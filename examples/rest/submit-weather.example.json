@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0",
+  "stationId": "TESTWX",
+  "temperature": 72,
+  "humidity": 50,
+  "windDirection": 180,
+  "windSpeed": 5,
+  "sourceMetadata": {
+    "sourceName": "Example REST Weather Submitter",
+    "sourceType": "LocalApi",
+    "sourceId": "rest-weather-example",
+    "origin": "LocalApi",
+    "trustLevel": "External"
+  },
+  "validationWarnings": [],
+  "validationErrors": []
+}

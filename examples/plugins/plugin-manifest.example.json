@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "pluginId": "example.weather.driver",
+  "name": "Example Weather Driver",
+  "version": "0.1.0",
+  "publisher": "Example Developer",
+  "description": "Documentation-only example plugin manifest for a read-only weather input driver.",
+  "capabilities": [
+    "WeatherInputDriver"
+  ],
+  "requestedPermissions": [
+    "ReadOnly",
+    "SubmitLocalData"
+  ],
+  "sourceMetadata": {
+    "sourceName": "Example Weather Driver",
+    "sourceType": "Plugin",
+    "sourceId": "example.weather.driver",
+    "origin": "Plugin",
+    "trustLevel": "External"
+  },
+  "signature": {
+    "required": true,
+    "status": "ExampleOnlyUnsigned"
+  },
+  "minimumAprsCommandVersion": "0.1.0",
+  "transmitEnabled": false
+}

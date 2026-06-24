@@ -1,0 +1,1 @@
+{"station_id":123,"sensors":[{"lsid":456,"sensor_type":45,"data":[{"ts":1493322445,"wind_dir":180,"wind_speed_avg_last_1_min":5.5,"temp":72.4,"hum":50,"bar_sea_level":29.92}]}]}

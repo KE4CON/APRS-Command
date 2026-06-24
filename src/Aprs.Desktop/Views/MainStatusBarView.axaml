@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Aprs.Desktop.Views.MainStatusBarView">
+  <Border Background="#EDF2F7"
+          BorderBrush="#CBD5E1"
+          BorderThickness="0,1,0,0"
+          Padding="12,7">
+    <Grid ColumnDefinitions="*,Auto,Auto"
+          ColumnSpacing="18">
+      <TextBlock Text="Ready"
+                 Foreground="#334155"
+                 VerticalAlignment="Center" />
+      <TextBlock Grid.Column="1"
+                 Text="APRS-IS Disconnected"
+                 Foreground="#526173"
+                 VerticalAlignment="Center" />
+      <TextBlock Grid.Column="2"
+                 Text="RF TX Disabled"
+                 Foreground="#0F766E"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center" />
+    </Grid>
+  </Border>
+</UserControl>

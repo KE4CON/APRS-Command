@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "messageId": "example-message-001",
+  "timestamp": "2026-06-12T10:15:30+00:00",
+  "streamName": "events",
+  "eventType": "StationUpdated",
+  "eventCategory": "Station",
+  "sourceMetadata": {
+    "sourceName": "Simulation",
+    "sourceType": "Simulation",
+    "sourceId": "sim",
+    "origin": "Simulated",
+    "trustLevel": "Internal"
+  },
+  "payloadType": "StationUpdateDto",
+  "payload": {
+    "schemaVersion": "1.0",
+    "callsign": "SIM001",
+    "displayName": "Sim Station 1"
+  },
+  "warnings": [],
+  "errors": []
+}

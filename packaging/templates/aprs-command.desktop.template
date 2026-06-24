@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=APRS Command
+Comment=Cross-platform amateur-radio APRS desktop client with receive-first safe defaults
+Exec=/opt/aprs-command/Aprs.Desktop
+Icon=aprs-command
+Terminal=false
+Categories=HamRadio;Network;Utility;
+StartupNotify=true

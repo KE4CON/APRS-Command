@@ -1,0 +1,46 @@
+namespace Aprs.Services;
+
+public sealed record DigipeaterConfiguration(
+    bool DigipeaterEnabled,
+    bool RfTransmitEnabled,
+    IReadOnlyList<string> AllowedRfReceivePorts,
+    string? RfTransmitPort,
+    string DigipeaterCallsign,
+    IReadOnlyList<string> SupportedAliases,
+    bool FillInDigipeaterMode,
+    bool FullDigipeaterMode,
+    bool DuplicateSuppressionEnabled,
+    TimeSpan DuplicateDetectionWindow,
+    int MaximumDigipeatsPerMinute,
+    int MaximumDigipeatsPerStationPerMinute,
+    bool RequireValidSourceCallsign,
+    bool RequireValidPath,
+    bool RequireExplicitConfirmationBeforeEnabling,
+    IReadOnlyList<string> BlockedCallsigns,
+    IReadOnlyList<string> BlockedPathPatterns,
+    IReadOnlyList<string> AllowedPathPatterns,
+    DateTimeOffset CreatedTimestampUtc,
+    DateTimeOffset UpdatedTimestampUtc)
+{
+    public static DigipeaterConfiguration Default { get; } = new(
+        DigipeaterEnabled: false,
+        RfTransmitEnabled: false,
+        AllowedRfReceivePorts: [],
+        RfTransmitPort: null,
+        DigipeaterCallsign: string.Empty,
+        SupportedAliases: ["WIDE1-1", "WIDE2-1"],
+        FillInDigipeaterMode: false,
+        FullDigipeaterMode: false,
+        DuplicateSuppressionEnabled: true,
+        DuplicateDetectionWindow: TimeSpan.FromMinutes(30),
+        MaximumDigipeatsPerMinute: 10,
+        MaximumDigipeatsPerStationPerMinute: 3,
+        RequireValidSourceCallsign: true,
+        RequireValidPath: true,
+        RequireExplicitConfirmationBeforeEnabling: true,
+        BlockedCallsigns: [],
+        BlockedPathPatterns: ["TCPIP*", "TCPXX*", "q*"],
+        AllowedPathPatterns: [],
+        CreatedTimestampUtc: DateTimeOffset.MinValue,
+        UpdatedTimestampUtc: DateTimeOffset.MinValue);
+}

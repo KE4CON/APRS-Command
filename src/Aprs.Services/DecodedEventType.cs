@@ -1,0 +1,35 @@
+namespace Aprs.Services;
+
+public enum DecodedEventType
+{
+    StationCreated,
+    StationUpdated,
+    StationExpired,
+    ObjectCreated,
+    ObjectUpdated,
+    ObjectKilled,
+    WeatherUpdated,
+    MessageReceived,
+    MessageSent,
+    MessageAcknowledged,
+    MessageRejected,
+    BulletinReceived,
+    GpsUpdated,
+    PortConnected,
+    PortDisconnected,
+    AprsIsConnected,
+    AprsIsDisconnected,
+    BeaconGenerated,
+    BeaconTransmitted,
+    WeatherBeaconGenerated,
+    WeatherBeaconTransmitted,
+    PacketTransmitBlocked,
+    PacketTransmitted,
+    IGateCandidateDetected,
+    IGatePacketGated,
+    IGatePacketBlocked,
+    DigipeaterPacketRepeated,
+    DigipeaterPacketBlocked,
+    AlertTriggered,
+    TrainingScenarioUpdated
+}

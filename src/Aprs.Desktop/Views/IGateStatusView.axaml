@@ -1,0 +1,175 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.IGateStatusView"
+             x:DataType="vm:IGateStatusViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        RowSpacing="10">
+    <StackPanel Spacing="2">
+      <TextBlock Text="iGate Monitor and Safety"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="RF-to-APRS-IS gating remains disabled unless the shared safety service allows it."
+                 Foreground="#526173"
+                 FontSize="12"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,*,*"
+          RowDefinitions="Auto,Auto,Auto"
+          ColumnSpacing="10"
+          RowSpacing="8">
+      <Border BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <StackPanel>
+          <TextBlock Text="iGate"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding IGateEnabled}"
+                     FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <StackPanel>
+          <TextBlock Text="RF to APRS-IS"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding RfToAprsIsGatingEnabled}"
+                     FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="2"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <StackPanel>
+          <TextBlock Text="APRS-IS TX"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding AprsIsTransmitEnabled}"
+                     FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Column="3"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <StackPanel>
+          <TextBlock Text="APRS-IS TX Required"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding AprsIsTransmitRequired}"
+                     FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="1"
+              Grid.ColumnSpan="4"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <Grid ColumnDefinitions="*,*"
+              RowDefinitions="Auto,Auto"
+              ColumnSpacing="10"
+              RowSpacing="6">
+          <StackPanel>
+            <TextBlock Text="Decisions"
+                       FontSize="11"
+                       Foreground="#64748B" />
+            <TextBlock Text="{Binding DecisionSummary}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="Validation"
+                       FontSize="11"
+                       Foreground="#64748B" />
+            <TextBlock Text="{Binding ErrorSummary}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Row="1">
+            <TextBlock Text="Last gated packet"
+                       FontSize="11"
+                       Foreground="#64748B" />
+            <TextBlock Text="{Binding LastGatedPacket}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Row="1"
+                      Grid.Column="1">
+            <TextBlock Text="Last blocked reason"
+                       FontSize="11"
+                       Foreground="#64748B" />
+            <TextBlock Text="{Binding LastBlockedReason}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <TextBlock Grid.Row="2"
+                 Grid.ColumnSpan="4"
+                 Text="{Binding LastDecisionTime, StringFormat='Last decision: {0}'}"
+                 Foreground="#64748B"
+                 FontSize="12" />
+    </Grid>
+
+    <ScrollViewer Grid.Row="2">
+      <ItemsControl ItemsSource="{Binding Decisions}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="#FFFFFF"
+                    Padding="10"
+                    Margin="0,0,0,8">
+              <Grid ColumnDefinitions="Auto,*,*,*,Auto"
+                    RowDefinitions="Auto,Auto"
+                    ColumnSpacing="10"
+                    RowSpacing="6">
+                <TextBlock Text="{Binding Time}"
+                           Foreground="#64748B" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="{Binding Callsign}"
+                             FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Source}"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding PacketType}" />
+                <TextBlock Grid.Column="3"
+                           Text="{Binding Decision}"
+                           FontWeight="SemiBold" />
+                <TextBlock Grid.Column="4"
+                           Text="{Binding TransmitAttempted}" />
+                <TextBlock Grid.Row="1"
+                           Grid.ColumnSpan="5"
+                           Text="{Binding Reason}"
+                           Foreground="#475569"
+                           TextWrapping="Wrap" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

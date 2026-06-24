@@ -1,0 +1,1 @@
+{"status":{"status_code":0,"status_message":"SUCCESS"},"device_id":12345,"station_id":67890,"obs":[{"timestamp":1493322445,"wind_avg":3.46,"wind_direction":187,"wind_gust":4.25,"air_temperature":22.37,"relative_humidity":53,"barometric_pressure":1017.57}]}

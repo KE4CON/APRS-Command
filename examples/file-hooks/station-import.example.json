@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "callsign": "SIM001",
+  "displayName": "Sim Station 1",
+  "latitude": 39.058333,
+  "longitude": -84.508333,
+  "sourceMetadata": {
+    "sourceName": "Example File Import",
+    "sourceType": "FileImport",
+    "sourceId": "station-import-example",
+    "origin": "Imported",
+    "trustLevel": "External"
+  },
+  "validationWarnings": [],
+  "validationErrors": []
+}

@@ -1,0 +1,209 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             xmlns:views="using:Aprs.Desktop.Views"
+             x:Class="Aprs.Desktop.Views.WeatherView"
+             x:DataType="vm:WeatherViewModel">
+  <Grid RowDefinitions="Auto,*"
+        Margin="0,10,0,0">
+    <StackPanel Grid.Row="0"
+                Margin="0,0,0,12">
+      <TextBlock Text="Weather"
+                 FontSize="24"
+                 FontWeight="SemiBold" />
+      <TextBlock Text="{Binding Summary}"
+                 Foreground="#526173" />
+    </StackPanel>
+    <TabControl Grid.Row="1">
+      <TabItem Header="Stations">
+        <Grid ColumnDefinitions="2*,3*"
+              ColumnSpacing="10">
+      <Border BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#F8FAFC"
+              Padding="10">
+        <ScrollViewer>
+          <ItemsControl ItemsSource="{Binding Rows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="#CBD5E1"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Background="#FFFFFF"
+                        Padding="10"
+                        Margin="0,0,0,8">
+                  <Grid RowDefinitions="Auto,Auto,Auto"
+                        RowSpacing="6">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="8">
+                      <StackPanel>
+                        <TextBlock Text="{Binding DisplayName}"
+                                   FontWeight="SemiBold"
+                                   Foreground="#0F172A" />
+                        <TextBlock Text="{Binding SourceType}"
+                                   FontSize="11"
+                                   Foreground="#64748B" />
+                      </StackPanel>
+                      <Border Grid.Column="1"
+                              BorderBrush="#0E7490"
+                              BorderThickness="1"
+                              CornerRadius="4"
+                              Padding="6,3">
+                        <TextBlock Text="{Binding DataState}"
+                                   Foreground="#0E7490"
+                                   FontSize="11"
+                                   FontWeight="SemiBold" />
+                      </Border>
+                    </Grid>
+                    <Grid Grid.Row="1"
+                          ColumnDefinitions="*,*"
+                          ColumnSpacing="8">
+                      <TextBlock Text="{Binding Temperature}"
+                                 FontWeight="SemiBold" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Wind}"
+                                 TextWrapping="Wrap" />
+                    </Grid>
+                    <TextBlock Grid.Row="2"
+                               Text="{Binding StaleWarning}"
+                               Foreground="#B45309"
+                               FontSize="11"
+                               TextWrapping="Wrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Border>
+
+      <Border Grid.Column="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="12">
+        <ScrollViewer>
+          <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                RowSpacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding SelectedStation.DisplayName}"
+                         FontSize="18"
+                         FontWeight="SemiBold"
+                         Foreground="#0F172A" />
+              <TextBlock Text="{Binding SelectedStation.StaleWarning}"
+                         Foreground="#B45309"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+
+            <UniformGrid Grid.Row="1"
+                         Columns="2">
+              <StackPanel Margin="0,0,12,8">
+                <TextBlock Text="Last update"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.LastUpdate}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Age"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Age}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,12,8">
+                <TextBlock Text="Temperature"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Temperature}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Wind"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Wind}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Margin="0,0,12,8">
+                <TextBlock Text="Rain"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Rain}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+              <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Humidity"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Humidity}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,12,8">
+                <TextBlock Text="Pressure"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Pressure}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Solar / UV"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.SolarUv}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,12,8">
+                <TextBlock Text="Snow"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Snow}" />
+              </StackPanel>
+              <StackPanel Margin="0,0,0,8">
+                <TextBlock Text="Lightning / Events"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Lightning}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </UniformGrid>
+
+            <Grid Grid.Row="2"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="12">
+              <StackPanel>
+                <TextBlock Text="Source"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.SourceType}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <TextBlock Text="Origin"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding SelectedStation.Origin}" />
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Grid.Row="3"
+                        Spacing="4">
+              <TextBlock Text="Raw packet / payload"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding SelectedStation.RawPayload}"
+                         FontFamily="Consolas,Menlo,monospace"
+                         FontSize="11"
+                         TextWrapping="Wrap"
+                         Foreground="#334155" />
+            </StackPanel>
+          </Grid>
+        </ScrollViewer>
+      </Border>
+        </Grid>
+      </TabItem>
+      <TabItem Header="Beacon">
+        <views:WeatherBeaconSettingsView DataContext="{Binding BeaconSettings}" />
+      </TabItem>
+      <TabItem Header="Setup">
+        <views:WeatherStationSetupView DataContext="{Binding Setup}" />
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

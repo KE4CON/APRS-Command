@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.WeatherSourceStatusView"
+             x:DataType="vm:WeatherSourceStatusViewModel">
+  <Border BorderBrush="#CBD5E1"
+          BorderThickness="1"
+          CornerRadius="6"
+          Background="#F8FAFC"
+          Padding="10">
+    <UniformGrid Columns="2">
+      <StackPanel Margin="0,0,12,8">
+        <TextBlock Text="Driver status"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding DriverStatus}" />
+      </StackPanel>
+      <StackPanel Margin="0,0,0,8">
+        <TextBlock Text="Driver type"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding DriverType}" />
+      </StackPanel>
+      <StackPanel Margin="0,0,12,8">
+        <TextBlock Text="Connection"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding ConnectionState}" />
+      </StackPanel>
+      <StackPanel Margin="0,0,0,8">
+        <TextBlock Text="Last update"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding LastSuccessfulUpdate}" />
+      </StackPanel>
+      <StackPanel Margin="0,0,12,0">
+        <TextBlock Text="Validation"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding ValidationStatus}" />
+      </StackPanel>
+      <StackPanel>
+        <TextBlock Text="Last error"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding LastError}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </UniformGrid>
+  </Border>
+</UserControl>

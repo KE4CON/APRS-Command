@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Aprs.Desktop.Views.OfflineMapManagerView">
+  <Grid RowDefinitions="Auto,Auto,Auto,*"
+        RowSpacing="10">
+    <StackPanel Spacing="2">
+      <TextBlock Text="Offline Map Manager"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="Prepare map tile areas for offline cache downloads"
+                 Foreground="#526173"
+                 FontSize="12" />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,*,*"
+          RowDefinitions="Auto,Auto,Auto"
+          ColumnSpacing="8"
+          RowSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Area name"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="Local operating area" />
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Text="Provider"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <ComboBox SelectedIndex="0">
+          <ComboBoxItem Content="SampleGrid" />
+        </ComboBox>
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Text="Min zoom"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <NumericUpDown Value="8"
+                       Minimum="0"
+                       Maximum="18" />
+      </StackPanel>
+      <StackPanel Grid.Column="3">
+        <TextBlock Text="Max zoom"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <NumericUpDown Value="12"
+                       Minimum="0"
+                       Maximum="18" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="1">
+        <TextBlock Text="North"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="39.20" />
+      </StackPanel>
+      <StackPanel Grid.Row="1"
+                  Grid.Column="1">
+        <TextBlock Text="South"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="38.90" />
+      </StackPanel>
+      <StackPanel Grid.Row="1"
+                  Grid.Column="2">
+        <TextBlock Text="West"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="-84.70" />
+      </StackPanel>
+      <StackPanel Grid.Row="1"
+                  Grid.Column="3">
+        <TextBlock Text="East"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="-84.30" />
+      </StackPanel>
+
+      <StackPanel Grid.Row="2"
+                  Grid.ColumnSpan="4">
+        <TextBlock Text="Notes"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="Provider rules and attribution must be reviewed before enabling downloads." />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="2"
+          ColumnDefinitions="Auto,Auto,*"
+          ColumnSpacing="8">
+      <Button Padding="10,6">
+        <TextBlock Text="Estimate" />
+      </Button>
+      <Button Grid.Column="1"
+              Padding="10,6">
+        <TextBlock Text="Download" />
+      </Button>
+      <TextBlock Grid.Column="2"
+                 Text="Download is disabled until a provider explicitly allows internet tile downloads."
+                 Foreground="#64748B"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+    </Grid>
+
+    <Border Grid.Row="3"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="10"
+            Background="#FFFFFF">
+      <Grid RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="6">
+        <TextBlock Text="Progress"
+                   FontWeight="SemiBold"
+                   Foreground="#0F172A" />
+        <ProgressBar Grid.Row="1"
+                     Minimum="0"
+                     Maximum="100"
+                     Value="0" />
+        <TextBlock Grid.Row="2"
+                   Text="Pending estimate. Cached tiles will be skipped and failures recorded without stopping the whole job."
+                   Foreground="#475569"
+                   TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

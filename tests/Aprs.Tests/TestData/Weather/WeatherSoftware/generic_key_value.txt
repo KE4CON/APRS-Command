@@ -1,0 +1,1 @@
+station=GenericWX,winddir=210,windspeedmph=8.3,windgustmph=13.4,tempf=74.2,humidity=57,pressuremb=1015.1,rainlasthourin=0.04,rain24hin=0.20,dailyrainin=0.21,solarradiation=315,uv=2.5,lightningcount=1,lightningdistancemi=4.2

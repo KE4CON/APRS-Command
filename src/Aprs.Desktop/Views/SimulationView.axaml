@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.SimulationView"
+             x:DataType="vm:SimulationViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="8">
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Simulation Mode"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding TransmitStatusText}"
+                   Foreground="#0F766E"
+                   FontWeight="SemiBold" />
+      </StackPanel>
+      <TextBlock Grid.Column="1"
+                 Text="{Binding State}"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          RowDefinitions="Auto,Auto"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+          ColumnSpacing="6"
+          RowSpacing="6">
+      <Button Command="{Binding StartCommand}" Content="Start" Padding="10,6" />
+      <Button Grid.Column="1" Command="{Binding PauseCommand}" Content="Pause" Padding="10,6" />
+      <Button Grid.Column="2" Command="{Binding ResumeCommand}" Content="Resume" Padding="10,6" />
+      <Button Grid.Column="3" Command="{Binding StopCommand}" Content="Stop" Padding="10,6" />
+      <Button Grid.Column="4" Command="{Binding StepCommand}" Content="Step" Padding="10,6" />
+      <Button Grid.Column="5" Command="{Binding ResetCommand}" Content="Reset" Padding="10,6" />
+      <StackPanel Grid.Row="1"
+                  Grid.ColumnSpan="6"
+                  Spacing="2">
+        <TextBlock Text="{Binding SourceName}" />
+        <TextBlock Text="{Binding StationCountText}" Foreground="#475569" />
+        <TextBlock Text="{Binding UpdateIntervalText, StringFormat='Update interval: {0}'}" Foreground="#475569" />
+        <TextBlock Text="{Binding AreaText}" Foreground="#475569" />
+        <TextBlock Text="{Binding LastErrorText}" Foreground="#B91C1C" />
+      </StackPanel>
+    </Grid>
+
+    <Border Grid.Row="2"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Background="#F8FAFC"
+            Padding="8">
+      <Grid RowDefinitions="Auto,*"
+            RowSpacing="6">
+        <TextBlock Text="{Binding PacketCountText, StringFormat='Recent simulated packets: {0}'}"
+                   FontWeight="SemiBold" />
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding RecentPackets}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="#E2E8F0"
+                        BorderThickness="0,0,0,1"
+                        Padding="0,5">
+                  <Grid ColumnDefinitions="60,90,90,*"
+                        RowDefinitions="Auto,Auto"
+                        ColumnSpacing="8">
+                    <TextBlock Text="{Binding Time}" Foreground="#64748B" />
+                    <TextBlock Grid.Column="1" Text="{Binding Kind}" />
+                    <TextBlock Grid.Column="2" Text="{Binding EntityName}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="3" Text="{Binding Source}" />
+                    <TextBlock Grid.Row="1"
+                               Grid.ColumnSpan="4"
+                               Text="{Binding RawPacket}"
+                               FontFamily="Menlo,Consolas,monospace"
+                               TextWrapping="NoWrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "1.0",
+  "rawPacket": "N0CALL-SIM>APRS:>Blocked example",
+  "requestedTransport": "APRS-IS",
+  "transmitEnabled": false,
+  "notes": "Example only. Imported/API transmit requests are blocked unless future operator settings and central safety checks explicitly allow them."
+}

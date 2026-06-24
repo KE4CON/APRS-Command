@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "stationId": "TESTWX",
+  "temperature": 72,
+  "humidity": 50,
+  "windDirection": 180,
+  "windSpeed": 5,
+  "windGust": 10,
+  "sourceMetadata": {
+    "sourceName": "Example Weather File",
+    "sourceType": "FileImport",
+    "sourceId": "weather-import-example",
+    "origin": "Imported",
+    "trustLevel": "External"
+  },
+  "validationWarnings": [],
+  "validationErrors": []
+}

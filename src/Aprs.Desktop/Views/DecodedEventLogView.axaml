@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.DecodedEventLogView"
+             x:DataType="vm:DecodedEventLogViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="8">
+    <Grid Grid.Row="0"
+          ColumnDefinitions="*,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Decoded Event Log"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding RowCount, StringFormat='Decoded events: {0}'}"
+                   Foreground="#526173" />
+      </StackPanel>
+      <Button Grid.Column="1"
+              Command="{Binding ClearLogCommand}"
+              Content="Clear"
+              Padding="12,6"
+              VerticalAlignment="Center" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="2*,*,*,*,*"
+          ColumnSpacing="8">
+      <TextBox Watermark="Search events"
+               Text="{Binding SearchText}" />
+      <TextBox Grid.Column="1"
+               Watermark="Callsign/source"
+               Text="{Binding CallsignOrSourceFilter}" />
+      <ComboBox Grid.Column="2"
+                ItemsSource="{Binding CategoryFilterOptions}"
+                SelectedItem="{Binding SelectedCategoryFilter}" />
+      <ComboBox Grid.Column="3"
+                ItemsSource="{Binding SeverityFilterOptions}"
+                SelectedItem="{Binding SelectedSeverityFilter}" />
+      <ComboBox Grid.Column="4"
+                ItemsSource="{Binding EventTypeFilterOptions}"
+                SelectedItem="{Binding SelectedEventTypeFilter}" />
+    </Grid>
+
+    <Border Grid.Row="2"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Background="#F8FAFC"
+            Padding="8">
+      <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border BorderBrush="#E2E8F0"
+                      BorderThickness="0,0,0,1"
+                      Padding="0,6">
+                <Grid ColumnDefinitions="70,80,90,150,110,*"
+                      RowDefinitions="Auto,Auto"
+                      ColumnSpacing="8"
+                      RowSpacing="3">
+                  <TextBlock Text="{Binding Timestamp}"
+                             Foreground="#475569"
+                             FontSize="12" />
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding Severity}"
+                             FontWeight="SemiBold"
+                             FontSize="12" />
+                  <TextBlock Grid.Column="2"
+                             Text="{Binding Category}"
+                             Foreground="#475569"
+                             FontSize="12" />
+                  <TextBlock Grid.Column="3"
+                             Text="{Binding EventType}"
+                             FontSize="12" />
+                  <TextBlock Grid.Column="4"
+                             Text="{Binding CallsignOrSource}"
+                             FontWeight="SemiBold"
+                             FontSize="12" />
+                  <TextBlock Grid.Column="5"
+                             Text="{Binding Summary}"
+                             TextWrapping="NoWrap"
+                             FontSize="12" />
+                  <TextBlock Grid.Row="1"
+                             Grid.ColumnSpan="6"
+                             Text="{Binding Details}"
+                             Foreground="#475569"
+                             FontSize="12"
+                             TextWrapping="NoWrap" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,50 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.WeatherPacketPreviewView"
+             x:DataType="vm:WeatherPacketPreviewViewModel">
+  <Border BorderBrush="#CBD5E1"
+          BorderThickness="1"
+          CornerRadius="6"
+          Background="#FFFFFF"
+          Padding="10">
+    <Grid RowDefinitions="Auto,Auto,Auto"
+          RowSpacing="8">
+      <Grid ColumnDefinitions="*,Auto,Auto"
+            ColumnSpacing="10">
+        <TextBlock Text="APRS Weather Packet Preview"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1"
+                   Text="{Binding AprsIsEligible, StringFormat='APRS-IS eligible: {0}'}" />
+        <TextBlock Grid.Column="2"
+                   Text="{Binding RfEligible, StringFormat='RF eligible: {0}'}" />
+      </Grid>
+      <Border Grid.Row="1"
+              BorderBrush="#E2E8F0"
+              BorderThickness="1"
+              CornerRadius="4"
+              Background="#F8FAFC"
+              Padding="8">
+        <TextBlock Text="{Binding Packet}"
+                   FontFamily="Consolas,Menlo,monospace"
+                   TextWrapping="Wrap" />
+      </Border>
+      <Grid Grid.Row="2"
+            RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="4">
+        <TextBlock Text="{Binding StaleWarning}"
+                   Foreground="#B45309"
+                   TextWrapping="Wrap" />
+        <TextBlock Grid.Row="1"
+                   Text="{Binding ValidationErrors, StringFormat='Errors: {0}'}"
+                   Foreground="#991B1B"
+                   TextWrapping="Wrap" />
+        <TextBlock Grid.Row="2"
+                   Text="{Binding ValidationWarnings, StringFormat='Warnings: {0}'}"
+                   Foreground="#64748B"
+                   TextWrapping="Wrap" />
+      </Grid>
+    </Grid>
+  </Border>
+</UserControl>

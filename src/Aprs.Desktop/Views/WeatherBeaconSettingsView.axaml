@@ -1,0 +1,149 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.WeatherBeaconSettingsView"
+             x:DataType="vm:WeatherBeaconSettingsViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+          RowSpacing="12">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Weather Beacon"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="Local weather packet preview and safe transmit scheduling"
+                   Foreground="#526173"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Grid Grid.Row="1"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="12">
+        <Border BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#F8FAFC"
+                Padding="10">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Selected source"
+                       FontSize="11"
+                       Foreground="#64748B" />
+            <TextBlock Text="{Binding SelectedWeatherSource}"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding SourceStatus}"
+                       Foreground="#334155"
+                       TextWrapping="Wrap" />
+            <TextBlock Text="{Binding StaleWarning}"
+                       Foreground="#B45309"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#FFFFFF"
+                Padding="10">
+          <UniformGrid Columns="2">
+            <StackPanel Margin="0,0,10,8">
+              <TextBlock Text="Beacon enabled"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding WeatherBeaconEnabled}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,0,8">
+              <TextBlock Text="Interval"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding TransmitInterval}" />
+            </StackPanel>
+            <StackPanel Margin="0,0,10,0">
+              <TextBlock Text="APRS-IS TX"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding AprsIsWeatherTransmitEnabled}" />
+            </StackPanel>
+            <StackPanel>
+              <TextBlock Text="RF TX"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding RfWeatherTransmitEnabled}" />
+            </StackPanel>
+          </UniformGrid>
+        </Border>
+      </Grid>
+
+      <Border Grid.Row="2"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="10">
+        <Grid RowDefinitions="Auto,*"
+              RowSpacing="8">
+          <Grid ColumnDefinitions="*,Auto,Auto,Auto"
+                ColumnSpacing="8">
+            <TextBlock Text="APRS packet preview"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Content="Preview"
+                    Command="{Binding PreviewCommand}" />
+            <Button Grid.Column="2"
+                    Content="Transmit APRS-IS"
+                    Command="{Binding TransmitAprsIsNowCommand}" />
+            <Button Grid.Column="3"
+                    Content="Transmit RF"
+                    Command="{Binding TransmitRfNowCommand}" />
+          </Grid>
+          <Border Grid.Row="1"
+                  BorderBrush="#E2E8F0"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Background="#F8FAFC"
+                  Padding="8">
+            <TextBlock Text="{Binding PacketPreview}"
+                       FontFamily="Consolas,Menlo,monospace"
+                       TextWrapping="Wrap" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <UniformGrid Grid.Row="3"
+                   Columns="2">
+        <StackPanel Margin="0,0,12,8">
+          <TextBlock Text="Last observation"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding LastObservationTime}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,0,8">
+          <TextBlock Text="Next transmit"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding NextTransmitTime}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,12,0">
+          <TextBlock Text="Last result"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding LastTransmitResult}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel>
+          <TextBlock Text="Blocked reason"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding LastBlockedReason}"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </UniformGrid>
+
+      <TextBlock Grid.Row="4"
+                 Text="Weather beaconing, APRS-IS transmit, and RF transmit are separate safety gates and remain disabled by default."
+                 Foreground="#64748B"
+                 TextWrapping="Wrap" />
+    </Grid>
+  </ScrollViewer>
+</UserControl>

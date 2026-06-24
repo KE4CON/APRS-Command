@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.ObjectEditorView"
+             x:DataType="vm:ObjectEditorViewModel">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+        RowSpacing="8">
+    <Grid ColumnDefinitions="*,*,Auto,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Object"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding ObjectName}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Text="Owner"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding OwnerCallsign}" />
+      </StackPanel>
+      <CheckBox Grid.Column="2"
+                Content="Alive"
+                IsChecked="{Binding IsAlive}"
+                VerticalAlignment="Bottom" />
+      <CheckBox Grid.Column="3"
+                Content="Killed"
+                IsChecked="{Binding IsKilled}"
+                VerticalAlignment="Bottom" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,Auto,Auto,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Latitude"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding Latitude}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Text="Longitude"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding Longitude}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Text="Table"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Width="44"
+                 Text="{Binding SymbolTableIdentifier}" />
+      </StackPanel>
+      <StackPanel Grid.Column="3">
+        <TextBlock Text="Symbol"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Width="44"
+                 Text="{Binding SymbolCode}" />
+      </StackPanel>
+      <StackPanel Grid.Column="4">
+        <TextBlock Text="Overlay"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Width="52"
+                 Text="{Binding Overlay}" />
+      </StackPanel>
+    </Grid>
+
+    <StackPanel Grid.Row="2">
+      <TextBlock Text="Comment"
+                 FontSize="11"
+                 Foreground="#64748B" />
+      <TextBox Text="{Binding Comment}" />
+    </StackPanel>
+
+    <Grid Grid.Row="3"
+          ColumnDefinitions="*,Auto,Auto,Auto"
+          ColumnSpacing="10">
+      <StackPanel>
+        <TextBlock Text="Interval"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Watermark="placeholder"
+                 Text="{Binding TransmitIntervalMinutes}" />
+      </StackPanel>
+      <CheckBox Grid.Column="1"
+                Content="APRS-IS TX"
+                IsChecked="{Binding AprsIsTransmitEnabled}"
+                VerticalAlignment="Bottom" />
+      <CheckBox Grid.Column="2"
+                Content="RF TX"
+                IsChecked="{Binding RfTransmitEnabled}"
+                VerticalAlignment="Bottom" />
+      <CheckBox Grid.Column="3"
+                Content="Adopted"
+                IsChecked="{Binding IsAdopted}"
+                VerticalAlignment="Bottom" />
+    </Grid>
+
+    <Border Grid.Row="4"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="4"
+            Background="#F8FAFC"
+            Padding="8">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Packet preview"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding PacketPreview}"
+                   FontFamily="Consolas, Menlo, monospace"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{Binding ValidationSummary}"
+                   Foreground="#B91C1C"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{Binding WarningSummary}"
+                   Foreground="#92400E"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

@@ -1,0 +1,6 @@
+APRS symbol graphics (aprs-symbols-64-0/1/2.png) are from the
+aprs.fi high-resolution APRS symbol set by Heikki Hannikainen, OH7LZB.
+Source: http://github.com/hessu/aprs-symbols/
+Reused per that project's terms, which ask that applications point back
+to the source above. See that repository's COPYRIGHT.md for per-symbol
+licensing details.

@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             xmlns:views="using:Aprs.Desktop.Views"
+             x:Class="Aprs.Desktop.Views.ObjectManagerView"
+             x:DataType="vm:ObjectManagerViewModel">
+  <Grid RowDefinitions="Auto,*"
+        Margin="0,10,0,0">
+    <StackPanel Grid.Row="0"
+                Margin="0,0,0,12">
+      <TextBlock Text="Objects"
+                 FontSize="24"
+                 FontWeight="SemiBold" />
+      <TextBlock Text="APRS objects and items"
+                 Foreground="#526173" />
+    </StackPanel>
+    <Grid Grid.Row="1"
+          RowDefinitions="Auto,*,Auto"
+          RowSpacing="8">
+      <Grid ColumnDefinitions="*,Auto,Auto"
+            ColumnSpacing="8">
+        <TextBlock Text="{Binding StatusText}"
+                   Foreground="#526173"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+        <Button Grid.Column="1"
+                Content="New"
+                Command="{Binding NewObjectCommand}" />
+        <Button Grid.Column="2"
+                Content="Edit"
+                Command="{Binding EditSelectedCommand}" />
+      </Grid>
+
+      <Grid Grid.Row="1"
+            ColumnDefinitions="1.1*,1.4*"
+            ColumnSpacing="10">
+        <Border BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#F8FAFC"
+                Padding="8">
+          <ListBox ItemsSource="{Binding Objects}"
+                   SelectedItem="{Binding SelectedObject}">
+            <ListBox.ItemTemplate>
+              <DataTemplate DataType="vm:ObjectListRowViewModel">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="8"
+                      Margin="0,3">
+                  <StackPanel>
+                    <TextBlock Text="{Binding Name}"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Owner}"
+                               FontSize="11"
+                               Foreground="#64748B" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Comment}"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Position}"
+                               FontSize="11"
+                               Foreground="#64748B" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{Binding State}"
+                               Foreground="#475569" />
+                    <TextBlock Text="{Binding Ownership}"
+                               FontSize="11"
+                               Foreground="#64748B" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Border>
+
+        <Border Grid.Column="1"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#FFFFFF"
+                Padding="10">
+          <views:ObjectEditorView DataContext="{Binding Editor}" />
+        </Border>
+      </Grid>
+
+      <Grid Grid.Row="2"
+            ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+            ColumnSpacing="8">
+        <TextBlock Text="Local preview only. Object packets are not transmitted."
+                   Foreground="#64748B"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="1"
+                Content="Save"
+                Command="{Binding SaveCommand}" />
+        <Button Grid.Column="2"
+                Content="Kill"
+                Command="{Binding MarkKilledCommand}" />
+        <Button Grid.Column="3"
+                Content="Delete"
+                Command="{Binding DeleteCommand}" />
+        <Button Grid.Column="4"
+                Content="Cancel"
+                Command="{Binding CancelCommand}" />
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

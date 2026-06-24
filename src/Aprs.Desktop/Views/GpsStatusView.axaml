@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.GpsStatusView"
+             x:DataType="vm:GpsStatusViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto"
+          RowSpacing="12">
+      <StackPanel Spacing="2">
+        <TextBlock Text="GPS Status"
+                   FontSize="18"
+                   FontWeight="SemiBold"
+                   Foreground="#0F172A" />
+        <TextBlock Text="Current GPS fix information"
+                   Foreground="#526173"
+                   FontSize="12" />
+      </StackPanel>
+
+      <Border Grid.Row="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#F8FAFC"
+              Padding="12">
+        <Grid RowDefinitions="Auto,Auto"
+              RowSpacing="10">
+          <Grid ColumnDefinitions="*,Auto"
+                ColumnSpacing="12">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding Source}"
+                         FontSize="16"
+                         FontWeight="SemiBold"
+                         Foreground="#0F172A" />
+              <TextBlock Text="{Binding SourceName}"
+                         FontSize="12"
+                         Foreground="#64748B"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Grid.Column="1"
+                    BorderBrush="{Binding StatusBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="8,4"
+                    VerticalAlignment="Top">
+              <TextBlock Text="{Binding FixStatus}"
+                         Foreground="{Binding StatusBrush}"
+                         FontWeight="SemiBold" />
+            </Border>
+          </Grid>
+
+          <Grid Grid.Row="1"
+                ColumnDefinitions="*,*,*"
+                RowDefinitions="Auto,Auto,Auto,Auto"
+                ColumnSpacing="12"
+                RowSpacing="8">
+            <StackPanel>
+              <TextBlock Text="Latitude"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Latitude}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Column="1">
+              <TextBlock Text="Longitude"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Longitude}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Altitude"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Altitude}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="1">
+              <TextBlock Text="Speed"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Speed}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Row="1"
+                        Grid.Column="1">
+              <TextBlock Text="Course"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Course}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Row="1"
+                        Grid.Column="2">
+              <TextBlock Text="HDOP"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Hdop}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="2">
+              <TextBlock Text="Satellites"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding SatelliteCount}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Row="2"
+                        Grid.Column="1">
+              <TextBlock Text="Used"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding UsedSatelliteCount}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+            <StackPanel Grid.Row="2"
+                        Grid.Column="2">
+              <TextBlock Text="Age"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding Age}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+
+            <StackPanel Grid.Row="3"
+                        Grid.ColumnSpan="3">
+              <TextBlock Text="Last update"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBlock Text="{Binding LastUpdate}"
+                         FontWeight="SemiBold" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="2"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="12">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Raw source"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding RawSource}"
+                     TextWrapping="Wrap"
+                     FontFamily="Consolas, Menlo, monospace"
+                     Foreground="#334155" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,1 @@
+{"station_id":123,"generated_at":1493322450,"sensors":[{"lsid":456,"sensor_type":45,"data":[{"ts":1493322445,"wind_dir":180,"wind_speed_avg_last_1_min":5.5,"wind_speed_hi_last_10_min":10.2,"temp":72.4,"hum":50,"bar_sea_level":29.92,"rainfall_last_60_min":0.02,"rainfall_last_24_hr":0.10,"rainfall_daily":0.15,"solar_rad":310,"uv_index":2.4,"battery_voltage":4.7}]}]}

@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.WeatherDiagnosticsView"
+             x:DataType="vm:WeatherDiagnosticsViewModel">
+  <Border BorderBrush="#CBD5E1"
+          BorderThickness="1"
+          CornerRadius="6"
+          Background="#FFFFFF"
+          Padding="10">
+    <Grid RowDefinitions="Auto,Auto,Auto"
+          RowSpacing="8">
+      <TextBlock Text="Diagnostics"
+                 FontWeight="SemiBold" />
+      <UniformGrid Grid.Row="1"
+                   Columns="2">
+        <StackPanel Margin="0,0,12,8">
+          <TextBlock Text="Driver status"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding DriverStatus}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,0,8">
+          <TextBlock Text="Connection"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding ConnectionState}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,12,8">
+          <TextBlock Text="Last successful update"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding LastSuccessfulUpdate}" />
+        </StackPanel>
+        <StackPanel Margin="0,0,0,8">
+          <TextBlock Text="Last failed update"
+                     FontSize="11"
+                     Foreground="#64748B" />
+          <TextBlock Text="{Binding LastFailedUpdate}" />
+        </StackPanel>
+      </UniformGrid>
+      <StackPanel Grid.Row="2"
+                  Spacing="4">
+        <TextBlock Text="{Binding ValidationErrors, StringFormat='Validation errors: {0}'}"
+                   Foreground="#991B1B"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{Binding ValidationWarnings, StringFormat='Validation warnings: {0}'}"
+                   Foreground="#B45309"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{Binding LastError, StringFormat='Last error: {0}'}"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="Raw source payload"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBlock Text="{Binding RawSourcePayload}"
+                   FontFamily="Consolas,Menlo,monospace"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

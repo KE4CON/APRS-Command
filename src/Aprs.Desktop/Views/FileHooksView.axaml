@@ -1,0 +1,70 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.FileHooksView"
+             x:DataType="vm:FileHooksViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="10">
+    <StackPanel>
+      <TextBlock Text="File Import / Export Hooks"
+                 FontSize="20"
+                 FontWeight="SemiBold" />
+      <TextBlock Text="{Binding LastAction}"
+                 Foreground="#526173" />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,*"
+          ColumnSpacing="8">
+      <Button Content="Manual Export"
+              Command="{Binding ManualExportCommand}" />
+      <Button Grid.Column="1"
+              Content="Scan Imports"
+              Command="{Binding ManualImportScanCommand}" />
+      <Button Grid.Column="2"
+              Content="Clear Status"
+              Command="{Binding ClearStatusCommand}" />
+    </Grid>
+
+    <Border Grid.Row="2"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Background="#F8FAFC"
+            Padding="10">
+      <Grid ColumnDefinitions="150,*"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            RowSpacing="6"
+            ColumnSpacing="12">
+        <TextBlock Text="State" FontWeight="SemiBold" />
+        <TextBlock Grid.Column="1" Text="{Binding State}" />
+        <TextBlock Grid.Row="1" Text="Hooks enabled" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding FileHooksEnabled}" />
+        <TextBlock Grid.Row="2" Text="Import enabled" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ImportEnabled}" />
+        <TextBlock Grid.Row="3" Text="Export enabled" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ExportEnabled}" />
+        <TextBlock Grid.Row="4" Text="Base folder" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding BaseFolderPath}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="5" Text="Import folder" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding ImportFolderPath}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="6" Text="Export folder" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding ExportFolderPath}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="7" Text="Last export" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding LastExportTime}" />
+        <TextBlock Grid.Row="8" Text="Last import" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding LastImportTime}" />
+        <TextBlock Grid.Row="9" Text="Import counts" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="9"
+                   Grid.Column="1"
+                   Text="{Binding ImportCountSummary}" />
+        <TextBlock Grid.Row="10" Text="Last error" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="10"
+                   Grid.Column="1"
+                   Text="{Binding LastError}"
+                   TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

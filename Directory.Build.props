@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <RollForward>Major</RollForward>
+    <Product>APRS Command</Product>
+  </PropertyGroup>
+</Project>

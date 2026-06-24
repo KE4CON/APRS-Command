@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.FirstRunSetupView"
+             x:DataType="vm:FirstRunSetupViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+          RowSpacing="12">
+      <StackPanel Spacing="3">
+        <TextBlock Text="{Binding Title}"
+                   FontSize="20"
+                   FontWeight="SemiBold"
+                   Foreground="#0F172A" />
+        <TextBlock Text="{Binding StatusText}"
+                   Foreground="#526173"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Border Grid.Row="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="12">
+        <Grid ColumnDefinitions="Auto,*"
+              RowDefinitions="Auto,Auto,Auto,Auto"
+              RowSpacing="6"
+              ColumnSpacing="12">
+          <TextBlock Text="Application data"
+                     FontWeight="SemiBold" />
+          <TextBlock Grid.Column="1"
+                     Text="{Binding ApplicationDataFolderPath}"
+                     TextWrapping="Wrap" />
+          <TextBlock Grid.Row="1"
+                     Text="Logs"
+                     FontWeight="SemiBold" />
+          <TextBlock Grid.Row="1"
+                     Grid.Column="1"
+                     Text="{Binding LogsFolderPath}"
+                     TextWrapping="Wrap" />
+          <TextBlock Grid.Row="2"
+                     Text="Map cache"
+                     FontWeight="SemiBold" />
+          <TextBlock Grid.Row="2"
+                     Grid.Column="1"
+                     Text="{Binding MapCacheFolderPath}"
+                     TextWrapping="Wrap" />
+          <TextBlock Grid.Row="3"
+                     Text="Exports"
+                     FontWeight="SemiBold" />
+          <TextBlock Grid.Row="3"
+                     Grid.Column="1"
+                     Text="{Binding ExportFolderPath}"
+                     TextWrapping="Wrap" />
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="2"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#F8FAFC"
+              Padding="12">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Safe defaults"
+                     FontWeight="SemiBold"
+                     Foreground="#0F172A" />
+          <ItemsControl ItemsSource="{Binding SafetyDefaults}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,4" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding TransmitDisabled, StringFormat='Transmit disabled: {0}'}" />
+          <TextBlock Text="{Binding ExtensionInputsDisabled, StringFormat='Extension inputs disabled: {0}'}" />
+        </StackPanel>
+      </Border>
+
+      <Button Grid.Row="3"
+              Content="Mark First-Run Setup Complete"
+              HorizontalAlignment="Left"
+              Command="{Binding FinishSetupCommand}" />
+    </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.RfDiagnosticsView"
+             x:DataType="vm:RfDiagnosticsViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="8">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel>
+        <TextBlock Text="RF Diagnostics"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding LastUpdatedText, StringFormat='Last updated: {0}'}"
+                   Foreground="#526173" />
+      </StackPanel>
+      <Button Grid.Column="1"
+              Command="{Binding ClearCommand}"
+              Content="Clear"
+              Padding="12,6"
+              VerticalAlignment="Center" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,*,*,*"
+          RowDefinitions="Auto,Auto"
+          ColumnSpacing="6"
+          RowSpacing="6">
+      <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#FFFFFF" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Packets" FontSize="11" Foreground="#64748B" />
+          <TextBlock Text="{Binding TotalPacketsText}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#FFFFFF" Padding="8">
+        <StackPanel>
+          <TextBlock Text="RF" FontSize="11" Foreground="#64748B" />
+          <TextBlock Text="{Binding RfPacketsText}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="2" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#FFFFFF" Padding="8">
+        <StackPanel>
+          <TextBlock Text="APRS-IS" FontSize="11" Foreground="#64748B" />
+          <TextBlock Text="{Binding AprsIsPacketsText}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="3" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#FFFFFF" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Duplicates" FontSize="11" Foreground="#64748B" />
+          <TextBlock Text="{Binding DuplicatePacketsText}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="4" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#FFFFFF" Padding="8">
+        <StackPanel>
+          <TextBlock Text="Stations" FontSize="11" Foreground="#64748B" />
+          <TextBlock Text="{Binding UniqueStationsText}" FontWeight="SemiBold" />
+        </StackPanel>
+      </Border>
+      <TextBlock Grid.Row="1"
+                 Grid.ColumnSpan="5"
+                 Text="{Binding LinkSummaryText}"
+                 Foreground="#475569" />
+    </Grid>
+
+    <Grid Grid.Row="2"
+          ColumnDefinitions="*,*"
+          RowDefinitions="Auto,*"
+          ColumnSpacing="8"
+          RowSpacing="8">
+      <Grid ColumnDefinitions="*,*"
+            ColumnSpacing="8">
+        <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="8">
+          <StackPanel>
+            <TextBlock Text="Station Rates" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding StationRates}" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="8">
+          <StackPanel>
+            <TextBlock Text="Source Rates" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding SourceRates}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Grid Grid.Column="1"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="8">
+        <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="8">
+          <StackPanel>
+            <TextBlock Text="Path Warnings" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding PathWarnings}" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Background="#F8FAFC" Padding="8">
+          <StackPanel>
+            <TextBlock Text="Beacon Warnings" FontWeight="SemiBold" />
+            <ItemsControl ItemsSource="{Binding ExcessiveBeaconWarnings}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Border Grid.Row="1"
+              Grid.ColumnSpan="2"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="8">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding RecentPackets}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border BorderBrush="#E2E8F0"
+                        BorderThickness="0,0,0,1"
+                        Padding="0,6">
+                  <Grid ColumnDefinitions="60,90,90,90,100,*"
+                        RowDefinitions="Auto,Auto,Auto"
+                        ColumnSpacing="8"
+                        RowSpacing="2">
+                    <TextBlock Text="{Binding Time}" Foreground="#64748B" />
+                    <TextBlock Grid.Column="1" Text="{Binding Callsign}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="2" Text="{Binding PacketSource}" />
+                    <TextBlock Grid.Column="3" Text="{Binding DuplicateState}" />
+                    <TextBlock Grid.Column="4" Text="{Binding LinkState}" />
+                    <TextBlock Grid.Column="5" Text="{Binding RawPacket}" FontFamily="Menlo,Consolas,monospace" />
+                    <TextBlock Grid.Row="1" Grid.ColumnSpan="6" Text="{Binding Path, StringFormat='Path: {0}'}" Foreground="#475569" />
+                    <TextBlock Grid.Row="2" Grid.ColumnSpan="6" Text="{Binding Warnings}" Foreground="#B45309" TextWrapping="Wrap" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

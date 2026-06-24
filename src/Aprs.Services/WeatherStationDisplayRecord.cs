@@ -1,0 +1,26 @@
+namespace Aprs.Services;
+
+public sealed record WeatherStationDisplayRecord(
+    string StationId,
+    string DisplayName,
+    WeatherStationSourceType SourceType,
+    double? Latitude,
+    double? Longitude,
+    int? WindDirectionDegrees,
+    int? WindSpeedMph,
+    int? WindGustMph,
+    int? TemperatureFahrenheit,
+    int? RainLastHourHundredthsInch,
+    int? RainLast24HoursHundredthsInch,
+    int? RainSinceMidnightHundredthsInch,
+    int? HumidityPercent,
+    double? BarometricPressureMillibars,
+    int? LuminosityWattsPerSquareMeter,
+    double? UvIndex,
+    int? SnowHundredthsInch,
+    string? LightningEventInformation,
+    DateTimeOffset LastUpdateUtc,
+    TimeSpan DataAge,
+    WeatherDataState DataState,
+    string? RawPayload,
+    WeatherStationOrigin Origin);

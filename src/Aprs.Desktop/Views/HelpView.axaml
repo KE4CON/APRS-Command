@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.HelpView"
+             x:DataType="vm:HelpViewModel">
+  <Grid RowDefinitions="Auto,*"
+        RowSpacing="10"
+        Margin="12">
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="10">
+      <StackPanel>
+        <TextBlock Text="Help"
+                   FontSize="24"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding DocumentationLocation}"
+                   Foreground="#526173"
+                   FontSize="12" />
+      </StackPanel>
+      <TextBox Grid.Column="1"
+               Width="260"
+               Watermark="Search help"
+               Text="{Binding SearchText}" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="270,*"
+          ColumnSpacing="12">
+      <Border BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#F8FAFC"
+              Padding="8">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top"
+                     Text="{Binding TopicCount, StringFormat='Topics: {0}'}"
+                     Foreground="#526173"
+                     Margin="0,0,0,8" />
+          <ListBox ItemsSource="{Binding FilteredTopics}"
+                   SelectedItem="{Binding SelectedTopic}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Title}"
+                           TextWrapping="Wrap" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <Border Grid.Column="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="12">
+        <Grid RowDefinitions="Auto,Auto,*"
+              RowSpacing="8">
+          <TextBlock Text="{Binding SelectedTitle}"
+                     FontSize="22"
+                     FontWeight="SemiBold" />
+          <TextBlock Grid.Row="1"
+                     Text="{Binding SelectedAvailability}"
+                     Foreground="#526173" />
+          <ScrollViewer Grid.Row="2"
+                        VerticalScrollBarVisibility="Auto"
+                        HorizontalScrollBarVisibility="Disabled">
+            <TextBox Text="{Binding SelectedContent}"
+                     AcceptsReturn="True"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     FontFamily="Menlo,Consolas,monospace"
+                     FontSize="13"
+                     BorderThickness="0"
+                     Background="#FFFFFF" />
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

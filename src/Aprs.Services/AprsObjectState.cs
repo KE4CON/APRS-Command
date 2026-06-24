@@ -1,0 +1,26 @@
+namespace Aprs.Services;
+
+public sealed record AprsObjectState(
+    string Name,
+    AprsManagedObjectType ObjectType,
+    string OwnerCallsign,
+    bool IsAlive,
+    bool IsKilled,
+    AprsObjectLifecycleState LifecycleState,
+    double? Latitude,
+    double? Longitude,
+    char? SymbolTableIdentifier,
+    char? SymbolCode,
+    char? Overlay,
+    string? Comment,
+    string? PacketTimestamp,
+    DateTimeOffset FirstHeardUtc,
+    DateTimeOffset LastHeardUtc,
+    DateTimeOffset LastUpdatedUtc,
+    string LastRawPacket,
+    AprsPacketSource PacketSource,
+    bool IsLocallyCreated,
+    bool IsLocallyOwned,
+    bool IsAdopted,
+    string? OwnershipWarning,
+    IReadOnlyList<string> ValidationErrors);

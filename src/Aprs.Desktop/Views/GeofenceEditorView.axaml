@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.GeofenceEditorView"
+             x:DataType="vm:GeofenceEditorViewModel">
+  <Grid RowDefinitions="Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="8">
+    <Grid ColumnDefinitions="*,Auto,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Geofence Editor"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding CountText}"
+                   Foreground="#526173" />
+      </StackPanel>
+      <Button Grid.Column="1"
+              Command="{Binding CreateCircleCommand}"
+              Content="New Circle"
+              Padding="10,6"
+              VerticalAlignment="Center" />
+      <Button Grid.Column="2"
+              Command="{Binding CreatePolygonCommand}"
+              Content="New Polygon"
+              Padding="10,6"
+              VerticalAlignment="Center" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="1.1*,1.3*"
+          ColumnSpacing="8">
+      <Border BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="8">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ListBox ItemsSource="{Binding Geofences}"
+                   SelectedItem="{Binding SelectedGeofence}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Grid ColumnDefinitions="*,80"
+                      RowDefinitions="Auto,Auto,Auto"
+                      ColumnSpacing="8">
+                  <TextBlock Text="{Binding Name}"
+                             FontWeight="SemiBold" />
+                  <TextBlock Grid.Column="1"
+                             Text="{Binding Enabled}" />
+                  <TextBlock Grid.Row="1"
+                             Grid.ColumnSpan="2"
+                             Text="{Binding Type, StringFormat='Type: {0}'}"
+                             Foreground="#475569" />
+                  <TextBlock Grid.Row="2"
+                             Grid.ColumnSpan="2"
+                             Text="{Binding Validation}"
+                             Foreground="#B45309"
+                             TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+      </Border>
+
+      <Border Grid.Column="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#F8FAFC"
+              Padding="10">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="8">
+            <TextBox Watermark="Name"
+                     Text="{Binding Name}" />
+            <TextBox Watermark="Description"
+                     Text="{Binding Description}" />
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="8">
+              <ComboBox ItemsSource="{Binding TypeOptions}"
+                        SelectedItem="{Binding SelectedType}" />
+              <CheckBox Grid.Column="1"
+                        Content="Enabled"
+                        IsChecked="{Binding Enabled}" />
+              <Button Grid.Column="2"
+                      Command="{Binding ToggleEnabledCommand}"
+                      Content="Toggle"
+                      Padding="10,6" />
+            </Grid>
+            <Grid ColumnDefinitions="*,*,*"
+                  ColumnSpacing="8">
+              <TextBox Watermark="Center latitude"
+                       Text="{Binding CenterLatitude}" />
+              <TextBox Grid.Column="1"
+                       Watermark="Center longitude"
+                       Text="{Binding CenterLongitude}" />
+              <TextBox Grid.Column="2"
+                       Watermark="Radius meters"
+                       Text="{Binding RadiusMeters}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="8">
+              <CheckBox Content="Alert on enter"
+                        IsChecked="{Binding AlertOnEnter}" />
+              <CheckBox Grid.Column="1"
+                        Content="Alert on exit"
+                        IsChecked="{Binding AlertOnExit}" />
+              <Button Grid.Column="2"
+                      Command="{Binding SetMapCenterPlaceholderCommand}"
+                      Content="Use Map Center"
+                      Padding="10,6" />
+            </Grid>
+            <TextBox Watermark="Polygon points: latitude,longitude per line"
+                     Text="{Binding PolygonPointsText}"
+                     AcceptsReturn="True"
+                     MinHeight="90" />
+            <Button Command="{Binding AddPolygonPointPlaceholderCommand}"
+                    Content="Add Map Point Placeholder"
+                    Padding="10,6"
+                    HorizontalAlignment="Left" />
+            <Grid ColumnDefinitions="Auto,Auto,*"
+                  ColumnSpacing="8">
+              <Button Command="{Binding SaveCommand}"
+                      Content="Save"
+                      Padding="12,6" />
+              <Button Grid.Column="1"
+                      Command="{Binding DeleteCommand}"
+                      Content="Delete"
+                      Padding="12,6" />
+              <TextBlock Grid.Column="2"
+                         Text="{Binding ValidationText}"
+                         Foreground="#475569"
+                         VerticalAlignment="Center"
+                         TextWrapping="Wrap" />
+            </Grid>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

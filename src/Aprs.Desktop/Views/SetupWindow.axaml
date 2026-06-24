@@ -1,0 +1,62 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aprs.Desktop.Views.SetupWindow"
+        Title="APRS Command — First-Run Setup"
+        Width="460"
+        Height="470"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+  <Border Background="#FFFFFF"
+          Padding="24">
+    <StackPanel Spacing="14">
+      <TextBlock Text="Welcome to APRS Command"
+                 FontSize="22"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="Enter your station details to get started. You can change these later by editing your station profile."
+                 Foreground="#475569"
+                 TextWrapping="Wrap" />
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Callsign"
+                   Foreground="#0F172A" />
+        <TextBox x:Name="CallsignBox"
+                 Watermark="e.g. KE4CON" />
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Latitude (decimal degrees)"
+                   Foreground="#0F172A" />
+        <TextBox x:Name="LatitudeBox"
+                 Watermark="e.g. 42.328068" />
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Longitude (decimal degrees)"
+                   Foreground="#0F172A" />
+        <TextBox x:Name="LongitudeBox"
+                 Watermark="e.g. -88.454975" />
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock Text="Station range filter (km)"
+                   Foreground="#0F172A" />
+        <TextBox x:Name="RadiusBox"
+                 Text="200" />
+      </StackPanel>
+
+      <TextBlock x:Name="ErrorText"
+                 Foreground="#DC2626"
+                 IsVisible="False"
+                 TextWrapping="Wrap" />
+
+      <Button x:Name="SaveButton"
+              Content="Save and continue"
+              Click="OnSaveClick"
+              HorizontalAlignment="Right"
+              Padding="16,8"
+              Background="#2563EB"
+              Foreground="#FFFFFF" />
+    </StackPanel>
+  </Border>
+</Window>

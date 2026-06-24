@@ -1,0 +1,135 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.TrainingModeView"
+             x:DataType="vm:TrainingModeViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        Margin="0,10,0,0"
+        RowSpacing="8">
+    <Grid ColumnDefinitions="*,Auto"
+          ColumnSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Training Mode"
+                   FontSize="20"
+                   FontWeight="SemiBold" />
+        <TextBlock Text="{Binding TransmitStatusText}"
+                   Foreground="#0F766E"
+                   FontWeight="SemiBold" />
+      </StackPanel>
+      <TextBlock Grid.Column="1"
+                 Text="{Binding State}"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center" />
+    </Grid>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+          ColumnSpacing="6">
+      <Button Command="{Binding EnableCommand}" Content="Enable" Padding="10,6" />
+      <Button Grid.Column="1" Command="{Binding StartCommand}" Content="Start" Padding="10,6" />
+      <Button Grid.Column="2" Command="{Binding PauseCommand}" Content="Pause" Padding="10,6" />
+      <Button Grid.Column="3" Command="{Binding ResumeCommand}" Content="Resume" Padding="10,6" />
+      <Button Grid.Column="4" Command="{Binding StopCommand}" Content="Stop" Padding="10,6" />
+      <Button Grid.Column="5" Command="{Binding ResetCommand}" Content="Reset" Padding="10,6" />
+      <Button Grid.Column="6" Command="{Binding DisableCommand}" Content="Disable" Padding="10,6" />
+    </Grid>
+
+    <Grid Grid.Row="2"
+          ColumnDefinitions="1.1*,1.4*"
+          RowDefinitions="*,Auto"
+          ColumnSpacing="8"
+          RowSpacing="8">
+      <Border BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Background="#FFFFFF"
+              Padding="8">
+        <ListBox ItemsSource="{Binding Scenarios}"
+                 SelectedItem="{Binding SelectedScenario}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <StackPanel Spacing="2">
+                <TextBlock Text="{Binding ScenarioName}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding Difficulty, StringFormat='Difficulty: {0}'}" Foreground="#475569" />
+                <TextBlock Text="{Binding ScenarioType}" Foreground="#475569" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+
+      <Grid Grid.Column="1"
+            RowDefinitions="Auto,*,Auto"
+            RowSpacing="8">
+        <Border BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#F8FAFC"
+                Padding="8">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding SelectedScenarioName}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding ScenarioDescription}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding ProgressText}" Foreground="#475569" />
+            <TextBlock Text="{Binding LastEventText}" Foreground="#475569" />
+          </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#FFFFFF"
+                Padding="8">
+          <Grid RowDefinitions="Auto,*"
+                RowSpacing="6">
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  ColumnSpacing="6">
+              <TextBlock Text="Scenario Tasks" FontWeight="SemiBold" />
+              <Button Grid.Column="1" Command="{Binding CompleteTaskCommand}" Content="Complete" Padding="8,4" />
+              <Button Grid.Column="2" Command="{Binding SkipTaskCommand}" Content="Skip" Padding="8,4" />
+            </Grid>
+            <ListBox Grid.Row="1"
+                     ItemsSource="{Binding Tasks}"
+                     SelectedItem="{Binding SelectedTask}">
+              <ListBox.ItemTemplate>
+                <DataTemplate>
+                  <Grid ColumnDefinitions="*,90"
+                        RowDefinitions="Auto,Auto"
+                        ColumnSpacing="8">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1" Text="{Binding Status}" />
+                    <TextBlock Grid.Row="1"
+                               Grid.ColumnSpan="2"
+                               Text="{Binding Description}"
+                               Foreground="#475569"
+                               TextWrapping="Wrap" />
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Grid>
+        </Border>
+
+        <Border Grid.Row="2"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#F8FAFC"
+                Padding="8"
+                MaxHeight="100">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding RecentEvents}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Summary}"
+                             Foreground="#334155"
+                             TextWrapping="Wrap" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

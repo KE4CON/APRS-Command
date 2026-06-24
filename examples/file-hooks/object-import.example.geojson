@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "schemaVersion": "1.0",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-84.508333, 39.058333]
+      },
+      "properties": {
+        "objectName": "OBJTEST",
+        "objectType": "object",
+        "symbolTable": "/",
+        "symbolCode": "-",
+        "comment": "Example object"
+      }
+    }
+  ]
+}

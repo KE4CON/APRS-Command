@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.PortStatusView"
+             x:DataType="vm:PortStatusViewModel">
+  <Grid RowDefinitions="Auto,Auto,*"
+        RowSpacing="10">
+    <StackPanel Spacing="2">
+      <TextBlock Text="APRS Ports"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="{Binding Summary}"
+                 Foreground="#526173"
+                 FontSize="12"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <Border Grid.Row="1"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Background="#FFFFFF"
+            Padding="10">
+      <TextBlock Text="{Binding Health}"
+                 Foreground="#475569"
+                 TextWrapping="Wrap" />
+    </Border>
+
+    <ScrollViewer Grid.Row="2">
+      <ItemsControl ItemsSource="{Binding Ports}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="#FFFFFF"
+                    Padding="10"
+                    Margin="0,0,0,8">
+              <Grid ColumnDefinitions="2*,*,*,*,*,*,*"
+                    RowDefinitions="Auto,Auto"
+                    ColumnSpacing="10"
+                    RowSpacing="6">
+                <StackPanel>
+                  <TextBlock Text="{Binding PortName}"
+                             FontWeight="SemiBold"
+                             Foreground="#0F172A" />
+                  <TextBlock Text="{Binding SourceDescription}"
+                             FontSize="11"
+                             Foreground="#64748B"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="Type"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding PortType}" />
+                </StackPanel>
+                <StackPanel Grid.Column="2">
+                  <TextBlock Text="State"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding ConnectionState}" />
+                </StackPanel>
+                <StackPanel Grid.Column="3">
+                  <TextBlock Text="RX"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding ReceiveEnabled}" />
+                </StackPanel>
+                <StackPanel Grid.Column="4">
+                  <TextBlock Text="TX"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding TransmitEnabled}" />
+                </StackPanel>
+                <StackPanel Grid.Column="5">
+                  <TextBlock Text="Packets"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding PacketCounts}" />
+                </StackPanel>
+                <StackPanel Grid.Column="6">
+                  <TextBlock Text="Last packet"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding LastPacketTime}" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1"
+                            Grid.ColumnSpan="7">
+                  <TextBlock Text="Last error"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBlock Text="{Binding LastError}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

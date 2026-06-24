@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.DirewolfProfileView"
+             x:DataType="vm:DirewolfProfileViewModel">
+  <Grid RowDefinitions="Auto,Auto,Auto,*"
+        RowSpacing="12">
+    <StackPanel Spacing="2">
+      <TextBlock Text="Direwolf TCP KISS"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="Local network TNC profile"
+                 Foreground="#526173"
+                 FontSize="12" />
+    </StackPanel>
+
+    <Grid Grid.Row="1"
+          ColumnDefinitions="*,*,Auto"
+          RowDefinitions="Auto,Auto,Auto"
+          ColumnSpacing="10"
+          RowSpacing="8">
+      <StackPanel>
+        <TextBlock Text="Profile"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding ProfileName}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1">
+        <TextBlock Text="Host"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <TextBox Text="{Binding Host}" />
+      </StackPanel>
+      <StackPanel Grid.Column="2">
+        <TextBlock Text="KISS port"
+                   FontSize="11"
+                   Foreground="#64748B" />
+        <NumericUpDown Value="{Binding KissPort}"
+                       Minimum="1"
+                       Maximum="65535"
+                       Width="120" />
+      </StackPanel>
+
+      <CheckBox Grid.Row="1"
+                Content="Profile enabled"
+                IsChecked="{Binding Enabled}" />
+      <CheckBox Grid.Row="1"
+                Grid.Column="1"
+                Content="Receive enabled"
+                IsChecked="{Binding ReceiveEnabled}" />
+      <CheckBox Grid.Row="1"
+                Grid.Column="2"
+                Content="Auto reconnect"
+                IsChecked="{Binding AutoReconnect}" />
+
+      <StackPanel Grid.Row="2"
+                  Grid.ColumnSpan="3"
+                  Spacing="6">
+        <CheckBox Content="Transmit enabled"
+                  IsChecked="{Binding TransmitEnabled}" />
+        <TextBlock Text="{Binding SafetySummary}"
+                   Foreground="#B45309"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+
+    <Grid Grid.Row="2"
+          ColumnDefinitions="Auto,Auto,*"
+          ColumnSpacing="8">
+      <Button Command="{Binding TestConnectionCommand}"
+              Padding="10,6">
+        <TextBlock Text="Check Settings" />
+      </Button>
+      <Button Grid.Column="1"
+              Command="{Binding ResetCommand}"
+              Padding="10,6">
+        <TextBlock Text="Reset" />
+      </Button>
+      <TextBlock Grid.Column="2"
+                 Text="{Binding ConnectionStatus}"
+                 Foreground="#475569"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+    </Grid>
+
+    <Border Grid.Row="3"
+            BorderBrush="#CBD5E1"
+            BorderThickness="1"
+            CornerRadius="6"
+            Padding="12"
+            Background="#FFFFFF">
+      <Grid RowDefinitions="Auto,Auto,Auto"
+            RowSpacing="8">
+        <TextBlock Text="Setup notes"
+                   FontWeight="SemiBold"
+                   Foreground="#0F172A" />
+        <ItemsControl Grid.Row="1"
+                      ItemsSource="{Binding SetupNotes}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding}"
+                         TextWrapping="Wrap"
+                         Foreground="#475569"
+                         Margin="0,0,0,4" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <TextBox Grid.Row="2"
+                 Text="{Binding Notes}"
+                 AcceptsReturn="True"
+                 MinHeight="70"
+                 Watermark="Profile notes" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

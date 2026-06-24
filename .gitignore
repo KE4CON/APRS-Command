@@ -1,0 +1,16 @@
+bin/
+obj/
+artifacts/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+.DS_Store
+
+.fake
+.vs/
+publish/
+packages/
+*.zip
