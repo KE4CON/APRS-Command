@@ -18,7 +18,7 @@ information-architecture spec.
 - **ENGINE** — implemented and tested in the service/transport layer, not yet
   wired to a live editor.
 - **MONITOR** — surfaced in the UI as a read-only status display (no editing).
-- **PLANNED** — agreed in design, not yet built.
+- **PLANNED** — agreed in design and committed to build; not yet started.
 - **OPTIONAL** — deliberately out of current scope; recorded so it isn't lost.
 
 ---
@@ -72,25 +72,56 @@ in the panel.
 
 ## 2. Connections — the core of this revision
 
-This is where DigiRig / SignaLink / "regular old TNC" get resolved. There are
-**three** connection types, plus APRS-IS — not five. The reason is a
-classification fact worth stating plainly in the docs and the UI:
+This is where DigiRig / SignaLink / "regular old TNC" get resolved. The operator
+picks **one connection type**. The choices, plus APRS-IS, are:
+
+1. **Managed local modem (sound card)** — APRS Command runs Direwolf for you; you
+   pick the USB audio input/output device and PTT method right here. This is the
+   familiar path for a SignaLink, DigiRig, or any sound-card interface, and it
+   matches the long-established workflow operators know from YAAC, AGWPE, and
+   UZ7HO SoundModem (see the rationale under "Design notes" below).
+2. **Network TNC (KISS-TCP)** — connect to a modem that is already running
+   (GrayWolf, or a Direwolf you manage yourself).
+3. **AGWPE (TCP)** — connect to a modem speaking the AGW protocol.
+4. **Serial KISS (hardware TNC)** — a hardware TNC on a serial port.
+
+A classification fact still worth stating plainly in the docs and the UI:
 
 > **DigiRig and SignaLink are not TNCs.** They are USB sound-card / PTT
-> interfaces with no modem of their own. The AFSK demodulation still happens in
-> software (Direwolf / GrayWolf), which owns the sound device. APRS Command
-> never talks to the DigiRig or SignaLink directly — it connects to the software
-> modem in front of them. So both collapse into the **Network TNC (KISS-TCP)**
-> path. They do not get their own connection mode.
+> interfaces with no modem of their own. The AFSK demodulation always happens in
+> software (Direwolf / GrayWolf), which owns the sound device. APRS Command never
+> talks to the DigiRig or SignaLink as a TNC. There are two ways their audio
+> reaches APRS Command: either a modem you run yourself sits in front of them and
+> you connect via **Network TNC (KISS-TCP)**, or you let **Managed local modem**
+> run that modem for you and pick the device in this UI. Either way the modem is
+> Direwolf/GrayWolf — the only difference is who launches and configures it.
 >
 > Trap to call out in the UI: a DigiRig's serial port carries **PTT/CAT, not
 > KISS**. Do not point a Serial KISS connection at a DigiRig COM port — it will
 > not work.
 
-### The four connection choices, with in-UI helper text
+### The connection choices, with in-UI helper text
 
 Each description below is written to appear as the helper text under that option
 in the Connections section, so the choice isn't a bare label.
+
+---
+
+**Managed local modem (sound card)** — *runs a local Direwolf; connects to it
+internally over loopback KISS-TCP*
+
+> Use your computer's sound card as the TNC. APRS Command starts and configures
+> the software modem (Direwolf) for you — you just pick the audio device and how
+> the radio is keyed. This is the path for a **SignaLink, DigiRig, or any USB
+> sound-card interface**, and it's the familiar setup if you've used YAAC or a
+> SoundModem before.
+>
+> Settings: **Audio input device** (receive — radio into computer), **Audio
+> output device** (transmit — computer to radio), **PTT method** (VOX for a
+> SignaLink, serial RTS/DTR for a DigiRig and most interfaces, or GPIO on a Pi),
+> and modem speed (1200 AFSK for standard VHF APRS; 9600 G3RUH where used).
+> Pick this if: your radio connects through a sound-card interface and you'd
+> rather not hand-edit a config file.
 
 ---
 
@@ -160,20 +191,48 @@ Serial KISS radio port **and** an APRS-IS feed — and the existing read-only Po
 monitor shows the health of each. Transmit safety is per-port (the engine models
 `ReceiveEnabled` / `TransmitEnabled` separately on every connection).
 
-### OPTIONAL future: "Managed local modem"
+### Managed local modem — design notes
 
-A convenience mode where APRS Command **launches and configures Direwolf** for
-the operator — so a DigiRig / SignaLink owner picks an audio device and PTT line
-in this UI instead of hand-editing `direwolf.conf`. This is the only scenario in
-which DigiRig / SignaLink would become first-class, named choices with audio +
-PTT settings.
+**Status: PLANNED (promoted from optional).** Decision: build it, because keeping
+the setup familiar matters more than the architectural tidiness of pushing all
+audio concerns out of the client.
 
-Status: **OPTIONAL, not started.** There is currently no modem-launching or
-audio-device code in the client (the "Direwolf" tab today is a connection
-profile plus setup notes, not a launcher). Recommendation: **defer.** It
-duplicates what Direwolf/GrayWolf config already does and pulls the client back
-toward owning RF concerns that were deliberately pushed out. Recorded here so the
-idea isn't lost, not committed to.
+**Why (the rationale, recorded so it isn't re-litigated):** for ~20 years the
+established APRS workflow with a sound-card interface has been "pick your audio
+input and output device in the client" — that's how YAAC, AGWPE, and UZ7HO
+SoundModem all work. Operators have deep muscle memory for it. A field tool that
+instead requires hand-editing `direwolf.conf` to choose a USB device breaks that
+expectation, adds friction exactly when an operator is under activation stress,
+and generates avoidable support burden. Familiarity wins here.
+
+**What it does mechanically:** APRS Command launches a local Direwolf process,
+writes its config from the operator's UI selections (audio input device, audio
+output device, PTT method, modem speed), and then connects to it over loopback
+KISS-TCP (`127.0.0.1:8001`). So internally this **reuses the Network TNC
+(KISS-TCP) path** — managed mode is a convenience layer that produces a local
+KISS-TCP modem, not a second transport.
+
+**The real work involved (this is the one place audio-device awareness re-enters
+the client):**
+
+- **Device enumeration**, per platform — list the system's audio input/output
+  devices by name so the operator can pick them: CoreAudio (macOS), WASAPI/WinMM
+  (Windows), ALSA (Linux/Pi). APRS Command only needs the device names/IDs to
+  write into the Direwolf config; it does not read or write audio itself.
+- **PTT methods** — VOX (SignaLink, no host control needed), serial RTS/DTR
+  (DigiRig and most interfaces), CM108 GPIO (some sound chips), GPIO (Pi).
+- **Direwolf dependency** — sub-decision to settle when this is built: **bundle**
+  a per-platform Direwolf binary (friendliest "it just works," but adds packaging
+  weight and Direwolf is GPL, so watch licensing/version) versus **locate** an
+  already-installed Direwolf (lighter, but less turnkey). Lean toward bundling for
+  the field-server/laptop use case where turnkey matters most.
+- **Lifecycle** — start/stop Direwolf with the connection, surface its status in
+  the existing Ports monitor, and recover cleanly if it dies (the field-comms
+  reliability bar: no orphaned processes, no silent failures).
+
+**Sequencing:** this comes *after* the basic Connections wiring (the four
+external choices), since it builds on the loopback KISS-TCP path. It is not a
+parity blocker, but it is now a committed feature, not a deferred maybe.
 
 ---
 
@@ -267,16 +326,19 @@ receive-only → done. Everything else is reachable later from the sections abov
 
 ## Suggested build order
 
-1. **Connections** section with the three types + APRS-IS and the helper text
-   above. This is the load-bearing one — it's also the GrayWolf integration path
-   (KISS-TCP / AGW) the project already identified as the next milestone. Rename
-   the current "Direwolf" tab to **Network TNC (KISS-TCP)**; it is not
+1. **Connections** section with the four external types + APRS-IS and the helper
+   text above. This is the load-bearing one — it's also the GrayWolf integration
+   path (KISS-TCP / AGW) the project already identified as the next milestone.
+   Rename the current "Direwolf" tab to **Network TNC (KISS-TCP)**; it is not
    Direwolf-specific.
 2. Real serial-port discovery to replace `PlaceholderSerialPortDiscovery`
    (needed before Serial KISS is usable).
-3. Station symbol picker; Beaconing editor (behind transmit safety).
-4. GPS source editor; Maps & Display (units / coordinates / themes).
-5. Messaging; Alerts / Geofence / Filters.
-6. Leave Digipeater / iGate as monitors; build their editors only if/when a
+3. **Managed local modem** — audio-device enumeration, PTT selection, Direwolf
+   launch/lifecycle over loopback KISS-TCP. Builds on step 1; keeps sound-card
+   setup familiar (see design notes above).
+4. Station symbol picker; Beaconing editor (behind transmit safety).
+5. GPS source editor; Maps & Display (units / coordinates / themes).
+6. Messaging; Alerts / Geofence / Filters.
+7. Leave Digipeater / iGate as monitors; build their editors only if/when a
    no-GrayWolf RF-owner mode is wanted.
-7. Advanced / Integrations last.
+8. Advanced / Integrations last.

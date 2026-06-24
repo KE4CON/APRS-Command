@@ -12,8 +12,9 @@ direction; the guides in the parent `docs/` folder document current features.
 - `LIVE_BOOTSTRAP_NOTES.md` — what the `feature/live-bootstrap` work changed and how
   to build/verify it.
 - `SETTINGS_MENU_SPEC.md` — structure of the Settings panel: every section, the
-  owned-vs-delegated (GrayWolf) split, and the three connection types (Network
-  TNC / AGWPE / Serial KISS) plus APRS-IS, with plain-language UI helper text.
+  owned-vs-delegated (GrayWolf) split, and the four connection types (Managed
+  local modem / Network TNC / AGWPE / Serial KISS) plus APRS-IS, with
+  plain-language UI helper text.
 
 ## Decisions locked in
 
@@ -23,7 +24,10 @@ direction; the guides in the parent `docs/` folder document current features.
 - All "smaller touches" in scope (map layer toggles, search-and-center, follow-me,
   right-click context menus, command palette); the map-dependent ones follow the
   Mapsui map work.
-- Connections: three types — Network TNC (KISS-TCP), AGWPE, and Serial KISS — plus
-  APRS-IS. DigiRig and SignaLink are sound-card/PTT interfaces, not TNCs, and fold
-  into the Network TNC path (behind Direwolf/GrayWolf); they are not separate modes.
-  A "managed local modem" launcher is recorded as optional and deferred.
+- Connections: four types — Managed local modem (sound card), Network TNC
+  (KISS-TCP), AGWPE, and Serial KISS — plus APRS-IS. DigiRig and SignaLink are
+  sound-card/PTT interfaces, not TNCs; their audio reaches APRS Command through a
+  Direwolf/GrayWolf modem, either one you run (Network TNC) or one the Managed
+  local modem mode runs for you. Managed local modem is a committed feature (lets
+  the operator pick the USB audio input/output device + PTT in-app), kept for
+  familiarity with YAAC/AGWPE/SoundModem workflows.
