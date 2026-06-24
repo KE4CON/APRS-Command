@@ -46,6 +46,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>()));
         services.AddSingleton<AprsIngestionService>();
 
+        // Persisted settings: single source of truth for configuration that survives restarts.
+        services.AddSingleton<IAppSettingsStore>(_ => JsonAppSettingsStore.Default);
+
         var provider = services.BuildServiceProvider();
 
         // --- Live spine view models ---
