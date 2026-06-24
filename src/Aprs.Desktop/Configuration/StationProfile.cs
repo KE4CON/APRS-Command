@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.Json;
 
 namespace Aprs.Desktop.Configuration;
 
@@ -32,41 +31,16 @@ public sealed record StationProfile(
             Longitude,
             FilterRadiusKm);
 
-    private static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "AprsCommand",
-        "station-profile.json");
+    /// <summary>
+    /// Loads the saved profile, or <see cref="Default"/> if none is saved or it is invalid.
+    /// Routes through the unified <see cref="JsonAppSettingsStore"/> so the station profile is one
+    /// section of the single settings file rather than a separate file.
+    /// </summary>
+    public static StationProfile Load() => JsonAppSettingsStore.Default.Load().Station;
 
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
-
-    /// <summary>Loads the saved profile, or returns <see cref="Default"/> if none exists or it is invalid.</summary>
-    public static StationProfile Load()
-    {
-        try
-        {
-            var path = FilePath;
-            if (File.Exists(path))
-            {
-                var profile = JsonSerializer.Deserialize<StationProfile>(File.ReadAllText(path));
-                if (profile is not null && !string.IsNullOrWhiteSpace(profile.Callsign))
-                {
-                    return profile;
-                }
-            }
-        }
-        catch
-        {
-            // Any read/parse error falls back to the safe default rather than crashing startup.
-        }
-
-        return Default;
-    }
-
-    /// <summary>Saves this profile as JSON in the per-user application data folder.</summary>
-    public void Save()
-    {
-        var path = FilePath;
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(this, JsonOptions));
-    }
+    /// <summary>
+    /// Saves this profile as the station section of the unified settings file, leaving every other
+    /// section untouched.
+    /// </summary>
+    public void Save() => JsonAppSettingsStore.Default.Update(settings => settings with { Station = this });
 }
