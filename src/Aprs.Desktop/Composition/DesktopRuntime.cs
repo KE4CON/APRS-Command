@@ -49,6 +49,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // Persisted settings: single source of truth for configuration that survives restarts.
         services.AddSingleton<IAppSettingsStore>(_ => JsonAppSettingsStore.Default);
 
+        // One shared port registry, and the central transmit-safety authority that every transmit
+        // path consults before keying up (owns the global inhibit used by exercise/training modes).
+        services.AddSingleton<IAprsPortManager, AprsPortManager>();
+        services.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();
+        services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
+
         var provider = services.BuildServiceProvider();
 
         // --- Live spine view models ---
