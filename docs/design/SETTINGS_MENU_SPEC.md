@@ -72,8 +72,26 @@ in the panel.
 
 ## 2. Connections — the core of this revision
 
-This is where DigiRig / SignaLink / "regular old TNC" get resolved. The operator
-picks **one connection type**. The choices, plus APRS-IS, are:
+This is where DigiRig / SignaLink / "regular old TNC" get resolved.
+
+> **DECIDED — connection model: a list of typed ports (not a single connection).**
+> The Connections section is a *list* of ports the operator can run at once. Each
+> port has a name/id, a type (one of the choices below), that type's settings, and
+> its own **enable / receive / transmit** switches. This is required by real use —
+> an iGate runs RF and APRS-IS simultaneously, and the field-server case is GrayWolf
+> over KISS-TCP plus an APRS-IS backhaul — and it matches UI-View32, Xastir, YAAC,
+> and the existing engine (`AprsPortManager` is already multi-port with per-port
+> enable/receive/transmit). To keep first-run simple, the list **defaults to one
+> receive-only APRS-IS port**, so a newcomer sees stations without configuring
+> anything; power users add radio ports as needed. This decision changes only the
+> `ConnectionSettings` record (flat → list of typed entries); the settings-persistence
+> store is model-agnostic and does not change. Two implementation details deferred to
+> the build: serialize the polymorphic list as tagged records with a port-type field
+> (keeps resilient loading simple) rather than JSON inheritance; and allow more than
+> one port of a given type, warning only on risky setups (e.g. transmit on multiple
+> RF ports).
+
+Each port is **one of these types**, plus APRS-IS as a type in its own right:
 
 1. **Managed local modem (sound card)** — APRS Command runs Direwolf for you; you
    pick the USB audio input/output device and PTT method right here. This is the

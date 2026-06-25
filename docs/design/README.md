@@ -31,3 +31,8 @@ direction; the guides in the parent `docs/` folder document current features.
   local modem mode runs for you. Managed local modem is a committed feature (lets
   the operator pick the USB audio input/output device + PTT in-app), kept for
   familiarity with YAAC/AGWPE/SoundModem workflows.
+- Connection model: a **list of typed ports** (not a single connection), each with a
+  name, type, settings, and its own enable/receive/transmit switches — matching real
+  use (RF + APRS-IS at once) and the existing multi-port engine. Defaults to one
+  receive-only APRS-IS port for a simple first run. Changes only the
+  `ConnectionSettings` record; the persistence store is unaffected.
