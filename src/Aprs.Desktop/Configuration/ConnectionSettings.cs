@@ -1,26 +1,29 @@
-using Aprs.Transport;
-
 namespace Aprs.Desktop.Configuration;
 
 /// <summary>
-/// Persisted connection configuration. Groups the transport configs that the engine already
-/// models so they round-trip to disk as one section of <see cref="AppSettings"/>.
+/// Persisted connection configuration: a list of typed ports the operator can run simultaneously
+/// (the decided connection model). Each <see cref="ConnectionPort"/> carries its own type, settings,
+/// and enable/receive/transmit switches.
 ///
-/// NOTE: this is intentionally a flat "one of each" shape for now. The decision about whether
-/// connections become a list of typed ports (so RF + APRS-IS can run at once) is tracked as a
-/// separate action item; when it is made, only this record changes — the persistence machinery
-/// (<see cref="JsonAppSettingsStore"/>) is model-agnostic and does not need to change with it.
+/// <para>Defaults to a single receive-only APRS-IS port so a new install shows traffic without setup
+/// and cannot transmit by accident.</para>
 /// </summary>
-public sealed record ConnectionSettings(
-    TcpKissConfiguration TcpKiss,
-    SerialKissConfiguration SerialKiss,
-    AgwpeConfiguration Agwpe,
-    AprsIsClientConfiguration AprsIs)
+public sealed record ConnectionSettings(IReadOnlyList<ConnectionPort> Ports)
 {
-    /// <summary>All transports disabled by default; the operator opts in per connection.</summary>
-    public static ConnectionSettings Default { get; } = new(
-        TcpKiss: TcpKissConfiguration.Default,
-        SerialKiss: SerialKissConfiguration.Default,
-        Agwpe: AgwpeConfiguration.Default,
-        AprsIs: AprsIsClientConfiguration.Default);
+    public static ConnectionSettings Default { get; } = new([ConnectionPort.DefaultAprsIs()]);
+
+    /// <summary>
+    /// Returns a settings value guaranteed to have at least one usable port, with every port's
+    /// type-specific configuration filled in. An empty or missing list (e.g. a pre-port-list file)
+    /// falls back to <see cref="Default"/>.
+    /// </summary>
+    public ConnectionSettings Normalized()
+    {
+        if (Ports is null || Ports.Count == 0)
+        {
+            return Default;
+        }
+
+        return new ConnectionSettings(Ports.Select(p => p.Normalized()).ToList());
+    }
 }

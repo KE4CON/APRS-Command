@@ -50,10 +50,14 @@ public sealed class AppSettingsStoreTests : IDisposable
         var saved = AppSettings.Default with
         {
             Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
-            Connections = ConnectionSettings.Default with
-            {
-                TcpKiss = TcpKissConfiguration.Default with { Host = "10.0.0.5", Port = 8002, Enabled = true }
-            }
+            Connections = new ConnectionSettings(
+            [
+                new ConnectionPort(
+                    "radio-1", "Radio 1", ConnectionPortType.NetworkTncKiss,
+                    Enabled: true, ReceiveEnabled: true, TransmitEnabled: true,
+                    PortConfiguration.ForNetworkTncKiss(
+                        TcpKissConfiguration.Default with { Host = "10.0.0.5", Port = 8002, Enabled = true }))
+            ])
         };
 
         store.Save(saved);
@@ -62,9 +66,14 @@ public sealed class AppSettingsStoreTests : IDisposable
         Assert.Equal("KE4CON", loaded.Station.Callsign);
         Assert.Equal(40.0, loaded.Station.Latitude);
         Assert.Equal(100, loaded.Station.FilterRadiusKm);
-        Assert.Equal("10.0.0.5", loaded.Connections.TcpKiss.Host);
-        Assert.Equal(8002, loaded.Connections.TcpKiss.Port);
-        Assert.True(loaded.Connections.TcpKiss.Enabled);
+
+        var port = Assert.Single(loaded.Connections.Ports);
+        Assert.Equal("radio-1", port.Id);
+        Assert.Equal(ConnectionPortType.NetworkTncKiss, port.Type);
+        Assert.True(port.Enabled);
+        Assert.True(port.TransmitEnabled);
+        Assert.Equal("10.0.0.5", port.Configuration.NetworkTncKiss!.Host);
+        Assert.Equal(8002, port.Configuration.NetworkTncKiss!.Port);
     }
 
     [Fact]
@@ -73,25 +82,29 @@ public sealed class AppSettingsStoreTests : IDisposable
         var store = NewStore();
         var saved = AppSettings.Default with
         {
-            Connections = ConnectionSettings.Default with
-            {
-                SerialKiss = SerialKissConfiguration.Default with
-                {
-                    PortName = "/dev/tty.usbserial",
-                    BaudRate = 1200,
-                    Parity = SerialKissParity.Even,
-                    ReconnectDelay = TimeSpan.FromSeconds(7)
-                }
-            }
+            Connections = new ConnectionSettings(
+            [
+                new ConnectionPort(
+                    "tnc", "Hardware TNC", ConnectionPortType.SerialKiss,
+                    Enabled: true, ReceiveEnabled: true, TransmitEnabled: false,
+                    PortConfiguration.ForSerialKiss(SerialKissConfiguration.Default with
+                    {
+                        PortName = "/dev/tty.usbserial",
+                        BaudRate = 1200,
+                        Parity = SerialKissParity.Even,
+                        ReconnectDelay = TimeSpan.FromSeconds(7)
+                    }))
+            ])
         };
 
         store.Save(saved);
         var loaded = NewStore().Load();
 
-        Assert.Equal("/dev/tty.usbserial", loaded.Connections.SerialKiss.PortName);
-        Assert.Equal(1200, loaded.Connections.SerialKiss.BaudRate);
-        Assert.Equal(SerialKissParity.Even, loaded.Connections.SerialKiss.Parity);
-        Assert.Equal(TimeSpan.FromSeconds(7), loaded.Connections.SerialKiss.ReconnectDelay);
+        var serial = Assert.Single(loaded.Connections.Ports).Configuration.SerialKiss!;
+        Assert.Equal("/dev/tty.usbserial", serial.PortName);
+        Assert.Equal(1200, serial.BaudRate);
+        Assert.Equal(SerialKissParity.Even, serial.Parity);
+        Assert.Equal(TimeSpan.FromSeconds(7), serial.ReconnectDelay);
     }
 
     [Fact]
@@ -135,10 +148,13 @@ public sealed class AppSettingsStoreTests : IDisposable
         store.Save(AppSettings.Default with
         {
             Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
-            Connections = ConnectionSettings.Default with
-            {
-                TcpKiss = TcpKissConfiguration.Default with { Host = "192.168.1.50" }
-            }
+            Connections = new ConnectionSettings(
+            [
+                new ConnectionPort(
+                    "radio-1", "Radio 1", ConnectionPortType.NetworkTncKiss,
+                    Enabled: true, ReceiveEnabled: true, TransmitEnabled: false,
+                    PortConfiguration.ForNetworkTncKiss(TcpKissConfiguration.Default with { Host = "192.168.1.50" }))
+            ])
         });
 
         var root = JsonNode.Parse(File.ReadAllText(settingsPath))!.AsObject();
@@ -149,7 +165,8 @@ public sealed class AppSettingsStoreTests : IDisposable
 
         // Station falls back to default, but the connections section survives.
         Assert.Equal(AppSettings.Default.Station.Callsign, loaded.Station.Callsign);
-        Assert.Equal("192.168.1.50", loaded.Connections.TcpKiss.Host);
+        var port = Assert.Single(loaded.Connections.Ports);
+        Assert.Equal("192.168.1.50", port.Configuration.NetworkTncKiss!.Host);
     }
 
     [Fact]
@@ -164,16 +181,47 @@ public sealed class AppSettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Load_MigratesPrePortListConnections_ToDefaultPort()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(settingsPath)!);
+
+        // A v1-style file: the old flat connections shape (no "ports" array), schemaVersion 1.
+        var v1Json = """
+        {
+          "schemaVersion": 1,
+          "station": { "callsign": "KE4CON", "latitude": 40.0, "longitude": -83.0, "filterRadiusKm": 100 },
+          "connections": {
+            "tcpKiss": { "host": "10.0.0.9", "port": 8001 },
+            "aprsIs": { "callsign": "KE4CON", "passcode": "12345" }
+          }
+        }
+        """;
+        File.WriteAllText(settingsPath, v1Json);
+
+        var loaded = NewStore().Load();
+
+        Assert.Equal("KE4CON", loaded.Station.Callsign);      // station preserved
+        Assert.Equal(2, loaded.SchemaVersion);                // migrated forward to v2
+        var port = Assert.Single(loaded.Connections.Ports);   // default single APRS-IS port
+        Assert.Equal(ConnectionPortType.AprsIs, port.Type);
+        Assert.NotNull(port.Configuration.AprsIs);
+    }
+
+    [Fact]
     public void Update_ChangesOneSection_PreservesOthers()
     {
         var store = NewStore();
         store.Save(AppSettings.Default with
         {
             Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
-            Connections = ConnectionSettings.Default with
-            {
-                AprsIs = AprsIsClientConfiguration.Default
-            }
+            Connections = new ConnectionSettings(
+            [
+                ConnectionPort.DefaultAprsIs(),
+                new ConnectionPort(
+                    "tnc", "Hardware TNC", ConnectionPortType.SerialKiss,
+                    Enabled: false, ReceiveEnabled: true, TransmitEnabled: false,
+                    PortConfiguration.ForSerialKiss(SerialKissConfiguration.Default with { PortName = "COM3" }))
+            ])
         });
 
         // Change only the station; connections must remain intact.
@@ -184,6 +232,8 @@ public sealed class AppSettingsStoreTests : IDisposable
 
         Assert.Equal(250, result.Station.FilterRadiusKm);
         Assert.Equal("KE4CON", result.Station.Callsign);
+        Assert.Equal(2, result.Connections.Ports.Count);
+        Assert.Contains(result.Connections.Ports, p => p.Configuration.SerialKiss?.PortName == "COM3");
 
         var reloaded = NewStore().Load();
         Assert.Equal(250, reloaded.Station.FilterRadiusKm);

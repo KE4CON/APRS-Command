@@ -31,6 +31,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter() }
     };
 
@@ -149,7 +150,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             station = StationProfile.Default;
         }
 
-        var connections = settings.Connections ?? ConnectionSettings.Default;
+        var connections = (settings.Connections ?? ConnectionSettings.Default).Normalized();
 
         var normalized = settings with { Station = station, Connections = connections };
         return Migrate(normalized);
@@ -166,8 +167,10 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             return settings;
         }
 
-        // Example for the future:
-        //   if (settings.SchemaVersion < 2) { settings = settings with { ... }; }
+        // v1 -> v2 introduced the connection port-list. A v1 file's old flat connections object has
+        // no "ports" array, so it deserializes to an empty port list and Normalize() above has
+        // already replaced it with the default single APRS-IS port. Nothing more is needed here; the
+        // version is simply stamped forward.
 
         return settings with { SchemaVersion = AppSettings.CurrentSchemaVersion };
     }
@@ -200,8 +203,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             station = StationProfile.Default;
         }
 
-        var connections = TryDeserializeSection(root, "connections", ConnectionSettings.Default)
-            ?? ConnectionSettings.Default;
+        var connections = (TryDeserializeSection(root, "connections", ConnectionSettings.Default)
+            ?? ConnectionSettings.Default).Normalized();
 
         var schemaVersion = AppSettings.CurrentSchemaVersion;
         if (root.TryGetPropertyValue("schemaVersion", out var versionNode)
