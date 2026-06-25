@@ -49,7 +49,7 @@ public sealed class AppSettingsStoreTests : IDisposable
         var store = NewStore();
         var saved = AppSettings.Default with
         {
-            Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
+            Station = StationProfile.Default with { Callsign = "KE4CON", Latitude = 40.0, Longitude = -83.0, FilterRadiusKm = 100 },
             Connections = new ConnectionSettings(
             [
                 new ConnectionPort(
@@ -123,7 +123,7 @@ public sealed class AppSettingsStoreTests : IDisposable
     {
         var store = NewStore();
 
-        store.Save(AppSettings.Default with { Station = new StationProfile("W1AW", 41.7, -72.7, 50) });
+        store.Save(AppSettings.Default with { Station = StationProfile.Default with { Callsign = "W1AW", Latitude = 41.7, Longitude = -72.7, FilterRadiusKm = 50 } });
 
         Assert.True(File.Exists(settingsPath));
         Assert.False(File.Exists(settingsPath + ".tmp"));
@@ -147,7 +147,7 @@ public sealed class AppSettingsStoreTests : IDisposable
         var store = NewStore();
         store.Save(AppSettings.Default with
         {
-            Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
+            Station = StationProfile.Default with { Callsign = "KE4CON", Latitude = 40.0, Longitude = -83.0, FilterRadiusKm = 100 },
             Connections = new ConnectionSettings(
             [
                 new ConnectionPort(
@@ -173,7 +173,7 @@ public sealed class AppSettingsStoreTests : IDisposable
     public void Load_WithBlankCallsign_FallsBackToDefaultStation()
     {
         var store = NewStore();
-        store.Save(AppSettings.Default with { Station = new StationProfile("   ", 1.0, 2.0, 10) });
+        store.Save(AppSettings.Default with { Station = StationProfile.Default with { Callsign = "   ", Latitude = 1.0, Longitude = 2.0, FilterRadiusKm = 10 } });
 
         var loaded = NewStore().Load();
 
@@ -213,7 +213,7 @@ public sealed class AppSettingsStoreTests : IDisposable
         var store = NewStore();
         store.Save(AppSettings.Default with
         {
-            Station = new StationProfile("KE4CON", 40.0, -83.0, 100),
+            Station = StationProfile.Default with { Callsign = "KE4CON", Latitude = 40.0, Longitude = -83.0, FilterRadiusKm = 100 },
             Connections = new ConnectionSettings(
             [
                 ConnectionPort.DefaultAprsIs(),
@@ -245,9 +245,9 @@ public sealed class AppSettingsStoreTests : IDisposable
     {
         // Verifies the salvage/round-trip plumbing the way a caller would actually persist a profile.
         var store = NewStore();
-        store.Save(AppSettings.Default with { Station = new StationProfile("N0CALL", 39.5, -98.35, 200) });
+        store.Save(AppSettings.Default with { Station = StationProfile.Default with { Callsign = "N0CALL", Latitude = 39.5, Longitude = -98.35, FilterRadiusKm = 200 } });
 
-        var updated = store.Update(s => s with { Station = new StationProfile("KE4CON", 40.0, -83.0, 75) });
+        var updated = store.Update(s => s with { Station = StationProfile.Default with { Callsign = "KE4CON", Latitude = 40.0, Longitude = -83.0, FilterRadiusKm = 75 } });
 
         Assert.Equal("KE4CON", updated.Station.Callsign);
         Assert.True(updated.Station.IsConfigured);
@@ -259,7 +259,7 @@ public sealed class AppSettingsStoreTests : IDisposable
         // Simulate an old build's station-profile.json (PascalCase, as the previous serializer wrote it).
         var legacyPath = Path.Combine(tempDir, "legacy", "station-profile.json");
         Directory.CreateDirectory(Path.GetDirectoryName(legacyPath)!);
-        File.WriteAllText(legacyPath, JsonSerializer.Serialize(new StationProfile("KE4CON", 40.0, -83.0, 100)));
+        File.WriteAllText(legacyPath, JsonSerializer.Serialize(StationProfile.Default with { Callsign = "KE4CON", Latitude = 40.0, Longitude = -83.0, FilterRadiusKm = 100 }));
 
         var store = NewStore(legacyPath);
         var loaded = store.Load();

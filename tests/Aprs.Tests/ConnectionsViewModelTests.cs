@@ -141,7 +141,7 @@ public sealed class ConnectionsViewModelTests
     [Fact]
     public void Save_PreservesOtherSettingsSections()
     {
-        var initial = AppSettings.Default with { Station = new StationProfile("KE4CON", 40, -83, 100) };
+        var initial = AppSettings.Default with { Station = StationProfile.Default with { Callsign = "KE4CON", Latitude = 40, Longitude = -83, FilterRadiusKm = 100 } };
         var vm = NewViewModel(out var store, initial);
 
         vm.SaveCommand.Execute(null);

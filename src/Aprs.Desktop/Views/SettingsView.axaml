@@ -28,7 +28,7 @@
                 CornerRadius="6"
                 Padding="12"
                 Background="#F8FAFC">
-          <views:StationSetupView />
+          <views:StationSetupView DataContext="{Binding StationSetup}" />
         </Border>
       </TabItem>
       <TabItem Header="GPS">

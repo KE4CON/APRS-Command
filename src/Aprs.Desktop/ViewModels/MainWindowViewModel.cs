@@ -27,7 +27,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             TrainingModeViewModel.CreateDesignTime(),
             FileHooksViewModel.CreateDesignTime(),
             FirstRunSetupViewModel.CreateDesignTime(),
-            ConnectionsViewModel.CreateDesignTime())
+            ConnectionsViewModel.CreateDesignTime(),
+            StationSetupViewModel.CreateDesignTime())
     {
     }
 
@@ -52,7 +53,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         TrainingModeViewModel training,
         FileHooksViewModel fileHooks,
         FirstRunSetupViewModel firstRunSetup,
-        ConnectionsViewModel connections)
+        ConnectionsViewModel connections,
+        StationSetupViewModel stationSetup)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -76,6 +78,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         FileHooks = fileHooks;
         FirstRunSetup = firstRunSetup;
         Connections = connections;
+        StationSetup = stationSetup;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -132,6 +135,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public FileHooksViewModel FileHooks { get; }
     public FirstRunSetupViewModel FirstRunSetup { get; }
     public ConnectionsViewModel Connections { get; }
+    public StationSetupViewModel StationSetup { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }

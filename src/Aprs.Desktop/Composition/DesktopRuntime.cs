@@ -84,7 +84,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             TrainingModeViewModel.CreateDesignTime(),       // TODO: wire to training service
             FileHooksViewModel.CreateDesignTime(),          // TODO: wire to file hooks service
             FirstRunSetupViewModel.CreateDesignTime(),      // TODO: wire to first-run/settings service
-            new ConnectionsViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE: reads/writes settings
+            new ConnectionsViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),
