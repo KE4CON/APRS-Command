@@ -13,7 +13,9 @@
         <TextBlock Text="APRS weather station data received from the network. Shows current conditions reported by nearby weather stations." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:WeatherView Grid.Row="1" DataContext="{Binding Weather}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>

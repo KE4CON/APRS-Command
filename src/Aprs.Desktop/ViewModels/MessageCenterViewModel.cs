@@ -1,3 +1,4 @@
+using Aprs.Desktop.Configuration;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -47,7 +48,7 @@ public sealed class MessageCenterViewModel
 
     public MessageRowViewModel? SelectedMessage { get; set; }
 
-    public string ComposeLocalStation { get; set; } = "N0CALL";
+    public string ComposeLocalStation { get; set; } = StationProfile.Load().FullCallsign;
 
     public string ComposeRecipient { get; set; } = "K8ABC";
 

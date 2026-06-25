@@ -13,7 +13,9 @@
         <TextBlock Text="Low-level TNC and modem diagnostics — frame counts, decode errors, station rates, and path warnings. Use when something on the radio side isn't working right." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:RfDiagnosticsView Grid.Row="1" DataContext="{Binding RfDiagnostics}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>

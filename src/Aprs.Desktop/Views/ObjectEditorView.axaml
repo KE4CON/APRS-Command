@@ -47,21 +47,24 @@
       <StackPanel Grid.Column="2">
         <TextBlock Text="Table"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="#64748B"
+                   ToolTip.Tip="/ = primary symbol table, \ = alternate table. Use / for most objects." />
         <TextBox Width="44"
                  Text="{Binding SymbolTableIdentifier}" />
       </StackPanel>
       <StackPanel Grid.Column="3">
         <TextBlock Text="Symbol"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="#64748B"
+                   ToolTip.Tip="The symbol character from the APRS symbol table. For example: - = house, > = car, ; = generic object. See the Station Setup tab for the full list." />
         <TextBox Width="44"
                  Text="{Binding SymbolCode}" />
       </StackPanel>
       <StackPanel Grid.Column="4">
         <TextBlock Text="Overlay"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="#64748B"
+                   ToolTip.Tip="Optional single character that modifies alternate-table symbols. For example a 1 on a digipeater means WIDEn-N capable. Leave blank for primary table symbols." />
         <TextBox Width="52"
                  Text="{Binding Overlay}" />
       </StackPanel>
@@ -95,6 +98,7 @@
       <CheckBox Grid.Column="3"
                 Content="Adopted"
                 IsChecked="{Binding IsAdopted}"
+                ToolTip.Tip="Adopted means your station has taken ownership of this object, which was originally created by another station. Your station will transmit it to keep it alive on the network."
                 VerticalAlignment="Bottom" />
     </Grid>
 

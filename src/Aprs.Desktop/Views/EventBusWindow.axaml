@@ -13,7 +13,9 @@
         <TextBlock Text="Internal event bus monitor — shows every event passing through the app in real time. A troubleshooting tool for developers and advanced users." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:EventMonitorView Grid.Row="1" DataContext="{Binding EventMonitor}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>
