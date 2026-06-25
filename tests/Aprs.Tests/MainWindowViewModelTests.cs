@@ -156,7 +156,11 @@ public sealed class MainWindowViewModelTests
         Assert.Contains("Content=\"{Binding SelectedFeatureContent}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Text=\"{Binding SelectedFeatureName}\"", xaml, StringComparison.Ordinal);
         Assert.Contains("Text=\"{Binding SelectedFeatureDescription}\"", xaml, StringComparison.Ordinal);
-        Assert.Equal(1, Count(xaml, "<Button Grid.Column=\"1\""));
+
+        // Settings and Help live on the menu bar (a single click target each), not as header buttons.
+        Assert.Contains("<Menu", xaml, StringComparison.Ordinal);
+        Assert.Equal(1, Count(xaml, "Command=\"{Binding OpenSettingsCommand}\""));
+        Assert.Equal(1, Count(xaml, "Command=\"{Binding OpenHelpCommand}\""));
 
         foreach (var command in new[]
         {

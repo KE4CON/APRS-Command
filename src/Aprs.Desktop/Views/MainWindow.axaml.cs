@@ -18,12 +18,14 @@ public sealed partial class MainWindow : Window
         if (subscribedViewModel is not null)
         {
             subscribedViewModel.HelpRequested -= OnHelpRequested;
+            subscribedViewModel.SettingsRequested -= OnSettingsRequested;
         }
 
         subscribedViewModel = DataContext as MainWindowViewModel;
         if (subscribedViewModel is not null)
         {
             subscribedViewModel.HelpRequested += OnHelpRequested;
+            subscribedViewModel.SettingsRequested += OnSettingsRequested;
         }
     }
 
@@ -35,5 +37,17 @@ public sealed partial class MainWindow : Window
         };
 
         helpWindow.Show(this);
+    }
+
+    private void OnSettingsRequested(object? sender, EventArgs e)
+    {
+        // The tabbed SettingsView binds its tabs to properties on the main view model
+        // (Connections, FirstRunSetup, etc.), so the window shares that data context.
+        var settingsWindow = new SettingsWindow
+        {
+            DataContext = subscribedViewModel
+        };
+
+        settingsWindow.Show(this);
     }
 }

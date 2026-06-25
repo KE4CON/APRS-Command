@@ -90,11 +90,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenRfDiagnosticsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.RfDiagnostics));
         OpenAlertsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Alerts));
         OpenHelpCommand = new DesktopCommand(RequestHelp);
+        OpenSettingsCommand = new DesktopCommand(RequestSettings);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public event EventHandler? HelpRequested;
+
+    public event EventHandler? SettingsRequested;
 
     public MapViewModel Map { get; }
 
@@ -157,6 +160,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenAlertsCommand { get; }
 
     public DesktopCommand OpenHelpCommand { get; }
+
+    public DesktopCommand OpenSettingsCommand { get; }
 
     public MainFeaturePanel SelectedFeature
     {
@@ -247,6 +252,11 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     private void RequestHelp()
     {
         HelpRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RequestSettings()
+    {
+        SettingsRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
