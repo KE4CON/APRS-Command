@@ -13,7 +13,9 @@ namespace Aprs.Desktop.Configuration;
 public sealed record AppSettings(
     int SchemaVersion,
     StationProfile Station,
-    ConnectionSettings Connections)
+    ConnectionSettings Connections,
+    IGateSettings IGate,
+    DigipeaterSettings Digipeater)
 {
     /// <summary>Bump this when the persisted shape changes in a way that needs migration.</summary>
     /// <remarks>v2 introduced the connection port-list (replacing the flat one-of-each shape).</remarks>
@@ -23,5 +25,7 @@ public sealed record AppSettings(
     public static AppSettings Default { get; } = new(
         SchemaVersion: CurrentSchemaVersion,
         Station: StationProfile.Default,
-        Connections: ConnectionSettings.Default);
+        Connections: ConnectionSettings.Default,
+        IGate: IGateSettings.Default,
+        Digipeater: DigipeaterSettings.Default);
 }

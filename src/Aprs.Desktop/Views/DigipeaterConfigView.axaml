@@ -1,0 +1,78 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.DigipeaterConfigView"
+             x:DataType="vm:DigipeaterConfigViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+
+      <!-- Header -->
+      <StackPanel Spacing="2">
+        <TextBlock Text="Digipeater Setup" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
+        <TextBlock Foreground="#526173" FontSize="12" TextWrapping="Wrap"
+                   Text="A digipeater receives APRS packets on RF and re-transmits them so stations further away can be heard. To digipeat you need: an RF port with transmit enabled in Connections, and digipeating enabled here." />
+      </StackPanel>
+
+      <!-- Master enable + callsign -->
+      <Border Grid.Row="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+        <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+          <StackPanel Spacing="10">
+            <CheckBox Content="Enable digipeater"
+                      IsChecked="{Binding Enabled}"
+                      FontWeight="SemiBold" />
+            <CheckBox Content="Enable RF transmit"
+                      IsChecked="{Binding RfTransmitEnabled}"
+                      ToolTip.Tip="Allow the digipeater to transmit on the RF port below. The transmit safety authority also applies." />
+          </StackPanel>
+          <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Digipeater callsign" FontSize="11" Foreground="#64748B"
+                         ToolTip.Tip="The callsign the digipeater uses when re-transmitting. Usually your main callsign with an SSID, e.g. KE4CON-2." />
+              <TextBox Text="{Binding DigipeaterCallsign}" Watermark="e.g. KE4CON-2" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="RF transmit port ID" FontSize="11" Foreground="#64748B"
+                         ToolTip.Tip="The port ID from your Connections list to transmit on. Copy it exactly from the Connections tab." />
+              <TextBox Text="{Binding RfTransmitPort}" Watermark="e.g. rf-1" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Border>
+
+      <!-- Mode + aliases -->
+      <Border Grid.Row="2" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Digipeater mode" FontWeight="SemiBold" Foreground="#0F172A" />
+          <StackPanel Spacing="6">
+            <CheckBox Content="Fill-in mode (WIDE1-1 only)"
+                      IsChecked="{Binding FillInMode}"
+                      ToolTip.Tip="Fill-in digipeaters only respond to WIDE1-1 — the first hop. Use this for a low-power portable digipeater or one in a coverage gap. It does not repeat packets that have already been digipeated." />
+            <CheckBox Content="Full digipeater mode (all WIDEn-N)"
+                      IsChecked="{Binding FullMode}"
+                      ToolTip.Tip="A full digipeater responds to all WIDEn-N paths. Use this for a fixed, high-site digipeater. Requires coordination with other local operators — running two full digipeaters on the same frequency causes collisions." />
+          </StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="Supported aliases (comma-separated)" FontSize="11" Foreground="#64748B"
+                       ToolTip.Tip="The path aliases this digipeater will respond to. Default is WIDE1-1,WIDE2-1. Most operators should leave this unchanged." />
+            <TextBox Text="{Binding SupportedAliases}" Watermark="WIDE1-1,WIDE2-1" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Warning -->
+      <Border Grid.Row="3" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="5" Padding="12">
+        <TextBlock Foreground="#92400E" FontSize="11" TextWrapping="Wrap">
+          <Run FontWeight="SemiBold">Coordinate before enabling:</Run>
+          <Run> Running a digipeater — especially a full digipeater — affects everyone on the local APRS frequency. Contact your local APRS frequency coordinator and check whether a digipeater is needed in your area before enabling. Uncoordinated digipeaters can cause channel congestion and coverage holes.</Run>
+        </TextBlock>
+      </Border>
+
+      <!-- Save / Revert -->
+      <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+        <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
+        <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="#475569" VerticalAlignment="Center" />
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

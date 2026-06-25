@@ -73,7 +73,14 @@
                 CornerRadius="6"
                 Padding="12"
                 Background="#F8FAFC">
-          <views:IGateStatusView DataContext="{Binding IGateStatus}" />
+          <TabControl>
+            <TabItem Header="Setup">
+              <views:IGateConfigView DataContext="{Binding IGateConfig}" />
+            </TabItem>
+            <TabItem Header="Status">
+              <views:IGateStatusView DataContext="{Binding IGateStatus}" />
+            </TabItem>
+          </TabControl>
         </Border>
       </TabItem>
       <TabItem Header="Digipeater">
@@ -82,7 +89,14 @@
                 CornerRadius="6"
                 Padding="12"
                 Background="#F8FAFC">
-          <views:DigipeaterStatusView DataContext="{Binding DigipeaterStatus}" />
+          <TabControl>
+            <TabItem Header="Setup">
+              <views:DigipeaterConfigView DataContext="{Binding DigipeaterConfig}" />
+            </TabItem>
+            <TabItem Header="Status">
+              <views:DigipeaterStatusView DataContext="{Binding DigipeaterStatus}" />
+            </TabItem>
+          </TabControl>
         </Border>
       </TabItem>
     </TabControl>

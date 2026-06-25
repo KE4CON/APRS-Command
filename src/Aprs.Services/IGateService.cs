@@ -9,6 +9,11 @@ public sealed partial class IGateService : IIGateService
     private readonly IBeaconSchedulerClock clock;
     private readonly List<IGateGatingDecisionRecord> decisions = [];
     private readonly IGateConfiguration configuration;
+    private volatile bool runtimeEnabled;
+
+    public bool IsEnabled => runtimeEnabled;
+
+    public void SetEnabled(bool enabled) => runtimeEnabled = enabled;
 
     public IGateService(
         IAprsIsClient aprsIsClient,
@@ -18,6 +23,7 @@ public sealed partial class IGateService : IIGateService
         this.aprsIsClient = aprsIsClient;
         this.clock = clock ?? new SystemBeaconSchedulerClock();
         this.configuration = StampDefaults(configuration ?? IGateConfiguration.Default, DateTimeOffset.UtcNow);
+        runtimeEnabled = this.configuration.IGateEnabled;
     }
 
     public async Task<IGateGatingDecisionRecord> EvaluateAndGateAsync(
@@ -80,6 +86,11 @@ public sealed partial class IGateService : IIGateService
 
     private (IGateDecision Decision, string Reason, IReadOnlyList<string> Errors)? EvaluateBlocked(IGateCandidatePacket candidate)
     {
+        if (!runtimeEnabled)
+        {
+            return (IGateDecision.TransmitDisabled, "iGate is disabled.", ["iGate is disabled."]);
+        }
+
         if (!configuration.IGateEnabled)
         {
             return (IGateDecision.TransmitDisabled, "iGate is disabled.", ["iGate is disabled."]);

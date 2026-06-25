@@ -11,6 +11,11 @@ public sealed partial class DigipeaterService : IDigipeaterService
     private readonly List<DigipeaterDecisionRecord> decisions = [];
     private readonly DigipeaterConfiguration configuration;
     private readonly ITransmitSafetyAuthority? transmitSafety;
+    private volatile bool runtimeEnabled;
+
+    public bool IsEnabled => runtimeEnabled;
+
+    public void SetEnabled(bool enabled) => runtimeEnabled = enabled;
 
     public DigipeaterService(
         IAprsPortManager portManager,
@@ -24,6 +29,7 @@ public sealed partial class DigipeaterService : IDigipeaterService
         this.clock = clock ?? new SystemBeaconSchedulerClock();
         this.configuration = StampDefaults(configuration ?? DigipeaterConfiguration.Default, DateTimeOffset.UtcNow);
         this.transmitSafety = transmitSafety;
+        runtimeEnabled = this.configuration.DigipeaterEnabled;
     }
 
     public async Task<DigipeaterDecisionRecord> EvaluateAndDigipeatAsync(
@@ -100,6 +106,11 @@ public sealed partial class DigipeaterService : IDigipeaterService
         string receivedRfPort,
         DigipeaterPathResult pathResult)
     {
+        if (!runtimeEnabled)
+        {
+            return (DigipeaterDecision.TransmitDisabled, "Digipeater is disabled.", ["Digipeater is disabled."]);
+        }
+
         if (!configuration.DigipeaterEnabled)
         {
             return (DigipeaterDecision.TransmitDisabled, "Digipeater mode is disabled.", ["Digipeater mode is disabled."]);

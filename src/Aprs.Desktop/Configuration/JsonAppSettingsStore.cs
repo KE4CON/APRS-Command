@@ -151,8 +151,10 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         }
 
         var connections = (settings.Connections ?? ConnectionSettings.Default).Normalized();
+        var iGate = settings.IGate ?? IGateSettings.Default;
+        var digipeater = settings.Digipeater ?? DigipeaterSettings.Default;
 
-        var normalized = settings with { Station = station, Connections = connections };
+        var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater };
         return Migrate(normalized);
     }
 
@@ -206,6 +208,9 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var connections = (TryDeserializeSection(root, "connections", ConnectionSettings.Default)
             ?? ConnectionSettings.Default).Normalized();
 
+        var iGate = TryDeserializeSection(root, "iGate", IGateSettings.Default) ?? IGateSettings.Default;
+        var digipeater = TryDeserializeSection(root, "digipeater", DigipeaterSettings.Default) ?? DigipeaterSettings.Default;
+
         var schemaVersion = AppSettings.CurrentSchemaVersion;
         if (root.TryGetPropertyValue("schemaVersion", out var versionNode)
             && versionNode is not null
@@ -214,7 +219,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             schemaVersion = parsedVersion;
         }
 
-        return Migrate(new AppSettings(schemaVersion, station, connections));
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)

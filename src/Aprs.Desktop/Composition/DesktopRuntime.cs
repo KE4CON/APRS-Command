@@ -85,7 +85,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             FileHooksViewModel.CreateDesignTime(),          // TODO: wire to file hooks service
             FirstRunSetupViewModel.CreateDesignTime(),      // TODO: wire to first-run/settings service
             new ConnectionsViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new IGateConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),

@@ -28,7 +28,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             FileHooksViewModel.CreateDesignTime(),
             FirstRunSetupViewModel.CreateDesignTime(),
             ConnectionsViewModel.CreateDesignTime(),
-            StationSetupViewModel.CreateDesignTime())
+            StationSetupViewModel.CreateDesignTime(),
+            IGateConfigViewModel.CreateDesignTime(),
+            DigipeaterConfigViewModel.CreateDesignTime())
     {
     }
 
@@ -54,7 +56,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         FileHooksViewModel fileHooks,
         FirstRunSetupViewModel firstRunSetup,
         ConnectionsViewModel connections,
-        StationSetupViewModel stationSetup)
+        StationSetupViewModel stationSetup,
+        IGateConfigViewModel iGateConfig,
+        DigipeaterConfigViewModel digipeaterConfig)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -79,6 +83,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         FirstRunSetup = firstRunSetup;
         Connections = connections;
         StationSetup = stationSetup;
+        IGateConfig = iGateConfig;
+        DigipeaterConfig = digipeaterConfig;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -136,6 +142,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public FirstRunSetupViewModel FirstRunSetup { get; }
     public ConnectionsViewModel Connections { get; }
     public StationSetupViewModel StationSetup { get; }
+    public IGateConfigViewModel IGateConfig { get; }
+    public DigipeaterConfigViewModel DigipeaterConfig { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }
