@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Aprs.Desktop.Views"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.AlertsWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="APRS Command — Alerts"
+        Width="860" Height="620" MinWidth="600" MinHeight="440">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="16,10">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Alerts" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
+        <TextBlock Text="Alert rules and trigger history. Rules fire when a station matches your criteria — callsign pattern, distance, or geofence boundary." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+    <views:AlertRulesView Grid.Row="1" DataContext="{Binding Alerts}" />
+    <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
+      <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
+    </Border>
+  </Grid>
+</Window>

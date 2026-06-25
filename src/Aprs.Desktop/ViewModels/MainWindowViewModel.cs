@@ -1,16 +1,13 @@
-namespace Aprs.Desktop.ViewModels;
-
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Aprs.Services;
 
+namespace Aprs.Desktop.ViewModels;
+
 public sealed class MainWindowViewModel : INotifyPropertyChanged
 {
-    private MainFeaturePanel selectedFeature = MainFeaturePanel.Messages;
-
     public MainWindowViewModel(MapViewModel map)
-        : this(
-            map,
+        : this(map,
             GpsStatusViewModel.CreateDesignTime(),
             RawPacketLogViewModel.CreateDesignTime(),
             DecodedEventLogViewModel.CreateDesignTime(),
@@ -81,186 +78,79 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Connections = connections;
         Map.AttachObjectManager(ObjectManager);
 
-        OpenMessagesCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Messages));
-        OpenObjectsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Objects));
-        OpenWeatherCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Weather));
-        OpenEventsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Events));
-        OpenEventBusCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.EventBus));
-        OpenReplayCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Replay));
-        OpenRfDiagnosticsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.RfDiagnostics));
-        OpenAlertsCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Alerts));
-        OpenHelpCommand = new DesktopCommand(RequestHelp);
-        OpenSettingsCommand = new DesktopCommand(RequestSettings);
+        // All feature panels now open as their own windows.
+        // Each command raises an event; MainWindow.axaml.cs handles the event and opens the window.
+        OpenMessagesCommand    = new DesktopCommand(() => MessagesRequested?.Invoke(this, EventArgs.Empty));
+        OpenObjectsCommand     = new DesktopCommand(() => ObjectsRequested?.Invoke(this, EventArgs.Empty));
+        OpenWeatherCommand     = new DesktopCommand(() => WeatherRequested?.Invoke(this, EventArgs.Empty));
+        OpenEventsCommand      = new DesktopCommand(() => EventsRequested?.Invoke(this, EventArgs.Empty));
+        OpenEventBusCommand    = new DesktopCommand(() => EventBusRequested?.Invoke(this, EventArgs.Empty));
+        OpenReplayCommand      = new DesktopCommand(() => ReplayRequested?.Invoke(this, EventArgs.Empty));
+        OpenRfDiagnosticsCommand = new DesktopCommand(() => RfDiagnosticsRequested?.Invoke(this, EventArgs.Empty));
+        OpenAlertsCommand      = new DesktopCommand(() => AlertsRequested?.Invoke(this, EventArgs.Empty));
+        OpenStationListCommand = new DesktopCommand(() => StationListRequested?.Invoke(this, EventArgs.Empty));
+        OpenRawPacketsCommand  = new DesktopCommand(() => RawPacketsRequested?.Invoke(this, EventArgs.Empty));
+        OpenSettingsCommand    = new DesktopCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
+        OpenHelpCommand        = new DesktopCommand(() => HelpRequested?.Invoke(this, EventArgs.Empty));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    // Window-open events — MainWindow subscribes and opens the appropriate window.
+    public event EventHandler? MessagesRequested;
+    public event EventHandler? ObjectsRequested;
+    public event EventHandler? WeatherRequested;
+    public event EventHandler? EventsRequested;
+    public event EventHandler? EventBusRequested;
+    public event EventHandler? ReplayRequested;
+    public event EventHandler? RfDiagnosticsRequested;
+    public event EventHandler? AlertsRequested;
+    public event EventHandler? StationListRequested;
+    public event EventHandler? RawPacketsRequested;
+    public event EventHandler? SettingsRequested;
     public event EventHandler? HelpRequested;
 
-    public event EventHandler? SettingsRequested;
-
     public MapViewModel Map { get; }
-
     public StationListViewModel StationList { get; }
-
     public GpsStatusViewModel GpsStatus { get; }
-
     public RawPacketLogViewModel RawPacketLog { get; }
-
     public DecodedEventLogViewModel DecodedEventLog { get; }
-
     public EventMonitorViewModel EventMonitor { get; }
-
     public MessageCenterViewModel MessageCenter { get; }
-
     public ObjectManagerViewModel ObjectManager { get; }
-
     public DirewolfProfileViewModel DirewolfProfile { get; }
-
+    public PortStatusViewModel PortStatus { get; }
+    public IGateStatusViewModel IGateStatus { get; }
+    public DigipeaterStatusViewModel DigipeaterStatus { get; }
+    public WeatherViewModel Weather { get; }
+    public ReplayViewModel Replay { get; }
+    public RfDiagnosticsViewModel RfDiagnostics { get; }
+    public AlertRulesViewModel Alerts { get; }
+    public GeofenceEditorViewModel Geofences { get; }
+    public SimulationViewModel Simulation { get; }
+    public TrainingModeViewModel Training { get; }
+    public FileHooksViewModel FileHooks { get; }
+    public FirstRunSetupViewModel FirstRunSetup { get; }
     public ConnectionsViewModel Connections { get; }
 
-    public PortStatusViewModel PortStatus { get; }
-
-    public IGateStatusViewModel IGateStatus { get; }
-
-    public DigipeaterStatusViewModel DigipeaterStatus { get; }
-
-    public WeatherViewModel Weather { get; }
-
-    public ReplayViewModel Replay { get; }
-
-    public RfDiagnosticsViewModel RfDiagnostics { get; }
-
-    public AlertRulesViewModel Alerts { get; }
-
-    public GeofenceEditorViewModel Geofences { get; }
-
-    public SimulationViewModel Simulation { get; }
-
-    public TrainingModeViewModel Training { get; }
-
-    public FileHooksViewModel FileHooks { get; }
-
-    public FirstRunSetupViewModel FirstRunSetup { get; }
-
     public DesktopCommand OpenMessagesCommand { get; }
-
     public DesktopCommand OpenObjectsCommand { get; }
-
     public DesktopCommand OpenWeatherCommand { get; }
-
     public DesktopCommand OpenEventsCommand { get; }
-
     public DesktopCommand OpenEventBusCommand { get; }
-
     public DesktopCommand OpenReplayCommand { get; }
-
     public DesktopCommand OpenRfDiagnosticsCommand { get; }
-
     public DesktopCommand OpenAlertsCommand { get; }
-
-    public DesktopCommand OpenHelpCommand { get; }
-
+    public DesktopCommand OpenStationListCommand { get; }
+    public DesktopCommand OpenRawPacketsCommand { get; }
     public DesktopCommand OpenSettingsCommand { get; }
-
-    public MainFeaturePanel SelectedFeature
-    {
-        get => selectedFeature;
-        set
-        {
-            if (selectedFeature == value)
-            {
-                return;
-            }
-
-            selectedFeature = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(SelectedFeatureIndex));
-            OnPropertyChanged(nameof(SelectedFeatureName));
-            OnPropertyChanged(nameof(SelectedFeatureDescription));
-            OnPropertyChanged(nameof(SelectedFeatureContent));
-        }
-    }
-
-    public int SelectedFeatureIndex
-    {
-        get => (int)SelectedFeature;
-        set
-        {
-            if (!Enum.IsDefined(typeof(MainFeaturePanel), value))
-            {
-                return;
-            }
-
-            SelectedFeature = (MainFeaturePanel)value;
-        }
-    }
-
-    public string SelectedFeatureName => SelectedFeature switch
-    {
-        MainFeaturePanel.EventBus => "Event Bus",
-        MainFeaturePanel.RfDiagnostics => "RF Diagnostics",
-        _ => SelectedFeature.ToString()
-    };
-
-    public string SelectedFeatureDescription => SelectedFeature switch
-    {
-        MainFeaturePanel.Messages => "Inbox, outbox, bulletins, announcements, and queries.",
-        MainFeaturePanel.Objects => "Local and received APRS objects/items with safe edit previews.",
-        MainFeaturePanel.Weather => "APRS and local weather station display.",
-        MainFeaturePanel.Events => "Decoded packet and application event log.",
-        MainFeaturePanel.EventBus => "Internal event bus monitor for troubleshooting.",
-        MainFeaturePanel.Replay => "Replay packet files without live transmit.",
-        MainFeaturePanel.RfDiagnostics => "RF/TNC, KISS, Direwolf, and AGWPE diagnostics.",
-        MainFeaturePanel.Alerts => "Alert rules, trigger history, and geofence-related alerts.",
-        MainFeaturePanel.Geofence => "Geofence editor and area alert setup.",
-        MainFeaturePanel.Simulation => "Safe simulation controls and generated sample traffic.",
-        MainFeaturePanel.Training => "Training scenarios that cannot transmit.",
-        MainFeaturePanel.Files => "File import/export hook status and manual export preparation.",
-        MainFeaturePanel.Settings => "Station setup, first-run setup, transport, map, and safety settings.",
-        _ => "Selected APRS Command feature."
-    };
-
-    public object SelectedFeatureContent => SelectedFeature switch
-    {
-        MainFeaturePanel.Messages => MessageCenter,
-        MainFeaturePanel.Objects => ObjectManager,
-        MainFeaturePanel.Weather => Weather,
-        MainFeaturePanel.Events => DecodedEventLog,
-        MainFeaturePanel.EventBus => EventMonitor,
-        MainFeaturePanel.Replay => Replay,
-        MainFeaturePanel.RfDiagnostics => RfDiagnostics,
-        MainFeaturePanel.Alerts => Alerts,
-        MainFeaturePanel.Geofence => Geofences,
-        MainFeaturePanel.Simulation => Simulation,
-        MainFeaturePanel.Training => Training,
-        MainFeaturePanel.Files => FileHooks,
-        MainFeaturePanel.Settings => FirstRunSetup,
-        _ => MessageCenter
-    };
+    public DesktopCommand OpenHelpCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
         return new MainWindowViewModel(MapViewModel.CreateDesignTime());
     }
 
-    private void SelectFeature(MainFeaturePanel feature)
-    {
-        SelectedFeature = feature;
-    }
-
-    private void RequestHelp()
-    {
-        HelpRequested?.Invoke(this, EventArgs.Empty);
-    }
-
-    private void RequestSettings()
-    {
-        SettingsRequested?.Invoke(this, EventArgs.Empty);
-    }
-
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
