@@ -72,9 +72,13 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged
 
             selectedPort = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasSelection));
             RemoveSelectedPortCommand.RaiseCanExecuteChanged();
         }
     }
+
+    /// <summary>True when a port is selected, so the view can show/enable the editor panel.</summary>
+    public bool HasSelection => selectedPort is not null;
 
     public string StatusText
     {

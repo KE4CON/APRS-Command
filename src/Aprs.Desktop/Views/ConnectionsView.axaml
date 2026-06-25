@@ -1,0 +1,237 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.ConnectionsView"
+             x:DataType="vm:ConnectionsViewModel">
+  <Grid RowDefinitions="Auto,*,Auto"
+        RowSpacing="12">
+
+    <!-- Header -->
+    <StackPanel Spacing="2">
+      <TextBlock Text="Connections"
+                 FontSize="18"
+                 FontWeight="SemiBold"
+                 Foreground="#0F172A" />
+      <TextBlock Text="The ports APRS Command connects through. Run more than one at once (for example a radio port and APRS-IS together)."
+                 Foreground="#526173"
+                 FontSize="12"
+                 TextWrapping="Wrap" />
+    </StackPanel>
+
+    <!-- Body: port list (left) + editor (right) -->
+    <Grid Grid.Row="1"
+          ColumnDefinitions="300,*"
+          ColumnSpacing="12">
+
+      <!-- Left: the list, plus add/remove -->
+      <Grid Grid.Column="0"
+            RowDefinitions="*,Auto"
+            RowSpacing="8">
+        <Border BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Background="#FFFFFF">
+          <ListBox ItemsSource="{Binding Ports}"
+                   SelectedItem="{Binding SelectedPort}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ConnectionPortRowViewModel">
+                <StackPanel Spacing="2"
+                            Margin="2,4">
+                  <TextBlock Text="{Binding Name}"
+                             FontWeight="SemiBold"
+                             Foreground="#0F172A" />
+                  <TextBlock Text="{Binding TypeDisplay}"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Border>
+
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,Auto,Auto"
+              ColumnSpacing="6">
+          <ComboBox ItemsSource="{Binding AvailablePortTypes}"
+                    SelectedItem="{Binding NewPortType}"
+                    HorizontalAlignment="Stretch" />
+          <Button Grid.Column="1"
+                  Command="{Binding AddPortCommand}"
+                  Padding="10,6"
+                  Content="Add" />
+          <Button Grid.Column="2"
+                  Command="{Binding RemoveSelectedPortCommand}"
+                  Padding="10,6"
+                  Content="Remove" />
+        </Grid>
+      </Grid>
+
+      <!-- Right: editor for the selected port -->
+      <Border Grid.Column="1"
+              BorderBrush="#CBD5E1"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="12"
+              Background="#F8FAFC"
+              IsEnabled="{Binding HasSelection}">
+        <ScrollViewer>
+          <StackPanel Spacing="12">
+
+            <!-- Common fields -->
+            <StackPanel Spacing="2">
+              <TextBlock Text="Name"
+                         FontSize="11"
+                         Foreground="#64748B" />
+              <TextBox Text="{Binding SelectedPort.Name}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding SelectedPort.TypeDisplay}"
+                       FontWeight="SemiBold"
+                       Foreground="#0F172A" />
+
+            <StackPanel Orientation="Horizontal"
+                        Spacing="18">
+              <CheckBox Content="Enabled"
+                        IsChecked="{Binding SelectedPort.Enabled}" />
+              <CheckBox Content="Receive"
+                        IsChecked="{Binding SelectedPort.ReceiveEnabled}" />
+              <CheckBox Content="Transmit"
+                        IsChecked="{Binding SelectedPort.TransmitEnabled}" />
+            </StackPanel>
+
+            <!-- Network TNC (KISS-TCP) / managed local modem -->
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="10"
+                  IsVisible="{Binding SelectedPort.IsNetwork}">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Host"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBox Text="{Binding SelectedPort.NetworkHost}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1"
+                          Spacing="2">
+                <TextBlock Text="Port"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <NumericUpDown Value="{Binding SelectedPort.NetworkPort}"
+                               Minimum="1"
+                               Maximum="65535"
+                               Width="130" />
+              </StackPanel>
+            </Grid>
+
+            <!-- AGWPE -->
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="10"
+                  IsVisible="{Binding SelectedPort.IsAgwpe}">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Host"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBox Text="{Binding SelectedPort.AgwpeHost}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1"
+                          Spacing="2">
+                <TextBlock Text="Port"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <NumericUpDown Value="{Binding SelectedPort.AgwpePort}"
+                               Minimum="1"
+                               Maximum="65535"
+                               Width="130" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Serial KISS (hardware TNC) -->
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="10"
+                  IsVisible="{Binding SelectedPort.IsSerial}">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Serial port"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <TextBox Text="{Binding SelectedPort.SerialPortName}"
+                         Watermark="e.g. COM3 or /dev/tty.usbserial" />
+              </StackPanel>
+              <StackPanel Grid.Column="1"
+                          Spacing="2">
+                <TextBlock Text="Baud"
+                           FontSize="11"
+                           Foreground="#64748B" />
+                <NumericUpDown Value="{Binding SelectedPort.BaudRate}"
+                               Minimum="300"
+                               Maximum="115200"
+                               Increment="1200"
+                               Width="130" />
+              </StackPanel>
+            </Grid>
+
+            <!-- APRS-IS -->
+            <StackPanel Spacing="8"
+                        IsVisible="{Binding SelectedPort.IsAprsIs}">
+              <Grid ColumnDefinitions="*,Auto"
+                    ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Server"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBox Text="{Binding SelectedPort.AprsIsServer}"
+                           Watermark="e.g. rotate.aprs2.net" />
+                </StackPanel>
+                <StackPanel Grid.Column="1"
+                            Spacing="2">
+                  <TextBlock Text="Port"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <NumericUpDown Value="{Binding SelectedPort.AprsIsPort}"
+                                 Minimum="1"
+                                 Maximum="65535"
+                                 Width="130" />
+                </StackPanel>
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*"
+                    ColumnSpacing="10">
+                <StackPanel Spacing="2">
+                  <TextBlock Text="Passcode"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBox Text="{Binding SelectedPort.AprsIsPasscode}"
+                           Width="130"
+                           Watermark="-1 = RX only" />
+                </StackPanel>
+                <StackPanel Grid.Column="1"
+                            Spacing="2">
+                  <TextBlock Text="Filter (optional)"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                  <TextBox Text="{Binding SelectedPort.AprsIsFilter}"
+                           Watermark="e.g. m/100" />
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+
+    <!-- Footer: save / revert + status -->
+    <Grid Grid.Row="2"
+          ColumnDefinitions="Auto,Auto,*"
+          ColumnSpacing="8">
+      <Button Command="{Binding SaveCommand}"
+              Padding="14,6"
+              Content="Save" />
+      <Button Grid.Column="1"
+              Command="{Binding RevertCommand}"
+              Padding="10,6"
+              Content="Revert" />
+      <TextBlock Grid.Column="2"
+                 Text="{Binding StatusText}"
+                 Foreground="#475569"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap" />
+    </Grid>
+  </Grid>
+</UserControl>
