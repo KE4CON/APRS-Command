@@ -51,11 +51,11 @@
     </DataTemplate>
   </Window.DataTemplates>
 
-  <Grid RowDefinitions="Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
     <Border Grid.Row="0"
             Background="#18212B"
             Padding="16,12">
-      <Grid ColumnDefinitions="*,Auto,Auto,Auto"
+      <Grid ColumnDefinitions="*,Auto,Auto"
             ColumnSpacing="10">
         <StackPanel Spacing="1">
           <TextBlock Text="APRS Command"
@@ -66,12 +66,7 @@
                      FontSize="12"
                      Foreground="#CBD5E1" />
         </StackPanel>
-        <Button Grid.Column="1"
-                Content="Help"
-                Padding="14,6"
-                VerticalAlignment="Center"
-                Command="{Binding OpenHelpCommand}" />
-        <Border Grid.Column="2"
+        <Border Grid.Column="1"
                 Background="#1E293B"
                 BorderBrush="#64748B"
                 BorderThickness="1"
@@ -82,7 +77,7 @@
                      Foreground="#E2E8F0"
                      FontWeight="SemiBold" />
         </Border>
-        <Border Grid.Column="3"
+        <Border Grid.Column="2"
                 Background="#123B32"
                 BorderBrush="#2DD4BF"
                 BorderThickness="1"
@@ -96,7 +91,13 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1"
+    <Menu Grid.Row="1"
+          Background="#F1F5F9">
+      <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
+      <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
+    </Menu>
+
+    <Grid Grid.Row="2"
           Margin="12"
           RowDefinitions="*,240"
           ColumnDefinitions="*,320"
@@ -220,6 +221,6 @@
       </Border>
     </Grid>
 
-    <views:MainStatusBarView Grid.Row="2" />
+    <views:MainStatusBarView Grid.Row="3" />
   </Grid>
 </Window>

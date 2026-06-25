@@ -1,0 +1,23 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:Aprs.Desktop.Views"
+        x:Class="Aprs.Desktop.Views.SettingsWindow"
+        Title="APRS Command Settings"
+        Width="900"
+        Height="680"
+        MinWidth="720"
+        MinHeight="520">
+  <Grid RowDefinitions="*,Auto">
+    <views:SettingsView Margin="16,0,16,0" />
+    <Border Grid.Row="1"
+            Background="#F1F5F9"
+            BorderBrush="#CBD5E1"
+            BorderThickness="0,1,0,0"
+            Padding="12">
+      <Button Content="Close"
+              HorizontalAlignment="Right"
+              Padding="14,6"
+              Click="Close_Click" />
+    </Border>
+  </Grid>
+</Window>
