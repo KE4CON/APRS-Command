@@ -10,12 +10,26 @@
     <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="16,10">
       <StackPanel Spacing="2">
         <TextBlock Text="Raw Packet Monitor" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
-        <TextBlock Text="Every packet received on all active ports in the order received, with direction and source. Useful for confirming your connection is working." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="Every packet received on all active ports, in arrival order. Use this to confirm your connection is working — if packets appear here, the port is receiving. Use the Clear button to reset the log. To save the log for Replay, click Save Log and choose a location; that file can then be loaded in the Replay window." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:PacketMonitorView Grid.Row="1" DataContext="{Binding RawPacketLog}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
-      <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Content="Save Log"
+                Padding="14,6"
+                ToolTip.Tip="Save all received packets to a file that can be loaded in the Replay window"
+                Click="SaveLog_Click" />
+        <TextBlock Grid.Column="1"
+                   Text="Tip: save the log here, then open Replay to play it back without transmitting."
+                   Foreground="#64748B"
+                   FontSize="11"
+                   VerticalAlignment="Center"
+                   Margin="12,0" />
+        <Button Grid.Column="2" Content="Close" Padding="14,6" Click="Close_Click" />
+      </Grid>
     </Border>
   </Grid>
 </Window>

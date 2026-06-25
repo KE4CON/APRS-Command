@@ -10,10 +10,12 @@
     <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="16,10">
       <StackPanel Spacing="2">
         <TextBlock Text="APRS Objects" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
-        <TextBlock Text="Local and received APRS objects and items. Create, edit, or mark objects as killed. Objects you create are transmitted on all enabled transmit ports." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="APRS objects and items on the network. Create a new object to mark a location (shelter, EOC, staging area, water point). Your callsign is filled in as owner automatically. Table/Symbol/Overlay select the map icon — use the same symbol picker as Station Setup. 'Adopted' means you have taken ownership of an object originally created by another station." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:ObjectManagerView Grid.Row="1" DataContext="{Binding ObjectManager}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>

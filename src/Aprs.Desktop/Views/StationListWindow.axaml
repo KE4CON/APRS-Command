@@ -13,7 +13,9 @@
         <TextBlock Text="All stations heard on active ports, with last-heard time, position, and packet source. Click a callsign to centre the map on that station." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
+    <Border Grid.Row="1" Padding="16">
     <views:StationListView Grid.Row="1" DataContext="{Binding StationList}" />
+    </Border>
     <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>

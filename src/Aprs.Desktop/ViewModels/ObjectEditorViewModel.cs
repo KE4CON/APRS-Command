@@ -1,3 +1,4 @@
+using Aprs.Desktop.Configuration;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -40,7 +41,7 @@ public sealed class ObjectEditorViewModel
 
     public bool IsAdopted { get; set; }
 
-    public string OwnerCallsign { get; set; } = "N0CALL";
+    public string OwnerCallsign { get; set; } = StationProfile.Load().FullCallsign;
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
