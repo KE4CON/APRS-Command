@@ -7,7 +7,7 @@
         Title="APRS Command — APRS Objects"
         Width="900" Height="680" MinWidth="600" MinHeight="440">
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="16,10">
+    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="22,10">
       <StackPanel Spacing="2">
         <TextBlock Text="APRS Objects" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
         <TextBlock Text="APRS objects and items on the network. Create a new object to mark a location (shelter, EOC, staging area, water point). Your callsign is filled in as owner automatically. Table/Symbol/Overlay select the map icon — use the same symbol picker as Station Setup. 'Adopted' means you have taken ownership of an object originally created by another station." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />

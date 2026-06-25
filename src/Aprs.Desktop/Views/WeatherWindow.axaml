@@ -7,7 +7,7 @@
         Title="APRS Command — Weather"
         Width="800" Height="600" MinWidth="600" MinHeight="440">
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="16,10">
+    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="22,10">
       <StackPanel Spacing="2">
         <TextBlock Text="Weather" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
         <TextBlock Text="APRS weather station data received from the network. Shows current conditions reported by nearby weather stations." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
