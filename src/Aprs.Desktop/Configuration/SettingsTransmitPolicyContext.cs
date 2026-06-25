@@ -23,11 +23,26 @@ public sealed class SettingsTransmitPolicyContext : ITransmitPolicyContext
     {
         get
         {
-            var passcode = store.Load().Connections.AprsIs.Passcode?.Trim();
-            return !string.IsNullOrEmpty(passcode)
-                && !string.Equals(passcode, "-1", StringComparison.Ordinal)
-                && int.TryParse(passcode, out var value)
-                && value >= 0;
+            // Valid if any configured APRS-IS port carries a real numeric passcode (not the -1
+            // receive-only sentinel).
+            foreach (var port in store.Load().Connections.Ports)
+            {
+                if (port.Type != ConnectionPortType.AprsIs)
+                {
+                    continue;
+                }
+
+                var passcode = port.Configuration.AprsIs?.Passcode?.Trim();
+                if (!string.IsNullOrEmpty(passcode)
+                    && !string.Equals(passcode, "-1", StringComparison.Ordinal)
+                    && int.TryParse(passcode, out var value)
+                    && value >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

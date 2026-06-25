@@ -16,7 +16,8 @@ public sealed record AppSettings(
     ConnectionSettings Connections)
 {
     /// <summary>Bump this when the persisted shape changes in a way that needs migration.</summary>
-    public const int CurrentSchemaVersion = 1;
+    /// <remarks>v2 introduced the connection port-list (replacing the flat one-of-each shape).</remarks>
+    public const int CurrentSchemaVersion = 2;
 
     /// <summary>A fresh, unconfigured install: neutral station profile, all connections off.</summary>
     public static AppSettings Default { get; } = new(
