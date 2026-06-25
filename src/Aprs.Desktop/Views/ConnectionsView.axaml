@@ -3,6 +3,9 @@
              xmlns:vm="using:Aprs.Desktop.ViewModels"
              x:Class="Aprs.Desktop.Views.ConnectionsView"
              x:DataType="vm:ConnectionsViewModel">
+  <UserControl.Resources>
+    <vm:ConnectionPortTypeConverter x:Key="PortTypeConverter" />
+  </UserControl.Resources>
   <Grid RowDefinitions="Auto,*,Auto"
         RowSpacing="12">
 
@@ -54,7 +57,13 @@
               ColumnSpacing="6">
           <ComboBox ItemsSource="{Binding AvailablePortTypes}"
                     SelectedItem="{Binding NewPortType}"
-                    HorizontalAlignment="Stretch" />
+                    HorizontalAlignment="Stretch">
+            <ComboBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding Converter={StaticResource PortTypeConverter}}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
           <Button Grid.Column="1"
                   Command="{Binding AddPortCommand}"
                   Padding="10,6"

@@ -9,49 +9,10 @@
         Height="760"
         MinWidth="900"
         MinHeight="620">
-  <Window.DataTemplates>
-    <DataTemplate DataType="vm:MessageCenterViewModel">
-      <views:MessageCenterView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:ObjectManagerViewModel">
-      <views:ObjectManagerView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:WeatherViewModel">
-      <views:WeatherView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:DecodedEventLogViewModel">
-      <views:DecodedEventLogView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:EventMonitorViewModel">
-      <views:EventMonitorView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:ReplayViewModel">
-      <views:ReplayView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:RfDiagnosticsViewModel">
-      <views:RfDiagnosticsView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:AlertRulesViewModel">
-      <views:AlertRulesView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:GeofenceEditorViewModel">
-      <views:GeofenceEditorView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:SimulationViewModel">
-      <views:SimulationView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:TrainingModeViewModel">
-      <views:TrainingModeView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:FileHooksViewModel">
-      <views:FileHooksView />
-    </DataTemplate>
-    <DataTemplate DataType="vm:FirstRunSetupViewModel">
-      <views:FirstRunSetupView />
-    </DataTemplate>
-  </Window.DataTemplates>
 
   <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- Title bar -->
     <Border Grid.Row="0"
             Background="#18212B"
             Padding="16,12">
@@ -91,134 +52,115 @@
       </Grid>
     </Border>
 
+    <!-- Menu bar -->
     <Menu Grid.Row="1"
           Background="#F1F5F9">
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
+      <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
+      <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
+      <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
+      <MenuItem Header="_Weather" Command="{Binding OpenWeatherCommand}" />
+      <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
+      <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
+      <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
+      <MenuItem Header="_Tools">
+        <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />
+        <MenuItem Header="Replay" Command="{Binding OpenReplayCommand}" />
+        <MenuItem Header="RF Diagnostics" Command="{Binding OpenRfDiagnosticsCommand}" />
+      </MenuItem>
       <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
     </Menu>
 
+    <!-- Main content: icon sidebar + map -->
     <Grid Grid.Row="2"
-          Margin="12"
-          RowDefinitions="*,240"
-          ColumnDefinitions="*,320"
-          RowSpacing="10"
-          ColumnSpacing="10">
-      <views:MapView DataContext="{Binding Map}" />
+          ColumnDefinitions="48,*">
 
-      <views:StationListView Grid.Column="1"
-                             DataContext="{Binding StationList}" />
+      <!-- Left icon sidebar -->
+      <Border Grid.Column="0"
+              Background="#1E293B"
+              BorderBrush="#334155"
+              BorderThickness="0,0,1,0">
+        <StackPanel VerticalAlignment="Top"
+                    Spacing="2"
+                    Margin="4,8">
 
-      <views:PacketMonitorView Grid.Row="1"
-                               Grid.Column="0"
-                               DataContext="{Binding RawPacketLog}" />
+          <!-- Map tools -->
+          <Button ToolTip.Tip="Home / Reset view"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="⌂" />
+          </Button>
+          <Button ToolTip.Tip="Centre on my station"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="◎" />
+          </Button>
+          <Button ToolTip.Tip="Find station"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="🔍" />
+          </Button>
+          <Button ToolTip.Tip="Measure distance"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="📏" />
+          </Button>
+          <Button ToolTip.Tip="Map layer toggle"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="🗺" />
+          </Button>
 
-      <Border Grid.Column="1"
-              Grid.Row="1"
-              Name="FeaturePanel"
-              BorderBrush="#CBD5E1"
-              BorderThickness="1"
-              CornerRadius="6"
-              Background="#FFFFFF"
-              Padding="8">
-        <Grid RowDefinitions="Auto,Auto,*"
-              RowSpacing="7">
-          <Grid ColumnDefinitions="*,Auto"
-                ColumnSpacing="8">
-            <StackPanel>
-              <TextBlock Text="{Binding SelectedFeatureName}"
-                         FontSize="16"
-                         FontWeight="SemiBold"
-                         Foreground="#0F172A" />
-              <TextBlock Text="{Binding SelectedFeatureDescription}"
-                         FontSize="11"
-                         Foreground="#526173"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-            <TextBlock Grid.Column="1"
-                       Text="Panel"
-                       Foreground="#64748B"
-                       FontSize="11"
-                       VerticalAlignment="Top" />
-          </Grid>
+          <!-- Divider -->
+          <Border Height="1"
+                  Background="#334155"
+                  Margin="4,6" />
 
-          <Grid Grid.Row="1"
-                Name="FeatureButtonGrid"
-                RowDefinitions="32,32"
-                ColumnDefinitions="*,*,*,*"
-                RowSpacing="4"
-                ColumnSpacing="4"
-                MinHeight="68">
-            <Button Grid.Row="0"
-                    Grid.Column="0"
-                    Content="Messages"
-                    Command="{Binding OpenMessagesCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="0"
-                    Grid.Column="1"
-                    Content="Objects"
-                    Command="{Binding OpenObjectsCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="0"
-                    Grid.Column="2"
-                    Content="Weather"
-                    Command="{Binding OpenWeatherCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="0"
-                    Grid.Column="3"
-                    Content="Events"
-                    Command="{Binding OpenEventsCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="1"
-                    Grid.Column="0"
-                    Content="Event Bus"
-                    Command="{Binding OpenEventBusCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="1"
-                    Grid.Column="1"
-                    Content="Replay"
-                    Command="{Binding OpenReplayCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="1"
-                    Grid.Column="2"
-                    Content="RF Diag"
-                    Command="{Binding OpenRfDiagnosticsCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-            <Button Grid.Row="1"
-                    Grid.Column="3"
-                    Content="Alerts"
-                    Command="{Binding OpenAlertsCommand}"
-                    FontSize="11"
-                    Padding="4,2"
-                    HorizontalContentAlignment="Center" />
-          </Grid>
-
-          <Border Grid.Row="2"
-                  BorderBrush="#E2E8F0"
-                  BorderThickness="1"
-                  CornerRadius="4"
-                  Background="#F8FAFC"
-                  Padding="6">
-            <ScrollViewer VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-              <ContentControl Content="{Binding SelectedFeatureContent}" />
-            </ScrollViewer>
-          </Border>
-        </Grid>
+          <!-- Operator tools -->
+          <Button ToolTip.Tip="Beacon Now — transmit your position"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="📡" />
+          </Button>
+          <Button ToolTip.Tip="Alert status"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="4,8"
+                  Background="Transparent"
+                  Foreground="#CBD5E1"
+                  FontSize="18">
+            <TextBlock Text="🔔" />
+          </Button>
+        </StackPanel>
       </Border>
+
+      <!-- Map fills everything -->
+      <views:MapView Grid.Column="1"
+                     DataContext="{Binding Map}" />
     </Grid>
 
     <views:MainStatusBarView Grid.Row="3" />
