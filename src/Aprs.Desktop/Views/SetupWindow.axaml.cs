@@ -44,7 +44,13 @@ public sealed partial class SetupWindow : Window
             return;
         }
 
-        var profile = new StationProfile(callsign.ToUpperInvariant(), latitude, longitude, radius);
+        var profile = StationProfile.Default with
+        {
+            Callsign = callsign.ToUpperInvariant(),
+            Latitude = latitude,
+            Longitude = longitude,
+            FilterRadiusKm = radius
+        };
         profile.Save();
 
         SetupCompleted?.Invoke();

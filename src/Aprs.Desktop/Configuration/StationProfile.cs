@@ -3,44 +3,60 @@ using System.Globalization;
 namespace Aprs.Desktop.Configuration;
 
 /// <summary>
-/// Per-user station identity (callsign + home position) used to center the map, build the
-/// APRS-IS area filter, and log in to APRS-IS. Stored as JSON in the per-user application
-/// data folder so every operator who runs the app has their own profile. Nothing here is
-/// hardcoded to a single station; an unconfigured install falls back to <see cref="Default"/>.
+/// Complete operator station profile persisted between runs. Covers identity, position, symbol,
+/// beaconing parameters, and per-destination transmit opt-ins. Nothing here is hardcoded to a
+/// single station; an unconfigured install falls back to <see cref="Default"/>.
 /// </summary>
 public sealed record StationProfile(
     string Callsign,
+    int Ssid,
     double Latitude,
     double Longitude,
-    int FilterRadiusKm)
+    int FilterRadiusKm,
+    char SymbolTable,
+    char SymbolCode,
+    string StationComment,
+    string BeaconPath,
+    int AprsIsBeaconMinutes,
+    int RfBeaconMinutes,
+    bool FixedStationMode,
+    bool TransmitEnabled,
+    bool AprsIsTransmitEnabled,
+    bool RfTransmitEnabled,
+    string? PhgData)
 {
-    // Neutral fallback used before the user has saved a profile (continental US center).
-    public static StationProfile Default { get; } = new("N0CALL", 39.5, -98.35, 200);
+    public static StationProfile Default { get; } = new(
+        Callsign:             "N0CALL",
+        Ssid:                 0,
+        Latitude:             39.5,
+        Longitude:            -98.35,
+        FilterRadiusKm:       200,
+        SymbolTable:          '/',
+        SymbolCode:           '-',
+        StationComment:       "APRS Command",
+        BeaconPath:           "WIDE1-1,WIDE2-1",
+        AprsIsBeaconMinutes:  30,
+        RfBeaconMinutes:      60,
+        FixedStationMode:     true,
+        TransmitEnabled:      false,
+        AprsIsTransmitEnabled:false,
+        RfTransmitEnabled:    false,
+        PhgData:              null);
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Callsign)
         && !string.Equals(Callsign, "N0CALL", StringComparison.OrdinalIgnoreCase);
 
-    // Server-side APRS-IS range filter in the form "r/<lat>/<lon>/<km>". Invariant culture so
-    // the decimal point is always "." regardless of the operator's regional settings.
-    public string BuildAprsIsFilter() =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "r/{0}/{1}/{2}",
-            Latitude,
-            Longitude,
-            FilterRadiusKm);
+    /// <summary>Full callsign including SSID when non-zero, e.g. "KE4CON-7".</summary>
+    public string FullCallsign => Ssid == 0 ? Callsign : $"{Callsign}-{Ssid}";
 
-    /// <summary>
-    /// Loads the saved profile, or <see cref="Default"/> if none is saved or it is invalid.
-    /// Routes through the unified <see cref="JsonAppSettingsStore"/> so the station profile is one
-    /// section of the single settings file rather than a separate file.
-    /// </summary>
+    /// <summary>Two-character APRS symbol string displayed in the UI, e.g. "/-" or "/>".</summary>
+    public string SymbolDisplay => $"{SymbolTable}{SymbolCode}";
+
+    public string BuildAprsIsFilter() =>
+        string.Format(CultureInfo.InvariantCulture, "r/{0}/{1}/{2}", Latitude, Longitude, FilterRadiusKm);
+
     public static StationProfile Load() => JsonAppSettingsStore.Default.Load().Station;
 
-    /// <summary>
-    /// Saves this profile as the station section of the unified settings file, leaving every other
-    /// section untouched.
-    /// </summary>
-    public void Save() => JsonAppSettingsStore.Default.Update(settings => settings with { Station = this });
+    public void Save() => JsonAppSettingsStore.Default.Update(s => s with { Station = this });
 }
