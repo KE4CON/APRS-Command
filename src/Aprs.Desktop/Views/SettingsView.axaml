@@ -49,13 +49,13 @@
           <views:OfflineMapManagerView />
         </Border>
       </TabItem>
-      <TabItem Header="Direwolf">
+      <TabItem Header="Connections">
         <Border BorderBrush="#CBD5E1"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
                 Background="#F8FAFC">
-          <views:DirewolfProfileView DataContext="{Binding DirewolfProfile}" />
+          <views:ConnectionsView DataContext="{Binding Connections}" />
         </Border>
       </TabItem>
       <TabItem Header="Ports">

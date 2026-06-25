@@ -29,7 +29,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             SimulationViewModel.CreateDesignTime(),
             TrainingModeViewModel.CreateDesignTime(),
             FileHooksViewModel.CreateDesignTime(),
-            FirstRunSetupViewModel.CreateDesignTime())
+            FirstRunSetupViewModel.CreateDesignTime(),
+            ConnectionsViewModel.CreateDesignTime())
     {
     }
 
@@ -53,7 +54,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         SimulationViewModel simulation,
         TrainingModeViewModel training,
         FileHooksViewModel fileHooks,
-        FirstRunSetupViewModel firstRunSetup)
+        FirstRunSetupViewModel firstRunSetup,
+        ConnectionsViewModel connections)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -76,6 +78,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Training = training;
         FileHooks = fileHooks;
         FirstRunSetup = firstRunSetup;
+        Connections = connections;
         Map.AttachObjectManager(ObjectManager);
 
         OpenMessagesCommand = new DesktopCommand(() => SelectFeature(MainFeaturePanel.Messages));
@@ -110,6 +113,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ObjectManagerViewModel ObjectManager { get; }
 
     public DirewolfProfileViewModel DirewolfProfile { get; }
+
+    public ConnectionsViewModel Connections { get; }
 
     public PortStatusViewModel PortStatus { get; }
 
