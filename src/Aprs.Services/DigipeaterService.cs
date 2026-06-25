@@ -10,17 +10,20 @@ public sealed partial class DigipeaterService : IDigipeaterService
     private readonly IBeaconSchedulerClock clock;
     private readonly List<DigipeaterDecisionRecord> decisions = [];
     private readonly DigipeaterConfiguration configuration;
+    private readonly ITransmitSafetyAuthority? transmitSafety;
 
     public DigipeaterService(
         IAprsPortManager portManager,
         IRfBeaconTransmitClient rfTransmitClient,
         DigipeaterConfiguration? configuration = null,
-        IBeaconSchedulerClock? clock = null)
+        IBeaconSchedulerClock? clock = null,
+        ITransmitSafetyAuthority? transmitSafety = null)
     {
         this.portManager = portManager;
         this.rfTransmitClient = rfTransmitClient;
         this.clock = clock ?? new SystemBeaconSchedulerClock();
         this.configuration = StampDefaults(configuration ?? DigipeaterConfiguration.Default, DateTimeOffset.UtcNow);
+        this.transmitSafety = transmitSafety;
     }
 
     public async Task<DigipeaterDecisionRecord> EvaluateAndDigipeatAsync(
@@ -116,6 +119,17 @@ public sealed partial class DigipeaterService : IDigipeaterService
         if (!portSafety.IsSafe)
         {
             return (DigipeaterDecision.TransmitDisabled, portSafety.FailureReason ?? "RF transmit port is not safe.", [portSafety.FailureReason ?? "RF transmit port is not safe."]);
+        }
+
+        // Central transmit authority (when wired): adds the global inhibit (exercise mode) and the
+        // identity gate (never digipeat as a placeholder callsign) on top of the per-port check above.
+        if (transmitSafety is not null)
+        {
+            var decision = transmitSafety.Evaluate(new TransmitRequest(configuration.RfTransmitPort, TransmitDestination.Rf));
+            if (!decision.IsAllowed)
+            {
+                return (DigipeaterDecision.TransmitDisabled, decision.Explanation, [decision.Explanation]);
+            }
         }
 
         if (!IsRfSource(packetSource))

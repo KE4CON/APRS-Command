@@ -199,6 +199,36 @@ public sealed class DigipeaterServiceTests
         Assert.Equal(0, service.GetStatusSummary().AllowedCount);
     }
 
+    [Fact]
+    public async Task TransmitAuthorityInhibited_BlocksDigipeatEvenWhenPortIsReady()
+    {
+        var transmitter = new FakeRfBeaconTransmitClient();
+        var service = new DigipeaterService(
+            CreatePortManager(connectedTransmitPort: true),
+            transmitter,
+            EnabledConfiguration(),
+            new FakeBeaconSchedulerClock { UtcNow = Now },
+            transmitSafety: new StubInhibitedAuthority());
+
+        var decision = await service.EvaluateAndDigipeatAsync(
+            Parse("MOBILE1>APRS,WIDE1-1:!3903.50N/08430.50W>Mobile"), AprsPacketSource.Rf, "RF");
+
+        Assert.Equal(DigipeaterDecision.TransmitDisabled, decision.Decision);
+        Assert.False(decision.TransmitAttempted);
+        Assert.Equal(0, transmitter.SendCallCount);
+        Assert.Contains("inhibit", decision.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class StubInhibitedAuthority : ITransmitSafetyAuthority
+    {
+        public bool IsInhibited => true;
+        public string? InhibitReason => "exercise mode";
+        public void Inhibit(string reason) { }
+        public void Release() { }
+        public TransmitDecision Evaluate(TransmitRequest request)
+            => TransmitDecision.Deny(TransmitDenyReason.GlobalInhibit, "Transmit inhibited (exercise mode).");
+    }
+
     private DigipeaterService CreateService(FakeRfBeaconTransmitClient transmitter, DigipeaterConfiguration? configuration = null)
     {
         return new DigipeaterService(
