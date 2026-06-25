@@ -73,7 +73,7 @@
 
     <!-- Main content: icon sidebar + map -->
     <Grid Grid.Row="2"
-          ColumnDefinitions="48,*">
+          ColumnDefinitions="56,*">
 
       <!-- Left icon sidebar -->
       <Border Grid.Column="0"
@@ -81,78 +81,78 @@
               BorderBrush="#334155"
               BorderThickness="0,0,1,0">
         <StackPanel VerticalAlignment="Top"
-                    Spacing="2"
-                    Margin="4,8">
+                    Spacing="4"
+                    Margin="4,12">
 
           <!-- Map tools -->
           <Button ToolTip.Tip="Home / Reset view"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="⌂" />
           </Button>
           <Button ToolTip.Tip="Centre on my station"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="◎" />
           </Button>
           <Button ToolTip.Tip="Find station"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="🔍" />
           </Button>
           <Button ToolTip.Tip="Measure distance"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="📏" />
           </Button>
           <Button ToolTip.Tip="Map layer toggle"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="🗺" />
           </Button>
 
           <!-- Divider -->
           <Border Height="1"
                   Background="#334155"
-                  Margin="4,6" />
+                  Margin="4,8" />
 
           <!-- Operator tools -->
           <Button ToolTip.Tip="Beacon Now — transmit your position"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="📡" />
           </Button>
           <Button ToolTip.Tip="Alert status"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,8"
+                  Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="18">
+                  FontSize="24">
             <TextBlock Text="🔔" />
           </Button>
         </StackPanel>
