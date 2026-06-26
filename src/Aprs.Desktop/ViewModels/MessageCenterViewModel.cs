@@ -1,4 +1,5 @@
 using Aprs.Desktop.Configuration;
+using Aprs.Desktop.Runtime;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -14,6 +15,7 @@ public sealed class MessageCenterViewModel
     private readonly List<BulletinRowViewModel> bulletins = [];
     private readonly List<AnnouncementRowViewModel> announcements = [];
     private readonly List<QueryRowViewModel> queries = [];
+    private MessageAckCoordinator? ackCoordinator;
 
     public MessageCenterViewModel(IAprsMessageStoreService messageStore)
         : this(messageStore, new AprsBulletinService())
@@ -30,6 +32,35 @@ public sealed class MessageCenterViewModel
         {
             SelectMessage(SelectedMessage);
         }
+    }
+
+    /// <summary>Injects the ACK coordinator after construction (set from App.axaml.cs after runtime starts).</summary>
+    public void SetAckCoordinator(MessageAckCoordinator coordinator)
+        => ackCoordinator = coordinator;
+
+    /// <summary>
+    /// Creates and immediately transmits a message via the ACK/retry engine.
+    /// Falls back to queue-only if no ACK coordinator is available.
+    /// </summary>
+    public async Task<AprsMessageRecord?> SendMessageAsync(string localCallsign, string recipient, string body)
+    {
+        var request = new AprsMessageComposeRequest(localCallsign, recipient, body);
+        var validation = messageStore.ValidateComposeRequest(request);
+        if (!validation.IsValid) return null;
+
+        var now = DateTimeOffset.UtcNow;
+        var draft = messageStore.CreateDraft(request, now);
+        messageStore.QueueMessage(draft.Id, now);
+
+        if (ackCoordinator is not null)
+        {
+            var sent = await ackCoordinator.SendAsync(draft.Id).ConfigureAwait(false);
+            Refresh();
+            return sent;
+        }
+
+        Refresh();
+        return draft;
     }
 
     public IReadOnlyList<MessageRowViewModel> Inbox => inbox;

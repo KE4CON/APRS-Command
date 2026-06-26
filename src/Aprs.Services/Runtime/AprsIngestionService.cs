@@ -28,6 +28,9 @@ public sealed class AprsIngestionService
     /// <summary>Raised after a line has been recorded, parsed, and applied.</summary>
     public event EventHandler? PacketIngested;
 
+    /// <summary>Raised with the parsed packet after ingestion. Null if the line could not be parsed.</summary>
+    public event EventHandler<AprsPacket?>? PacketParsed;
+
     /// <summary>
     /// Ingests a single received raw APRS line. Safe to call repeatedly; never throws
     /// on malformed input (the parser flags validation errors instead).
@@ -41,11 +44,13 @@ public sealed class AprsIngestionService
 
         rawPacketLog.AddReceivedRawPacket(rawLine, source, timestampUtc: receivedAtUtc);
 
-        if (parser.TryParse(rawLine, receivedAtUtc, out var packet, out _) && packet is not null)
+        AprsPacket? packet = null;
+        if (parser.TryParse(rawLine, receivedAtUtc, out packet, out _) && packet is not null)
         {
             stationDatabase.ProcessPacket(packet, source);
         }
 
+        PacketParsed?.Invoke(this, packet);
         PacketIngested?.Invoke(this, EventArgs.Empty);
     }
 }

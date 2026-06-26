@@ -27,11 +27,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public BeaconService BeaconService { get; }
     public ITransmitSafetyAuthority TransmitAuthority { get; }
     public GpsCoordinator GpsCoordinator { get; }
+    public MessageAckCoordinator MessageAckCoordinator { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -39,6 +40,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         BeaconService = beaconService;
         TransmitAuthority = transmitAuthority;
         GpsCoordinator = gpsCoordinator;
+        MessageAckCoordinator = messageAckCoordinator;
     }
 
     public static DesktopRuntime Create()
@@ -63,6 +65,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IAprsPortManager, AprsPortManager>();
         services.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();
         services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
+        services.AddSingleton<IAprsMessageStoreService, AprsMessageStoreService>();
 
         var provider = services.BuildServiceProvider();
 
@@ -78,7 +81,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             rawPacketLog,                                   // LIVE
             DecodedEventLogViewModel.CreateDesignTime(),    // TODO: wire to decoded event log service
             EventMonitorViewModel.CreateDesignTime(),       // TODO: wire to IAprsEventBus
-            MessageCenterViewModel.CreateDesignTime(),      // TODO: wire to messaging services
+            new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
             ObjectManagerViewModel.CreateDesignTime(),      // TODO: wire to object manager service
             DirewolfProfileViewModel.CreateDesignTime(),    // TODO: wire to Direwolf profile service
             PortStatusViewModel.CreateDesignTime(),         // TODO: wire to AprsPortManager
@@ -109,6 +112,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load());
 
+        // Message ACK coordinator — reuses the beacon service's transmit-capable APRS-IS client.
+        var messageStore = provider.GetRequiredService<IAprsMessageStoreService>();
+        var messageAckCoordinator = beaconService.AprsIsClient is not null
+            ? MessageAckCoordinator.Create(messageStore, beaconService.AprsIsClient, transmitConfirmed: true)
+            : MessageAckCoordinator.Create(messageStore, new NullAprsIsClient(), transmitConfirmed: false);
+
         // GPS — only create a serial source when a port is configured and GPS is enabled.
         var gpsSettings = provider.GetRequiredService<IAppSettingsStore>().Load().Gps;
         SerialNmeaGpsSource? gpsSource = null;
@@ -120,7 +129,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),
-            gpsCoordinator);
+            gpsCoordinator,
+            messageAckCoordinator);
     }
 
     /// <summary>
@@ -133,6 +143,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         Coordinator.Start();
         BeaconService.Start();
         GpsCoordinator.Start();
+        MessageAckCoordinator.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -161,6 +172,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await MessageAckCoordinator.DisposeAsync().ConfigureAwait(false);
         await GpsCoordinator.DisposeAsync().ConfigureAwait(false);
         await BeaconService.DisposeAsync().ConfigureAwait(false);
         await Coordinator.DisposeAsync().ConfigureAwait(false);
