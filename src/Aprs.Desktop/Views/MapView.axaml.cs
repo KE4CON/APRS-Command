@@ -189,7 +189,6 @@ public sealed partial class MapView : UserControl
             configureHttpRequestMessage: request => request.Headers.UserAgent.ParseAdd(
                 "AprsCommand/1.0 (+https://github.com/KE4CON/CrossPlatformAPRS)"));
 
-        Console.Error.WriteLine($"[Map] Base map '{name}' with on-disk cache at {cacheDirectory}");
         return new TileLayer(tileSource) { Name = name };
     }
 
