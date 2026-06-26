@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.AudioConfigView"
+             x:DataType="vm:AudioConfigViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+
+      <!-- Header -->
+      <StackPanel Spacing="2">
+        <TextBlock Text="Audio Alerts" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
+        <TextBlock Foreground="#526173" FontSize="12" TextWrapping="Wrap"
+                   Text="APRS Command plays a distinct sound for each type of alert. Sounds are generated internally — no external audio files are required. If audio is unavailable the app continues normally and logs the failure." />
+      </StackPanel>
+
+      <!-- Volume -->
+      <Border Grid.Row="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+        <StackPanel Spacing="10">
+          <TextBlock Text="Volume" FontWeight="SemiBold" Foreground="#0F172A" />
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Slider Minimum="0" Maximum="100"
+                    Value="{Binding VolumePercent}"
+                    TickFrequency="10"
+                    IsSnapToTickEnabled="False" />
+            <TextBlock Grid.Column="1"
+                       Text="{Binding VolumePercent, StringFormat='{}{0}%'}"
+                       Width="40"
+                       VerticalAlignment="Center"
+                       Foreground="#475569" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Sound toggles -->
+      <Border Grid.Row="2" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+        <StackPanel Spacing="12">
+          <TextBlock Text="Play sounds for" FontWeight="SemiBold" Foreground="#0F172A" />
+
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+            <CheckBox Grid.Row="0" IsChecked="{Binding PlayOnMessageReceived}" />
+            <StackPanel Grid.Row="0" Grid.Column="1" Spacing="1">
+              <TextBlock Text="Incoming message" FontWeight="SemiBold" Foreground="#1e293b" />
+              <TextBlock Text="Two ascending tones — plays when a direct message arrives addressed to your callsign." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <CheckBox Grid.Row="1" IsChecked="{Binding PlayOnWarningAlert}" />
+            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="1">
+              <TextBlock Text="Warning alert" FontWeight="SemiBold" Foreground="#1e293b" />
+              <TextBlock Text="Three medium pulses — plays when a Warning-severity alert rule triggers." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <CheckBox Grid.Row="2" IsChecked="{Binding PlayOnCriticalAlert}" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="1">
+              <TextBlock Text="Critical alert" FontWeight="SemiBold" Foreground="#1e293b" />
+              <TextBlock Text="Rapid urgent pulses — plays when a Critical-severity alert rule triggers." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <CheckBox Grid.Row="3" IsChecked="{Binding PlayOnConnectionEvents}" />
+            <StackPanel Grid.Row="3" Grid.Column="1" Spacing="1">
+              <TextBlock Text="Connection events" FontWeight="SemiBold" Foreground="#1e293b" />
+              <TextBlock Text="Single rising or falling tone — plays when APRS-IS connects or disconnects." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <!-- Save / Revert -->
+      <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+        <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
+        <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="#475569" VerticalAlignment="Center" />
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

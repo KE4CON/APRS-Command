@@ -8,6 +8,8 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
     private const int MaximumMessageBodyLength = 67;
     private readonly List<AprsMessageRecord> messages = [];
 
+    public event EventHandler<AprsMessageRecord>? IncomingMessageReceived;
+
     public AprsMessageRecord AddIncomingMessage(MessageAprsPacket packet, string localStationCallsign, AprsPacketSource source = AprsPacketSource.Unknown)
     {
         var remoteStation = FormatSourceCallsign(packet.SourceCallsign, packet.SourceSsid);
@@ -34,6 +36,7 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
             packet.ValidationErrors);
 
         messages.Add(record);
+        IncomingMessageReceived?.Invoke(this, record);
         return record;
     }
 

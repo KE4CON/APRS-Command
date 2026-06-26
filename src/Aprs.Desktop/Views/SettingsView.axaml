@@ -99,6 +99,15 @@
           </TabControl>
         </Border>
       </TabItem>
+      <TabItem Header="Audio">
+        <Border BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Background="#F8FAFC">
+          <views:AudioConfigView DataContext="{Binding AudioConfig}" />
+        </Border>
+      </TabItem>
     </TabControl>
   </Grid>
 </UserControl>
