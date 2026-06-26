@@ -41,9 +41,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
         TileCacheConfiguration = tileCacheConfiguration;
         TileProvider = tileProvider;
         this.coordinateConverter = coordinateConverter;
-        BeginCreateObjectCommand = new DesktopCommand(BeginCreateObjectPlacement);
+        BeginCreateObjectCommand    = new DesktopCommand(BeginCreateObjectPlacement);
         ClearObjectSelectionCommand = new DesktopCommand(ClearObjectSelection);
+        HomeCommand                 = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.Home));
+        CentreOnStationCommand      = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.CentreOnStation));
     }
+
+    /// <summary>Fired when a sidebar navigation button is clicked. The MapView code-behind handles it.</summary>
+    public event EventHandler<MapNavigationRequest>? NavigationRequested;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -136,6 +141,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand BeginCreateObjectCommand { get; }
 
     public DesktopCommand ClearObjectSelectionCommand { get; }
+
+    public DesktopCommand HomeCommand { get; }
+
+    public DesktopCommand CentreOnStationCommand { get; }
 
     public void SelectStation(StationMarkerViewModel marker)
     {

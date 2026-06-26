@@ -199,6 +199,7 @@ public sealed partial class MapView : UserControl
         {
             currentViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             currentViewModel.Markers.CollectionChanged -= Markers_CollectionChanged;
+            currentViewModel.NavigationRequested -= OnNavigationRequested;
         }
 
         currentViewModel = DataContext as MapViewModel;
@@ -206,6 +207,7 @@ public sealed partial class MapView : UserControl
         {
             currentViewModel.PropertyChanged += ViewModel_PropertyChanged;
             currentViewModel.Markers.CollectionChanged += Markers_CollectionChanged;
+            currentViewModel.NavigationRequested += OnNavigationRequested;
         }
 
         UpdatePanels();
@@ -413,6 +415,23 @@ public sealed partial class MapView : UserControl
         var profile = StationProfile.Load();
         var (x, y) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
         MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(x, y), HomeResolution);
+    }
+
+    private void OnNavigationRequested(object? sender, MapNavigationRequest request)
+    {
+        switch (request)
+        {
+            case MapNavigationRequest.Home:
+                CenterOnHome();
+                break;
+
+            case MapNavigationRequest.CentreOnStation:
+                // Centre on the operator's own station position at a tighter zoom.
+                var profile = StationProfile.Load();
+                var (x, y) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
+                MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(x, y), HomeResolution / 4);
+                break;
+        }
     }
 
     private void OnMapInfo(object? sender, MapInfoEventArgs e)
