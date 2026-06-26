@@ -28,11 +28,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public ITransmitSafetyAuthority TransmitAuthority { get; }
     public GpsCoordinator GpsCoordinator { get; }
     public MessageAckCoordinator MessageAckCoordinator { get; }
+    public KissTcpCoordinator KissTcpCoordinator { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -41,6 +42,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         TransmitAuthority = transmitAuthority;
         GpsCoordinator = gpsCoordinator;
         MessageAckCoordinator = messageAckCoordinator;
+        KissTcpCoordinator = kissTcpCoordinator;
     }
 
     public static DesktopRuntime Create()
@@ -127,10 +129,15 @@ public sealed class DesktopRuntime : IAsyncDisposable
         }
         var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource);
 
+        var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
+            provider.GetRequiredService<IAppSettingsStore>().Load(),
+            provider.GetRequiredService<AprsIngestionService>());
+
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),
             gpsCoordinator,
-            messageAckCoordinator);
+            messageAckCoordinator,
+            kissTcpCoordinator);
     }
 
     /// <summary>
@@ -144,6 +151,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         BeaconService.Start();
         GpsCoordinator.Start();
         MessageAckCoordinator.Start();
+        KissTcpCoordinator.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -172,6 +180,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await KissTcpCoordinator.DisposeAsync().ConfigureAwait(false);
         await MessageAckCoordinator.DisposeAsync().ConfigureAwait(false);
         await GpsCoordinator.DisposeAsync().ConfigureAwait(false);
         await BeaconService.DisposeAsync().ConfigureAwait(false);
