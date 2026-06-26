@@ -160,8 +160,12 @@
                 <TextBlock Text="Serial port"
                            FontSize="11"
                            Foreground="#64748B" />
-                <TextBox Text="{Binding SelectedPort.SerialPortName}"
-                         Watermark="e.g. COM3 or /dev/tty.usbserial" />
+                <ComboBox ItemsSource="{Binding SelectedPort.AvailableSerialPorts}"
+                          SelectedItem="{Binding SelectedPort.SerialPortName}"
+                          HorizontalAlignment="Stretch"
+                          IsEditable="True"
+                          Text="{Binding SelectedPort.SerialPortName}"
+                          PlaceholderText="e.g. /dev/tty.usbserial or COM3" />
               </StackPanel>
               <StackPanel Grid.Column="1"
                           Spacing="2">

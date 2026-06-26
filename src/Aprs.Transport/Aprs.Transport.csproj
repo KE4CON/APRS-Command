@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="System.IO.Ports" Version="9.0.0" />
     <ProjectReference Include="..\Aprs.Core\Aprs.Core.csproj" />
   </ItemGroup>
 </Project>
