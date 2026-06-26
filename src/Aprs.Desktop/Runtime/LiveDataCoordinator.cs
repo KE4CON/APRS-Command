@@ -38,6 +38,8 @@ public sealed class LiveDataCoordinator : IAsyncDisposable
         this.ingestion.PacketIngested += (_, _) => dirty = true;
     }
 
+    public AprsIsConnectionState ConnectionState => aprsIsClient?.State ?? AprsIsConnectionState.Disconnected;
+
     /// <summary>Starts the coalesced UI refresh loop.</summary>
     public void Start()
     {

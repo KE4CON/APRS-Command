@@ -1,17 +1,28 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
+using Avalonia.Threading;
 using Aprs.Desktop.ViewModels;
+using Aprs.Transport;
 
 namespace Aprs.Desktop.Views;
 
 public sealed partial class MainWindow : Window
 {
     private MainWindowViewModel? vm;
+    private DispatcherTimer? statusTimer;
 
     public MainWindow()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        // Poll connection state and transmit inhibit every second to keep badges current.
+        statusTimer = new DispatcherTimer(
+            TimeSpan.FromSeconds(1),
+            DispatcherPriority.Background,
+            (_, _) => RefreshStatusBadges());
+        statusTimer.Start();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -90,6 +101,34 @@ public sealed partial class MainWindow : Window
 
     private void OnHelpRequested(object? s, EventArgs e)
         => new HelpWindow { DataContext = HelpViewModel.CreateDefault() }.Show(this);
+
+    private void RefreshStatusBadges()
+    {
+        var runtime = (Application.Current as App)?.Runtime;
+        if (runtime is null) return;
+
+        // APRS-IS badge
+        var state = runtime.ConnectionState;
+        var (aprsText, aprsBg, aprsBorder) = state switch
+        {
+            AprsIsConnectionState.Connected    => ("APRS-IS Connected",    "#0F3D2E", "#22C55E"),
+            AprsIsConnectionState.Connecting   => ("APRS-IS Connecting…",  "#1E293B", "#F59E0B"),
+            AprsIsConnectionState.Reconnecting => ("APRS-IS Reconnecting…","#1E293B", "#F59E0B"),
+            AprsIsConnectionState.Faulted      => ("APRS-IS Error",        "#3D0F0F", "#F87171"),
+            _                                  => ("APRS-IS Offline",      "#1E293B", "#64748B")
+        };
+        AprsIsBadgeText.Text = aprsText;
+        AprsIsBadgeBorder.Background     = new SolidColorBrush(Color.Parse(aprsBg));
+        AprsIsBadgeBorder.BorderBrush    = new SolidColorBrush(Color.Parse(aprsBorder));
+
+        // TX badge — only update when NOT in exercise mode (exercise mode sets its own text)
+        if (!runtime.IsTransmitInhibited)
+        {
+            TxBadgeText.Text = "TX Disabled";
+            TxBadgeBorder.Background  = new SolidColorBrush(Color.Parse("#123B32"));
+            TxBadgeBorder.BorderBrush = new SolidColorBrush(Color.Parse("#2DD4BF"));
+        }
+    }
 
     private void OnExerciseModeRequested(object? s, EventArgs e)
     {
