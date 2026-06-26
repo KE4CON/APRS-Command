@@ -49,6 +49,7 @@ public sealed partial class MainWindow : Window
             vm.HelpRequested          -= OnHelpRequested;
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
+            vm.AboutRequested         -= OnAboutRequested;
         }
 
         vm = DataContext as MainWindowViewModel;
@@ -69,6 +70,7 @@ public sealed partial class MainWindow : Window
             vm.HelpRequested          += OnHelpRequested;
             vm.BeaconNowRequested     += OnBeaconNowRequested;
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
+            vm.AboutRequested         += OnAboutRequested;
         }
     }
 
@@ -107,6 +109,9 @@ public sealed partial class MainWindow : Window
 
     private void OnHelpRequested(object? s, EventArgs e)
         => new HelpWindow { DataContext = HelpViewModel.CreateDefault() }.Show(this);
+
+    private void OnAboutRequested(object? s, EventArgs e)
+        => new AboutWindow().ShowDialog(this);
 
     /// <summary>
     /// Shows a feature window with its saved position/size restored, and saves its state on close.
