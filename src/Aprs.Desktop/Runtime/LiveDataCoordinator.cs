@@ -40,6 +40,13 @@ public sealed class LiveDataCoordinator : IAsyncDisposable
 
     public AprsIsConnectionState ConnectionState => aprsIsClient?.State ?? AprsIsConnectionState.Disconnected;
 
+    /// <summary>Forwarded from the ingestion service — fires after each packet is processed.</summary>
+    public event EventHandler? PacketIngested
+    {
+        add    => ingestion.PacketIngested += value;
+        remove => ingestion.PacketIngested -= value;
+    }
+
     /// <summary>Starts the coalesced UI refresh loop.</summary>
     public void Start()
     {

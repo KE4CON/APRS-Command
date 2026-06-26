@@ -94,7 +94,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new ConnectionsViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new IGateConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),

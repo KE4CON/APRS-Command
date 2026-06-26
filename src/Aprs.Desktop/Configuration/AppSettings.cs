@@ -8,14 +8,15 @@ namespace Aprs.Desktop.Configuration;
 ///
 /// <para><see cref="SchemaVersion"/> exists so future format changes can be migrated rather than
 /// silently dropped. The store stamps the current version on every save and can run migration
-/// steps on load when an older version is read.</para>
+/// steps on load when an older version is load.</para>
 /// </summary>
 public sealed record AppSettings(
     int SchemaVersion,
     StationProfile Station,
     ConnectionSettings Connections,
     IGateSettings IGate,
-    DigipeaterSettings Digipeater)
+    DigipeaterSettings Digipeater,
+    AudioSettings Audio)
 {
     /// <summary>Bump this when the persisted shape changes in a way that needs migration.</summary>
     /// <remarks>v2 introduced the connection port-list (replacing the flat one-of-each shape).</remarks>
@@ -27,5 +28,6 @@ public sealed record AppSettings(
         Station: StationProfile.Default,
         Connections: ConnectionSettings.Default,
         IGate: IGateSettings.Default,
-        Digipeater: DigipeaterSettings.Default);
+        Digipeater: DigipeaterSettings.Default,
+        Audio: AudioSettings.Default);
 }

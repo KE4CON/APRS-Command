@@ -4,6 +4,9 @@ namespace Aprs.Services;
 
 public interface IAprsMessageStoreService
 {
+    /// <summary>Fired when a new incoming message is added to the inbox.</summary>
+    event EventHandler<AprsMessageRecord>? IncomingMessageReceived;
+
     /// <summary>
     /// Adds a parsed incoming APRS message packet to the inbox.
     /// </summary>

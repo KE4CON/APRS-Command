@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Aprs.Desktop.Composition;
 using Aprs.Desktop.Configuration;
+using Aprs.Desktop.Audio;
 using Aprs.Desktop.ViewModels;
 using Aprs.Desktop.Views;
 
@@ -48,6 +49,7 @@ public sealed partial class App : Application
                     runtime.Start();
                     runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
                         runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
+                    WireSoundAlerts(runtime);
                 }
                 else
                 {
@@ -67,6 +69,7 @@ public sealed partial class App : Application
                         runtime.Start();
                         runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
                             runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
+                        WireSoundAlerts(runtime);
                         setup.Close();
                     };
 
@@ -85,5 +88,49 @@ public sealed partial class App : Application
             await runtime.DisposeAsync();
             runtime = null;
         }
+    }
+
+    private static void WireSoundAlerts(DesktopRuntime rt)
+    {
+        var sound = new SoundAlertService(JsonAppSettingsStore.Default);
+
+        // Message received → play MessageReceived sound.
+        // The MessageCenterViewModel is wired to a design-time service in DesktopRuntime
+        // (not yet fully live), so we hook the ingestion pipeline directly via the
+        // SettingsTransmitPolicyContext's store — simplest path that doesn't require
+        // restructuring the composition root.
+        // For now, subscribe to the ingestion PacketIngested event and detect message
+        // packets by checking if the inbox grew. When MessageCenterViewModel is fully
+        // wired to a live IAprsMessageStoreService, this can be replaced with a direct
+        // IncomingMessageReceived subscription.
+        var lastInboxCount = 0;
+        rt.Coordinator.PacketIngested += (_, _) =>
+        {
+            var count = rt.MainViewModel.MessageCenter.InboxCount;
+            if (count > lastInboxCount)
+            {
+                lastInboxCount = count;
+                sound.Play(AlertSound.MessageReceived, $"msg-{count}");
+            }
+        };
+
+        // Connection events
+        var lastState = Aprs.Transport.AprsIsConnectionState.Disconnected;
+        _ = System.Threading.Tasks.Task.Run(async () =>
+        {
+            while (true)
+            {
+                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1));
+                var state = rt.ConnectionState;
+                if (state != lastState)
+                {
+                    if (state == Aprs.Transport.AprsIsConnectionState.Connected)
+                        sound.Play(AlertSound.Connected, $"conn-{DateTimeOffset.UtcNow.Ticks}");
+                    else if (lastState == Aprs.Transport.AprsIsConnectionState.Connected)
+                        sound.Play(AlertSound.Disconnected, $"disc-{DateTimeOffset.UtcNow.Ticks}");
+                    lastState = state;
+                }
+            }
+        });
     }
 }
