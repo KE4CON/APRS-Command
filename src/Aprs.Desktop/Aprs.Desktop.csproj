@@ -10,7 +10,7 @@
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
     <FileVersion>0.1.0.0</FileVersion>
     <InformationalVersion>0.1.0-alpha</InformationalVersion>
-    <Copyright>Copyright © 2025 KE4CON</Copyright>
+    <Copyright>Copyright © 2026 James Rospopo (KE4CON)</Copyright>
     <Description>A cross-platform APRS client for amateur radio operators.</Description>
   </PropertyGroup>
   <ItemGroup>
