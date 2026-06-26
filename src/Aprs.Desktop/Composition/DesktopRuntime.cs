@@ -29,11 +29,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public GpsCoordinator GpsCoordinator { get; }
     public MessageAckCoordinator MessageAckCoordinator { get; }
     public KissTcpCoordinator KissTcpCoordinator { get; }
+    public ManagedModemCoordinator? ManagedModemCoordinator { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -43,6 +44,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         GpsCoordinator = gpsCoordinator;
         MessageAckCoordinator = messageAckCoordinator;
         KissTcpCoordinator = kissTcpCoordinator;
+        ManagedModemCoordinator = managedModemCoordinator;
     }
 
     public static DesktopRuntime Create()
@@ -103,7 +105,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new IGateConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new ManagedModemViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),
@@ -129,6 +132,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
         }
         var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource);
 
+        var appSettings2 = provider.GetRequiredService<IAppSettingsStore>().Load();
+        var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>());
+
         var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             provider.GetRequiredService<AprsIngestionService>());
@@ -137,7 +143,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<ITransmitSafetyAuthority>(),
             gpsCoordinator,
             messageAckCoordinator,
-            kissTcpCoordinator);
+            kissTcpCoordinator,
+            managedModemCoordinator);
     }
 
     /// <summary>
@@ -152,6 +159,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         GpsCoordinator.Start();
         MessageAckCoordinator.Start();
         KissTcpCoordinator.Start();
+        ManagedModemCoordinator?.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -180,6 +188,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (ManagedModemCoordinator is not null) await ManagedModemCoordinator.DisposeAsync().ConfigureAwait(false);
         await KissTcpCoordinator.DisposeAsync().ConfigureAwait(false);
         await MessageAckCoordinator.DisposeAsync().ConfigureAwait(false);
         await GpsCoordinator.DisposeAsync().ConfigureAwait(false);

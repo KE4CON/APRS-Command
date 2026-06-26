@@ -65,6 +65,15 @@
           <views:ConnectionsView DataContext="{Binding Connections}" />
         </Border>
       </TabItem>
+      <TabItem Header="Managed Modem">
+        <Border BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Background="{DynamicResource CardBgBrush}">
+          <views:ManagedModemView DataContext="{Binding ManagedModem}" />
+        </Border>
+      </TabItem>
       <TabItem Header="Ports">
         <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
