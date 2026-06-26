@@ -12,17 +12,17 @@
                    FontSize="22"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding SafetySummary}"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
 
       <Grid Grid.Row="1"
             ColumnDefinitions="280,*"
             ColumnSpacing="12">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#F8FAFC"
+                Background="{DynamicResource TextTitleBarBrush}"
                 Padding="10">
           <Grid RowDefinitions="Auto,*"
                 RowSpacing="8">
@@ -44,10 +44,10 @@
       <Grid Grid.Row="2"
             ColumnDefinitions="*,*"
             ColumnSpacing="12">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBgBrush}"
                 Padding="10">
           <Grid RowDefinitions="Auto,*"
                 RowSpacing="8">
@@ -58,66 +58,66 @@
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Source"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.SourceName}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Source type"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.SourceType}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Station/device"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.StationDeviceId}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Timestamp"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Timestamp}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Age / state"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.DataAge}" />
                 <TextBlock Text="{Binding WeatherDataPreview.StaleWarning}"
-                           Foreground="#B45309" />
+                           Foreground="{DynamicResource WarnTextBrush}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Wind"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Wind}"
                            TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Temperature"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Temperature}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Humidity / pressure"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Humidity}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Pressure}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Rain"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Rain}"
                            TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Solar / UV / lightning"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding WeatherDataPreview.SolarLuminosity}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Uv}" />
                 <TextBlock Text="{Binding WeatherDataPreview.Lightning}"
@@ -150,10 +150,10 @@
       <Grid Grid.Row="4"
             ColumnDefinitions="*,*"
             ColumnSpacing="12">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBgBrush}"
                 Padding="10">
           <Grid RowDefinitions="Auto,Auto,Auto"
                 RowSpacing="8">

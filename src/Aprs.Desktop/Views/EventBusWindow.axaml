@@ -7,16 +7,16 @@
         Title="APRS Command — Event Bus"
         Width="900" Height="600" MinWidth="600" MinHeight="440">
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="22,10">
+    <Border Grid.Row="0" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,0,0,1" Padding="22,10">
       <StackPanel Spacing="2">
-        <TextBlock Text="Event Bus" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
-        <TextBlock Text="Internal event bus monitor — shows every event passing through the app in real time. A troubleshooting tool for developers and advanced users." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="Event Bus" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="Internal event bus monitor — shows every event passing through the app in real time. A troubleshooting tool for developers and advanced users." Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
     <Border Grid.Row="1" Padding="16">
     <views:EventMonitorView Grid.Row="1" DataContext="{Binding EventMonitor}" />
     </Border>
-    <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
+    <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>
   </Grid>

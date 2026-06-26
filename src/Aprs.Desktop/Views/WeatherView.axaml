@@ -12,25 +12,25 @@
                  FontSize="24"
                  FontWeight="SemiBold" />
       <TextBlock Text="{Binding Summary}"
-                 Foreground="#526173" />
+                 Foreground="{DynamicResource TextSubtleBrush}" />
     </StackPanel>
     <TabControl Grid.Row="1">
       <TabItem Header="Stations">
         <Grid ColumnDefinitions="2*,3*"
               ColumnSpacing="10">
-      <Border BorderBrush="#CBD5E1"
+      <Border BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#F8FAFC"
+              Background="{DynamicResource TextTitleBarBrush}"
               Padding="10">
         <ScrollViewer>
           <ItemsControl ItemsSource="{Binding Rows}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border BorderBrush="#CBD5E1"
+                <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                         BorderThickness="1"
                         CornerRadius="6"
-                        Background="#FFFFFF"
+                        Background="{DynamicResource SurfaceBgBrush}"
                         Padding="10"
                         Margin="0,0,0,8">
                   <Grid RowDefinitions="Auto,Auto,Auto"
@@ -40,18 +40,18 @@
                       <StackPanel>
                         <TextBlock Text="{Binding DisplayName}"
                                    FontWeight="SemiBold"
-                                   Foreground="#0F172A" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding SourceType}"
                                    FontSize="11"
-                                   Foreground="#64748B" />
+                                   Foreground="{DynamicResource TextMutedBrush}" />
                       </StackPanel>
                       <Border Grid.Column="1"
-                              BorderBrush="#0E7490"
+                              BorderBrush="{DynamicResource AccentTealBrush}"
                               BorderThickness="1"
                               CornerRadius="4"
                               Padding="6,3">
                         <TextBlock Text="{Binding DataState}"
-                                   Foreground="#0E7490"
+                                   Foreground="{DynamicResource AccentTealBrush}"
                                    FontSize="11"
                                    FontWeight="SemiBold" />
                       </Border>
@@ -67,7 +67,7 @@
                     </Grid>
                     <TextBlock Grid.Row="2"
                                Text="{Binding StaleWarning}"
-                               Foreground="#B45309"
+                               Foreground="{DynamicResource WarnTextBrush}"
                                FontSize="11"
                                TextWrapping="Wrap" />
                   </Grid>
@@ -79,10 +79,10 @@
       </Border>
 
       <Border Grid.Column="1"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#FFFFFF"
+              Background="{DynamicResource SurfaceBgBrush}"
               Padding="12">
         <ScrollViewer>
           <Grid RowDefinitions="Auto,Auto,Auto,Auto"
@@ -91,9 +91,9 @@
               <TextBlock Text="{Binding SelectedStation.DisplayName}"
                          FontSize="18"
                          FontWeight="SemiBold"
-                         Foreground="#0F172A" />
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{Binding SelectedStation.StaleWarning}"
-                         Foreground="#B45309"
+                         Foreground="{DynamicResource WarnTextBrush}"
                          TextWrapping="Wrap" />
             </StackPanel>
 
@@ -102,64 +102,64 @@
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Last update"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.LastUpdate}"
                            TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Age"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Age}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Temperature"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Temperature}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Wind"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Wind}"
                            TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Rain"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Rain}"
                            TextWrapping="Wrap" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Humidity"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Humidity}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Pressure"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Pressure}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Solar / UV"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.SolarUv}" />
               </StackPanel>
               <StackPanel Margin="0,0,12,8">
                 <TextBlock Text="Snow"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Snow}" />
               </StackPanel>
               <StackPanel Margin="0,0,0,8">
                 <TextBlock Text="Lightning / Events"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Lightning}"
                            TextWrapping="Wrap" />
               </StackPanel>
@@ -171,13 +171,13 @@
               <StackPanel>
                 <TextBlock Text="Source"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.SourceType}" />
               </StackPanel>
               <StackPanel Grid.Column="1">
                 <TextBlock Text="Origin"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding SelectedStation.Origin}" />
               </StackPanel>
             </Grid>
@@ -186,12 +186,12 @@
                         Spacing="4">
               <TextBlock Text="Raw packet / payload"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding SelectedStation.RawPayload}"
                          FontFamily="Consolas,Menlo,monospace"
                          FontSize="11"
                          TextWrapping="Wrap"
-                         Foreground="#334155" />
+                         Foreground="{DynamicResource TitleBarBorderBrush}" />
             </StackPanel>
           </Grid>
         </ScrollViewer>

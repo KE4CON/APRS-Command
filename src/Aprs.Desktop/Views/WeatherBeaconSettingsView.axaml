@@ -11,63 +11,63 @@
                    FontSize="20"
                    FontWeight="SemiBold" />
         <TextBlock Text="Local weather packet preview and safe transmit scheduling"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
 
       <Grid Grid.Row="1"
             ColumnDefinitions="*,*"
             ColumnSpacing="12">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#F8FAFC"
+                Background="{DynamicResource TextTitleBarBrush}"
                 Padding="10">
           <StackPanel Spacing="6">
             <TextBlock Text="Selected source"
                        FontSize="11"
-                       Foreground="#64748B" />
+                       Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{Binding SelectedWeatherSource}"
                        FontWeight="SemiBold"
                        TextWrapping="Wrap" />
             <TextBlock Text="{Binding SourceStatus}"
-                       Foreground="#334155"
+                       Foreground="{DynamicResource TitleBarBorderBrush}"
                        TextWrapping="Wrap" />
             <TextBlock Text="{Binding StaleWarning}"
-                       Foreground="#B45309"
+                       Foreground="{DynamicResource WarnTextBrush}"
                        TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 
         <Border Grid.Column="1"
-                BorderBrush="#CBD5E1"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBgBrush}"
                 Padding="10">
           <UniformGrid Columns="2">
             <StackPanel Margin="0,0,10,8">
               <TextBlock Text="Beacon enabled"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding WeatherBeaconEnabled}" />
             </StackPanel>
             <StackPanel Margin="0,0,0,8">
               <TextBlock Text="Interval"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding TransmitInterval}" />
             </StackPanel>
             <StackPanel Margin="0,0,10,0">
               <TextBlock Text="APRS-IS TX"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding AprsIsWeatherTransmitEnabled}" />
             </StackPanel>
             <StackPanel>
               <TextBlock Text="RF TX"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding RfWeatherTransmitEnabled}" />
             </StackPanel>
           </UniformGrid>
@@ -75,10 +75,10 @@
       </Grid>
 
       <Border Grid.Row="2"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#FFFFFF"
+              Background="{DynamicResource SurfaceBgBrush}"
               Padding="10">
         <Grid RowDefinitions="Auto,*"
               RowSpacing="8">
@@ -98,10 +98,10 @@
                     Command="{Binding TransmitRfNowCommand}" />
           </Grid>
           <Border Grid.Row="1"
-                  BorderBrush="#E2E8F0"
+                  BorderBrush="{DynamicResource TextOnDarkBrush}"
                   BorderThickness="1"
                   CornerRadius="4"
-                  Background="#F8FAFC"
+                  Background="{DynamicResource TextTitleBarBrush}"
                   Padding="8">
             <TextBlock Text="{Binding PacketPreview}"
                        FontFamily="Consolas,Menlo,monospace"
@@ -115,26 +115,26 @@
         <StackPanel Margin="0,0,12,8">
           <TextBlock Text="Last observation"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding LastObservationTime}" />
         </StackPanel>
         <StackPanel Margin="0,0,0,8">
           <TextBlock Text="Next transmit"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding NextTransmitTime}" />
         </StackPanel>
         <StackPanel Margin="0,0,12,0">
           <TextBlock Text="Last result"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding LastTransmitResult}"
                      TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel>
           <TextBlock Text="Blocked reason"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding LastBlockedReason}"
                      TextWrapping="Wrap" />
         </StackPanel>
@@ -142,7 +142,7 @@
 
       <TextBlock Grid.Row="4"
                  Text="Weather beaconing, APRS-IS transmit, and RF transmit are separate safety gates and remain disabled by default."
-                 Foreground="#64748B"
+                 Foreground="{DynamicResource TextMutedBrush}"
                  TextWrapping="Wrap" />
     </Grid>
   </ScrollViewer>

@@ -10,33 +10,33 @@
                  FontSize="24"
                  FontWeight="SemiBold" />
       <TextBlock Text="Connection and safety settings"
-                 Foreground="#526173" />
+                 Foreground="{DynamicResource TextSubtleBrush}" />
     </StackPanel>
     <TabControl Grid.Row="1">
       <TabItem Header="First Run">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:FirstRunSetupView DataContext="{Binding FirstRunSetup}" />
         </Border>
       </TabItem>
       <TabItem Header="Station">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:StationSetupView DataContext="{Binding StationSetup}" />
         </Border>
       </TabItem>
       <TabItem Header="GPS">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <TabControl>
             <TabItem Header="Setup">
               <views:GpsConfigView DataContext="{Binding GpsConfig}" />
@@ -48,38 +48,38 @@
         </Border>
       </TabItem>
       <TabItem Header="Offline Maps">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:OfflineMapManagerView />
         </Border>
       </TabItem>
       <TabItem Header="Connections">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:ConnectionsView DataContext="{Binding Connections}" />
         </Border>
       </TabItem>
       <TabItem Header="Ports">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:PortStatusView DataContext="{Binding PortStatus}" />
         </Border>
       </TabItem>
       <TabItem Header="iGate">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <TabControl>
             <TabItem Header="Setup">
               <views:IGateConfigView DataContext="{Binding IGateConfig}" />
@@ -91,11 +91,11 @@
         </Border>
       </TabItem>
       <TabItem Header="Digipeater">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <TabControl>
             <TabItem Header="Setup">
               <views:DigipeaterConfigView DataContext="{Binding DigipeaterConfig}" />
@@ -107,11 +107,11 @@
         </Border>
       </TabItem>
       <TabItem Header="Audio">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <views:AudioConfigView DataContext="{Binding AudioConfig}" />
         </Border>
       </TabItem>

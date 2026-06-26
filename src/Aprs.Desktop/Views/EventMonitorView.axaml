@@ -14,7 +14,7 @@
                    FontSize="20"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding RowCount, StringFormat='Recent events: {0}'}"
-                   Foreground="#526173" />
+                   Foreground="{DynamicResource TextSubtleBrush}" />
       </StackPanel>
       <Button Grid.Column="1"
               Command="{Binding RefreshCommand}"
@@ -45,17 +45,17 @@
     </Grid>
 
     <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             Padding="8">
       <ScrollViewer HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Auto">
         <ItemsControl ItemsSource="{Binding Rows}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border BorderBrush="#E2E8F0"
+              <Border BorderBrush="{DynamicResource TextOnDarkBrush}"
                       BorderThickness="0,0,0,1"
                       Padding="0,6">
                 <Grid ColumnDefinitions="70,80,90,150,110,*"
@@ -63,7 +63,7 @@
                       ColumnSpacing="8"
                       RowSpacing="3">
                   <TextBlock Text="{Binding Timestamp}"
-                             Foreground="#475569"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
                              FontSize="12" />
                   <TextBlock Grid.Column="1"
                              Text="{Binding Severity}"
@@ -71,7 +71,7 @@
                              FontSize="12" />
                   <TextBlock Grid.Column="2"
                              Text="{Binding Category}"
-                             Foreground="#475569"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
                              FontSize="12" />
                   <TextBlock Grid.Column="3"
                              Text="{Binding EventType}"
@@ -87,7 +87,7 @@
                   <TextBlock Grid.Row="1"
                              Grid.Column="5"
                              Text="{Binding Related}"
-                             Foreground="#64748B"
+                             Foreground="{DynamicResource TextMutedBrush}"
                              FontSize="11" />
                 </Grid>
               </Border>

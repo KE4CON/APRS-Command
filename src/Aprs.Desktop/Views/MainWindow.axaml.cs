@@ -50,6 +50,7 @@ public sealed partial class MainWindow : Window
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
             vm.AboutRequested         -= OnAboutRequested;
+            vm.DarkModeRequested      -= OnDarkModeRequested;
         }
 
         vm = DataContext as MainWindowViewModel;
@@ -71,6 +72,7 @@ public sealed partial class MainWindow : Window
             vm.BeaconNowRequested     += OnBeaconNowRequested;
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
             vm.AboutRequested         += OnAboutRequested;
+            vm.DarkModeRequested      += OnDarkModeRequested;
         }
     }
 
@@ -112,6 +114,9 @@ public sealed partial class MainWindow : Window
 
     private void OnAboutRequested(object? s, EventArgs e)
         => new AboutWindow().ShowDialog(this);
+
+    private void OnDarkModeRequested(object? s, EventArgs e)
+        => (Application.Current as App)?.ToggleDarkMode();
 
     /// <summary>
     /// Shows a feature window with its saved position/size restored, and saves its state on close.

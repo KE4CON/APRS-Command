@@ -11,10 +11,10 @@
         <TextBlock Text="Station List"
                    FontSize="20"
                    FontWeight="SemiBold"
-                   Foreground="#0F172A" />
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
         <TextBlock Text="{Binding RowCount, StringFormat='{}{0} visible stations'}"
                    FontSize="12"
-                   Foreground="#526173" />
+                   Foreground="{DynamicResource TextSubtleBrush}" />
       </StackPanel>
       <Button Grid.Column="1"
               Padding="8,4"
@@ -51,13 +51,13 @@
     </Grid>
 
     <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             ClipToBounds="True">
       <Grid RowDefinitions="Auto,*">
-        <Border Background="#E2E8F0"
+        <Border Background="{DynamicResource TextOnDarkBrush}"
                 Padding="8,6">
           <Grid ColumnDefinitions="1.2*,1.2*,1.4*,.9*,.9*"
                 ColumnSpacing="6">
@@ -67,7 +67,7 @@
                     Click="SortByCallsign_Click">
               <TextBlock Text="Call"
                          FontWeight="SemiBold"
-                         Foreground="#334155" />
+                         Foreground="{DynamicResource TitleBarBorderBrush}" />
             </Button>
             <Button Grid.Column="1"
                     Padding="0"
@@ -76,12 +76,12 @@
                     Click="SortByDisplayName_Click">
               <TextBlock Text="Name"
                          FontWeight="SemiBold"
-                         Foreground="#334155" />
+                         Foreground="{DynamicResource TitleBarBorderBrush}" />
             </Button>
             <TextBlock Grid.Column="2"
                        Text="Symbol"
                        FontWeight="SemiBold"
-                       Foreground="#334155" />
+                       Foreground="{DynamicResource TitleBarBorderBrush}" />
             <Button Grid.Column="3"
                     Padding="0"
                     Background="Transparent"
@@ -89,7 +89,7 @@
                     Click="SortByAgeState_Click">
               <TextBlock Text="Age"
                          FontWeight="SemiBold"
-                         Foreground="#334155" />
+                         Foreground="{DynamicResource TitleBarBorderBrush}" />
             </Button>
             <Button Grid.Column="4"
                     Padding="0"
@@ -98,7 +98,7 @@
                     Click="SortByPacketSource_Click">
               <TextBlock Text="Src"
                          FontWeight="SemiBold"
-                         Foreground="#334155" />
+                         Foreground="{DynamicResource TitleBarBorderBrush}" />
             </Button>
           </Grid>
         </Border>
@@ -107,12 +107,12 @@
                  Grid.Row="1"
                  ItemsSource="{Binding Rows}"
                  SelectionChanged="StationRowsListBox_SelectionChanged"
-                 Background="#F8FAFC"
+                 Background="{DynamicResource TextTitleBarBrush}"
                  BorderThickness="0">
           <ListBox.ItemTemplate>
             <DataTemplate DataType="vm:StationListRowViewModel">
               <Border Padding="8,7"
-                      BorderBrush="#E2E8F0"
+                      BorderBrush="{DynamicResource TextOnDarkBrush}"
                       BorderThickness="0,0,0,1">
                 <Grid RowDefinitions="Auto,Auto,Auto"
                       RowSpacing="3">
@@ -120,47 +120,47 @@
                         ColumnSpacing="6">
                     <TextBlock Text="{Binding Callsign}"
                                FontWeight="SemiBold"
-                               Foreground="#0F172A"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
-                               Foreground="#0F172A"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="2"
                                Text="{Binding SymbolDescription}"
-                               Foreground="#475569"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="3"
                                Text="{Binding AgeStateLabel}"
-                               Foreground="#475569"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Grid.Column="4"
                                Text="{Binding PacketSourceLabel}"
-                               Foreground="#475569"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </Grid>
                   <Grid Grid.Row="1"
                         ColumnDefinitions="*,*,*,*"
                         ColumnSpacing="6">
                     <TextBlock Text="{Binding LastHeard}"
-                               Foreground="#64748B"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="11" />
                     <TextBlock Grid.Column="1"
                                Text="{Binding Speed}"
-                               Foreground="#64748B"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="11" />
                     <TextBlock Grid.Column="2"
                                Text="{Binding Course}"
-                               Foreground="#64748B"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="11" />
                     <TextBlock Grid.Column="3"
                                Text="{Binding Distance}"
-                               Foreground="#64748B"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                FontSize="11" />
                   </Grid>
                   <TextBlock Grid.Row="2"
                              Text="{Binding Comment}"
-                             Foreground="#475569"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
                              FontSize="11"
                              TextTrimming="CharacterEllipsis" />
                 </Grid>

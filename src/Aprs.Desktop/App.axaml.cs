@@ -69,6 +69,17 @@ public sealed partial class App : Application
     private DesktopRuntime? runtime;
     public DesktopRuntime? Runtime => runtime;
 
+    private bool isDarkMode;
+    public bool IsDarkMode => isDarkMode;
+
+    public void ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+        RequestedThemeVariant = isDarkMode
+            ? Avalonia.Styling.ThemeVariant.Dark
+            : Avalonia.Styling.ThemeVariant.Light;
+    }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);

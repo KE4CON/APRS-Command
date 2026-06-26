@@ -10,17 +10,17 @@
         <TextBlock Text="GPS Status"
                    FontSize="18"
                    FontWeight="SemiBold"
-                   Foreground="#0F172A" />
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
         <TextBlock Text="Current GPS fix information"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    FontSize="12" />
       </StackPanel>
 
       <Border Grid.Row="1"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#F8FAFC"
+              Background="{DynamicResource TextTitleBarBrush}"
               Padding="12">
         <Grid RowDefinitions="Auto,Auto"
               RowSpacing="10">
@@ -30,10 +30,10 @@
               <TextBlock Text="{Binding Source}"
                          FontSize="16"
                          FontWeight="SemiBold"
-                         Foreground="#0F172A" />
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{Binding SourceName}"
                          FontSize="12"
-                         Foreground="#64748B"
+                         Foreground="{DynamicResource TextMutedBrush}"
                          TextWrapping="Wrap" />
             </StackPanel>
             <Border Grid.Column="1"
@@ -56,21 +56,21 @@
             <StackPanel>
               <TextBlock Text="Latitude"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Latitude}"
                          FontWeight="SemiBold" />
             </StackPanel>
             <StackPanel Grid.Column="1">
               <TextBlock Text="Longitude"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Longitude}"
                          FontWeight="SemiBold" />
             </StackPanel>
             <StackPanel Grid.Column="2">
               <TextBlock Text="Altitude"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Altitude}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -78,7 +78,7 @@
             <StackPanel Grid.Row="1">
               <TextBlock Text="Speed"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Speed}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -86,7 +86,7 @@
                         Grid.Column="1">
               <TextBlock Text="Course"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Course}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -94,7 +94,7 @@
                         Grid.Column="2">
               <TextBlock Text="HDOP"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Hdop}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -102,7 +102,7 @@
             <StackPanel Grid.Row="2">
               <TextBlock Text="Satellites"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding SatelliteCount}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -110,7 +110,7 @@
                         Grid.Column="1">
               <TextBlock Text="Used"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding UsedSatelliteCount}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -118,7 +118,7 @@
                         Grid.Column="2">
               <TextBlock Text="Age"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding Age}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -127,7 +127,7 @@
                         Grid.ColumnSpan="3">
               <TextBlock Text="Last update"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBlock Text="{Binding LastUpdate}"
                          FontWeight="SemiBold" />
             </StackPanel>
@@ -136,19 +136,19 @@
       </Border>
 
       <Border Grid.Row="2"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#FFFFFF"
+              Background="{DynamicResource SurfaceBgBrush}"
               Padding="12">
         <StackPanel Spacing="4">
           <TextBlock Text="Raw source"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding RawSource}"
                      TextWrapping="Wrap"
                      FontFamily="Consolas, Menlo, monospace"
-                     Foreground="#334155" />
+                     Foreground="{DynamicResource TitleBarBorderBrush}" />
         </StackPanel>
       </Border>
     </Grid>

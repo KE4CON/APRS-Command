@@ -14,9 +14,9 @@
       <TextBlock Text="Connections"
                  FontSize="18"
                  FontWeight="SemiBold"
-                 Foreground="#0F172A" />
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
       <TextBlock Text="The ports APRS Command connects through. Run more than one at once (for example a radio port and APRS-IS together)."
-                 Foreground="#526173"
+                 Foreground="{DynamicResource TextSubtleBrush}"
                  FontSize="12"
                  TextWrapping="Wrap" />
     </StackPanel>
@@ -30,10 +30,10 @@
       <Grid Grid.Column="0"
             RowDefinitions="*,Auto"
             RowSpacing="8">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF">
+                Background="{DynamicResource SurfaceBgBrush}">
           <ListBox ItemsSource="{Binding Ports}"
                    SelectedItem="{Binding SelectedPort}">
             <ListBox.ItemTemplate>
@@ -42,10 +42,10 @@
                             Margin="2,4">
                   <TextBlock Text="{Binding Name}"
                              FontWeight="SemiBold"
-                             Foreground="#0F172A" />
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
                   <TextBlock Text="{Binding TypeDisplay}"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -77,11 +77,11 @@
 
       <!-- Right: editor for the selected port -->
       <Border Grid.Column="1"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
               Padding="12"
-              Background="#F8FAFC"
+              Background="{DynamicResource TextTitleBarBrush}"
               IsEnabled="{Binding HasSelection}">
         <ScrollViewer>
           <StackPanel Spacing="12">
@@ -90,13 +90,13 @@
             <StackPanel Spacing="2">
               <TextBlock Text="Name"
                          FontSize="11"
-                         Foreground="#64748B" />
+                         Foreground="{DynamicResource TextMutedBrush}" />
               <TextBox Text="{Binding SelectedPort.Name}" />
             </StackPanel>
 
             <TextBlock Text="{Binding SelectedPort.TypeDisplay}"
                        FontWeight="SemiBold"
-                       Foreground="#0F172A" />
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <StackPanel Orientation="Horizontal"
                         Spacing="18">
@@ -115,14 +115,14 @@
               <StackPanel Spacing="2">
                 <TextBlock Text="Host"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBox Text="{Binding SelectedPort.NetworkHost}" />
               </StackPanel>
               <StackPanel Grid.Column="1"
                           Spacing="2">
                 <TextBlock Text="Port"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <NumericUpDown Value="{Binding SelectedPort.NetworkPort}"
                                Minimum="1"
                                Maximum="65535"
@@ -137,14 +137,14 @@
               <StackPanel Spacing="2">
                 <TextBlock Text="Host"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBox Text="{Binding SelectedPort.AgwpeHost}" />
               </StackPanel>
               <StackPanel Grid.Column="1"
                           Spacing="2">
                 <TextBlock Text="Port"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <NumericUpDown Value="{Binding SelectedPort.AgwpePort}"
                                Minimum="1"
                                Maximum="65535"
@@ -159,7 +159,7 @@
               <StackPanel Spacing="2">
                 <TextBlock Text="Serial port"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <ComboBox ItemsSource="{Binding SelectedPort.AvailableSerialPorts}"
                           SelectedItem="{Binding SelectedPort.SerialPortName}"
                           HorizontalAlignment="Stretch"
@@ -171,7 +171,7 @@
                           Spacing="2">
                 <TextBlock Text="Baud"
                            FontSize="11"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <NumericUpDown Value="{Binding SelectedPort.BaudRate}"
                                Minimum="300"
                                Maximum="115200"
@@ -188,7 +188,7 @@
                 <StackPanel Spacing="2">
                   <TextBlock Text="Server"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox Text="{Binding SelectedPort.AprsIsServer}"
                            Watermark="e.g. rotate.aprs2.net" />
                 </StackPanel>
@@ -196,7 +196,7 @@
                             Spacing="2">
                   <TextBlock Text="Port"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <NumericUpDown Value="{Binding SelectedPort.AprsIsPort}"
                                  Minimum="1"
                                  Maximum="65535"
@@ -208,7 +208,7 @@
                 <StackPanel Spacing="2">
                   <TextBlock Text="Passcode"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox Text="{Binding SelectedPort.AprsIsPasscode}"
                            Width="130"
                            Watermark="-1 = RX only" />
@@ -217,7 +217,7 @@
                             Spacing="2">
                   <TextBlock Text="Filter (optional)"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox Text="{Binding SelectedPort.AprsIsFilter}"
                            Watermark="e.g. m/100" />
                 </StackPanel>
@@ -242,7 +242,7 @@
               Content="Revert" />
       <TextBlock Grid.Column="2"
                  Text="{Binding StatusText}"
-                 Foreground="#475569"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
                  VerticalAlignment="Center"
                  TextWrapping="Wrap" />
     </Grid>

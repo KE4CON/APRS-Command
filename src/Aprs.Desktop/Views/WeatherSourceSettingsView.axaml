@@ -3,10 +3,10 @@
              xmlns:vm="using:Aprs.Desktop.ViewModels"
              x:Class="Aprs.Desktop.Views.WeatherSourceSettingsView"
              x:DataType="vm:WeatherSourceSettingsViewModel">
-  <Border BorderBrush="#CBD5E1"
+  <Border BorderBrush="{DynamicResource TextSidebarBrush}"
           BorderThickness="1"
           CornerRadius="6"
-          Background="#FFFFFF"
+          Background="{DynamicResource SurfaceBgBrush}"
           Padding="12">
     <Grid RowDefinitions="Auto,Auto,*,Auto"
           RowSpacing="8">
@@ -15,7 +15,7 @@
                    FontSize="18"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding SettingsSummary}"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
       <ItemsControl Grid.Row="2"
@@ -30,7 +30,7 @@
       </ItemsControl>
       <TextBlock Grid.Row="3"
                  Text="{Binding CredentialWarning}"
-                 Foreground="#B45309"
+                 Foreground="{DynamicResource WarnTextBrush}"
                  TextWrapping="Wrap" />
     </Grid>
   </Border>

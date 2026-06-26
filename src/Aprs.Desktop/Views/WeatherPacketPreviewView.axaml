@@ -3,10 +3,10 @@
              xmlns:vm="using:Aprs.Desktop.ViewModels"
              x:Class="Aprs.Desktop.Views.WeatherPacketPreviewView"
              x:DataType="vm:WeatherPacketPreviewViewModel">
-  <Border BorderBrush="#CBD5E1"
+  <Border BorderBrush="{DynamicResource TextSidebarBrush}"
           BorderThickness="1"
           CornerRadius="6"
-          Background="#FFFFFF"
+          Background="{DynamicResource SurfaceBgBrush}"
           Padding="10">
     <Grid RowDefinitions="Auto,Auto,Auto"
           RowSpacing="8">
@@ -21,10 +21,10 @@
                    Text="{Binding RfEligible, StringFormat='RF eligible: {0}'}" />
       </Grid>
       <Border Grid.Row="1"
-              BorderBrush="#E2E8F0"
+              BorderBrush="{DynamicResource TextOnDarkBrush}"
               BorderThickness="1"
               CornerRadius="4"
-              Background="#F8FAFC"
+              Background="{DynamicResource TextTitleBarBrush}"
               Padding="8">
         <TextBlock Text="{Binding Packet}"
                    FontFamily="Consolas,Menlo,monospace"
@@ -34,15 +34,15 @@
             RowDefinitions="Auto,Auto,Auto"
             RowSpacing="4">
         <TextBlock Text="{Binding StaleWarning}"
-                   Foreground="#B45309"
+                   Foreground="{DynamicResource WarnTextBrush}"
                    TextWrapping="Wrap" />
         <TextBlock Grid.Row="1"
                    Text="{Binding ValidationErrors, StringFormat='Errors: {0}'}"
-                   Foreground="#991B1B"
+                   Foreground="{DynamicResource ErrorBgBrush}"
                    TextWrapping="Wrap" />
         <TextBlock Grid.Row="2"
                    Text="{Binding ValidationWarnings, StringFormat='Warnings: {0}'}"
-                   Foreground="#64748B"
+                   Foreground="{DynamicResource TextMutedBrush}"
                    TextWrapping="Wrap" />
       </Grid>
     </Grid>

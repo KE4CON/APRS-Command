@@ -11,13 +11,13 @@
       <StackPanel>
         <TextBlock Text="Object"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding ObjectName}" />
       </StackPanel>
       <StackPanel Grid.Column="1">
         <TextBlock Text="Owner"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding OwnerCallsign}" />
       </StackPanel>
       <CheckBox Grid.Column="2"
@@ -36,24 +36,24 @@
       <StackPanel>
         <TextBlock Text="Latitude"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding Latitude}" />
       </StackPanel>
       <StackPanel Grid.Column="1">
         <TextBlock Text="Longitude"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding Longitude}" />
       </StackPanel>
       <StackPanel Grid.Column="2" Grid.ColumnSpan="3" Spacing="4">
         <TextBlock Text="Symbol"
                    FontSize="11"
-                   Foreground="#64748B"
+                   Foreground="{DynamicResource TextMutedBrush}"
                    ToolTip.Tip="Click to choose the object's map icon. The symbol code is set automatically." />
         <ListBox ItemsSource="{Binding AvailableSymbols}"
                  SelectedItem="{Binding SelectedSymbol}"
                  MaxHeight="80"
-                 BorderBrush="#CBD5E1"
+                 BorderBrush="{DynamicResource TextSidebarBrush}"
                  BorderThickness="1">
           <ListBox.ItemsPanel>
             <ItemsPanelTemplate>
@@ -67,15 +67,15 @@
                 <TextBlock Text="{Binding FallbackDisplayText}"
                            FontSize="14" FontWeight="Bold"
                            HorizontalAlignment="Center"
-                           Foreground="#1D4ED8" />
+                           Foreground="{DynamicResource AccentBlueBrush}" />
               </Border>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1"
+        <Border Background="{DynamicResource AccentBlueBgBrush}" BorderBrush="{DynamicResource AccentBlueBorderBrush}" BorderThickness="1"
                 CornerRadius="4" Padding="8,5">
           <TextBlock Text="{Binding SymbolDisplay}"
-                     FontSize="11" FontWeight="SemiBold" Foreground="#1D4ED8" />
+                     FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBlueBrush}" />
         </Border>
       </StackPanel>
     </Grid>
@@ -83,7 +83,7 @@
     <StackPanel Grid.Row="2">
       <TextBlock Text="Comment"
                  FontSize="11"
-                 Foreground="#64748B" />
+                 Foreground="{DynamicResource TextMutedBrush}" />
       <TextBox Text="{Binding Comment}" />
     </StackPanel>
 
@@ -93,7 +93,7 @@
       <StackPanel>
         <TextBlock Text="Interval"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Watermark="placeholder"
                  Text="{Binding TransmitIntervalMinutes}" />
       </StackPanel>
@@ -113,23 +113,23 @@
     </Grid>
 
     <Border Grid.Row="4"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="4"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             Padding="8">
       <StackPanel Spacing="4">
         <TextBlock Text="Packet preview"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBlock Text="{Binding PacketPreview}"
                    FontFamily="Consolas, Menlo, monospace"
                    TextWrapping="Wrap" />
         <TextBlock Text="{Binding ValidationSummary}"
-                   Foreground="#B91C1C"
+                   Foreground="{DynamicResource ErrorBorderBrush}"
                    TextWrapping="Wrap" />
         <TextBlock Text="{Binding WarningSummary}"
-                   Foreground="#92400E"
+                   Foreground="{DynamicResource WarnTextStrongBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
     </Border>

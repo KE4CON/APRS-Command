@@ -14,14 +14,14 @@
                    FontSize="20"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding TransmitStatusText}"
-                   Foreground="#0F766E"
+                   Foreground="{DynamicResource AccentTealBrush}"
                    FontWeight="SemiBold" />
       </StackPanel>
       <TextBlock Grid.Column="1"
                  Text="{Binding State}"
                  VerticalAlignment="Center"
                  FontWeight="SemiBold"
-                 Foreground="#334155" />
+                 Foreground="{DynamicResource TitleBarBorderBrush}" />
     </Grid>
 
     <Grid Grid.Row="1"
@@ -72,16 +72,16 @@
                  Grid.Column="1"
                  Grid.ColumnSpan="5"
                  Text="{Binding LastError}"
-                 Foreground="#B91C1C"
+                 Foreground="{DynamicResource ErrorBorderBrush}"
                  VerticalAlignment="Center"
                  TextWrapping="Wrap" />
     </Grid>
 
     <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             Padding="8">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <ItemsControl ItemsSource="{Binding Entries}">
@@ -90,7 +90,7 @@
               <TextBlock Text="{Binding}"
                          FontFamily="Menlo,Consolas,monospace"
                          FontSize="12"
-                         Foreground="#334155"
+                         Foreground="{DynamicResource TitleBarBorderBrush}"
                          Margin="0,0,0,4" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>
