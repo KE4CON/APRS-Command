@@ -26,17 +26,19 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public LiveDataCoordinator Coordinator { get; }
     public BeaconService BeaconService { get; }
     public ITransmitSafetyAuthority TransmitAuthority { get; }
+    public GpsCoordinator GpsCoordinator { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
         Coordinator = coordinator;
         BeaconService = beaconService;
         TransmitAuthority = transmitAuthority;
+        GpsCoordinator = gpsCoordinator;
     }
 
     public static DesktopRuntime Create()
@@ -95,7 +97,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new IGateConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),
@@ -106,8 +109,18 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load());
 
+        // GPS — only create a serial source when a port is configured and GPS is enabled.
+        var gpsSettings = provider.GetRequiredService<IAppSettingsStore>().Load().Gps;
+        SerialNmeaGpsSource? gpsSource = null;
+        if (gpsSettings.Enabled && !string.IsNullOrWhiteSpace(gpsSettings.SerialPortName))
+        {
+            gpsSource = new SerialNmeaGpsSource(gpsSettings.SerialPortName, gpsSettings.BaudRate);
+        }
+        var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource);
+
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
-            provider.GetRequiredService<ITransmitSafetyAuthority>());
+            provider.GetRequiredService<ITransmitSafetyAuthority>(),
+            gpsCoordinator);
     }
 
     /// <summary>
@@ -119,6 +132,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
     {
         Coordinator.Start();
         BeaconService.Start();
+        GpsCoordinator.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -147,6 +161,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await GpsCoordinator.DisposeAsync().ConfigureAwait(false);
         await BeaconService.DisposeAsync().ConfigureAwait(false);
         await Coordinator.DisposeAsync().ConfigureAwait(false);
 

@@ -17,7 +17,8 @@ public sealed record AppSettings(
     IGateSettings IGate,
     DigipeaterSettings Digipeater,
     AudioSettings Audio,
-    WindowStates Windows)
+    WindowStates Windows,
+    GpsSettings Gps)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -28,5 +29,6 @@ public sealed record AppSettings(
         IGate: IGateSettings.Default,
         Digipeater: DigipeaterSettings.Default,
         Audio: AudioSettings.Default,
-        Windows: WindowStates.Default);
+        Windows: WindowStates.Default,
+        Gps: GpsSettings.Default);
 }

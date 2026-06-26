@@ -31,7 +31,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             StationSetupViewModel.CreateDesignTime(),
             IGateConfigViewModel.CreateDesignTime(),
             DigipeaterConfigViewModel.CreateDesignTime(),
-            AudioConfigViewModel.CreateDesignTime())
+            AudioConfigViewModel.CreateDesignTime(),
+            GpsConfigViewModel.CreateDesignTime())
     {
     }
 
@@ -60,7 +61,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         StationSetupViewModel stationSetup,
         IGateConfigViewModel iGateConfig,
         DigipeaterConfigViewModel digipeaterConfig,
-        AudioConfigViewModel audioConfig)
+        AudioConfigViewModel audioConfig,
+        GpsConfigViewModel gpsConfig)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -88,6 +90,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         IGateConfig = iGateConfig;
         DigipeaterConfig = digipeaterConfig;
         AudioConfig = audioConfig;
+        GpsConfig = gpsConfig;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -154,6 +157,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public IGateConfigViewModel IGateConfig { get; }
     public DigipeaterConfigViewModel DigipeaterConfig { get; }
     public AudioConfigViewModel AudioConfig { get; }
+    public GpsConfigViewModel GpsConfig { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }
