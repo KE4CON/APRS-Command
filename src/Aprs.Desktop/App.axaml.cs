@@ -42,6 +42,30 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireGpsWriteback(DesktopRuntime rt)
+    {
+        rt.GpsCoordinator.PositionUpdated += (_, position) =>
+        {
+            // Only write back if the operator has enabled it and we have valid coordinates.
+            if (!JsonAppSettingsStore.Default.Load().Gps.UpdateStationPosition) return;
+            if (position.Latitude is null || position.Longitude is null) return;
+            if (!position.FixValid) return;
+
+            // Update the persisted station profile lat/lon from the live GPS fix.
+            JsonAppSettingsStore.Default.Update(s => s with
+            {
+                Station = s.Station with
+                {
+                    Latitude  = position.Latitude.Value,
+                    Longitude = position.Longitude.Value
+                }
+            });
+
+            // Push the updated position into the live beacon engine immediately.
+            rt.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
+        };
+    }
+
     private DesktopRuntime? runtime;
     public DesktopRuntime? Runtime => runtime;
 
@@ -81,6 +105,7 @@ public sealed partial class App : Application
                         runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                     WireSoundAlerts(runtime);
                     WireMessageToast(runtime);
+                    WireGpsWriteback(runtime);
                 }
                 else
                 {
@@ -102,6 +127,7 @@ public sealed partial class App : Application
                             runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                         WireSoundAlerts(runtime);
                         WireMessageToast(runtime);
+                        WireGpsWriteback(runtime);
                         setup.Close();
                     };
 
