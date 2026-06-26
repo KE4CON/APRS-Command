@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window
             vm.SettingsRequested      -= OnSettingsRequested;
             vm.HelpRequested          -= OnHelpRequested;
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
+            vm.ExerciseModeRequested  -= OnExerciseModeRequested;
         }
 
         vm = DataContext as MainWindowViewModel;
@@ -50,6 +51,7 @@ public sealed partial class MainWindow : Window
             vm.SettingsRequested      += OnSettingsRequested;
             vm.HelpRequested          += OnHelpRequested;
             vm.BeaconNowRequested     += OnBeaconNowRequested;
+            vm.ExerciseModeRequested  += OnExerciseModeRequested;
         }
     }
 
@@ -88,6 +90,31 @@ public sealed partial class MainWindow : Window
 
     private void OnHelpRequested(object? s, EventArgs e)
         => new HelpWindow { DataContext = HelpViewModel.CreateDefault() }.Show(this);
+
+    private void OnExerciseModeRequested(object? s, EventArgs e)
+    {
+        var authority = (Application.Current as App)?.Runtime?.TransmitAuthority;
+        if (authority is null) return;
+
+        if (authority.IsInhibited)
+        {
+            authority.Release();
+            TxBadgeText.Text = "TX Enabled";
+            TxBadgeBorder.Background = new Avalonia.Media.SolidColorBrush(
+                Avalonia.Media.Color.Parse("#123B32"));
+            TxBadgeBorder.BorderBrush = new Avalonia.Media.SolidColorBrush(
+                Avalonia.Media.Color.Parse("#2DD4BF"));
+        }
+        else
+        {
+            authority.Inhibit("Exercise mode — all transmit inhibited");
+            TxBadgeText.Text = "EXERCISE — TX INHIBITED";
+            TxBadgeBorder.Background = new Avalonia.Media.SolidColorBrush(
+                Avalonia.Media.Color.Parse("#7F1D1D"));
+            TxBadgeBorder.BorderBrush = new Avalonia.Media.SolidColorBrush(
+                Avalonia.Media.Color.Parse("#F87171"));
+        }
+    }
 
     private async void OnBeaconNowRequested(object? s, EventArgs e)
     {
