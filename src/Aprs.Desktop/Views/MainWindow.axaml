@@ -117,6 +117,7 @@
             <TextBlock Text="◎" />
           </Button>
           <Button ToolTip.Tip="Find station"
+                  Command="{Binding Map.FindStationCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
@@ -126,6 +127,7 @@
             <TextBlock Text="🔍" />
           </Button>
           <Button ToolTip.Tip="Measure distance"
+                  Command="{Binding Map.MeasureDistanceCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
@@ -135,6 +137,7 @@
             <TextBlock Text="📏" />
           </Button>
           <Button ToolTip.Tip="Map layer toggle"
+                  Command="{Binding Map.ToggleMapLayerCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
@@ -161,6 +164,7 @@
             <TextBlock Text="📡" />
           </Button>
           <Button ToolTip.Tip="Alert status"
+                  Command="{Binding Map.AlertStatusCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Padding="4,10"

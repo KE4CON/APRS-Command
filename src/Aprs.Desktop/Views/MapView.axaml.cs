@@ -25,6 +25,7 @@ public sealed partial class MapView : UserControl
     private MapViewModel? currentViewModel;
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
     private ILayer? currentBaseLayer;
+    private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private bool mapInitialized;
     private bool hasFitToData;
 
@@ -199,6 +200,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             currentViewModel.Markers.CollectionChanged -= Markers_CollectionChanged;
             currentViewModel.NavigationRequested -= OnNavigationRequested;
+            currentViewModel.FindStationRequested -= OnFindStationRequested;
+            currentViewModel.ToggleMapLayerRequested -= OnToggleMapLayerRequested;
         }
 
         currentViewModel = DataContext as MapViewModel;
@@ -207,6 +210,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.PropertyChanged += ViewModel_PropertyChanged;
             currentViewModel.Markers.CollectionChanged += Markers_CollectionChanged;
             currentViewModel.NavigationRequested += OnNavigationRequested;
+            currentViewModel.FindStationRequested += OnFindStationRequested;
+            currentViewModel.ToggleMapLayerRequested += OnToggleMapLayerRequested;
         }
 
         UpdatePanels();
@@ -414,6 +419,100 @@ public sealed partial class MapView : UserControl
         var profile = StationProfile.Load();
         var (x, y) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
         MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(x, y), HomeResolution);
+    }
+
+    private async void OnFindStationRequested(object? sender, EventArgs e)
+    {
+        // Simple input dialog — type a callsign and centre the map on it.
+        var dialog = new Avalonia.Controls.Window
+        {
+            Title = "Find Station",
+            Width = 360,
+            Height = 160,
+            CanResize = false,
+            WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner
+        };
+
+        var panel = new Avalonia.Controls.StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12 };
+        panel.Children.Add(new Avalonia.Controls.TextBlock
+        {
+            Text = "Enter callsign to find on the map:",
+            Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#0F172A"))
+        });
+
+        var input = new Avalonia.Controls.TextBox { Watermark = "e.g. KE4CON" };
+        panel.Children.Add(input);
+
+        var btnRow = new Avalonia.Controls.StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal,
+            Spacing = 8,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right
+        };
+
+        var findBtn = new Avalonia.Controls.Button { Content = "Find", Padding = new Avalonia.Thickness(16, 6) };
+        var cancelBtn = new Avalonia.Controls.Button { Content = "Cancel", Padding = new Avalonia.Thickness(10, 6) };
+        btnRow.Children.Add(findBtn);
+        btnRow.Children.Add(cancelBtn);
+        panel.Children.Add(btnRow);
+        dialog.Content = panel;
+
+        string? result = null;
+        findBtn.Click   += (_, _) => { result = input.Text?.Trim().ToUpperInvariant(); dialog.Close(); };
+        cancelBtn.Click += (_, _) => dialog.Close();
+        input.KeyDown   += (_, k) => { if (k.Key == Avalonia.Input.Key.Enter) { result = input.Text?.Trim().ToUpperInvariant(); dialog.Close(); } };
+
+        var owner = this.VisualRoot as Avalonia.Controls.Window;
+        if (owner is not null) await dialog.ShowDialog(owner);
+
+        if (string.IsNullOrWhiteSpace(result)) return;
+
+        // Find the station in the current viewmodel markers.
+        if (DataContext is not MapViewModel vm) return;
+        var marker = vm.Markers.FirstOrDefault(m =>
+            string.Equals(m.Callsign, result, StringComparison.OrdinalIgnoreCase));
+
+        if (marker is not null)
+        {
+            vm.RequestCentreOnPosition(marker.Latitude, marker.Longitude);
+        }
+        else
+        {
+            // Station not in the current station list — show a brief message.
+            var notFound = new Avalonia.Controls.Window
+            {
+                Title = "Not Found",
+                Width = 320,
+                Height = 130,
+                CanResize = false,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner
+            };
+            var msg = new Avalonia.Controls.StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12 };
+            msg.Children.Add(new Avalonia.Controls.TextBlock
+            {
+                Text = $"{result} is not in the current station list.\nIt may not have been heard recently.",
+                TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#475569"))
+            });
+            var ok = new Avalonia.Controls.Button
+            {
+                Content = "OK",
+                HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+                Padding = new Avalonia.Thickness(16, 6)
+            };
+            ok.Click += (_, _) => notFound.Close();
+            msg.Children.Add(ok);
+            notFound.Content = msg;
+            if (owner is not null) await notFound.ShowDialog(owner);
+        }
+    }
+
+    private void OnToggleMapLayerRequested(object? sender, EventArgs e)
+    {
+        // Cycle through: OSM → USGS Topo → USGS Imagery → USGS Imagery+Topo → OSM
+        var kinds = new[] { BaseMapKind.OpenStreetMap, BaseMapKind.UsgsTopo, BaseMapKind.UsgsImagery, BaseMapKind.UsgsImageryTopo };
+        baseMapIndex = (baseMapIndex + 1) % kinds.Length;
+        SetBaseMap(kinds[baseMapIndex]);
     }
 
     private void OnNavigationRequested(object? sender, MapNavigationRequest request)
