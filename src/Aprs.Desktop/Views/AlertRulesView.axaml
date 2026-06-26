@@ -3,108 +3,171 @@
              xmlns:vm="using:Aprs.Desktop.ViewModels"
              x:Class="Aprs.Desktop.Views.AlertRulesView"
              x:DataType="vm:AlertRulesViewModel">
-  <Grid RowDefinitions="Auto,*,*"
-        Margin="0,10,0,0"
-        RowSpacing="8">
-    <Grid ColumnDefinitions="*,Auto,Auto"
-          ColumnSpacing="8">
-      <StackPanel>
-        <TextBlock Text="Alert Rules"
-                   FontSize="20"
-                   FontWeight="SemiBold" />
-        <TextBlock Text="{Binding RuleCountText}"
-                   Foreground="#526173" />
-      </StackPanel>
-      <Button Grid.Column="1"
-              Command="{Binding AcknowledgeSelectedCommand}"
-              Content="Acknowledge"
-              Padding="10,6"
-              VerticalAlignment="Center" />
-      <Button Grid.Column="2"
-              Command="{Binding ClearHistoryCommand}"
-              Content="Clear History"
-              Padding="10,6"
-              VerticalAlignment="Center" />
+  <Grid RowDefinitions="*,Auto" RowSpacing="10">
+
+    <Grid ColumnDefinitions="*,320" ColumnSpacing="10">
+
+      <!-- Rules list -->
+      <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+          <TextBlock Text="{Binding RuleCountText}"
+                     Foreground="#475569"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1"
+                  Command="{Binding NewRuleCommand}"
+                  Content="New Rule"
+                  Padding="10,5" />
+          <Button Grid.Column="2"
+                  Command="{Binding EditSelectedRuleCommand}"
+                  Content="Edit"
+                  Padding="10,5" />
+          <Button Grid.Column="3"
+                  Command="{Binding DeleteSelectedRuleCommand}"
+                  Content="Delete"
+                  Padding="10,5" />
+        </Grid>
+
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding Rules}"
+                 SelectedItem="{Binding SelectedRule}"
+                 BorderBrush="#CBD5E1"
+                 BorderThickness="1">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:AlertRuleRowViewModel">
+              <Grid ColumnDefinitions="Auto,*,Auto,Auto"
+                    ColumnSpacing="10"
+                    Margin="2,4">
+                <TextBlock Text="{Binding Enabled}"
+                           FontSize="10"
+                           Foreground="#64748B"
+                           VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Spacing="1">
+                  <TextBlock Text="{Binding RuleName}"
+                             FontWeight="SemiBold"
+                             Foreground="#0F172A" />
+                  <TextBlock Text="{Binding AlertType}"
+                             FontSize="11"
+                             Foreground="#64748B" />
+                </StackPanel>
+                <TextBlock Grid.Column="2"
+                           Text="{Binding Severity}"
+                           FontSize="11"
+                           Foreground="#475569"
+                           VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3"
+                           Text="{Binding TriggerCount}"
+                           FontSize="11"
+                           Foreground="#64748B"
+                           VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Editor panel -->
+        <Border Grid.Row="2"
+                IsVisible="{Binding IsEditingRule}"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Background="#F8FAFC">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding EditorTitle}"
+                       FontWeight="SemiBold"
+                       FontSize="13"
+                       Foreground="#0F172A" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Rule name" FontSize="11" Foreground="#64748B" />
+                <TextBox Text="{Binding EditRuleName}" Watermark="e.g. KE4CON heard" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Text="Alert type" FontSize="11" Foreground="#64748B" />
+                <ComboBox ItemsSource="{Binding AvailableAlertTypes}"
+                          SelectedItem="{Binding EditAlertType}"
+                          HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <StackPanel Spacing="2">
+                <TextBlock Text="Target callsign / port (optional)" FontSize="11" Foreground="#64748B"
+                           ToolTip.Tip="For callsign alerts: the callsign to watch. For port alerts: the port ID. Leave blank to match any." />
+                <TextBox Text="{Binding EditTarget}" Watermark="e.g. KE4CON or aprs-is" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Text="Severity" FontSize="11" Foreground="#64748B" />
+                <ComboBox ItemsSource="{Binding AvailableSeverities}"
+                          SelectedItem="{Binding EditSeverity}"
+                          HorizontalAlignment="Stretch" />
+              </StackPanel>
+            </Grid>
+
+            <CheckBox Content="Rule enabled" IsChecked="{Binding EditEnabled}" />
+
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+              <Button Command="{Binding SaveRuleCommand}" Content="Save" Padding="14,6" />
+              <Button Grid.Column="1" Command="{Binding CancelEditCommand}" Content="Cancel" Padding="10,6" />
+              <TextBlock Grid.Column="3"
+                         Text="{Binding EditorStatus}"
+                         Foreground="#DC2626"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Trigger history -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="6">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+          <TextBlock Text="{Binding TriggerCountText}"
+                     Foreground="#475569"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1"
+                  Command="{Binding ClearHistoryCommand}"
+                  Content="Clear"
+                  Padding="10,5" />
+        </Grid>
+
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding History}"
+                 SelectedItem="{Binding SelectedTrigger}"
+                 BorderBrush="#CBD5E1"
+                 BorderThickness="1">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:AlertTriggerRowViewModel">
+              <StackPanel Spacing="2" Margin="2,4">
+                <TextBlock Text="{Binding RuleName}"
+                           FontWeight="SemiBold"
+                           FontSize="11"
+                           Foreground="#0F172A" />
+                <TextBlock Text="{Binding TriggerTime}"
+                           FontSize="10"
+                           Foreground="#64748B" />
+                <TextBlock Text="{Binding TriggerReason}"
+                           FontSize="10"
+                           Foreground="#475569"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Button Grid.Row="2"
+                Command="{Binding AcknowledgeSelectedCommand}"
+                Content="Acknowledge selected"
+                HorizontalAlignment="Stretch"
+                Padding="10,6" />
+      </Grid>
     </Grid>
 
-    <Border Grid.Row="1"
-            BorderBrush="#CBD5E1"
-            BorderThickness="1"
-            CornerRadius="6"
-            Background="#FFFFFF"
-            Padding="8">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <ItemsControl ItemsSource="{Binding Rules}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Border BorderBrush="#E2E8F0"
-                      BorderThickness="0,0,0,1"
-                      Padding="0,5">
-                <Grid ColumnDefinitions="*,80,100,80,90"
-                      RowDefinitions="Auto,Auto"
-                      ColumnSpacing="8">
-                  <TextBlock Text="{Binding RuleName}"
-                             FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding Enabled}" />
-                  <TextBlock Grid.Column="2"
-                             Text="{Binding AlertType}" />
-                  <TextBlock Grid.Column="3"
-                             Text="{Binding Severity}" />
-                  <TextBlock Grid.Column="4"
-                             Text="{Binding TriggerCount, StringFormat='Count {0}'}" />
-                  <TextBlock Grid.Row="1"
-                             Grid.ColumnSpan="5"
-                             Text="{Binding Threshold, StringFormat='Target/threshold: {0}'}"
-                             Foreground="#475569" />
-                </Grid>
-              </Border>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </Border>
-
-    <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
-            BorderThickness="1"
-            CornerRadius="6"
-            Background="#F8FAFC"
-            Padding="8">
-      <Grid RowDefinitions="Auto,*"
-            RowSpacing="6">
-        <TextBlock Text="{Binding TriggerCountText, StringFormat='Alert history: {0}'}"
-                   FontWeight="SemiBold" />
-        <ScrollViewer Grid.Row="1"
-                      VerticalScrollBarVisibility="Auto">
-          <ListBox ItemsSource="{Binding History}"
-                   SelectedItem="{Binding SelectedTrigger}">
-            <ListBox.ItemTemplate>
-              <DataTemplate>
-                <Grid ColumnDefinitions="120,80,110,*"
-                      RowDefinitions="Auto,Auto"
-                      ColumnSpacing="8"
-                      RowSpacing="2">
-                  <TextBlock Text="{Binding Time}"
-                             Foreground="#64748B" />
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding Severity}"
-                             FontWeight="SemiBold" />
-                  <TextBlock Grid.Column="2"
-                             Text="{Binding Source}" />
-                  <TextBlock Grid.Column="3"
-                             Text="{Binding Summary}" />
-                  <TextBlock Grid.Row="1"
-                             Grid.ColumnSpan="4"
-                             Text="{Binding Details}"
-                             Foreground="#475569"
-                             TextWrapping="Wrap" />
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </ScrollViewer>
-      </Grid>
-    </Border>
+    <!-- Status bar -->
+    <TextBlock Grid.Row="1"
+               Text="Select a rule and click Edit, or click New Rule to create one. Alerts fire based on incoming packets — the app must be running and connected to receive them."
+               Foreground="#64748B"
+               FontSize="11"
+               TextWrapping="Wrap" />
   </Grid>
 </UserControl>
