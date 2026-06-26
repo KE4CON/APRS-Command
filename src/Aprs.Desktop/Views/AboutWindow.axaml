@@ -58,10 +58,15 @@
 
       <Border Height="1" Background="{DynamicResource TextOnDarkBrush}" Margin="0,20,0,16" />
 
-      <TextBlock Text="Built on Avalonia UI, Mapsui, and BruTile. Inspired by UI-View32."
-                 FontSize="11"
+      <TextBlock FontSize="11"
                  Foreground="{DynamicResource TextSubtleBrush}"
-                 TextWrapping="Wrap" />
+                 TextWrapping="Wrap"
+                 Margin="0,0,0,6"
+                 Text="Built on Avalonia UI, Mapsui, and BruTile." />
+      <TextBlock FontSize="11"
+                 Foreground="{DynamicResource TextSubtleBrush}"
+                 TextWrapping="Wrap"
+                 Text="Inspired by the vision of Bob Bruninga WB4APR, father of APRS, who designed it as a situational awareness tool — and by UI-View32, written by Roger Barker G4IDE. Released under GPL v3 so it can live on." />
     </StackPanel>
 
     <!-- Close button -->

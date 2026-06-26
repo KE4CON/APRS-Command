@@ -1,5 +1,23 @@
 # APRS Command User Manual
 
+## A Note on Philosophy
+
+APRS Command exists because of two people and one promise.
+
+**Bob Bruninga WB4APR** invented APRS in the early 1990s. He spent decades building and refining it, and he was always clear about what it was for. APRS is not a tracking system. It is a **situational awareness tool** — a way for amateur radio operators to share real-time tactical information about what is happening in an area. Weather, resources, objects, messages, coverage — a common operating picture. Bob wanted operators at an emergency scene to be able to look at a map and immediately understand the situation: where people are, what conditions are like, what communications are active. That vision is the foundation of this program.
+
+**Roger Barker G4IDE** built UI-View32, the most beloved APRS client the amateur radio community has ever had. Operators relied on it for over twenty years. When Roger passed in 2004, the source code was destroyed per his wishes, and UI-View32 could never be updated, fixed, or ported to new platforms. A program that thousands of operators depended on was frozen in time and slowly left behind by the operating systems it ran on. The community lost something irreplaceable because it was closed source.
+
+APRS Command is released under **GPL v3** — the GNU General Public License, version 3. This means the source code is always available, anyone can study it, fix it, improve it, and distribute it. No one can ever take it closed source. No one can ever destroy the source code. If the original author is gone tomorrow, any ham radio operator in the world can pick it up and carry it forward. That is the promise this license makes — to Bob's vision, to Roger's legacy, and to the amateur radio community that depends on these tools when it matters most.
+
+Use this program as Bob intended: not just to watch dots move on a map, but to understand what is happening in your operating area. Use it during exercises and activations to build and share a common operating picture. Use it to serve your community. That is what APRS was made for.
+
+73 de KE4CON
+
+---
+
+## Overview
+
 APRS Command is a cross-platform desktop application for amateur-radio APRS operation. It is designed around safe receive-first operation, clear station display, packet monitoring, weather display, logging, replay, and future controlled transmit workflows.
 
 ## What APRS Command Is
