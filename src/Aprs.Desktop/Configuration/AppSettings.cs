@@ -8,7 +8,7 @@ namespace Aprs.Desktop.Configuration;
 ///
 /// <para><see cref="SchemaVersion"/> exists so future format changes can be migrated rather than
 /// silently dropped. The store stamps the current version on every save and can run migration
-/// steps on load when an older version is load.</para>
+/// steps on load when an older version is read.</para>
 /// </summary>
 public sealed record AppSettings(
     int SchemaVersion,
@@ -16,18 +16,17 @@ public sealed record AppSettings(
     ConnectionSettings Connections,
     IGateSettings IGate,
     DigipeaterSettings Digipeater,
-    AudioSettings Audio)
+    AudioSettings Audio,
+    WindowStates Windows)
 {
-    /// <summary>Bump this when the persisted shape changes in a way that needs migration.</summary>
-    /// <remarks>v2 introduced the connection port-list (replacing the flat one-of-each shape).</remarks>
     public const int CurrentSchemaVersion = 2;
 
-    /// <summary>A fresh, unconfigured install: neutral station profile, all connections off.</summary>
     public static AppSettings Default { get; } = new(
         SchemaVersion: CurrentSchemaVersion,
         Station: StationProfile.Default,
         Connections: ConnectionSettings.Default,
         IGate: IGateSettings.Default,
         Digipeater: DigipeaterSettings.Default,
-        Audio: AudioSettings.Default);
+        Audio: AudioSettings.Default,
+        Windows: WindowStates.Default);
 }

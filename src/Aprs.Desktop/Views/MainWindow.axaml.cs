@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Aprs.Desktop.Configuration;
 using Aprs.Desktop.ViewModels;
 using Aprs.Transport;
 
@@ -16,6 +17,11 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        // Restore MainWindow position/size from last session.
+        var store = JsonAppSettingsStore.Default;
+        Opened  += (_, _) => WindowStateService.Restore(this, store);
+        Closing += (_, _) => WindowStateService.Save(this, store);
 
         // Poll connection state and transmit inhibit every second to keep badges current.
         statusTimer = new DispatcherTimer(
@@ -67,40 +73,51 @@ public sealed partial class MainWindow : Window
     }
 
     private void OnMessagesRequested(object? s, EventArgs e)
-        => new MessagesWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new MessagesWindow { DataContext = vm });
 
     private void OnObjectsRequested(object? s, EventArgs e)
-        => new ObjectsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new ObjectsWindow { DataContext = vm });
 
     private void OnWeatherRequested(object? s, EventArgs e)
-        => new WeatherWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new WeatherWindow { DataContext = vm });
 
     private void OnEventsRequested(object? s, EventArgs e)
-        => new EventsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new EventsWindow { DataContext = vm });
 
     private void OnEventBusRequested(object? s, EventArgs e)
-        => new EventBusWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new EventBusWindow { DataContext = vm });
 
     private void OnReplayRequested(object? s, EventArgs e)
-        => new ReplayWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new ReplayWindow { DataContext = vm });
 
     private void OnRfDiagnosticsRequested(object? s, EventArgs e)
-        => new RfDiagnosticsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new RfDiagnosticsWindow { DataContext = vm });
 
     private void OnAlertsRequested(object? s, EventArgs e)
-        => new AlertsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new AlertsWindow { DataContext = vm });
 
     private void OnStationListRequested(object? s, EventArgs e)
-        => new StationListWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new StationListWindow { DataContext = vm });
 
     private void OnRawPacketsRequested(object? s, EventArgs e)
-        => new RawPacketsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new RawPacketsWindow { DataContext = vm });
 
     private void OnSettingsRequested(object? s, EventArgs e)
-        => new SettingsWindow { DataContext = vm }.Show(this);
+        => ShowWithState(new SettingsWindow { DataContext = vm });
 
     private void OnHelpRequested(object? s, EventArgs e)
         => new HelpWindow { DataContext = HelpViewModel.CreateDefault() }.Show(this);
+
+    /// <summary>
+    /// Shows a feature window with its saved position/size restored, and saves its state on close.
+    /// </summary>
+    private void ShowWithState(Window window)
+    {
+        var store = JsonAppSettingsStore.Default;
+        WindowStateService.Restore(window, store);
+        window.Closing += (_, _) => WindowStateService.Save(window, store);
+        window.Show(this);
+    }
 
     private void RefreshStatusBadges()
     {
