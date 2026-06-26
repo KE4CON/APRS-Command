@@ -51,6 +51,11 @@ public sealed partial class MainWindow : Window
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
             vm.AboutRequested         -= OnAboutRequested;
             vm.DarkModeRequested      -= OnDarkModeRequested;
+            if (vm.Map is not null)
+            {
+                vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
+                vm.Map.MeasureDistanceRequested -= OnMeasureDistanceRequested;
+            }
         }
 
         vm = DataContext as MainWindowViewModel;
@@ -73,6 +78,11 @@ public sealed partial class MainWindow : Window
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
             vm.AboutRequested         += OnAboutRequested;
             vm.DarkModeRequested      += OnDarkModeRequested;
+            if (vm.Map is not null)
+            {
+                vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
+                vm.Map.MeasureDistanceRequested += OnMeasureDistanceRequested;
+            }
         }
     }
 
@@ -117,6 +127,118 @@ public sealed partial class MainWindow : Window
 
     private void OnDarkModeRequested(object? s, EventArgs e)
         => (Application.Current as App)?.ToggleDarkMode();
+
+    private void OnAlertStatusRequested(object? s, EventArgs e)
+        => ShowWithState(new AlertsWindow { DataContext = vm });
+
+    private async void OnMeasureDistanceRequested(object? s, EventArgs e)
+    {
+        // Measure distance and bearing between two callsigns in the station list.
+        if (vm?.Map is null) return;
+        var markers = vm.Map.Markers;
+        if (markers.Count == 0)
+        {
+            await ShowBeaconResult("Measure Distance", "No stations are currently on the map.", success: false);
+            return;
+        }
+
+        var callsigns = markers.Select(m => m.Callsign).OrderBy(c => c).ToArray();
+
+        var dialog = new Avalonia.Controls.Window
+        {
+            Title = "Measure Distance",
+            Width = 380,
+            Height = 200,
+            CanResize = false,
+            WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner
+        };
+
+        var panel = new Avalonia.Controls.StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 10 };
+        panel.Children.Add(new Avalonia.Controls.TextBlock
+        {
+            Text = "Measure distance and bearing between two stations:",
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+            Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#0F172A"))
+        });
+
+        var grid = new Avalonia.Controls.Grid();
+        grid.ColumnDefinitions.Add(new Avalonia.Controls.ColumnDefinition { Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new Avalonia.Controls.ColumnDefinition { Width = new Avalonia.Controls.GridLength(1, Avalonia.Controls.GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new Avalonia.Controls.ColumnDefinition { Width = Avalonia.Controls.GridLength.Auto });
+
+        var fromBox = new Avalonia.Controls.ComboBox { ItemsSource = callsigns, IsEditable = true, PlaceholderText = "From", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var toBox   = new Avalonia.Controls.ComboBox { ItemsSource = callsigns, IsEditable = true, PlaceholderText = "To",   HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch };
+        var calcBtn = new Avalonia.Controls.Button { Content = "Calculate", Padding = new Avalonia.Thickness(10, 6), Margin = new Avalonia.Thickness(6, 0, 0, 0) };
+
+        Avalonia.Controls.Grid.SetColumn(fromBox, 0);
+        Avalonia.Controls.Grid.SetColumn(toBox, 1);
+        Avalonia.Controls.Grid.SetColumn(calcBtn, 2);
+        grid.Children.Add(fromBox);
+        grid.Children.Add(toBox);
+        grid.Children.Add(calcBtn);
+        panel.Children.Add(grid);
+
+        var resultText = new Avalonia.Controls.TextBlock
+        {
+            Foreground = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#475569")),
+            FontSize = 12,
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        };
+        panel.Children.Add(resultText);
+
+        var closeBtn = new Avalonia.Controls.Button { Content = "Close", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Padding = new Avalonia.Thickness(14, 6) };
+        closeBtn.Click += (_, _) => dialog.Close();
+        panel.Children.Add(closeBtn);
+        dialog.Content = panel;
+
+        calcBtn.Click += (_, _) =>
+        {
+            var from = (fromBox.SelectedItem as string ?? fromBox.Text ?? string.Empty).Trim().ToUpperInvariant();
+            var to   = (toBox.SelectedItem   as string ?? toBox.Text   ?? string.Empty).Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to)) { resultText.Text = "Please select both stations."; return; }
+
+            var mFrom = markers.FirstOrDefault(m => string.Equals(m.Callsign, from, StringComparison.OrdinalIgnoreCase));
+            var mTo   = markers.FirstOrDefault(m => string.Equals(m.Callsign, to,   StringComparison.OrdinalIgnoreCase));
+
+            if (mFrom is null || mTo is null) { resultText.Text = $"{(mFrom is null ? from : to)} not found in station list."; return; }
+
+            var distKm  = HaversineKm(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
+            var distMi  = distKm * 0.621371;
+            var bearing = BearingDeg(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
+            resultText.Text = $"{from} → {to}\nDistance: {distKm:F1} km  ({distMi:F1} mi)\nBearing: {bearing:F0}° ({CardinalBearing(bearing)})";
+        };
+
+        await dialog.ShowDialog(this);
+    }
+
+    private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        return R * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
+    private static double BearingDeg(double lat1, double lon1, double lat2, double lon2)
+    {
+        var dLon = (lon2 - lon1) * Math.PI / 180;
+        var y = Math.Sin(dLon) * Math.Cos(lat2 * Math.PI / 180);
+        var x = Math.Cos(lat1 * Math.PI / 180) * Math.Sin(lat2 * Math.PI / 180) -
+                Math.Sin(lat1 * Math.PI / 180) * Math.Cos(lat2 * Math.PI / 180) * Math.Cos(dLon);
+        return (Math.Atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    private static string CardinalBearing(double deg) => (int)(deg / 22.5 + 0.5) switch
+    {
+        0 or 16 => "N", 1 => "NNE", 2 => "NE", 3 => "ENE",
+        4 => "E", 5 => "ESE", 6 => "SE", 7 => "SSE",
+        8 => "S", 9 => "SSW", 10 => "SW", 11 => "WSW",
+        12 => "W", 13 => "WNW", 14 => "NW", 15 => "NNW",
+        _ => "N"
+    };
 
     /// <summary>
     /// Shows a feature window with its saved position/size restored, and saves its state on close.

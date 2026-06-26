@@ -45,10 +45,19 @@ public sealed class MapViewModel : INotifyPropertyChanged
         ClearObjectSelectionCommand = new DesktopCommand(ClearObjectSelection);
         HomeCommand                 = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.Home));
         CentreOnStationCommand      = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.CentreOnStation));
+        FindStationCommand          = new DesktopCommand(() => FindStationRequested?.Invoke(this, EventArgs.Empty));
+        ToggleMapLayerCommand       = new DesktopCommand(() => ToggleMapLayerRequested?.Invoke(this, EventArgs.Empty));
+        MeasureDistanceCommand      = new DesktopCommand(() => MeasureDistanceRequested?.Invoke(this, EventArgs.Empty));
+        AlertStatusCommand          = new DesktopCommand(() => AlertStatusRequested?.Invoke(this, EventArgs.Empty));
     }
 
     /// <summary>Fired when a sidebar navigation button or station list click requests map navigation.</summary>
     public event EventHandler<MapNavigationRequest>? NavigationRequested;
+
+    public event EventHandler? FindStationRequested;
+    public event EventHandler? ToggleMapLayerRequested;
+    public event EventHandler? MeasureDistanceRequested;
+    public event EventHandler? AlertStatusRequested;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -145,6 +154,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand HomeCommand { get; }
 
     public DesktopCommand CentreOnStationCommand { get; }
+
+    public DesktopCommand FindStationCommand { get; }
+
+    public DesktopCommand ToggleMapLayerCommand { get; }
+
+    public DesktopCommand MeasureDistanceCommand { get; }
+
+    public DesktopCommand AlertStatusCommand { get; }
 
     /// <summary>
     /// Requests the MapView to centre on specific coordinates. Called by the station list
