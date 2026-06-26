@@ -112,9 +112,29 @@ public sealed class DesktopRuntime : IAsyncDisposable
         Coordinator.Start();
         BeaconService.Start();
 
-        // Callsign and area filter come from the per-user station profile, not hardcoded.
-        var profile = StationProfile.Load();
-        Coordinator.ConnectAprsIsReceiveOnly(profile.Callsign, filter: profile.BuildAprsIsFilter());
+        // Read the station profile and the first configured APRS-IS port so the receive
+        // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
+        var settings = StationProfile.Load();
+        var appSettings = JsonAppSettingsStore.Default.Load();
+
+        // Find the first enabled APRS-IS port in the connection list.
+        var aprsIsPort = appSettings.Connections.Ports
+            .FirstOrDefault(p => p.Type == ConnectionPortType.AprsIs && p.Enabled && p.ReceiveEnabled);
+
+        var serverHost = aprsIsPort?.Configuration.AprsIs?.ServerHost;
+        var serverPort = aprsIsPort?.Configuration.AprsIs?.ServerPort;
+
+        // Use the custom filter from the port if set; otherwise fall back to the
+        // position-based radius filter built from the station profile.
+        var customFilter = aprsIsPort?.Configuration.AprsIs?.Filter?.Trim();
+        var positionFilter = settings.BuildAprsIsFilter();
+        var filter = !string.IsNullOrWhiteSpace(customFilter) ? customFilter : positionFilter;
+
+        Coordinator.ConnectAprsIsReceiveOnly(
+            settings.Callsign,
+            serverHost: serverHost,
+            serverPort: serverPort,
+            filter: filter);
     }
 
     public async ValueTask DisposeAsync()
