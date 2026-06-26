@@ -6,6 +6,7 @@ using Aprs.Desktop.Composition;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Audio;
 using Aprs.Desktop.ViewModels;
+using Aprs.Services;
 using Aprs.Desktop.Views;
 using Avalonia.Threading;
 
@@ -74,10 +75,49 @@ public sealed partial class App : Application
 
         // Route every parsed packet to the ACK coordinator so ACK/REJ packets
         // from APRS-IS are applied to outgoing messages immediately.
-        rt.Coordinator.PacketParsed += (_, packet) =>
+        rt.Coordinator.PacketParsed += (_, e) =>
         {
-            if (packet is not null)
-                rt.MessageAckCoordinator.ProcessIncomingPacket(packet);
+            if (e.Packet is not null)
+                rt.MessageAckCoordinator.ProcessIncomingPacket(e.Packet);
+        };
+    }
+
+    private static void WireRfDiagnostics(DesktopRuntime rt)
+    {
+        var rfVm = rt.MainViewModel.RfDiagnostics;
+
+        // Route parsed RF packets (KISS-TCP and Direwolf) to the RF diagnostics service.
+        rt.Coordinator.PacketParsed += (_, e) =>
+        {
+            if (e.Packet is null) return;
+            if (e.Source is AprsPacketSource.TcpKiss or AprsPacketSource.Direwolf)
+            {
+                rt.MainViewModel.RfDiagnostics.AcceptPacket(e.Packet, e.Source);
+            }
+        };
+
+        // Pipe Direwolf / managed modem console output to the RF Diagnostics console.
+        if (rt.ManagedModemCoordinator is not null)
+        {
+            rt.ManagedModemCoordinator.OutputReceived += (_, line) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    rfVm.AddConsoleOutput(line));
+            };
+        }
+    }
+
+    private static void WireGpsStatus(DesktopRuntime rt)
+    {
+        // Update the GPS status viewmodel whenever a new GPS position arrives.
+        rt.GpsCoordinator.PositionUpdated += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                var updated = GpsStatusViewModel.FromGpsService(
+                    rt.GpsCoordinator.GpsService, DateTimeOffset.UtcNow);
+                rt.MainViewModel.UpdateGpsStatus(updated);
+            });
         };
     }
 
@@ -133,6 +173,8 @@ public sealed partial class App : Application
                     WireMessageToast(runtime);
                     WireGpsWriteback(runtime);
                     WireMessageAck(runtime);
+                    WireRfDiagnostics(runtime);
+                    WireGpsStatus(runtime);
                 }
                 else
                 {
@@ -156,6 +198,8 @@ public sealed partial class App : Application
                         WireMessageToast(runtime);
                         WireGpsWriteback(runtime);
                         WireMessageAck(runtime);
+                        WireRfDiagnostics(runtime);
+                        WireGpsStatus(runtime);
                         setup.Close();
                     };
 

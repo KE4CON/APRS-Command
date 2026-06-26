@@ -70,6 +70,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();
         services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
         services.AddSingleton<IAprsMessageStoreService, AprsMessageStoreService>();
+        services.AddSingleton<IAlertRuleService, AlertRuleService>();
+        services.AddSingleton<IIGateService>(_ => new IGateService(
+            new NullAprsIsClient(), IGateConfiguration.Default, null));
+        services.AddSingleton<IDigipeaterService>(p => new DigipeaterService(
+            p.GetRequiredService<IAprsPortManager>(), new NullRfBeaconTransmitClient(), null, null, p.GetRequiredService<ITransmitSafetyAuthority>()));
+        services.AddSingleton<IRfDiagnosticsService, RfDiagnosticsService>();
+        services.AddSingleton<DirewolfProfileService>(_ =>
+            new DirewolfProfileService(DateTimeOffset.UtcNow));
 
         var provider = services.BuildServiceProvider();
 
@@ -81,20 +89,20 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // station list is live automatically once the map is updated by the coordinator.
         var mainViewModel = new MainWindowViewModel(
             map,
-            GpsStatusViewModel.CreateDesignTime(),          // TODO: wire to real GPS service
+            GpsStatusViewModel.FromGpsService(new Aprs.Services.GpsService(), DateTimeOffset.UtcNow), // TODO: update from live GpsCoordinator
             rawPacketLog,                                   // LIVE
             DecodedEventLogViewModel.CreateDesignTime(),    // TODO: wire to decoded event log service
             EventMonitorViewModel.CreateDesignTime(),       // TODO: wire to IAprsEventBus
             new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
             ObjectManagerViewModel.CreateDesignTime(),      // TODO: wire to object manager service
-            DirewolfProfileViewModel.CreateDesignTime(),    // TODO: wire to Direwolf profile service
-            PortStatusViewModel.CreateDesignTime(),         // TODO: wire to AprsPortManager
-            IGateStatusViewModel.CreateDesignTime(),        // TODO: wire to iGate service
-            DigipeaterStatusViewModel.CreateDesignTime(),   // TODO: wire to digipeater service
+            new DirewolfProfileViewModel(provider.GetRequiredService<DirewolfProfileService>()), // LIVE
+            new PortStatusViewModel(provider.GetRequiredService<IAprsPortManager>()),   // LIVE
+            new IGateStatusViewModel(provider.GetRequiredService<IIGateService>()),     // LIVE
+            new DigipeaterStatusViewModel(provider.GetRequiredService<IDigipeaterService>()), // LIVE
             WeatherViewModel.CreateDesignTime(),            // TODO: wire to weather services
             ReplayViewModel.CreateDesignTime(),             // TODO: wire to replay service (feed ingestion, source=Replay)
-            RfDiagnosticsViewModel.CreateDesignTime(),      // TODO: wire to RF diagnostics
-            AlertRulesViewModel.CreateDesignTime(),         // TODO: wire to alert rules service
+            new RfDiagnosticsViewModel(provider.GetRequiredService<IRfDiagnosticsService>()), // LIVE
+            new AlertRulesViewModel(provider.GetRequiredService<IAlertRuleService>()),  // LIVE
             GeofenceEditorViewModel.CreateDesignTime(),     // TODO: wire to geofence service
             SimulationViewModel.CreateDesignTime(),         // TODO: wire to simulation service (source=Simulation)
             TrainingModeViewModel.CreateDesignTime(),       // TODO: wire to training service

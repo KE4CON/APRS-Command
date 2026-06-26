@@ -10,6 +10,9 @@ namespace Aprs.Desktop.Runtime;
 public sealed class GpsCoordinator : IAsyncDisposable
 {
     private readonly GpsService gpsService;
+
+    /// <summary>The underlying GPS service — used by WireGpsStatus to read current position.</summary>
+    public GpsService GpsService => gpsService;
     private readonly IGpsSentenceSource? source;
     private readonly CancellationTokenSource cts = new();
     private Task? readLoop;

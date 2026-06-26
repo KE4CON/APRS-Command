@@ -34,6 +34,19 @@ public sealed class RfDiagnosticsViewModel : INotifyPropertyChanged
 
     public ObservableCollection<string> ExcessiveBeaconWarnings { get; }
 
+    /// <summary>Raw text output from Direwolf or other modem processes.</summary>
+    public ObservableCollection<string> ConsoleOutput { get; } = new();
+
+    /// <summary>Adds a line of text from Direwolf or the managed modem process.</summary>
+    public void AddConsoleOutput(string line)
+    {
+        if (string.IsNullOrEmpty(line)) return;
+        ConsoleOutput.Add($"[{DateTimeOffset.Now:HH:mm:ss}] {line}");
+        // Keep the last 500 lines to avoid unbounded growth.
+        while (ConsoleOutput.Count > 500)
+            ConsoleOutput.RemoveAt(0);
+    }
+
     public DesktopCommand ClearCommand { get; }
 
     public string TotalPacketsText { get; private set; } = "0";
@@ -49,6 +62,13 @@ public sealed class RfDiagnosticsViewModel : INotifyPropertyChanged
     public string LinkSummaryText { get; private set; } = "RF-only 0, APRS-IS-only 0, both 0";
 
     public string LastUpdatedText { get; private set; } = "-";
+
+    /// <summary>Feeds a live RF packet into the diagnostics service and refreshes the display.</summary>
+    public void AcceptPacket(Aprs.Core.AprsPacket packet, AprsPacketSource source)
+    {
+        diagnosticsService.AcceptPacket(packet, source, source.ToString());
+        Refresh();
+    }
 
     public void Refresh()
     {
