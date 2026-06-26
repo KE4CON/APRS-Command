@@ -12,6 +12,7 @@ namespace Aprs.Desktop;
 public sealed partial class App : Application
 {
     private DesktopRuntime? runtime;
+    public DesktopRuntime? Runtime => runtime;
 
     public override void Initialize()
     {
