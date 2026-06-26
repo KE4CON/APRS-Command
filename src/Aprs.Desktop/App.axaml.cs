@@ -66,6 +66,21 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireMessageAck(DesktopRuntime rt)
+    {
+        // Give the message center viewmodel access to the ACK coordinator so
+        // SendMessageAsync uses the real retry engine.
+        rt.MainViewModel.MessageCenter.SetAckCoordinator(rt.MessageAckCoordinator);
+
+        // Route every parsed packet to the ACK coordinator so ACK/REJ packets
+        // from APRS-IS are applied to outgoing messages immediately.
+        rt.Coordinator.PacketParsed += (_, packet) =>
+        {
+            if (packet is not null)
+                rt.MessageAckCoordinator.ProcessIncomingPacket(packet);
+        };
+    }
+
     private DesktopRuntime? runtime;
     public DesktopRuntime? Runtime => runtime;
 
@@ -117,6 +132,7 @@ public sealed partial class App : Application
                     WireSoundAlerts(runtime);
                     WireMessageToast(runtime);
                     WireGpsWriteback(runtime);
+                    WireMessageAck(runtime);
                 }
                 else
                 {
@@ -139,6 +155,7 @@ public sealed partial class App : Application
                         WireSoundAlerts(runtime);
                         WireMessageToast(runtime);
                         WireGpsWriteback(runtime);
+                        WireMessageAck(runtime);
                         setup.Close();
                     };
 

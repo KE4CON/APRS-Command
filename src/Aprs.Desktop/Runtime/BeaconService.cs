@@ -17,6 +17,9 @@ public sealed class BeaconService : IAsyncDisposable
     private readonly LocalStationProfileService profileService;
     private readonly BeaconScheduler scheduler;
     private readonly IAprsIsClient? aprsIsClient;
+
+    /// <summary>The transmit-capable APRS-IS client, if one is configured. Used by the message ACK coordinator.</summary>
+    public IAprsIsClient? AprsIsClient => aprsIsClient;
     private readonly CancellationTokenSource cts = new();
     private Task? tickLoop;
 
