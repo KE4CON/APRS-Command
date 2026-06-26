@@ -24,13 +24,15 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public MainWindowViewModel MainViewModel { get; }
     public LiveDataCoordinator Coordinator { get; }
     public BeaconService BeaconService { get; }
+    public ITransmitSafetyAuthority TransmitAuthority { get; }
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
         Coordinator = coordinator;
         BeaconService = beaconService;
+        TransmitAuthority = transmitAuthority;
     }
 
     public static DesktopRuntime Create()
@@ -99,7 +101,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load());
 
-        return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService);
+        return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
+            provider.GetRequiredService<ITransmitSafetyAuthority>());
     }
 
     /// <summary>

@@ -39,13 +39,15 @@
                      FontWeight="SemiBold" />
         </Border>
         <Border Grid.Column="2"
+                x:Name="TxBadgeBorder"
                 Background="#123B32"
                 BorderBrush="#2DD4BF"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
-          <TextBlock Text="TX Disabled"
+          <TextBlock x:Name="TxBadgeText"
+                     Text="TX Disabled"
                      Foreground="#D9FFF7"
                      FontWeight="SemiBold" />
         </Border>
@@ -67,6 +69,9 @@
         <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />
         <MenuItem Header="Replay" Command="{Binding OpenReplayCommand}" />
         <MenuItem Header="RF Diagnostics" Command="{Binding OpenRfDiagnosticsCommand}" />
+        <Separator />
+        <MenuItem Header="Toggle Exercise Mode (inhibit all transmit)"
+                  Command="{Binding ToggleExerciseModeCommand}" />
       </MenuItem>
       <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
     </Menu>
