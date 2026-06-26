@@ -96,7 +96,8 @@
                   Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="24">
+                  FontSize="24"
+                  Command="{Binding Map.HomeCommand}">
             <TextBlock Text="⌂" />
           </Button>
           <Button ToolTip.Tip="Centre on my station"
@@ -105,7 +106,8 @@
                   Padding="4,10"
                   Background="Transparent"
                   Foreground="#CBD5E1"
-                  FontSize="24">
+                  FontSize="24"
+                  Command="{Binding Map.CentreOnStationCommand}">
             <TextBlock Text="◎" />
           </Button>
           <Button ToolTip.Tip="Find station"
