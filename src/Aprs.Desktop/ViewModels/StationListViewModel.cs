@@ -146,6 +146,8 @@ public sealed class StationListViewModel : INotifyPropertyChanged
 
         SelectedRow = row;
         map.SelectStation(row.Marker);
+        // Centre the map on this station so the operator can see it immediately.
+        map.RequestCentreOnPosition(row.Marker.Latitude, row.Marker.Longitude);
     }
 
     public IReadOnlyList<string> CreateCsvExportRows()

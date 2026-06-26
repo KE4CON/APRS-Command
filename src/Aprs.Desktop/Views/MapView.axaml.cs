@@ -419,17 +419,21 @@ public sealed partial class MapView : UserControl
 
     private void OnNavigationRequested(object? sender, MapNavigationRequest request)
     {
-        switch (request)
+        switch (request.Kind)
         {
-            case MapNavigationRequest.Home:
+            case MapNavigationKind.Home:
                 CenterOnHome();
                 break;
 
-            case MapNavigationRequest.CentreOnStation:
-                // Centre on the operator's own station position at a tighter zoom.
+            case MapNavigationKind.CentreOnStation:
                 var profile = StationProfile.Load();
-                var (x, y) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
-                MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(x, y), HomeResolution / 4);
+                var (sx, sy) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
+                MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(sx, sy), HomeResolution / 4);
+                break;
+
+            case MapNavigationKind.CentreOnPosition when request.Latitude.HasValue && request.Longitude.HasValue:
+                var (px, py) = SphericalMercator.FromLonLat(request.Longitude.Value, request.Latitude.Value);
+                MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(px, py), HomeResolution / 8);
                 break;
         }
     }

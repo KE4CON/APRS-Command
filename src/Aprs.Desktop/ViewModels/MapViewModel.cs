@@ -47,7 +47,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         CentreOnStationCommand      = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.CentreOnStation));
     }
 
-    /// <summary>Fired when a sidebar navigation button is clicked. The MapView code-behind handles it.</summary>
+    /// <summary>Fired when a sidebar navigation button or station list click requests map navigation.</summary>
     public event EventHandler<MapNavigationRequest>? NavigationRequested;
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -145,6 +145,13 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand HomeCommand { get; }
 
     public DesktopCommand CentreOnStationCommand { get; }
+
+    /// <summary>
+    /// Requests the MapView to centre on specific coordinates. Called by the station list
+    /// when the operator clicks a callsign, so the map jumps to that station.
+    /// </summary>
+    public void RequestCentreOnPosition(double latitude, double longitude)
+        => NavigationRequested?.Invoke(this, new MapNavigationRequest(MapNavigationKind.CentreOnPosition, latitude, longitude));
 
     public void SelectStation(StationMarkerViewModel marker)
     {
