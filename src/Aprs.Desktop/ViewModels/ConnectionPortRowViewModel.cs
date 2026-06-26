@@ -111,6 +111,10 @@ public sealed class ConnectionPortRowViewModel : INotifyPropertyChanged
         set => Update(port with { Configuration = port.Configuration with { AprsIs = Is with { Filter = value } } });
     }
 
+    /// <summary>Serial ports available on this machine, for the serial port name dropdown.</summary>
+    public IReadOnlyList<string> AvailableSerialPorts { get; } =
+        new SerialPortDiscovery().GetAvailablePortNames();
+
     /// <summary>The current edited port, with its type-specific configuration guaranteed present.</summary>
     public ConnectionPort ToModel() => port.Normalized();
 
