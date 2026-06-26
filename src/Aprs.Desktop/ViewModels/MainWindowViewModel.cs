@@ -138,7 +138,14 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
-    public GpsStatusViewModel GpsStatus { get; }
+    public GpsStatusViewModel GpsStatus { get; private set; }
+
+    /// <summary>Replaces the GPS status viewmodel with fresh data from the live GPS service.</summary>
+    public void UpdateGpsStatus(GpsStatusViewModel updated)
+    {
+        GpsStatus = updated;
+        OnPropertyChanged(nameof(GpsStatus));
+    }
     public RawPacketLogViewModel RawPacketLog { get; }
     public DecodedEventLogViewModel DecodedEventLog { get; }
     public EventMonitorViewModel EventMonitor { get; }

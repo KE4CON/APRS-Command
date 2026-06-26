@@ -28,8 +28,8 @@ public sealed class AprsIngestionService
     /// <summary>Raised after a line has been recorded, parsed, and applied.</summary>
     public event EventHandler? PacketIngested;
 
-    /// <summary>Raised with the parsed packet after ingestion. Null if the line could not be parsed.</summary>
-    public event EventHandler<AprsPacket?>? PacketParsed;
+    /// <summary>Raised with the parsed packet and its source after ingestion. Packet is null if the line could not be parsed.</summary>
+    public event EventHandler<ParsedPacketEventArgs>? PacketParsed;
 
     /// <summary>
     /// Ingests a single received raw APRS line. Safe to call repeatedly; never throws
@@ -50,7 +50,7 @@ public sealed class AprsIngestionService
             stationDatabase.ProcessPacket(packet, source);
         }
 
-        PacketParsed?.Invoke(this, packet);
+        PacketParsed?.Invoke(this, new ParsedPacketEventArgs(packet, source));
         PacketIngested?.Invoke(this, EventArgs.Empty);
     }
 }

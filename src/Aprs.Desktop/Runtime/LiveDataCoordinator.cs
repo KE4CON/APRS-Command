@@ -47,8 +47,8 @@ public sealed class LiveDataCoordinator : IAsyncDisposable
         remove => ingestion.PacketIngested -= value;
     }
 
-    /// <summary>Forwarded from the ingestion service — fires with the parsed packet (null if unparseable).</summary>
-    public event EventHandler<AprsPacket?>? PacketParsed
+    /// <summary>Forwarded from the ingestion service — fires with the parsed packet and source (packet is null if unparseable).</summary>
+    public event EventHandler<ParsedPacketEventArgs>? PacketParsed
     {
         add    => ingestion.PacketParsed += value;
         remove => ingestion.PacketParsed -= value;
