@@ -167,6 +167,42 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
         set { if (phgData != value) { phgData = value; OnPropertyChanged(); } }
     }
 
+    // PHG encoder — four dropdowns that build the PHG string automatically.
+    public IReadOnlyList<string> PhgPowerOptions { get; } =
+        ["None", "0W (0)", "1W (1)", "4W (2)", "9W (3)", "16W (4)", "25W (5)", "36W (6)", "49W (7)", "64W (8)", "81W (9)"];
+
+    public IReadOnlyList<string> PhgHeightOptions { get; } =
+        ["None", "10ft (0)", "20ft (1)", "40ft (2)", "80ft (3)", "160ft (4)", "320ft (5)", "640ft (6)", "1280ft (7)", "2560ft (8)", "5120ft (9)"];
+
+    public IReadOnlyList<string> PhgGainOptions { get; } =
+        ["None", "0dB (0)", "1dB (1)", "2dB (2)", "3dB (3)", "4dB (4)", "5dB (5)", "6dB (6)", "7dB (7)", "8dB (8)", "9dB (9)"];
+
+    public IReadOnlyList<string> PhgDirectivityOptions { get; } =
+        ["None", "Omni (0)", "NE (1)", "E (2)", "SE (3)", "S (4)", "SW (5)", "W (6)", "NW (7)", "N (8)"];
+
+    public void ApplyPhgFromDropdowns(int powerIndex, int heightIndex, int gainIndex, int directivityIndex)
+    {
+        // Index 0 = "None" — if any is None, clear the whole PHG string.
+        if (powerIndex <= 0 || heightIndex <= 0 || gainIndex <= 0 || directivityIndex <= 0)
+        {
+            PhgData = string.Empty;
+            return;
+        }
+        // Subtract 1 to convert from 1-based dropdown index to 0-based PHG digit.
+        PhgData = $"PHG{powerIndex - 1}{heightIndex - 1}{gainIndex - 1}{directivityIndex - 1}";
+    }
+
+    public (int Power, int Height, int Gain, int Directivity) ParsePhgToDropdownIndices()
+    {
+        // Try to parse existing PHG string like "PHG5380" back to dropdown indices.
+        if (phgData.Length == 7 && phgData.StartsWith("PHG", StringComparison.OrdinalIgnoreCase)
+            && phgData[3..].All(char.IsDigit))
+        {
+            return (phgData[3] - '0' + 1, phgData[4] - '0' + 1, phgData[5] - '0' + 1, phgData[6] - '0' + 1);
+        }
+        return (0, 0, 0, 0);
+    }
+
     // ── Transmit safety ──────────────────────────────────────────────────────
 
     public bool TransmitEnabled
