@@ -101,6 +101,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenRawPacketsCommand  = new DesktopCommand(() => RawPacketsRequested?.Invoke(this, EventArgs.Empty));
         OpenSettingsCommand    = new DesktopCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         OpenHelpCommand        = new DesktopCommand(() => HelpRequested?.Invoke(this, EventArgs.Empty));
+        BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -118,6 +119,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? RawPacketsRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? HelpRequested;
+    public event EventHandler? BeaconNowRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -157,6 +159,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenRawPacketsCommand { get; }
     public DesktopCommand OpenSettingsCommand { get; }
     public DesktopCommand OpenHelpCommand { get; }
+    public DesktopCommand BeaconNowCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
