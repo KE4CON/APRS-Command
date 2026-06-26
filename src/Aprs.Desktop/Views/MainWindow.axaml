@@ -28,13 +28,15 @@
                      Foreground="#CBD5E1" />
         </StackPanel>
         <Border Grid.Column="1"
+                x:Name="AprsIsBadgeBorder"
                 Background="#1E293B"
                 BorderBrush="#64748B"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
-          <TextBlock Text="APRS-IS Offline"
+          <TextBlock x:Name="AprsIsBadgeText"
+                     Text="APRS-IS Offline"
                      Foreground="#E2E8F0"
                      FontWeight="SemiBold" />
         </Border>

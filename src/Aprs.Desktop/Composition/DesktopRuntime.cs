@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Aprs.Core;
 using Aprs.Mapping;
 using Aprs.Services;
+using Aprs.Transport;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Runtime;
 using Aprs.Desktop.ViewModels;
@@ -25,6 +26,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public LiveDataCoordinator Coordinator { get; }
     public BeaconService BeaconService { get; }
     public ITransmitSafetyAuthority TransmitAuthority { get; }
+
+    public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
+    public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
     private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority)
     {
