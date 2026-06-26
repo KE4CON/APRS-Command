@@ -14,6 +14,7 @@
     <PackageReference Include="BruTile.MbTiles" Version="6.0.0" />
     <PackageReference Include="Mapsui.Avalonia" Version="5.1.0" />
     <PackageReference Include="Mapsui.Tiling" Version="5.1.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.1" />
@@ -26,10 +27,7 @@
     <ProjectReference Include="..\AprsCommand.Api\AprsCommand.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\docs\*.md"
-             Link="docs\%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest"
-             CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\docs\*.md" Link="docs\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\aprs-symbols-64-0.png">

@@ -48,7 +48,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // registered in the container, so they are created via explicit factories rather than
         // letting the DI container pick a constructor it cannot fully satisfy.
         services.AddSingleton<IAprsParser, AprsParser>();
-        services.AddSingleton<IStationDatabase>(_ => new StationDatabase());
+        services.AddSingleton<IStationDatabase>(_ => new Persistence.SqliteStationDatabase());
         services.AddSingleton<IRawPacketLogService>(
             sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>()));
         services.AddSingleton<AprsIngestionService>();
@@ -148,6 +148,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
     {
         await BeaconService.DisposeAsync().ConfigureAwait(false);
         await Coordinator.DisposeAsync().ConfigureAwait(false);
+
+        // Dispose the station database (closes the SQLite connection cleanly).
+        if (provider.GetService<IStationDatabase>() is IDisposable db)
+        {
+            db.Dispose();
+        }
+
         await provider.DisposeAsync().ConfigureAwait(false);
     }
 }

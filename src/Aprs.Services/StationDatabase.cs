@@ -527,4 +527,29 @@ public sealed class StationDatabase : IStationDatabase
     {
         return degrees * Math.PI / 180;
     }
+
+    /// <summary>
+    /// Restores a persisted snapshot directly into the in-memory store without running
+    /// it through packet parsing. Called by the SQLite persistence layer on startup.
+    /// Does not overwrite a snapshot that was heard more recently.
+    /// </summary>
+    public void RestoreSnapshot(StationSnapshot snapshot)
+    {
+        var key = NormalizeStationKey(snapshot.Callsign);
+        if (stations.TryGetValue(key, out var existing) && existing.LastHeardUtc >= snapshot.LastHeardUtc)
+        {
+            return; // Already have a more-recent entry from this session.
+        }
+
+        stations[key] = snapshot;
+    }
+
+    /// <summary>
+    /// Restores a persisted tactical label without triggering any update logic.
+    /// Called by the SQLite persistence layer on startup.
+    /// </summary>
+    public void RestoreTacticalLabel(TacticalLabel label)
+    {
+        tacticalLabels[NormalizeStationKey(label.RealCallsign)] = label;
+    }
 }
