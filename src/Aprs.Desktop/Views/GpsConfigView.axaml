@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.GpsConfigView"
+             x:DataType="vm:GpsConfigViewModel">
+  <ScrollViewer>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+
+      <StackPanel Spacing="2">
+        <TextBlock Text="GPS Setup" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
+        <TextBlock Foreground="#526173" FontSize="12" TextWrapping="Wrap"
+                   Text="Connect a USB GPS receiver to get live position data. Any standard NMEA-0183 GPS works — plug it in and select its serial port below. A restart is required after changing GPS settings." />
+      </StackPanel>
+
+      <Border Grid.Row="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+        <StackPanel Spacing="10">
+          <CheckBox Content="Enable GPS" IsChecked="{Binding Enabled}" FontWeight="SemiBold" />
+
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Serial port" FontSize="11" Foreground="#64748B"
+                         ToolTip.Tip="The serial port your GPS receiver appears on. Plug in the GPS and it should appear in the list." />
+              <ComboBox ItemsSource="{Binding AvailableSerialPorts}"
+                        SelectedItem="{Binding SerialPortName}"
+                        IsEditable="True"
+                        Text="{Binding SerialPortName}"
+                        PlaceholderText="e.g. /dev/tty.usbserial or COM3"
+                        HorizontalAlignment="Stretch" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="Baud rate" FontSize="11" Foreground="#64748B"
+                         ToolTip.Tip="Most GPS receivers use 4800 baud. Check your GPS documentation if unsure." />
+              <ComboBox ItemsSource="{Binding AvailableBaudRates}"
+                        SelectedItem="{Binding BaudRate}"
+                        Width="120" />
+            </StackPanel>
+          </Grid>
+
+          <CheckBox Content="Update station position from GPS"
+                    IsChecked="{Binding UpdateStationPosition}"
+                    ToolTip.Tip="When enabled, your station's latitude and longitude in Station Setup are automatically updated from the GPS fix. Useful for portable and mobile operation." />
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="2" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="5" Padding="12">
+        <TextBlock Foreground="#92400E" FontSize="11" TextWrapping="Wrap">
+          <Run FontWeight="SemiBold">Note: </Run>
+          <Run>GPS changes take effect after restarting APRS Command. The GPS Status window (Settings → GPS → Status) shows the current fix quality, satellite count, and live coordinates once the GPS is connected and running.</Run>
+        </TextBlock>
+      </Border>
+
+      <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+        <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
+        <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="#475569" VerticalAlignment="Center" />
+      </Grid>
+    </Grid>
+  </ScrollViewer>
+</UserControl>

@@ -37,7 +37,14 @@
                 CornerRadius="6"
                 Padding="12"
                 Background="#F8FAFC">
-          <views:GpsStatusView DataContext="{Binding GpsStatus}" />
+          <TabControl>
+            <TabItem Header="Setup">
+              <views:GpsConfigView DataContext="{Binding GpsConfig}" />
+            </TabItem>
+            <TabItem Header="Status">
+              <views:GpsStatusView DataContext="{Binding GpsStatus}" />
+            </TabItem>
+          </TabControl>
         </Border>
       </TabItem>
       <TabItem Header="Offline Maps">
