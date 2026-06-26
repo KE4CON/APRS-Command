@@ -22,14 +22,15 @@ public sealed class DesktopRuntime : IAsyncDisposable
     private readonly ServiceProvider provider;
 
     public MainWindowViewModel MainViewModel { get; }
-
     public LiveDataCoordinator Coordinator { get; }
+    public BeaconService BeaconService { get; }
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
         Coordinator = coordinator;
+        BeaconService = beaconService;
     }
 
     public static DesktopRuntime Create()
@@ -95,7 +96,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
             map,
             rawPacketLog);
 
-        return new DesktopRuntime(provider, mainViewModel, coordinator);
+        var beaconService = BeaconService.CreateFromSettings(
+            provider.GetRequiredService<IAppSettingsStore>().Load());
+
+        return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService);
     }
 
     /// <summary>
@@ -106,6 +110,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public void Start()
     {
         Coordinator.Start();
+        BeaconService.Start();
 
         // Callsign and area filter come from the per-user station profile, not hardcoded.
         var profile = StationProfile.Load();
@@ -114,6 +119,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await BeaconService.DisposeAsync().ConfigureAwait(false);
         await Coordinator.DisposeAsync().ConfigureAwait(false);
         await provider.DisposeAsync().ConfigureAwait(false);
     }

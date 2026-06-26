@@ -228,6 +228,8 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
         StatusText = "Loaded.";
     }
 
+    public event EventHandler? SettingsSaved;
+
     public void Save()
     {
         var profile = new StationProfile(
@@ -248,6 +250,7 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
             RfTransmitEnabled:     RfTransmitEnabled,
             PhgData:               string.IsNullOrWhiteSpace(PhgData) ? null : PhgData.Trim());
         store.Update(s => s with { Station = profile });
+        SettingsSaved?.Invoke(this, EventArgs.Empty);
         StatusText = "Saved.";
     }
 
