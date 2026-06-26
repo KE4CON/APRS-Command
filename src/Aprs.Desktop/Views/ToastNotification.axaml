@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aprs.Desktop.Views.ToastNotification"
+        Title=""
+        Width="320"
+        Height="90"
+        MinWidth="320"
+        MaxWidth="320"
+        CanResize="False"
+        ShowInTaskbar="False"
+        SystemDecorations="None"
+        Topmost="True"
+        WindowStartupLocation="Manual"
+        Background="Transparent">
+  <Border Background="#0F172A"
+          BorderBrush="#334155"
+          BorderThickness="1"
+          CornerRadius="8"
+          Padding="14,12"
+          Cursor="Hand">
+    <Grid RowDefinitions="Auto,Auto" RowSpacing="4">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+        <TextBlock Text="📨" FontSize="20" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1"
+                   x:Name="TitleText"
+                   Text="New message"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   Foreground="#F1F5F9"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2"
+                   Text="✕"
+                   FontSize="12"
+                   Foreground="#64748B"
+                   VerticalAlignment="Center"
+                   Cursor="Hand"
+                   PointerPressed="CloseButton_PointerPressed" />
+      </Grid>
+      <TextBlock Grid.Row="1"
+                 x:Name="BodyText"
+                 Text=""
+                 FontSize="11"
+                 Foreground="#94A3B8"
+                 TextWrapping="Wrap"
+                 MaxLines="2" />
+    </Grid>
+  </Border>
+</Window>

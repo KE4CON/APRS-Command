@@ -1,17 +1,50 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Aprs.Desktop.Configuration;
+using Aprs.Mapping;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
 
-public sealed class ObjectEditorViewModel
+public sealed class ObjectEditorViewModel : INotifyPropertyChanged
 {
     private readonly IAprsObjectEditorService editorService;
+    private readonly AprsSymbolLookupService symbolService = AprsSymbolLookupService.Default;
+    private AprsSymbol? selectedSymbol;
 
     public ObjectEditorViewModel(IAprsObjectEditorService editorService, AprsObjectEditModel model)
     {
         this.editorService = editorService;
+        AvailableSymbols = new ObservableCollection<AprsSymbol>(
+            symbolService.GetKnownSymbols().Where(s => s.IsPrimaryTable));
         Load(model);
     }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    public ObservableCollection<AprsSymbol> AvailableSymbols { get; }
+
+    public AprsSymbol? SelectedSymbol
+    {
+        get => selectedSymbol;
+        set
+        {
+            if (ReferenceEquals(selectedSymbol, value)) return;
+            selectedSymbol = value;
+            if (value is not null)
+            {
+                SymbolTableIdentifier = value.SymbolTableIdentifier.ToString();
+                SymbolCode = value.SymbolCode.ToString();
+                OnPropertyChanged(nameof(SymbolDisplay));
+            }
+            OnPropertyChanged();
+        }
+    }
+
+    public string SymbolDisplay => selectedSymbol is not null
+        ? $"{selectedSymbol.Description}  ({SymbolTableIdentifier}{SymbolCode})"
+        : $"{SymbolTableIdentifier}{SymbolCode}";
 
     public string ObjectName { get; set; } = string.Empty;
 
@@ -95,6 +128,8 @@ public sealed class ObjectEditorViewModel
         SymbolTableIdentifier = model.SymbolTableIdentifier?.ToString() ?? string.Empty;
         SymbolCode = model.SymbolCode?.ToString() ?? string.Empty;
         Overlay = model.Overlay?.ToString() ?? string.Empty;
+        selectedSymbol = AvailableSymbols.FirstOrDefault(
+            s => s.SymbolTableIdentifier.ToString() == SymbolTableIdentifier && s.SymbolCode.ToString() == SymbolCode);
         Comment = model.Comment;
         TransmitIntervalMinutes = model.TransmitInterval?.TotalMinutes;
         AprsIsTransmitEnabled = model.AprsIsTransmitEnabled;
@@ -115,4 +150,7 @@ public sealed class ObjectEditorViewModel
     {
         return string.IsNullOrEmpty(value) ? null : value[0];
     }
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

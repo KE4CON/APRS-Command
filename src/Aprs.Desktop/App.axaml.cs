@@ -7,11 +7,41 @@ using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Audio;
 using Aprs.Desktop.ViewModels;
 using Aprs.Desktop.Views;
+using Avalonia.Threading;
 
 namespace Aprs.Desktop;
 
 public sealed partial class App : Application
 {
+    private static void WireMessageToast(DesktopRuntime rt)
+    {
+        var lastInboxCount = rt.MainViewModel.MessageCenter.InboxCount;
+
+        rt.Coordinator.PacketIngested += (_, _) =>
+        {
+            var count = rt.MainViewModel.MessageCenter.InboxCount;
+            if (count <= lastInboxCount) return;
+
+            var added = count - lastInboxCount;
+            lastInboxCount = count;
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                var latest = rt.MainViewModel.MessageCenter.Inbox.LastOrDefault();
+                var from   = latest?.RemoteStation ?? "Unknown";
+                var body   = latest?.Body ?? string.Empty;
+                var title  = added == 1
+                    ? $"New message from {from}"
+                    : $"{added} new messages";
+
+                var toast = new ToastNotification(title, body);
+                toast.Clicked += (_, _) =>
+                    rt.MainViewModel.OpenMessagesCommand.Execute(null);
+                toast.Show();
+            });
+        };
+    }
+
     private DesktopRuntime? runtime;
     public DesktopRuntime? Runtime => runtime;
 
@@ -50,6 +80,7 @@ public sealed partial class App : Application
                     runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
                         runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                     WireSoundAlerts(runtime);
+                    WireMessageToast(runtime);
                 }
                 else
                 {
@@ -70,6 +101,7 @@ public sealed partial class App : Application
                         runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
                             runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                         WireSoundAlerts(runtime);
+                        WireMessageToast(runtime);
                         setup.Close();
                     };
 
