@@ -106,6 +106,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenHelpCommand        = new DesktopCommand(() => HelpRequested?.Invoke(this, EventArgs.Empty));
         BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
         ToggleExerciseModeCommand = new DesktopCommand(() => ExerciseModeRequested?.Invoke(this, EventArgs.Empty));
+        OpenAboutCommand       = new DesktopCommand(() => AboutRequested?.Invoke(this, EventArgs.Empty));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -125,6 +126,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? HelpRequested;
     public event EventHandler? BeaconNowRequested;
     public event EventHandler? ExerciseModeRequested;
+    public event EventHandler? AboutRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -167,6 +169,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenHelpCommand { get; }
     public DesktopCommand BeaconNowCommand { get; }
     public DesktopCommand ToggleExerciseModeCommand { get; }
+    public DesktopCommand OpenAboutCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
