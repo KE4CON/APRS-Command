@@ -45,6 +45,8 @@ public sealed partial class App : Application
                         DataContext = runtime.MainViewModel
                     };
                     runtime.Start();
+                    runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
+                        runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                 }
                 else
                 {
@@ -62,6 +64,8 @@ public sealed partial class App : Application
                         desktop.MainWindow = mainWindow;
                         mainWindow.Show();
                         runtime.Start();
+                        runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
+                            runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
                         setup.Close();
                     };
 

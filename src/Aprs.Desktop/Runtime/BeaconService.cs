@@ -1,0 +1,187 @@
+using Aprs.Services;
+using Aprs.Transport;
+
+namespace Aprs.Desktop.Runtime;
+
+/// <summary>
+/// Owns the live beacon pipeline: a <see cref="LocalStationProfileService"/> populated from
+/// persisted settings, a <see cref="BeaconScheduler"/> wired to an APRS-IS client that can
+/// actually transmit, and a background tick loop that fires scheduled beacons on time.
+///
+/// <para>Call <see cref="ApplySettings"/> whenever the operator saves their station profile
+/// so changes take effect immediately without a restart. Call <see cref="BeaconNowAsync"/> when
+/// the operator clicks the Beacon Now sidebar button.</para>
+/// </summary>
+public sealed class BeaconService : IAsyncDisposable
+{
+    private readonly LocalStationProfileService profileService;
+    private readonly BeaconScheduler scheduler;
+    private readonly IAprsIsClient? aprsIsClient;
+    private readonly CancellationTokenSource cts = new();
+    private Task? tickLoop;
+
+    public BeaconService(
+        LocalStationProfileService profileService,
+        BeaconScheduler scheduler,
+        IAprsIsClient? aprsIsClient)
+    {
+        this.profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
+        this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
+        this.aprsIsClient = aprsIsClient;
+    }
+
+    /// <summary>Creates a fully wired BeaconService from the persisted station settings.</summary>
+    public static BeaconService CreateFromSettings(Configuration.AppSettings settings)
+    {
+        var station = settings.Station;
+        var profileService = new LocalStationProfileService();
+
+        // Push the persisted station profile into the service layer.
+        var profile = ToLocalProfile(station);
+        profileService.UpdateProfile(profile, DateTimeOffset.UtcNow);
+
+        // Build an APRS-IS client that can transmit when a real passcode is configured.
+        IAprsIsClient? aprsIsClient = null;
+        AprsIsClientConfiguration? clientConfig = null;
+
+        // Find the first APRS-IS port with a real passcode.
+        foreach (var port in settings.Connections.Ports)
+        {
+            if (port.Type != Configuration.ConnectionPortType.AprsIs)
+                continue;
+
+            var isConfig = port.Configuration.AprsIs;
+            if (isConfig is null) continue;
+
+            var passcode = isConfig.Passcode?.Trim();
+            if (string.IsNullOrEmpty(passcode) || passcode == "-1") continue;
+
+            clientConfig = AprsIsClientConfiguration.Default with
+            {
+                ServerHost    = isConfig.ServerHost,
+                ServerPort    = isConfig.ServerPort,
+                Callsign      = station.FullCallsign,
+                Passcode      = passcode,
+                Filter        = string.IsNullOrWhiteSpace(isConfig.Filter) ? null : isConfig.Filter,
+                ReceiveOnly   = false,
+                TransmitEnabled = station.AprsIsTransmitEnabled && station.TransmitEnabled
+            };
+
+            aprsIsClient = new AprsIsClient(clientConfig);
+            break;
+        }
+
+        var schedulerConfig = new BeaconSchedulerConfiguration(
+            SchedulerEnabled:        station.TransmitEnabled,
+            AprsIsBeaconEnabled:     station.AprsIsTransmitEnabled,
+            RfBeaconEnabled:         station.RfTransmitEnabled,
+            MinimumBeaconInterval:   TimeSpan.FromMinutes(5),
+            Destination:             "APRS",
+            RequireTransmitConfirmation: false,
+            SmartBeaconing:          SmartBeaconingConfiguration.Default);
+
+        var beaconFormatter = new AprsBeaconFormatter();
+        IAprsIsClient clientForScheduler = aprsIsClient ?? (IAprsIsClient)new NullAprsIsClient();
+        var scheduler = new BeaconScheduler(
+            profileService,
+            beaconFormatter,
+            clientForScheduler,
+            schedulerConfig);
+
+        return new BeaconService(profileService, scheduler, aprsIsClient);
+    }
+
+    /// <summary>
+    /// Updates the live profile service from freshly-saved settings so beacon content
+    /// reflects the latest station configuration immediately.
+    /// </summary>
+    public void ApplySettings(Configuration.AppSettings settings)
+    {
+        profileService.UpdateProfile(ToLocalProfile(settings.Station), DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>Starts the scheduler and the background tick loop.</summary>
+    public void Start()
+    {
+        if (aprsIsClient is not null)
+        {
+            _ = aprsIsClient.ConnectAsync(cts.Token);
+        }
+
+        scheduler.Start();
+
+        tickLoop = Task.Run(async () =>
+        {
+            while (!cts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await scheduler.TickAsync(cts.Token).ConfigureAwait(false);
+                    await Task.Delay(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch
+                {
+                    // Never crash the tick loop; log it later when we have a logging service.
+                    await Task.Delay(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false);
+                }
+            }
+        }, cts.Token);
+    }
+
+    /// <summary>Transmits a beacon immediately, bypassing the schedule.</summary>
+    public Task<BeaconNowResult> BeaconNowAsync(CancellationToken cancellationToken = default)
+        => scheduler.BeaconNowAsync(cancellationToken);
+
+    /// <summary>Current scheduler state — for the status display.</summary>
+    public BeaconSchedulerState GetState() => scheduler.GetState();
+
+    public async ValueTask DisposeAsync()
+    {
+        await cts.CancelAsync().ConfigureAwait(false);
+
+        if (tickLoop is not null)
+        {
+            try { await tickLoop.ConfigureAwait(false); }
+            catch { /* suppress */ }
+        }
+
+        scheduler.Stop();
+
+        if (aprsIsClient is not null)
+        {
+            try { await aprsIsClient.DisconnectAsync(CancellationToken.None).ConfigureAwait(false); }
+            catch { /* suppress */ }
+            await aprsIsClient.DisposeAsync().ConfigureAwait(false);
+        }
+
+        cts.Dispose();
+    }
+
+    private static LocalStationProfile ToLocalProfile(Configuration.StationProfile station)
+    {
+        return new LocalStationProfile(
+            Callsign:               station.Callsign,
+            Ssid:                   station.Ssid > 0 ? station.Ssid : null,
+            FixedLatitude:          station.Latitude,
+            FixedLongitude:         station.Longitude,
+            SymbolTableIdentifier:  station.SymbolTable,
+            SymbolCode:             station.SymbolCode,
+            Overlay:                null,
+            StationComment:         station.StationComment,
+            PhgData:                station.PhgData,
+            BeaconPath:             station.BeaconPath,
+            AprsIsBeaconInterval:   TimeSpan.FromMinutes(station.AprsIsBeaconMinutes),
+            RfBeaconInterval:       TimeSpan.FromMinutes(station.RfBeaconMinutes),
+            FixedStationMode:       station.FixedStationMode,
+            MobileStationMode:      !station.FixedStationMode,
+            TransmitEnabled:        station.TransmitEnabled,
+            AprsIsTransmitEnabled:  station.AprsIsTransmitEnabled,
+            RfTransmitEnabled:      station.RfTransmitEnabled,
+            CreatedAtUtc:           DateTimeOffset.UtcNow,
+            UpdatedAtUtc:           DateTimeOffset.UtcNow);
+    }
+}
