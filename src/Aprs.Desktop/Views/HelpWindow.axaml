@@ -10,8 +10,8 @@
   <Grid RowDefinitions="*,Auto">
     <views:HelpView />
     <Border Grid.Row="1"
-            Background="#F1F5F9"
-            BorderBrush="#CBD5E1"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="0,1,0,0"
             Padding="12">
       <Button Content="Close"

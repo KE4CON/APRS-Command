@@ -9,21 +9,21 @@
       <TextBlock Text="APRS Ports"
                  FontSize="18"
                  FontWeight="SemiBold"
-                 Foreground="#0F172A" />
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
       <TextBlock Text="{Binding Summary}"
-                 Foreground="#526173"
+                 Foreground="{DynamicResource TextSubtleBrush}"
                  FontSize="12"
                  TextWrapping="Wrap" />
     </StackPanel>
 
     <Border Grid.Row="1"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#FFFFFF"
+            Background="{DynamicResource SurfaceBgBrush}"
             Padding="10">
       <TextBlock Text="{Binding Health}"
-                 Foreground="#475569"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
                  TextWrapping="Wrap" />
     </Border>
 
@@ -31,10 +31,10 @@
       <ItemsControl ItemsSource="{Binding Ports}">
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <Border BorderBrush="#CBD5E1"
+            <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                     BorderThickness="1"
                     CornerRadius="6"
-                    Background="#FFFFFF"
+                    Background="{DynamicResource SurfaceBgBrush}"
                     Padding="10"
                     Margin="0,0,0,8">
               <Grid ColumnDefinitions="2*,*,*,*,*,*,*"
@@ -44,46 +44,46 @@
                 <StackPanel>
                   <TextBlock Text="{Binding PortName}"
                              FontWeight="SemiBold"
-                             Foreground="#0F172A" />
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
                   <TextBlock Text="{Binding SourceDescription}"
                              FontSize="11"
-                             Foreground="#64748B"
+                             Foreground="{DynamicResource TextMutedBrush}"
                              TextWrapping="Wrap" />
                 </StackPanel>
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="Type"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding PortType}" />
                 </StackPanel>
                 <StackPanel Grid.Column="2">
                   <TextBlock Text="State"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding ConnectionState}" />
                 </StackPanel>
                 <StackPanel Grid.Column="3">
                   <TextBlock Text="RX"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding ReceiveEnabled}" />
                 </StackPanel>
                 <StackPanel Grid.Column="4">
                   <TextBlock Text="TX"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding TransmitEnabled}" />
                 </StackPanel>
                 <StackPanel Grid.Column="5">
                   <TextBlock Text="Packets"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding PacketCounts}" />
                 </StackPanel>
                 <StackPanel Grid.Column="6">
                   <TextBlock Text="Last packet"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding LastPacketTime}" />
                 </StackPanel>
 
@@ -91,7 +91,7 @@
                             Grid.ColumnSpan="7">
                   <TextBlock Text="Last error"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBlock Text="{Binding LastError}"
                              TextWrapping="Wrap" />
                 </StackPanel>

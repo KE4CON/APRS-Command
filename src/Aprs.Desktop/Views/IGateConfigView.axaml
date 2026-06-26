@@ -8,13 +8,13 @@
 
       <!-- Header -->
       <StackPanel Spacing="2">
-        <TextBlock Text="iGate Setup" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
-        <TextBlock Foreground="#526173" FontSize="12" TextWrapping="Wrap"
+        <TextBlock Text="iGate Setup" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap"
                    Text="An iGate listens for APRS packets on RF and forwards them to the APRS-IS internet network. To iGate you need: a receive-enabled RF port in Connections, an APRS-IS port with a valid passcode (not -1), and iGating enabled here." />
       </StackPanel>
 
       <!-- Master enable -->
-      <Border Grid.Row="1" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+      <Border Grid.Row="1" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1" CornerRadius="6" Padding="14" Background="{DynamicResource TextTitleBarBrush}">
         <StackPanel Spacing="10">
           <CheckBox Content="Enable iGating (gate RF packets to APRS-IS)"
                     IsChecked="{Binding Enabled}"
@@ -29,10 +29,10 @@
       </Border>
 
       <!-- What to gate -->
-      <Border Grid.Row="2" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Background="#F8FAFC">
+      <Border Grid.Row="2" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1" CornerRadius="6" Padding="14" Background="{DynamicResource TextTitleBarBrush}">
         <StackPanel Spacing="8">
-          <TextBlock Text="Packet types to gate" FontWeight="SemiBold" Foreground="#0F172A" />
-          <TextBlock Foreground="#64748B" FontSize="11" TextWrapping="Wrap"
+          <TextBlock Text="Packet types to gate" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" TextWrapping="Wrap"
                      Text="Select which packet types should be forwarded to APRS-IS. When in doubt, leave all enabled — the APRS-IS server handles deduplication." />
           <StackPanel Orientation="Horizontal" Spacing="24">
             <CheckBox Content="Position packets" IsChecked="{Binding GatePositionPackets}" />
@@ -44,8 +44,8 @@
       </Border>
 
       <!-- Warning -->
-      <Border Grid.Row="3" Background="#FEF3C7" BorderBrush="#F59E0B" BorderThickness="1" CornerRadius="5" Padding="12">
-        <TextBlock Foreground="#92400E" FontSize="11" TextWrapping="Wrap">
+      <Border Grid.Row="3" Background="{DynamicResource WarnBgBrush}" BorderBrush="{DynamicResource WarnBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12">
+        <TextBlock Foreground="{DynamicResource WarnTextStrongBrush}" FontSize="11" TextWrapping="Wrap">
           <Run FontWeight="SemiBold">Before enabling iGating:</Run>
           <Run> Make sure your APRS-IS port in Connections has a real numeric passcode (not -1). A receive-only passcode prevents gating. Your callsign in Station Setup must also be set to a real callsign — the transmit safety authority will block gating if it is still N0CALL.</Run>
         </TextBlock>
@@ -55,7 +55,7 @@
       <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
         <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
-        <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="#475569" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
       </Grid>
     </Grid>
   </ScrollViewer>

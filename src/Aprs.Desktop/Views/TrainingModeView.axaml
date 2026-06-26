@@ -13,7 +13,7 @@
                    FontSize="20"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding TransmitStatusText}"
-                   Foreground="#0F766E"
+                   Foreground="{DynamicResource AccentTealBrush}"
                    FontWeight="SemiBold" />
       </StackPanel>
       <TextBlock Grid.Column="1"
@@ -39,10 +39,10 @@
           RowDefinitions="*,Auto"
           ColumnSpacing="8"
           RowSpacing="8">
-      <Border BorderBrush="#CBD5E1"
+      <Border BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#FFFFFF"
+              Background="{DynamicResource SurfaceBgBrush}"
               Padding="8">
         <ListBox ItemsSource="{Binding Scenarios}"
                  SelectedItem="{Binding SelectedScenario}">
@@ -50,8 +50,8 @@
             <DataTemplate>
               <StackPanel Spacing="2">
                 <TextBlock Text="{Binding ScenarioName}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding Difficulty, StringFormat='Difficulty: {0}'}" Foreground="#475569" />
-                <TextBlock Text="{Binding ScenarioType}" Foreground="#475569" />
+                <TextBlock Text="{Binding Difficulty, StringFormat='Difficulty: {0}'}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding ScenarioType}" Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>
@@ -61,24 +61,24 @@
       <Grid Grid.Column="1"
             RowDefinitions="Auto,*,Auto"
             RowSpacing="8">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#F8FAFC"
+                Background="{DynamicResource TextTitleBarBrush}"
                 Padding="8">
           <StackPanel Spacing="4">
             <TextBlock Text="{Binding SelectedScenarioName}" FontWeight="SemiBold" />
             <TextBlock Text="{Binding ScenarioDescription}" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding ProgressText}" Foreground="#475569" />
-            <TextBlock Text="{Binding LastEventText}" Foreground="#475569" />
+            <TextBlock Text="{Binding ProgressText}" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{Binding LastEventText}" Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
         </Border>
 
         <Border Grid.Row="1"
-                BorderBrush="#CBD5E1"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBgBrush}"
                 Padding="8">
           <Grid RowDefinitions="Auto,*"
                 RowSpacing="6">
@@ -101,7 +101,7 @@
                     <TextBlock Grid.Row="1"
                                Grid.ColumnSpan="2"
                                Text="{Binding Description}"
-                               Foreground="#475569"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" />
                   </Grid>
                 </DataTemplate>
@@ -111,10 +111,10 @@
         </Border>
 
         <Border Grid.Row="2"
-                BorderBrush="#CBD5E1"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#F8FAFC"
+                Background="{DynamicResource TextTitleBarBrush}"
                 Padding="8"
                 MaxHeight="100">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -122,7 +122,7 @@
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
                   <TextBlock Text="{Binding Summary}"
-                             Foreground="#334155"
+                             Foreground="{DynamicResource TitleBarBorderBrush}"
                              TextWrapping="Wrap" />
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

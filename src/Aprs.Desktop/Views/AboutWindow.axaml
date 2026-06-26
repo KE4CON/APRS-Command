@@ -8,7 +8,7 @@
         MaxWidth="440"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
-  <Grid RowDefinitions="*,Auto" Background="#FFFFFF">
+  <Grid RowDefinitions="*,Auto" Background="{DynamicResource SurfaceBgBrush}">
 
     <!-- Main content -->
     <StackPanel Spacing="0" VerticalAlignment="Center" Margin="40,32">
@@ -17,57 +17,57 @@
       <TextBlock Text="APRS Command"
                  FontSize="28"
                  FontWeight="Bold"
-                 Foreground="#0F172A" />
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
       <TextBlock x:Name="VersionText"
                  FontSize="13"
-                 Foreground="#64748B"
+                 Foreground="{DynamicResource TextMutedBrush}"
                  Margin="0,2,0,0" />
 
-      <Border Height="1" Background="#E2E8F0" Margin="0,20,0,20" />
+      <Border Height="1" Background="{DynamicResource TextOnDarkBrush}" Margin="0,20,0,20" />
 
       <!-- Description -->
       <TextBlock Text="A cross-platform APRS client for amateur radio operators."
                  FontSize="12"
-                 Foreground="#334155"
+                 Foreground="{DynamicResource TitleBarBorderBrush}"
                  TextWrapping="Wrap"
                  Margin="0,0,0,16" />
 
       <!-- Details grid -->
       <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
             ColumnSpacing="12" RowSpacing="6">
-        <TextBlock Grid.Row="0" Text="Operator:" FontSize="11" Foreground="#64748B" />
-        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="CallsignText" FontSize="11" Foreground="#1e293b" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="0" Text="Operator:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBlock Grid.Row="0" Grid.Column="1" x:Name="CallsignText" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" FontWeight="SemiBold" />
 
-        <TextBlock Grid.Row="1" Text="Runtime:" FontSize="11" Foreground="#64748B" />
-        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="RuntimeText" FontSize="11" Foreground="#1e293b" />
+        <TextBlock Grid.Row="1" Text="Runtime:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBlock Grid.Row="1" Grid.Column="1" x:Name="RuntimeText" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" />
 
-        <TextBlock Grid.Row="2" Text="Platform:" FontSize="11" Foreground="#64748B" />
-        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="PlatformText" FontSize="11" Foreground="#1e293b" />
+        <TextBlock Grid.Row="2" Text="Platform:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBlock Grid.Row="2" Grid.Column="1" x:Name="PlatformText" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" />
 
-        <TextBlock Grid.Row="3" Text="Source:" FontSize="11" Foreground="#64748B" />
+        <TextBlock Grid.Row="3" Text="Source:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
         <TextBlock Grid.Row="3" Grid.Column="1"
                    Text="github.com/KE4CON/APRS-Command"
                    FontSize="11"
-                   Foreground="#2563EB"
+                   Foreground="{DynamicResource AccentBlueMidBrush}"
                    Cursor="Hand"
                    PointerPressed="RepoLink_PointerPressed" />
 
-        <TextBlock Grid.Row="4" Text="License:" FontSize="11" Foreground="#64748B" />
-        <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT" FontSize="11" Foreground="#1e293b" />
+        <TextBlock Grid.Row="4" Text="License:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" />
       </Grid>
 
-      <Border Height="1" Background="#E2E8F0" Margin="0,20,0,16" />
+      <Border Height="1" Background="{DynamicResource TextOnDarkBrush}" Margin="0,20,0,16" />
 
       <TextBlock Text="Built on Avalonia UI, Mapsui, and BruTile. Inspired by UI-View32."
                  FontSize="11"
-                 Foreground="#94A3B8"
+                 Foreground="{DynamicResource TextSubtleBrush}"
                  TextWrapping="Wrap" />
     </StackPanel>
 
     <!-- Close button -->
     <Border Grid.Row="1"
-            Background="#F8FAFC"
-            BorderBrush="#E2E8F0"
+            Background="{DynamicResource TextTitleBarBrush}"
+            BorderBrush="{DynamicResource TextOnDarkBrush}"
             BorderThickness="0,1,0,0"
             Padding="20,12">
       <Button Content="Close"

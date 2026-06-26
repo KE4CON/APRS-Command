@@ -11,7 +11,7 @@
                  FontSize="20"
                  FontWeight="SemiBold" />
       <TextBlock Text="{Binding LastAction}"
-                 Foreground="#526173" />
+                 Foreground="{DynamicResource TextSubtleBrush}" />
     </StackPanel>
 
     <Grid Grid.Row="1"
@@ -28,10 +28,10 @@
     </Grid>
 
     <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             Padding="10">
       <Grid ColumnDefinitions="150,*"
             RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"

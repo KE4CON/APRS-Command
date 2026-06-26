@@ -9,9 +9,9 @@
       <TextBlock Text="Direwolf TCP KISS"
                  FontSize="18"
                  FontWeight="SemiBold"
-                 Foreground="#0F172A" />
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
       <TextBlock Text="Local network TNC profile"
-                 Foreground="#526173"
+                 Foreground="{DynamicResource TextSubtleBrush}"
                  FontSize="12" />
     </StackPanel>
 
@@ -23,19 +23,19 @@
       <StackPanel>
         <TextBlock Text="Profile"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding ProfileName}" />
       </StackPanel>
       <StackPanel Grid.Column="1">
         <TextBlock Text="Host"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBox Text="{Binding Host}" />
       </StackPanel>
       <StackPanel Grid.Column="2">
         <TextBlock Text="KISS port"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <NumericUpDown Value="{Binding KissPort}"
                        Minimum="1"
                        Maximum="65535"
@@ -60,7 +60,7 @@
         <CheckBox Content="Transmit enabled"
                   IsChecked="{Binding TransmitEnabled}" />
         <TextBlock Text="{Binding SafetySummary}"
-                   Foreground="#B45309"
+                   Foreground="{DynamicResource WarnTextBrush}"
                    TextWrapping="Wrap" />
       </StackPanel>
     </Grid>
@@ -79,29 +79,29 @@
       </Button>
       <TextBlock Grid.Column="2"
                  Text="{Binding ConnectionStatus}"
-                 Foreground="#475569"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
                  VerticalAlignment="Center"
                  TextWrapping="Wrap" />
     </Grid>
 
     <Border Grid.Row="3"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
             Padding="12"
-            Background="#FFFFFF">
+            Background="{DynamicResource SurfaceBgBrush}">
       <Grid RowDefinitions="Auto,Auto,Auto"
             RowSpacing="8">
         <TextBlock Text="Setup notes"
                    FontWeight="SemiBold"
-                   Foreground="#0F172A" />
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
         <ItemsControl Grid.Row="1"
                       ItemsSource="{Binding SetupNotes}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <TextBlock Text="{Binding}"
                          TextWrapping="Wrap"
-                         Foreground="#475569"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
                          Margin="0,0,0,4" />
             </DataTemplate>
           </ItemsControl.ItemTemplate>

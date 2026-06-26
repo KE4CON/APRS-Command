@@ -12,8 +12,8 @@
         Topmost="True"
         WindowStartupLocation="Manual"
         Background="Transparent">
-  <Border Background="#0F172A"
-          BorderBrush="#334155"
+  <Border Background="{DynamicResource TextPrimaryBrush}"
+          BorderBrush="{DynamicResource TitleBarBorderBrush}"
           BorderThickness="1"
           CornerRadius="8"
           Padding="14,12"
@@ -26,12 +26,12 @@
                    Text="New message"
                    FontSize="13"
                    FontWeight="SemiBold"
-                   Foreground="#F1F5F9"
+                   Foreground="{DynamicResource AppBgAltBrush}"
                    VerticalAlignment="Center" />
         <TextBlock Grid.Column="2"
                    Text="✕"
                    FontSize="12"
-                   Foreground="#64748B"
+                   Foreground="{DynamicResource TextMutedBrush}"
                    VerticalAlignment="Center"
                    Cursor="Hand"
                    PointerPressed="CloseButton_PointerPressed" />
@@ -40,7 +40,7 @@
                  x:Name="BodyText"
                  Text=""
                  FontSize="11"
-                 Foreground="#94A3B8"
+                 Foreground="{DynamicResource TextSubtleBrush}"
                  TextWrapping="Wrap"
                  MaxLines="2" />
     </Grid>

@@ -14,7 +14,7 @@
 
     <!-- Title bar -->
     <Border Grid.Row="0"
-            Background="#18212B"
+            Background="{DynamicResource TitleBarBgBrush}"
             Padding="16,12">
       <Grid ColumnDefinitions="*,Auto,Auto"
             ColumnSpacing="10">
@@ -22,35 +22,35 @@
           <TextBlock Text="APRS Command"
                      FontSize="19"
                      FontWeight="SemiBold"
-                     Foreground="#F8FAFC" />
+                     Foreground="{DynamicResource TextTitleBarBrush}" />
           <TextBlock Text="APRS station map"
                      FontSize="12"
-                     Foreground="#CBD5E1" />
+                     Foreground="{DynamicResource TextSidebarBrush}" />
         </StackPanel>
         <Border Grid.Column="1"
                 x:Name="AprsIsBadgeBorder"
-                Background="#1E293B"
-                BorderBrush="#64748B"
+                Background="{DynamicResource AppBgAltBrush}"
+                BorderBrush="{DynamicResource TextMutedBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
           <TextBlock x:Name="AprsIsBadgeText"
                      Text="APRS-IS Offline"
-                     Foreground="#E2E8F0"
+                     Foreground="{DynamicResource TextOnDarkBrush}"
                      FontWeight="SemiBold" />
         </Border>
         <Border Grid.Column="2"
                 x:Name="TxBadgeBorder"
-                Background="#123B32"
-                BorderBrush="#2DD4BF"
+                Background="{DynamicResource AccentTealBgBrush}"
+                BorderBrush="{DynamicResource AccentTealBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
           <TextBlock x:Name="TxBadgeText"
                      Text="TX Disabled"
-                     Foreground="#D9FFF7"
+                     Foreground="{DynamicResource AccentTealTextBrush}"
                      FontWeight="SemiBold" />
         </Border>
       </Grid>
@@ -58,7 +58,7 @@
 
     <!-- Menu bar -->
     <Menu Grid.Row="1"
-          Background="#F1F5F9">
+          Background="{DynamicResource AppBgAltBrush}">
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
       <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
       <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
@@ -74,6 +74,9 @@
         <Separator />
         <MenuItem Header="Toggle Exercise Mode (inhibit all transmit)"
                   Command="{Binding ToggleExerciseModeCommand}" />
+        <Separator />
+        <MenuItem Header="Toggle Dark Mode"
+                  Command="{Binding ToggleDarkModeCommand}" />
       </MenuItem>
       <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
       <MenuItem Header="About APRS Command" Command="{Binding OpenAboutCommand}" />
@@ -85,8 +88,8 @@
 
       <!-- Left icon sidebar -->
       <Border Grid.Column="0"
-              Background="#1E293B"
-              BorderBrush="#334155"
+              Background="{DynamicResource AppBgAltBrush}"
+              BorderBrush="{DynamicResource TitleBarBorderBrush}"
               BorderThickness="0,0,1,0">
         <StackPanel VerticalAlignment="Top"
                     Spacing="4"
@@ -98,7 +101,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24"
                   Command="{Binding Map.HomeCommand}">
             <TextBlock Text="⌂" />
@@ -108,7 +111,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24"
                   Command="{Binding Map.CentreOnStationCommand}">
             <TextBlock Text="◎" />
@@ -118,7 +121,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24">
             <TextBlock Text="🔍" />
           </Button>
@@ -127,7 +130,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24">
             <TextBlock Text="📏" />
           </Button>
@@ -136,14 +139,14 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24">
             <TextBlock Text="🗺" />
           </Button>
 
           <!-- Divider -->
           <Border Height="1"
-                  Background="#334155"
+                  Background="{DynamicResource TitleBarBorderBrush}"
                   Margin="4,8" />
 
           <!-- Operator tools -->
@@ -152,7 +155,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24"
                   Command="{Binding BeaconNowCommand}">
             <TextBlock Text="📡" />
@@ -162,7 +165,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,10"
                   Background="Transparent"
-                  Foreground="#CBD5E1"
+                  Foreground="{DynamicResource TextSidebarBrush}"
                   FontSize="24">
             <TextBlock Text="🔔" />
           </Button>

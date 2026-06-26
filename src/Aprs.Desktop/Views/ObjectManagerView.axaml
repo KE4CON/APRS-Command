@@ -12,7 +12,7 @@
                  FontSize="24"
                  FontWeight="SemiBold" />
       <TextBlock Text="APRS objects and items"
-                 Foreground="#526173" />
+                 Foreground="{DynamicResource TextSubtleBrush}" />
     </StackPanel>
     <Grid Grid.Row="1"
           RowDefinitions="Auto,*,Auto"
@@ -20,7 +20,7 @@
       <Grid ColumnDefinitions="*,Auto,Auto"
             ColumnSpacing="8">
         <TextBlock Text="{Binding StatusText}"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis" />
         <Button Grid.Column="1"
@@ -34,10 +34,10 @@
       <Grid Grid.Row="1"
             ColumnDefinitions="1.1*,1.4*"
             ColumnSpacing="10">
-        <Border BorderBrush="#CBD5E1"
+        <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#F8FAFC"
+                Background="{DynamicResource TextTitleBarBrush}"
                 Padding="8">
           <ListBox ItemsSource="{Binding Objects}"
                    SelectedItem="{Binding SelectedObject}">
@@ -51,21 +51,21 @@
                                FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Owner}"
                                FontSize="11"
-                               Foreground="#64748B" />
+                               Foreground="{DynamicResource TextMutedBrush}" />
                   </StackPanel>
                   <StackPanel Grid.Column="1">
                     <TextBlock Text="{Binding Comment}"
                                TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Position}"
                                FontSize="11"
-                               Foreground="#64748B" />
+                               Foreground="{DynamicResource TextMutedBrush}" />
                   </StackPanel>
                   <StackPanel Grid.Column="2">
                     <TextBlock Text="{Binding State}"
-                               Foreground="#475569" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Ownership}"
                                FontSize="11"
-                               Foreground="#64748B" />
+                               Foreground="{DynamicResource TextMutedBrush}" />
                   </StackPanel>
                 </Grid>
               </DataTemplate>
@@ -74,10 +74,10 @@
         </Border>
 
         <Border Grid.Column="1"
-                BorderBrush="#CBD5E1"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
-                Background="#FFFFFF"
+                Background="{DynamicResource SurfaceBgBrush}"
                 Padding="10">
           <views:ObjectEditorView DataContext="{Binding Editor}" />
         </Border>
@@ -87,7 +87,7 @@
             ColumnDefinitions="*,Auto,Auto,Auto,Auto"
             ColumnSpacing="8">
         <TextBlock Text="Local preview only. Object packets are not transmitted."
-                   Foreground="#64748B"
+                   Foreground="{DynamicResource TextMutedBrush}"
                    VerticalAlignment="Center" />
         <Button Grid.Column="1"
                 Content="Save"

@@ -13,7 +13,7 @@
                    FontSize="20"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding TransmitStatusText}"
-                   Foreground="#0F766E"
+                   Foreground="{DynamicResource AccentTealBrush}"
                    FontWeight="SemiBold" />
       </StackPanel>
       <TextBlock Grid.Column="1"
@@ -37,18 +37,18 @@
                   Grid.ColumnSpan="6"
                   Spacing="2">
         <TextBlock Text="{Binding SourceName}" />
-        <TextBlock Text="{Binding StationCountText}" Foreground="#475569" />
-        <TextBlock Text="{Binding UpdateIntervalText, StringFormat='Update interval: {0}'}" Foreground="#475569" />
-        <TextBlock Text="{Binding AreaText}" Foreground="#475569" />
-        <TextBlock Text="{Binding LastErrorText}" Foreground="#B91C1C" />
+        <TextBlock Text="{Binding StationCountText}" Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding UpdateIntervalText, StringFormat='Update interval: {0}'}" Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding AreaText}" Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding LastErrorText}" Foreground="{DynamicResource ErrorBorderBrush}" />
       </StackPanel>
     </Grid>
 
     <Border Grid.Row="2"
-            BorderBrush="#CBD5E1"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="6"
-            Background="#F8FAFC"
+            Background="{DynamicResource TextTitleBarBrush}"
             Padding="8">
       <Grid RowDefinitions="Auto,*"
             RowSpacing="6">
@@ -59,13 +59,13 @@
           <ItemsControl ItemsSource="{Binding RecentPackets}">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border BorderBrush="#E2E8F0"
+                <Border BorderBrush="{DynamicResource TextOnDarkBrush}"
                         BorderThickness="0,0,0,1"
                         Padding="0,5">
                   <Grid ColumnDefinitions="60,90,90,*"
                         RowDefinitions="Auto,Auto"
                         ColumnSpacing="8">
-                    <TextBlock Text="{Binding Time}" Foreground="#64748B" />
+                    <TextBlock Text="{Binding Time}" Foreground="{DynamicResource TextMutedBrush}" />
                     <TextBlock Grid.Column="1" Text="{Binding Kind}" />
                     <TextBlock Grid.Column="2" Text="{Binding EntityName}" FontWeight="SemiBold" />
                     <TextBlock Grid.Column="3" Text="{Binding Source}" />

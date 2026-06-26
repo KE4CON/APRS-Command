@@ -13,7 +13,7 @@
                    FontSize="24"
                    FontWeight="SemiBold" />
         <TextBlock Text="{Binding DocumentationLocation}"
-                   Foreground="#526173"
+                   Foreground="{DynamicResource TextSubtleBrush}"
                    FontSize="12" />
       </StackPanel>
       <TextBox Grid.Column="1"
@@ -25,15 +25,15 @@
     <Grid Grid.Row="1"
           ColumnDefinitions="270,*"
           ColumnSpacing="12">
-      <Border BorderBrush="#CBD5E1"
+      <Border BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#F8FAFC"
+              Background="{DynamicResource TextTitleBarBrush}"
               Padding="8">
         <DockPanel>
           <TextBlock DockPanel.Dock="Top"
                      Text="{Binding TopicCount, StringFormat='Topics: {0}'}"
-                     Foreground="#526173"
+                     Foreground="{DynamicResource TextSubtleBrush}"
                      Margin="0,0,0,8" />
           <ListBox ItemsSource="{Binding FilteredTopics}"
                    SelectedItem="{Binding SelectedTopic}">
@@ -48,10 +48,10 @@
       </Border>
 
       <Border Grid.Column="1"
-              BorderBrush="#CBD5E1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
-              Background="#FFFFFF"
+              Background="{DynamicResource SurfaceBgBrush}"
               Padding="12">
         <Grid RowDefinitions="Auto,Auto,*"
               RowSpacing="8">
@@ -60,7 +60,7 @@
                      FontWeight="SemiBold" />
           <TextBlock Grid.Row="1"
                      Text="{Binding SelectedAvailability}"
-                     Foreground="#526173" />
+                     Foreground="{DynamicResource TextSubtleBrush}" />
           <ScrollViewer Grid.Row="2"
                         VerticalScrollBarVisibility="Auto"
                         HorizontalScrollBarVisibility="Disabled">
@@ -71,7 +71,7 @@
                      FontFamily="Menlo,Consolas,monospace"
                      FontSize="13"
                      BorderThickness="0"
-                     Background="#FFFFFF" />
+                     Background="{DynamicResource SurfaceBgBrush}" />
           </ScrollViewer>
         </Grid>
       </Border>

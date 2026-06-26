@@ -3,10 +3,10 @@
              xmlns:vm="using:Aprs.Desktop.ViewModels"
              x:Class="Aprs.Desktop.Views.WeatherDiagnosticsView"
              x:DataType="vm:WeatherDiagnosticsViewModel">
-  <Border BorderBrush="#CBD5E1"
+  <Border BorderBrush="{DynamicResource TextSidebarBrush}"
           BorderThickness="1"
           CornerRadius="6"
-          Background="#FFFFFF"
+          Background="{DynamicResource SurfaceBgBrush}"
           Padding="10">
     <Grid RowDefinitions="Auto,Auto,Auto"
           RowSpacing="8">
@@ -17,41 +17,41 @@
         <StackPanel Margin="0,0,12,8">
           <TextBlock Text="Driver status"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding DriverStatus}" />
         </StackPanel>
         <StackPanel Margin="0,0,0,8">
           <TextBlock Text="Connection"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding ConnectionState}" />
         </StackPanel>
         <StackPanel Margin="0,0,12,8">
           <TextBlock Text="Last successful update"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding LastSuccessfulUpdate}" />
         </StackPanel>
         <StackPanel Margin="0,0,0,8">
           <TextBlock Text="Last failed update"
                      FontSize="11"
-                     Foreground="#64748B" />
+                     Foreground="{DynamicResource TextMutedBrush}" />
           <TextBlock Text="{Binding LastFailedUpdate}" />
         </StackPanel>
       </UniformGrid>
       <StackPanel Grid.Row="2"
                   Spacing="4">
         <TextBlock Text="{Binding ValidationErrors, StringFormat='Validation errors: {0}'}"
-                   Foreground="#991B1B"
+                   Foreground="{DynamicResource ErrorBgBrush}"
                    TextWrapping="Wrap" />
         <TextBlock Text="{Binding ValidationWarnings, StringFormat='Validation warnings: {0}'}"
-                   Foreground="#B45309"
+                   Foreground="{DynamicResource WarnTextBrush}"
                    TextWrapping="Wrap" />
         <TextBlock Text="{Binding LastError, StringFormat='Last error: {0}'}"
                    TextWrapping="Wrap" />
         <TextBlock Text="Raw source payload"
                    FontSize="11"
-                   Foreground="#64748B" />
+                   Foreground="{DynamicResource TextMutedBrush}" />
         <TextBlock Text="{Binding RawSourcePayload}"
                    FontFamily="Consolas,Menlo,monospace"
                    TextWrapping="Wrap" />

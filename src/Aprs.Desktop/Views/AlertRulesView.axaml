@@ -11,7 +11,7 @@
       <Grid RowDefinitions="Auto,*,Auto" RowSpacing="6">
         <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
           <TextBlock Text="{Binding RuleCountText}"
-                     Foreground="#475569"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
                      VerticalAlignment="Center" />
           <Button Grid.Column="1"
                   Command="{Binding NewRuleCommand}"
@@ -30,7 +30,7 @@
         <ListBox Grid.Row="1"
                  ItemsSource="{Binding Rules}"
                  SelectedItem="{Binding SelectedRule}"
-                 BorderBrush="#CBD5E1"
+                 BorderBrush="{DynamicResource TextSidebarBrush}"
                  BorderThickness="1">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:AlertRuleRowViewModel">
@@ -39,25 +39,25 @@
                     Margin="2,4">
                 <TextBlock Text="{Binding Enabled}"
                            FontSize="10"
-                           Foreground="#64748B"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            VerticalAlignment="Center" />
                 <StackPanel Grid.Column="1" Spacing="1">
                   <TextBlock Text="{Binding RuleName}"
                              FontWeight="SemiBold"
-                             Foreground="#0F172A" />
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
                   <TextBlock Text="{Binding AlertType}"
                              FontSize="11"
-                             Foreground="#64748B" />
+                             Foreground="{DynamicResource TextMutedBrush}" />
                 </StackPanel>
                 <TextBlock Grid.Column="2"
                            Text="{Binding Severity}"
                            FontSize="11"
-                           Foreground="#475569"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
                 <TextBlock Grid.Column="3"
                            Text="{Binding TriggerCount}"
                            FontSize="11"
-                           Foreground="#64748B"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            VerticalAlignment="Center" />
               </Grid>
             </DataTemplate>
@@ -67,24 +67,24 @@
         <!-- Editor panel -->
         <Border Grid.Row="2"
                 IsVisible="{Binding IsEditingRule}"
-                BorderBrush="#CBD5E1"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
                 CornerRadius="6"
                 Padding="12"
-                Background="#F8FAFC">
+                Background="{DynamicResource TextTitleBarBrush}">
           <StackPanel Spacing="10">
             <TextBlock Text="{Binding EditorTitle}"
                        FontWeight="SemiBold"
                        FontSize="13"
-                       Foreground="#0F172A" />
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
               <StackPanel Spacing="2">
-                <TextBlock Text="Rule name" FontSize="11" Foreground="#64748B" />
+                <TextBlock Text="Rule name" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBox Text="{Binding EditRuleName}" Watermark="e.g. KE4CON heard" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="2">
-                <TextBlock Text="Alert type" FontSize="11" Foreground="#64748B" />
+                <TextBlock Text="Alert type" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
                 <ComboBox ItemsSource="{Binding AvailableAlertTypes}"
                           SelectedItem="{Binding EditAlertType}"
                           HorizontalAlignment="Stretch" />
@@ -93,12 +93,12 @@
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
               <StackPanel Spacing="2">
-                <TextBlock Text="Target callsign / port (optional)" FontSize="11" Foreground="#64748B"
+                <TextBlock Text="Target callsign / port (optional)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
                            ToolTip.Tip="For callsign alerts: the callsign to watch. For port alerts: the port ID. Leave blank to match any." />
                 <TextBox Text="{Binding EditTarget}" Watermark="e.g. KE4CON or aprs-is" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="2">
-                <TextBlock Text="Severity" FontSize="11" Foreground="#64748B" />
+                <TextBlock Text="Severity" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
                 <ComboBox ItemsSource="{Binding AvailableSeverities}"
                           SelectedItem="{Binding EditSeverity}"
                           HorizontalAlignment="Stretch" />
@@ -112,7 +112,7 @@
               <Button Grid.Column="1" Command="{Binding CancelEditCommand}" Content="Cancel" Padding="10,6" />
               <TextBlock Grid.Column="3"
                          Text="{Binding EditorStatus}"
-                         Foreground="#DC2626"
+                         Foreground="{DynamicResource ErrorTextBrush}"
                          VerticalAlignment="Center" />
             </Grid>
           </StackPanel>
@@ -123,7 +123,7 @@
       <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="6">
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
           <TextBlock Text="{Binding TriggerCountText}"
-                     Foreground="#475569"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
                      VerticalAlignment="Center" />
           <Button Grid.Column="1"
                   Command="{Binding ClearHistoryCommand}"
@@ -134,7 +134,7 @@
         <ListBox Grid.Row="1"
                  ItemsSource="{Binding History}"
                  SelectedItem="{Binding SelectedTrigger}"
-                 BorderBrush="#CBD5E1"
+                 BorderBrush="{DynamicResource TextSidebarBrush}"
                  BorderThickness="1">
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:AlertTriggerRowViewModel">
@@ -142,13 +142,13 @@
                 <TextBlock Text="{Binding RuleName}"
                            FontWeight="SemiBold"
                            FontSize="11"
-                           Foreground="#0F172A" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{Binding TriggerTime}"
                            FontSize="10"
-                           Foreground="#64748B" />
+                           Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding TriggerReason}"
                            FontSize="10"
-                           Foreground="#475569"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap" />
               </StackPanel>
             </DataTemplate>
@@ -166,7 +166,7 @@
     <!-- Status bar -->
     <TextBlock Grid.Row="1"
                Text="Select a rule and click Edit, or click New Rule to create one. Alerts fire based on incoming packets — the app must be running and connected to receive them."
-               Foreground="#64748B"
+               Foreground="{DynamicResource TextMutedBrush}"
                FontSize="11"
                TextWrapping="Wrap" />
   </Grid>

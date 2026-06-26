@@ -7,16 +7,16 @@
         Title="APRS Command — Station List"
         Width="760" Height="620" MinWidth="600" MinHeight="440">
   <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,0,0,1" Padding="22,10">
+    <Border Grid.Row="0" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,0,0,1" Padding="22,10">
       <StackPanel Spacing="2">
-        <TextBlock Text="Station List" FontSize="18" FontWeight="SemiBold" Foreground="#0F172A" />
-        <TextBlock Text="All stations heard on active ports, with last-heard time, position, and packet source. Click a callsign to centre the map on that station." Foreground="#526173" FontSize="12" TextWrapping="Wrap" />
+        <TextBlock Text="Station List" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="All stations heard on active ports, with last-heard time, position, and packet source. Click a callsign to centre the map on that station." Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
     <Border Grid.Row="1" Padding="16">
     <views:StationListView Grid.Row="1" DataContext="{Binding StationList}" />
     </Border>
-    <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12">
+    <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,1,0,0" Padding="12">
       <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
     </Border>
   </Grid>
