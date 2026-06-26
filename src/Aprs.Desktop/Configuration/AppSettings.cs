@@ -18,7 +18,8 @@ public sealed record AppSettings(
     DigipeaterSettings Digipeater,
     AudioSettings Audio,
     WindowStates Windows,
-    GpsSettings Gps)
+    GpsSettings Gps,
+    ManagedModemSettings ManagedModem)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -30,5 +31,6 @@ public sealed record AppSettings(
         Digipeater: DigipeaterSettings.Default,
         Audio: AudioSettings.Default,
         Windows: WindowStates.Default,
-        Gps: GpsSettings.Default);
+        Gps: GpsSettings.Default,
+        ManagedModem: ManagedModemSettings.Default);
 }

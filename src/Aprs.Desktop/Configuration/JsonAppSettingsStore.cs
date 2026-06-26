@@ -156,8 +156,9 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var audio = settings.Audio ?? AudioSettings.Default;
         var windows = settings.Windows ?? WindowStates.Default;
         var gps = settings.Gps ?? GpsSettings.Default;
+        var managedModem = settings.ManagedModem ?? ManagedModemSettings.Default;
 
-        var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps };
+        var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps, ManagedModem = managedModem };
         return Migrate(normalized);
     }
 
@@ -216,6 +217,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var audio = TryDeserializeSection(root, "audio", AudioSettings.Default) ?? AudioSettings.Default;
         var windows = TryDeserializeSection(root, "windows", WindowStates.Default) ?? WindowStates.Default;
         var gps = TryDeserializeSection(root, "gps", GpsSettings.Default) ?? GpsSettings.Default;
+        var managedModem = TryDeserializeSection(root, "managedModem", ManagedModemSettings.Default) ?? ManagedModemSettings.Default;
 
         var schemaVersion = AppSettings.CurrentSchemaVersion;
         if (root.TryGetPropertyValue("schemaVersion", out var versionNode)
@@ -225,7 +227,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             schemaVersion = parsedVersion;
         }
 
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps));
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)
