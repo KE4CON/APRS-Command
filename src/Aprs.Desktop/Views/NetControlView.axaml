@@ -1,0 +1,150 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.NetControlView"
+        x:DataType="vm:NetControlViewModel"
+        Title="Net Control Roster"
+        Width="820" Height="580"
+        MinWidth="600" MinHeight="400"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="14,10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBox Text="{Binding NetName}"
+                   FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextTitleBarBrush}"
+                   Background="Transparent" BorderThickness="0"
+                   Watermark="Net name..." />
+          <TextBlock Text="{Binding SummaryText}"
+                     FontSize="11" Foreground="{DynamicResource TextSidebarBrush}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <CheckBox Content="Auto-add heard stations"
+                    IsChecked="{Binding AutoAddHeardStations}"
+                    Foreground="{DynamicResource TextSidebarBrush}"
+                    FontSize="11" />
+          <Button Command="{Binding RefreshCommand}" Content="↻ Refresh"
+                  Padding="10,5" FontSize="11" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Add callsign + filter bar -->
+    <Border Grid.Row="1" Padding="10,8" BorderBrush="{DynamicResource AppBorderBrush}"
+            BorderThickness="0,0,0,1" Background="{DynamicResource HeaderBgBrush}">
+      <Grid ColumnDefinitions="*,Auto,20,*" ColumnSpacing="6">
+        <TextBox Grid.Column="0" Text="{Binding NewCallsign}"
+                 Watermark="Enter callsign to add (e.g. W4ABC)"
+                 x:Name="CallsignInput" />
+        <Button Grid.Column="1" Command="{Binding AddCallsignCommand}"
+                Content="Add to Roster" Padding="12,6" />
+        <TextBox Grid.Column="3" Text="{Binding FilterText}"
+                 Watermark="🔍 Filter roster..." />
+      </Grid>
+    </Border>
+
+    <!-- Roster list -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,280">
+
+      <!-- Station list -->
+      <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0">
+        <ListBox ItemsSource="{Binding FilteredRoster}"
+                 SelectedItem="{Binding SelectedEntry}"
+                 Background="{DynamicResource SurfaceBgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="vm:NetControlRosterEntry">
+              <Grid ColumnDefinitions="32,*,100,80" Margin="4,3">
+                <!-- Status icon -->
+                <TextBlock Text="{Binding StatusIcon}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{Binding StatusColor}"
+                           VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <!-- Callsign + comment -->
+                <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding DisplayName}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding Comment}"
+                             FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                             TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <!-- Check-in time -->
+                <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding CheckedInAtText}"
+                             FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="checked in" FontSize="9"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             IsVisible="{Binding IsCheckedIn}" />
+                </StackPanel>
+                <!-- Last heard -->
+                <TextBlock Grid.Column="3" Text="{Binding LastHeardText}"
+                           FontSize="10" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Right" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+
+      <!-- Detail panel -->
+      <Border Grid.Column="1" Padding="14" Background="{DynamicResource CardBgBrush}">
+        <StackPanel Spacing="10" IsVisible="{Binding HasSelection}">
+          <TextBlock Text="{Binding SelectedEntry.Callsign}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{Binding SelectedEntry.PositionText}"
+                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Text="{Binding SelectedEntry.Comment}"
+                     FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" />
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
+
+          <!-- Status buttons -->
+          <TextBlock Text="Status" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <StackPanel Spacing="6">
+            <Button Command="{Binding CheckInCommand}" HorizontalAlignment="Stretch"
+                    Padding="0,8" Content="✓ Check In" />
+            <Button Command="{Binding StandbyCommand}" HorizontalAlignment="Stretch"
+                    Padding="0,8" Content="⏸ Standby" />
+            <Button Command="{Binding DepartCommand}" HorizontalAlignment="Stretch"
+                    Padding="0,8" Content="✗ Departed" />
+          </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
+
+          <!-- Notes -->
+          <TextBlock Text="Notes" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBox Text="{Binding SelectedEntry.Notes}"
+                   Watermark="Add notes about this station..."
+                   AcceptsReturn="True" Height="60" />
+
+          <Button Command="{Binding RemoveCommand}" HorizontalAlignment="Stretch"
+                  Padding="0,6" Content="Remove from roster"
+                  Foreground="{DynamicResource ErrorTextBrush}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- Status bar -->
+    <Border Grid.Row="3" Padding="10,5" Background="{DynamicResource HeaderBgBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <TextBlock Text="{Binding StatusText}" FontSize="11"
+                 Foreground="{DynamicResource TextMutedBrush}" />
+    </Border>
+
+    <!-- Bottom toolbar -->
+    <Border Grid.Row="4" Padding="10,8" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Button Command="{Binding ClearAllCommand}" Content="Clear All"
+              HorizontalAlignment="Right" Padding="12,6" />
+    </Border>
+
+  </Grid>
+</Window>

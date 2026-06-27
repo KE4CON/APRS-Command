@@ -34,7 +34,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             AudioConfigViewModel.CreateDesignTime(),
             GpsConfigViewModel.CreateDesignTime(),
             ManagedModemViewModel.CreateDesignTime(),
-            ReadinessViewModel.CreateDesignTime())
+            ReadinessViewModel.CreateDesignTime(),
+            NetControlViewModel.CreateDesignTime())
     {
     }
 
@@ -66,7 +67,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         AudioConfigViewModel audioConfig,
         GpsConfigViewModel gpsConfig,
         ManagedModemViewModel managedModem,
-        ReadinessViewModel readiness)
+        ReadinessViewModel readiness,
+        NetControlViewModel netControl)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -97,6 +99,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         GpsConfig = gpsConfig;
         ManagedModem = managedModem;
         Readiness = readiness;
+        NetControl = netControl;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -116,6 +119,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
         ToggleExerciseModeCommand = new DesktopCommand(() => ExerciseModeRequested?.Invoke(this, EventArgs.Empty));
         OpenAboutCommand       = new DesktopCommand(() => AboutRequested?.Invoke(this, EventArgs.Empty));
+        OpenNetControlCommand  = new DesktopCommand(() => NetControlRequested?.Invoke(this, EventArgs.Empty));
         ToggleDarkModeCommand  = new DesktopCommand(() => DarkModeRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -138,6 +142,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? ExerciseModeRequested;
     public event EventHandler? AboutRequested;
     public event EventHandler? DarkModeRequested;
+    public event EventHandler? NetControlRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -175,6 +180,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public GpsConfigViewModel GpsConfig { get; }
     public ManagedModemViewModel ManagedModem { get; }
     public ReadinessViewModel Readiness { get; }
+    public NetControlViewModel NetControl { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }
@@ -192,6 +198,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand ToggleExerciseModeCommand { get; }
     public DesktopCommand OpenAboutCommand { get; }
     public DesktopCommand ToggleDarkModeCommand { get; }
+    public DesktopCommand OpenNetControlCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {

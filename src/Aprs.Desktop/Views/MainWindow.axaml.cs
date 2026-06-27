@@ -51,6 +51,7 @@ public sealed partial class MainWindow : Window
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
             vm.AboutRequested         -= OnAboutRequested;
             vm.DarkModeRequested      -= OnDarkModeRequested;
+            vm.NetControlRequested    -= OnNetControlRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -78,6 +79,7 @@ public sealed partial class MainWindow : Window
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
             vm.AboutRequested         += OnAboutRequested;
             vm.DarkModeRequested      += OnDarkModeRequested;
+            vm.NetControlRequested    += OnNetControlRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -127,6 +129,12 @@ public sealed partial class MainWindow : Window
 
     private void OnDarkModeRequested(object? s, EventArgs e)
         => (Application.Current as App)?.ToggleDarkMode();
+
+    private void OnNetControlRequested(object? s, EventArgs e)
+    {
+        var win = new NetControlView { DataContext = vm?.NetControl };
+        win.Show(this);
+    }
 
     private void OnAlertStatusRequested(object? s, EventArgs e)
         => ShowWithState(new AlertsWindow { DataContext = vm });
