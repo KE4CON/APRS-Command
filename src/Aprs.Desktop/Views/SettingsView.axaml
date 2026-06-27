@@ -13,6 +13,15 @@
                  Foreground="{DynamicResource TextSubtleBrush}" />
     </StackPanel>
     <TabControl Grid.Row="1">
+      <TabItem Header="Readiness">
+        <Border BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="12"
+                Background="{DynamicResource CardBgBrush}">
+          <views:ReadinessView DataContext="{Binding Readiness}" />
+        </Border>
+      </TabItem>
       <TabItem Header="First Run">
         <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"

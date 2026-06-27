@@ -119,7 +119,8 @@ public sealed class BeaconService : IAsyncDisposable
             {
                 try
                 {
-                    await scheduler.TickAsync(cts.Token).ConfigureAwait(false);
+                    var tickResult = await scheduler.TickAsync(cts.Token).ConfigureAwait(false);
+                    if (tickResult is { Transmitted: true }) LastBeaconAt = DateTimeOffset.UtcNow;
                     await Task.Delay(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -135,9 +136,16 @@ public sealed class BeaconService : IAsyncDisposable
         }, cts.Token);
     }
 
+    /// <summary>The UTC time of the most recent successful beacon transmission, or null if none yet.</summary>
+    public DateTimeOffset? LastBeaconAt { get; private set; }
+
     /// <summary>Transmits a beacon immediately, bypassing the schedule.</summary>
-    public Task<BeaconNowResult> BeaconNowAsync(CancellationToken cancellationToken = default)
-        => scheduler.BeaconNowAsync(cancellationToken);
+    public async Task<BeaconNowResult> BeaconNowAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await scheduler.BeaconNowAsync(cancellationToken).ConfigureAwait(false);
+        if (result.Transmitted) LastBeaconAt = DateTimeOffset.UtcNow;
+        return result;
+    }
 
     /// <summary>Current scheduler state — for the status display.</summary>
     public BeaconSchedulerState GetState() => scheduler.GetState();

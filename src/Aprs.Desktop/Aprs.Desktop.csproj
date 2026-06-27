@@ -19,6 +19,7 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.7" />
     <PackageReference Include="BruTile.MbTiles" Version="6.0.0" />
     <PackageReference Include="Mapsui.Avalonia" Version="5.1.0" />
+    <PackageReference Include="Mapsui.Nts" Version="5.1.0" />
     <PackageReference Include="Mapsui.Tiling" Version="5.1.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />

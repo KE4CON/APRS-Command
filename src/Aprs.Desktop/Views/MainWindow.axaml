@@ -173,11 +173,23 @@
                   FontSize="24">
             <TextBlock Text="🔔" />
           </Button>
+
+          <Button ToolTip.Tip="{Binding Map.TrailsButtonTooltip}"
+                  Command="{Binding Map.ToggleTrailsCommand}"
+                  Padding="0" Width="36" Height="36"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}">
+            <TextBlock Text="🛤" />
+          </Button>
         </StackPanel>
       </Border>
 
       <!-- Map fills everything -->
       <views:MapView Grid.Column="1"
+                     x:Name="TheMapView"
                      DataContext="{Binding Map}" />
     </Grid>
 

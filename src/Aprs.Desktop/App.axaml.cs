@@ -121,6 +121,90 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireConnectionWatchdog(DesktopRuntime rt)
+    {
+        rt.ConnectionHealthWatchdog.ConnectionLost += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                var toast = new Aprs.Desktop.Views.ToastNotification(
+                    "⚠ APRS-IS Disconnected",
+                    "Connection has been down for 3+ minutes. Check your network and server settings.");
+                toast.Show();
+            });
+        };
+
+        rt.ConnectionHealthWatchdog.ConnectionRestored += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                var toast = new Aprs.Desktop.Views.ToastNotification(
+                    "✓ APRS-IS Reconnected",
+                    "Connection restored.");
+                toast.Show();
+            });
+        };
+    }
+
+    private static void WireTrails(DesktopRuntime rt, MainWindow mainWindow)
+    {
+        var mapView = mainWindow.TheMapView;
+        if (mapView is null) return;
+
+        // Give MapView a reference so it can redraw when the toggle fires.
+        mapView.WireTrailService(rt.StationTrailService);
+
+        // Record positions from ingested position packets only.
+        rt.Coordinator.PacketParsed += (_, e) =>
+        {
+            if (e.Packet is not Aprs.Core.PositionAprsPacket pos) return;
+            if (pos.Latitude is null || pos.Longitude is null) return;
+            rt.StationTrailService.RecordPosition(
+                pos.SourceCallsign, pos.Latitude.Value, pos.Longitude.Value, pos.ReceivedAtUtc);
+        };
+
+        // Redraw trail layer whenever trail data changes.
+        rt.StationTrailService.TrailsUpdated += (_, _) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                mapView.UpdateTrails(rt.StationTrailService));
+        };
+    }
+
+    private static void WireWeather(DesktopRuntime rt)
+    {
+        // Route weather packets from the ingestion pipeline to the Weather window.
+        rt.Coordinator.PacketParsed += (_, e) =>
+        {
+            if (e.Packet is Aprs.Core.WeatherAprsPacket wp)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    rt.MainViewModel.Weather.AcceptWeatherPacket(wp, e.Source));
+            }
+        };
+    }
+
+    private static void WireReadiness(DesktopRuntime rt)
+    {
+        void Refresh()
+        {
+            rt.MainViewModel.Readiness.Refresh(
+                store:               JsonAppSettingsStore.Default,
+                connectionState:     rt.ConnectionState,
+                hasGpsFix:           rt.GpsCoordinator.HasValidFix,
+                lastBeaconAt:        rt.BeaconService.LastBeaconAt,
+                exerciseModeActive:  rt.TransmitAuthority.IsInhibited);
+        }
+
+        // Refresh immediately, then every 5 seconds.
+        Refresh();
+        var timer = new Avalonia.Threading.DispatcherTimer(
+            TimeSpan.FromSeconds(5),
+            Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => Refresh());
+        timer.Start();
+    }
+
     private DesktopRuntime? runtime;
     public DesktopRuntime? Runtime => runtime;
 
@@ -133,6 +217,17 @@ public sealed partial class App : Application
         RequestedThemeVariant = isDarkMode
             ? Avalonia.Styling.ThemeVariant.Dark
             : Avalonia.Styling.ThemeVariant.Light;
+        // Persist so the preference survives restarts.
+        JsonAppSettingsStore.Default.Update(s => s with { DarkMode = isDarkMode });
+    }
+
+    /// <summary>Applies the persisted dark mode preference on startup before any window opens.</summary>
+    public void ApplyPersistedTheme()
+    {
+        isDarkMode = JsonAppSettingsStore.Default.Load().DarkMode;
+        RequestedThemeVariant = isDarkMode
+            ? Avalonia.Styling.ThemeVariant.Dark
+            : Avalonia.Styling.ThemeVariant.Light;
     }
 
     public override void Initialize()
@@ -142,6 +237,9 @@ public sealed partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // Apply saved theme preference before any window opens.
+        ApplyPersistedTheme();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             if (Design.IsDesignMode)
@@ -175,6 +273,10 @@ public sealed partial class App : Application
                     WireMessageAck(runtime);
                     WireRfDiagnostics(runtime);
                     WireGpsStatus(runtime);
+                    WireConnectionWatchdog(runtime);
+                    WireReadiness(runtime);
+                    WireWeather(runtime);
+                    WireTrails(runtime, (MainWindow)desktop.MainWindow!);
                 }
                 else
                 {
@@ -200,6 +302,15 @@ public sealed partial class App : Application
                         WireMessageAck(runtime);
                         WireRfDiagnostics(runtime);
                         WireGpsStatus(runtime);
+                        WireConnectionWatchdog(runtime);
+                        WireReadiness(runtime);
+                        WireWeather(runtime);
+                        // Trail wiring happens after main window is shown (setup.Close triggers it).
+                        setup.Closed += (_, _) =>
+                        {
+                            if (desktop.MainWindow is MainWindow mw)
+                                WireTrails(runtime, mw);
+                        };
                         setup.Close();
                     };
 

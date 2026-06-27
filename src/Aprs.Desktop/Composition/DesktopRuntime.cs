@@ -30,11 +30,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public MessageAckCoordinator MessageAckCoordinator { get; }
     public KissTcpCoordinator KissTcpCoordinator { get; }
     public ManagedModemCoordinator? ManagedModemCoordinator { get; }
+    public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
+    public StationTrailService StationTrailService { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -45,6 +47,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         MessageAckCoordinator = messageAckCoordinator;
         KissTcpCoordinator = kissTcpCoordinator;
         ManagedModemCoordinator = managedModemCoordinator;
+        ConnectionHealthWatchdog = connectionHealthWatchdog;
+        StationTrailService = stationTrailService;
     }
 
     public static DesktopRuntime Create()
@@ -78,6 +82,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IRfDiagnosticsService, RfDiagnosticsService>();
         services.AddSingleton<DirewolfProfileService>(_ =>
             new DirewolfProfileService(DateTimeOffset.UtcNow));
+        services.AddSingleton<IWeatherDisplayService, WeatherDisplayService>();
 
         var provider = services.BuildServiceProvider();
 
@@ -99,7 +104,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new PortStatusViewModel(provider.GetRequiredService<IAprsPortManager>()),   // LIVE
             new IGateStatusViewModel(provider.GetRequiredService<IIGateService>()),     // LIVE
             new DigipeaterStatusViewModel(provider.GetRequiredService<IDigipeaterService>()), // LIVE
-            WeatherViewModel.CreateDesignTime(),            // TODO: wire to weather services
+            new WeatherViewModel(provider.GetRequiredService<IWeatherDisplayService>(), DateTimeOffset.UtcNow), // LIVE
             ReplayViewModel.CreateDesignTime(),             // TODO: wire to replay service (feed ingestion, source=Replay)
             new RfDiagnosticsViewModel(provider.GetRequiredService<IRfDiagnosticsService>()), // LIVE
             new AlertRulesViewModel(provider.GetRequiredService<IAlertRuleService>()),  // LIVE
@@ -114,7 +119,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new DigipeaterConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new ManagedModemViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new ManagedModemViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new ReadinessViewModel()); // LIVE — refreshed by WireReadiness() in App.axaml.cs
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),
@@ -143,6 +149,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var appSettings2 = provider.GetRequiredService<IAppSettingsStore>().Load();
         var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>());
 
+        var watchdog = new ConnectionHealthWatchdog(coordinator);
+        var stationTrailService = new StationTrailService();
+
         var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             provider.GetRequiredService<AprsIngestionService>());
@@ -152,7 +161,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             gpsCoordinator,
             messageAckCoordinator,
             kissTcpCoordinator,
-            managedModemCoordinator);
+            managedModemCoordinator,
+            watchdog,
+            stationTrailService);
     }
 
     /// <summary>
@@ -168,6 +179,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         MessageAckCoordinator.Start();
         KissTcpCoordinator.Start();
         ManagedModemCoordinator?.Start();
+        ConnectionHealthWatchdog.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -196,6 +208,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await ConnectionHealthWatchdog.DisposeAsync().ConfigureAwait(false);
         if (ManagedModemCoordinator is not null) await ManagedModemCoordinator.DisposeAsync().ConfigureAwait(false);
         await KissTcpCoordinator.DisposeAsync().ConfigureAwait(false);
         await MessageAckCoordinator.DisposeAsync().ConfigureAwait(false);

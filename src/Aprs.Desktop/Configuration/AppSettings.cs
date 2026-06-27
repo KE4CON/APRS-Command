@@ -19,7 +19,8 @@ public sealed record AppSettings(
     AudioSettings Audio,
     WindowStates Windows,
     GpsSettings Gps,
-    ManagedModemSettings ManagedModem)
+    ManagedModemSettings ManagedModem,
+    bool DarkMode)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -32,5 +33,6 @@ public sealed record AppSettings(
         Audio: AudioSettings.Default,
         Windows: WindowStates.Default,
         Gps: GpsSettings.Default,
-        ManagedModem: ManagedModemSettings.Default);
+        ManagedModem: ManagedModemSettings.Default,
+        DarkMode: false);
 }
