@@ -171,6 +171,22 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireNetControl(DesktopRuntime rt)
+    {
+        // Update roster when position packets arrive.
+        rt.Coordinator.PacketParsed += (_, e) =>
+        {
+            if (e.Packet is not Aprs.Core.PositionAprsPacket pos) return;
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                rt.MainViewModel.NetControl.ProcessHeardStation(
+                    pos.SourceCallsign,
+                    pos.Latitude,
+                    pos.Longitude,
+                    pos.Comment,
+                    pos.ReceivedAtUtc));
+        };
+    }
+
     private static void WireWeather(DesktopRuntime rt)
     {
         // Route weather packets from the ingestion pipeline to the Weather window.
@@ -277,6 +293,7 @@ public sealed partial class App : Application
                     WireReadiness(runtime);
                     WireWeather(runtime);
                     WireTrails(runtime, (MainWindow)desktop.MainWindow!);
+                    WireNetControl(runtime);
                 }
                 else
                 {
@@ -305,6 +322,7 @@ public sealed partial class App : Application
                         WireConnectionWatchdog(runtime);
                         WireReadiness(runtime);
                         WireWeather(runtime);
+                        WireNetControl(runtime);
                         // Trail wiring happens after main window is shown (setup.Close triggers it).
                         setup.Closed += (_, _) =>
                         {

@@ -120,7 +120,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new AudioConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new ManagedModemViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
-            new ReadinessViewModel()); // LIVE — refreshed by WireReadiness() in App.axaml.cs
+            new ReadinessViewModel(), // LIVE — refreshed by WireReadiness() in App.axaml.cs
+            new NetControlViewModel(provider.GetRequiredService<IStationDatabase>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),

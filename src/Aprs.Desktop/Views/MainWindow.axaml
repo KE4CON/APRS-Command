@@ -61,6 +61,7 @@
           Background="{DynamicResource AppBgAltBrush}">
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
       <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
+      <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
       <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
       <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
       <MenuItem Header="_Weather" Command="{Binding OpenWeatherCommand}" />
