@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Aprs.Desktop.ViewModels;
 using Aprs.Desktop.Runtime;
+using Aprs.Desktop.Mapping;
 using Aprs.Services;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,8 @@ public sealed partial class MapView : UserControl
     private MapViewModel? currentViewModel;
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
     private WritableLayer? trailLayer;
+    private TileLayer? radarLayer;
+    private WmsRadarTileSource? radarTileSource;
     private ILayer? currentBaseLayer;
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private StationTrailService? trailService; // set by WireTrailService()
@@ -60,6 +63,16 @@ public sealed partial class MapView : UserControl
         // Trail layer sits between the base map and APRS markers.
         trailLayer = new WritableLayer { Name = "Station trails" };
         map.Layers.Add(trailLayer);
+
+        // Radar layer — between trails and markers, initially hidden.
+        radarTileSource = new WmsRadarTileSource();
+        radarLayer = new TileLayer(radarTileSource)
+        {
+            Name    = "NEXRAD Radar",
+            Opacity = 0.65,
+            Enabled = false  // off by default
+        };
+        map.Layers.Add(radarLayer);
 
         markerLayer = new GenericCollectionLayer<List<IFeature>>
         {
@@ -253,6 +266,25 @@ public sealed partial class MapView : UserControl
         {
             UpdateTrails(trailService);
         }
+
+        // When radar toggle changes, enable/disable the layer.
+        if (e.PropertyName == nameof(MapViewModel.ShowRadar) && radarLayer is not null)
+        {
+            radarLayer.Enabled = (DataContext as MapViewModel)?.ShowRadar ?? false;
+            MapControl.Map.RefreshData();
+            MapControl.RefreshGraphics();
+        }
+    }
+
+    /// <summary>Called by the radar refresh timer to force new tiles to be fetched.</summary>
+    public void RefreshRadar()
+    {
+        if (radarLayer is null || radarTileSource is null) return;
+        if (!(DataContext is MapViewModel { ShowRadar: true })) return;
+
+        radarTileSource.InvalidateCache();
+        MapControl.Map.RefreshData();
+        MapControl.RefreshGraphics();
     }
 
     /// <summary>Called from App.axaml.cs to give MapView access to the trail service for toggle redraws.</summary>

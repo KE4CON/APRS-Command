@@ -62,10 +62,14 @@
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
       <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
       <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
-      <MenuItem Header="_Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
       <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
       <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
-      <MenuItem Header="_Weather" Command="{Binding OpenWeatherCommand}" />
+      <MenuItem Header="_Weather">
+        <MenuItem Header="Weather Stations" Command="{Binding OpenWeatherCommand}" />
+        <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
+        <Separator />
+        <MenuItem Header="Toggle Radar Overlay 🌧" Command="{Binding Map.ToggleRadarCommand}" />
+      </MenuItem>
       <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
       <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
       <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
@@ -185,6 +189,17 @@
                   BorderThickness="0"
                   Foreground="{DynamicResource TextSidebarBrush}">
             <TextBlock Text="🛤" />
+          </Button>
+
+          <Button ToolTip.Tip="{Binding Map.RadarButtonTooltip}"
+                  Command="{Binding Map.ToggleRadarCommand}"
+                  Padding="0" Width="36" Height="36"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}">
+            <TextBlock Text="🌧" />
           </Button>
         </StackPanel>
       </Border>

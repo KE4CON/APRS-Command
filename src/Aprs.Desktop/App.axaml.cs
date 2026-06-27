@@ -171,6 +171,16 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireRadarRefresh(MainWindow mainWindow)
+    {
+        // Refresh radar tiles every 5 minutes when the overlay is active.
+        var timer = new Avalonia.Threading.DispatcherTimer(
+            TimeSpan.FromMinutes(5),
+            Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => mainWindow.TheMapView?.RefreshRadar());
+        timer.Start();
+    }
+
     private static void WireNwsAlerts(DesktopRuntime rt)
     {
         var settings = JsonAppSettingsStore.Default.Load();
@@ -312,6 +322,7 @@ public sealed partial class App : Application
                     WireTrails(runtime, (MainWindow)desktop.MainWindow!);
                     WireNetControl(runtime);
                     WireNwsAlerts(runtime);
+                    WireRadarRefresh((MainWindow)desktop.MainWindow!);
                 }
                 else
                 {
@@ -342,11 +353,14 @@ public sealed partial class App : Application
                         WireWeather(runtime);
                         WireNetControl(runtime);
                         WireNwsAlerts(runtime);
-                        // Trail wiring happens after main window is shown (setup.Close triggers it).
+                        // Trail and radar wiring happen after main window is shown.
                         setup.Closed += (_, _) =>
                         {
                             if (desktop.MainWindow is MainWindow mw)
+                            {
                                 WireTrails(runtime, mw);
+                                WireRadarRefresh(mw);
+                            }
                         };
                         setup.Close();
                     };
