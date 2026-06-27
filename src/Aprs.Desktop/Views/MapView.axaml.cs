@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Aprs.Desktop.ViewModels;
+using Aprs.Desktop.Runtime;
 using Aprs.Services;
 using System;
 using System.Collections.Generic;
@@ -9,9 +10,11 @@ using System.IO;
 using System.Linq;
 using Mapsui;
 using Mapsui.Layers;
+using Mapsui.Nts;
 using Mapsui.Projections;
 using Mapsui.Styles;
 using Mapsui.Tiling.Layers;
+using NetTopologySuite.Geometries;
 using Aprs.Desktop.Configuration;
 using BruTile;
 using BruTile.Cache;
@@ -24,8 +27,10 @@ public sealed partial class MapView : UserControl
 {
     private MapViewModel? currentViewModel;
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
+    private WritableLayer? trailLayer;
     private ILayer? currentBaseLayer;
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
+    private StationTrailService? trailService; // set by WireTrailService()
     private bool mapInitialized;
     private bool hasFitToData;
 
@@ -51,6 +56,10 @@ public sealed partial class MapView : UserControl
         var map = MapControl.Map;
         currentBaseLayer = CreateBaseLayer(BaseMapKind.OpenStreetMap);
         map.Layers.Add(currentBaseLayer);
+
+        // Trail layer sits between the base map and APRS markers.
+        trailLayer = new WritableLayer { Name = "Station trails" };
+        map.Layers.Add(trailLayer);
 
         markerLayer = new GenericCollectionLayer<List<IFeature>>
         {
@@ -238,6 +247,18 @@ public sealed partial class MapView : UserControl
             UpdatePanels();
             RefreshFeatures();
         }
+
+        // When the trails toggle changes, redraw immediately.
+        if (e.PropertyName == nameof(MapViewModel.ShowTrails) && trailService is not null)
+        {
+            UpdateTrails(trailService);
+        }
+    }
+
+    /// <summary>Called from App.axaml.cs to give MapView access to the trail service for toggle redraws.</summary>
+    public void WireTrailService(StationTrailService service)
+    {
+        trailService = service;
     }
 
     private void UpdatePanels()
@@ -419,6 +440,48 @@ public sealed partial class MapView : UserControl
         var profile = StationProfile.Load();
         var (x, y) = SphericalMercator.FromLonLat(profile.Longitude, profile.Latitude);
         MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(x, y), HomeResolution);
+    }
+
+    /// <summary>
+    /// Redraws the trail layer from the current StationTrailService data.
+    /// Does nothing if ShowTrails is false on the current MapViewModel.
+    /// </summary>
+    public void UpdateTrails(StationTrailService trailService)
+    {
+        if (trailLayer is null) return;
+
+        // If trails are turned off, clear the layer and return.
+        if (DataContext is MapViewModel vm && !vm.ShowTrails)
+        {
+            trailLayer.Clear();
+            trailLayer.DataHasChanged();
+            return;
+        }
+
+        trailLayer.Clear();
+
+        var lineStyle = new VectorStyle
+        {
+            Line = new Pen(new Color(99, 102, 241, 160), 2) // indigo, semi-transparent
+        };
+
+        foreach (var (_, points) in trailService.GetTrails())
+        {
+            if (points.Count < 2) continue;
+
+            var coords = points.Select(p =>
+            {
+                var (mx, my) = SphericalMercator.FromLonLat(p.Longitude, p.Latitude);
+                return new Coordinate(mx, my);
+            }).ToArray();
+
+            var geometry = new LineString(coords);
+            var feature = new GeometryFeature(geometry);
+            feature.Styles.Add(lineStyle);
+            trailLayer.Add(feature);
+        }
+
+        trailLayer.DataHasChanged();
     }
 
     private async void OnFindStationRequested(object? sender, EventArgs e)

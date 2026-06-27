@@ -33,7 +33,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             DigipeaterConfigViewModel.CreateDesignTime(),
             AudioConfigViewModel.CreateDesignTime(),
             GpsConfigViewModel.CreateDesignTime(),
-            ManagedModemViewModel.CreateDesignTime())
+            ManagedModemViewModel.CreateDesignTime(),
+            ReadinessViewModel.CreateDesignTime())
     {
     }
 
@@ -64,7 +65,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         DigipeaterConfigViewModel digipeaterConfig,
         AudioConfigViewModel audioConfig,
         GpsConfigViewModel gpsConfig,
-        ManagedModemViewModel managedModem)
+        ManagedModemViewModel managedModem,
+        ReadinessViewModel readiness)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -94,6 +96,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         AudioConfig = audioConfig;
         GpsConfig = gpsConfig;
         ManagedModem = managedModem;
+        Readiness = readiness;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -171,6 +174,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public AudioConfigViewModel AudioConfig { get; }
     public GpsConfigViewModel GpsConfig { get; }
     public ManagedModemViewModel ManagedModem { get; }
+    public ReadinessViewModel Readiness { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }

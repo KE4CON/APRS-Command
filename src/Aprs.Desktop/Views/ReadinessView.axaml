@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             x:Class="Aprs.Desktop.Views.ReadinessView"
+             x:DataType="vm:ReadinessViewModel">
+  <StackPanel Spacing="12" Margin="0,4">
+
+    <!-- Summary banner -->
+    <Border CornerRadius="6" Padding="14,10" Background="{DynamicResource AppBgAltBrush}">
+      <StackPanel Spacing="3">
+        <TextBlock Text="{Binding SummaryText}"
+                   FontSize="13" FontWeight="SemiBold"
+                   Foreground="{Binding SummaryColor}" />
+        <TextBlock Text="Pre-operation checklist for EmComm activations and exercises."
+                   FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Checklist items -->
+    <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate DataType="vm:ReadinessItem">
+          <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                  CornerRadius="5" Padding="12,8" Margin="0,0,0,4"
+                  Background="{DynamicResource CardBgBrush}">
+            <Grid ColumnDefinitions="28,*">
+              <TextBlock Text="{Binding ReadyIcon}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{Binding ReadyColor}"
+                         VerticalAlignment="Center" HorizontalAlignment="Center" />
+              <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Label}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding Detail}"
+                           FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <TextBlock Text="Refreshes automatically every 5 seconds."
+               FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+               HorizontalAlignment="Right" />
+  </StackPanel>
+</UserControl>

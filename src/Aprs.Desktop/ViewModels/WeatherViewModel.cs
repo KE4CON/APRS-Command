@@ -6,6 +6,8 @@ namespace Aprs.Desktop.ViewModels;
 
 public sealed class WeatherViewModel
 {
+    private readonly IWeatherDisplayService weatherService;
+
     public WeatherViewModel(IWeatherDisplayService weatherService, DateTimeOffset now)
         : this(weatherService, now, WeatherBeaconSettingsViewModel.CreateDesignTime(), WeatherStationSetupViewModel.CreateDesignTime())
     {
@@ -17,6 +19,7 @@ public sealed class WeatherViewModel
         WeatherBeaconSettingsViewModel beaconSettings,
         WeatherStationSetupViewModel setup)
     {
+        this.weatherService = weatherService;
         weatherService.UpdateStaleStates(now);
         Rows = new ObservableCollection<WeatherStationRowViewModel>(
             weatherService.GetAllWeatherStations().Select(station => new WeatherStationRowViewModel(station, now)));
@@ -24,6 +27,17 @@ public sealed class WeatherViewModel
         Summary = $"{Rows.Count} weather stations";
         BeaconSettings = beaconSettings;
         Setup = setup;
+    }
+
+    /// <summary>Feeds a live weather packet into the service and refreshes the display.</summary>
+    public void AcceptWeatherPacket(Aprs.Core.WeatherAprsPacket packet, AprsPacketSource source)
+    {
+        var now = DateTimeOffset.UtcNow;
+        weatherService.AcceptWeatherPacket(packet, source);
+        weatherService.UpdateStaleStates(now);
+        Rows.Clear();
+        foreach (var station in weatherService.GetAllWeatherStations())
+            Rows.Add(new WeatherStationRowViewModel(station, now));
     }
 
     public ObservableCollection<WeatherStationRowViewModel> Rows { get; }
