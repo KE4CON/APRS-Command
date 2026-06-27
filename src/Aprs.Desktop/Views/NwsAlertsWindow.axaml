@@ -1,0 +1,107 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:svc="using:Aprs.Desktop.Services"
+        x:Class="Aprs.Desktop.Views.NwsAlertsWindow"
+        x:DataType="vm:NwsAlertsViewModel"
+        Title="NWS Weather Alerts"
+        Width="720" Height="500"
+        MinWidth="500" MinHeight="350"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="14,10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="NWS Weather Alerts" FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextTitleBarBrush}" />
+          <TextBlock Text="{Binding LastRefreshedText}" FontSize="11"
+                     Foreground="{DynamicResource TextSidebarBrush}" />
+        </StackPanel>
+        <TextBlock Grid.Column="1" Text="{Binding SummaryText}" FontSize="11"
+                   Foreground="{DynamicResource TextSidebarBrush}"
+                   VerticalAlignment="Center" MaxWidth="250"
+                   TextWrapping="Wrap" />
+      </Grid>
+    </Border>
+
+    <!-- Content -->
+    <Grid Grid.Row="1" ColumnDefinitions="240,*">
+
+      <!-- Alert list -->
+      <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0"
+              Background="{DynamicResource SurfaceBgBrush}">
+        <ListBox ItemsSource="{Binding Alerts}"
+                 SelectedItem="{Binding SelectedAlert}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="svc:NwsAlertRecord">
+              <Border Padding="10,8" BorderBrush="{Binding SeverityColor}"
+                      BorderThickness="3,0,0,0" Margin="0,0,0,1"
+                      Background="{Binding SeverityBg}">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="{Binding Event}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="{Binding SeverityColor}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding AreaDescription}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding ExpiresText}" FontSize="9"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Border>
+
+      <!-- Alert detail -->
+      <ScrollViewer Grid.Column="1" Padding="16">
+        <StackPanel Spacing="12" IsVisible="{Binding HasSelectedAlert}">
+          <TextBlock Text="{Binding SelectedAlert.Event}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{Binding SelectedAlert.SeverityColor}"
+                     TextWrapping="Wrap" />
+          <TextBlock Text="{Binding SelectedAlert.Headline}"
+                     FontSize="12" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap" />
+
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto"
+                ColumnSpacing="12" RowSpacing="4">
+            <TextBlock Text="Severity:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="{Binding SelectedAlert.Severity}"
+                       FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Grid.Row="1" Text="Urgency:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedAlert.Urgency}"
+                       FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Grid.Row="2" Text="Area:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedAlert.AreaDescription}"
+                       FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+            <TextBlock Grid.Row="3" Text="Expires:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedAlert.ExpiresText}"
+                       FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Grid>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" />
+
+          <TextBlock Text="Description" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Text="{Binding SelectedAlert.Description}"
+                     FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap" LineHeight="18" />
+
+          <TextBlock Text="{Binding SelectedAlert.Sender}"
+                     FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Right" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Padding="14,8" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                 Text="Data from api.weather.gov — National Weather Service. Refreshes every 5 minutes." />
+    </Border>
+  </Grid>
+</Window>

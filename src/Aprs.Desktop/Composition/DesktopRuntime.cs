@@ -3,6 +3,7 @@ using Aprs.Core;
 using Aprs.Mapping;
 using Aprs.Services;
 using Aprs.Transport;
+using Aprs.Desktop.Services;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Runtime;
 using Aprs.Desktop.ViewModels;
@@ -30,13 +31,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public MessageAckCoordinator MessageAckCoordinator { get; }
     public KissTcpCoordinator KissTcpCoordinator { get; }
     public ManagedModemCoordinator? ManagedModemCoordinator { get; }
+    public NwsAlertService NwsAlertService { get; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -49,6 +51,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         ManagedModemCoordinator = managedModemCoordinator;
         ConnectionHealthWatchdog = connectionHealthWatchdog;
         StationTrailService = stationTrailService;
+        NwsAlertService = nwsAlertService;
     }
 
     public static DesktopRuntime Create()
@@ -121,7 +124,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new GpsConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new ManagedModemViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new ReadinessViewModel(), // LIVE — refreshed by WireReadiness() in App.axaml.cs
-            new NetControlViewModel(provider.GetRequiredService<IStationDatabase>())); // LIVE
+            new NetControlViewModel(provider.GetRequiredService<IStationDatabase>()), // LIVE
+            new NwsAlertsViewModel()); // LIVE — updated by WireNwsAlerts() in App.axaml.cs
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),
@@ -152,6 +156,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
         var watchdog = new ConnectionHealthWatchdog(coordinator);
         var stationTrailService = new StationTrailService();
+        var nwsAlertService = new NwsAlertService();
 
         var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
@@ -164,7 +169,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             kissTcpCoordinator,
             managedModemCoordinator,
             watchdog,
-            stationTrailService);
+            stationTrailService,
+            nwsAlertService);
     }
 
     /// <summary>
@@ -209,6 +215,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await NwsAlertService.DisposeAsync().ConfigureAwait(false);
         await ConnectionHealthWatchdog.DisposeAsync().ConfigureAwait(false);
         if (ManagedModemCoordinator is not null) await ManagedModemCoordinator.DisposeAsync().ConfigureAwait(false);
         await KissTcpCoordinator.DisposeAsync().ConfigureAwait(false);

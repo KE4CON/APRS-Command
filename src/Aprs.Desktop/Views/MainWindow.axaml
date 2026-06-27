@@ -10,7 +10,7 @@
         MinWidth="900"
         MinHeight="620">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
     <!-- Title bar -->
     <Border Grid.Row="0"
@@ -62,6 +62,7 @@
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
       <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
       <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
+      <MenuItem Header="_Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
       <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
       <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
       <MenuItem Header="_Weather" Command="{Binding OpenWeatherCommand}" />
@@ -84,7 +85,7 @@
     </Menu>
 
     <!-- Main content: icon sidebar + map -->
-    <Grid Grid.Row="2"
+    <Grid Grid.Row="4"
           ColumnDefinitions="56,*">
 
       <!-- Left icon sidebar -->
@@ -194,6 +195,12 @@
                      DataContext="{Binding Map}" />
     </Grid>
 
-    <views:MainStatusBarView Grid.Row="3" />
+    <!-- NWS weather alert banner — visible only when alerts are active -->
+    <views:NwsAlertsBannerView Grid.Row="2"
+                               DataContext="{Binding NwsAlerts}"
+                               Cursor="Hand"
+                               PointerPressed="NwsBanner_PointerPressed" />
+
+    <views:MainStatusBarView Grid.Row="4" />
   </Grid>
 </Window>
