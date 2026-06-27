@@ -12,7 +12,7 @@ APRS Command is released under **GPL v3** so that it can live on and be improved
 
 **Developer:** James Rospopo — KE4CON  
 **License:** GNU General Public License v3  
-**Status:** Alpha (v0.1.0) — functional for daily use, active development
+**Status:** Alpha (v0.2.0) — functional for daily use, active development
 
 ---
 
