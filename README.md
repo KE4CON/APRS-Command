@@ -4,7 +4,7 @@ A cross-platform APRS client for amateur radio operators, written in C# / .NET 1
 
 ## Philosophy
 
-APRS Command is built on the original vision of **Bob Bruninga WB4APR**, the father of APRS. Bob conceived APRS in the early 1990s not as a tracking system, but as a **situational awareness tool** — a way for amateur radio operators to share real-time tactical information about what is happening in an area. Weather, resources, messages, objects, coverage — a common operating picture for emergency communications. That vision guides every design decision in this program.
+APRS Command is built on the original vision of **Bob Bruninga WB4APR**, the father of APRS. Bob conceived APRS in the early 1990s not as a tracking system, but as a **situational awareness tool** — a way for amateur radio operators to share real-time tactical information about what is happening in an area. Weather, resources, messages, objects, coverage — a common operating picture for emergency communications. That vision — situational awareness for emergency communications, public service events, and any operation where amateur radio operators need a common operating picture — guides every design decision in this program.
 
 APRS Command is also inspired by **Roger Barker G4IDE**, author of UI-View32, the most beloved APRS client in the community's history. When Roger passed in 2004, the source code was destroyed per his wishes, and the program could never be updated, fixed, or ported to new platforms. The community lost an irreplaceable tool because it was closed source.
 
