@@ -35,7 +35,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             GpsConfigViewModel.CreateDesignTime(),
             ManagedModemViewModel.CreateDesignTime(),
             ReadinessViewModel.CreateDesignTime(),
-            NetControlViewModel.CreateDesignTime())
+            NetControlViewModel.CreateDesignTime(),
+            NwsAlertsViewModel.CreateDesignTime())
     {
     }
 
@@ -68,7 +69,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         GpsConfigViewModel gpsConfig,
         ManagedModemViewModel managedModem,
         ReadinessViewModel readiness,
-        NetControlViewModel netControl)
+        NetControlViewModel netControl,
+        NwsAlertsViewModel nwsAlerts)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -100,6 +102,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ManagedModem = managedModem;
         Readiness = readiness;
         NetControl = netControl;
+        NwsAlerts = nwsAlerts;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -120,6 +123,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ToggleExerciseModeCommand = new DesktopCommand(() => ExerciseModeRequested?.Invoke(this, EventArgs.Empty));
         OpenAboutCommand       = new DesktopCommand(() => AboutRequested?.Invoke(this, EventArgs.Empty));
         OpenNetControlCommand  = new DesktopCommand(() => NetControlRequested?.Invoke(this, EventArgs.Empty));
+        OpenNwsAlertsCommand   = new DesktopCommand(() => NwsAlertsRequested?.Invoke(this, EventArgs.Empty));
         ToggleDarkModeCommand  = new DesktopCommand(() => DarkModeRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -143,6 +147,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? AboutRequested;
     public event EventHandler? DarkModeRequested;
     public event EventHandler? NetControlRequested;
+    public event EventHandler? NwsAlertsRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -181,6 +186,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ManagedModemViewModel ManagedModem { get; }
     public ReadinessViewModel Readiness { get; }
     public NetControlViewModel NetControl { get; }
+    public NwsAlertsViewModel NwsAlerts { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }
@@ -199,6 +205,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenAboutCommand { get; }
     public DesktopCommand ToggleDarkModeCommand { get; }
     public DesktopCommand OpenNetControlCommand { get; }
+    public DesktopCommand OpenNwsAlertsCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {

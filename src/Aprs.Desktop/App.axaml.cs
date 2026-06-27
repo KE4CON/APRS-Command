@@ -171,6 +171,23 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireNwsAlerts(DesktopRuntime rt)
+    {
+        var settings = JsonAppSettingsStore.Default.Load();
+        var lat = settings.Station.Latitude;
+        var lon = settings.Station.Longitude;
+
+        // Subscribe to alert updates — push to viewmodel on UI thread.
+        rt.NwsAlertService.AlertsRefreshed += (_, alerts) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                rt.MainViewModel.NwsAlerts.UpdateAlerts(alerts));
+        };
+
+        // Start polling with the operator's configured location.
+        rt.NwsAlertService.Start(lat, lon);
+    }
+
     private static void WireNetControl(DesktopRuntime rt)
     {
         // Update roster when position packets arrive.
@@ -294,6 +311,7 @@ public sealed partial class App : Application
                     WireWeather(runtime);
                     WireTrails(runtime, (MainWindow)desktop.MainWindow!);
                     WireNetControl(runtime);
+                    WireNwsAlerts(runtime);
                 }
                 else
                 {
@@ -323,6 +341,7 @@ public sealed partial class App : Application
                         WireReadiness(runtime);
                         WireWeather(runtime);
                         WireNetControl(runtime);
+                        WireNwsAlerts(runtime);
                         // Trail wiring happens after main window is shown (setup.Close triggers it).
                         setup.Closed += (_, _) =>
                         {
