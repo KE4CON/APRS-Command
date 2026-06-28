@@ -284,6 +284,7 @@ public sealed class AlertRuleServiceTests
             null,
             null,
             1,
+            0,
             [],
             AprsPacketSource.Rf,
             null,

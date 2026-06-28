@@ -23,7 +23,8 @@ public sealed record StationMarker(
     IReadOnlyList<string> LastPath,
     string? Comment,
     string? LastRawPacket,
-    int PacketCount)
+    int PacketCount,
+    int DuplicatePacketCount)
 {
     public static StationMarker Create(
         string callsign,
@@ -41,7 +42,8 @@ public sealed record StationMarker(
         IReadOnlyList<string>? lastPath = null,
         string? comment = null,
         string? lastRawPacket = null,
-        int packetCount = 0)
+        int packetCount = 0,
+        int duplicatePacketCount = 0)
     {
         var symbol = AprsSymbolLookupService.Default.Resolve(symbolTableIdentifier, symbolCode);
 
@@ -66,7 +68,8 @@ public sealed record StationMarker(
             lastPath ?? [],
             comment,
             lastRawPacket,
-            packetCount);
+            packetCount,
+            duplicatePacketCount);
     }
 
     public static bool TryCreate(StationSnapshot station, out StationMarker? marker)
@@ -93,7 +96,8 @@ public sealed record StationMarker(
             station.SourcePath,
             station.Comment,
             station.LastRawPacket,
-            station.PacketCount);
+            station.PacketCount,
+            station.DuplicatePacketCount);
 
         return true;
     }

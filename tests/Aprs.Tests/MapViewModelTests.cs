@@ -397,6 +397,7 @@ public sealed class MapViewModelTests
             SpeedKnots: 12,
             AltitudeFeet: 1234,
             PacketCount: 1,
+            DuplicatePacketCount: 0,
             SourcePath: ["WIDE1-1"],
             PacketSource: AprsPacketSource.Simulation,
             HasMessagingCapability: true,

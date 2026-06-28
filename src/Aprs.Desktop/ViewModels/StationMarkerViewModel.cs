@@ -30,6 +30,7 @@ public sealed class StationMarkerViewModel
         SpeedKnots = marker.SpeedKnots;
         AltitudeFeet = marker.AltitudeFeet;
         LastPath = marker.LastPath;
+        DuplicatePacketCount = marker.DuplicatePacketCount;
         Comment = marker.Comment;
         LastRawPacket = marker.LastRawPacket;
         PacketCount = marker.PacketCount;
@@ -70,6 +71,7 @@ public sealed class StationMarkerViewModel
     public int? AltitudeFeet { get; }
 
     public IReadOnlyList<string> LastPath { get; }
+    public int DuplicatePacketCount { get; }
 
     public string? Comment { get; }
 

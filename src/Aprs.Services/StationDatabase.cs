@@ -9,6 +9,9 @@ public sealed class StationDatabase : IStationDatabase
     private readonly Dictionary<string, TacticalLabel> tacticalLabels = new(StringComparer.OrdinalIgnoreCase);
     private readonly StationAgingConfiguration agingConfiguration;
     private readonly StationTrailConfiguration trailConfiguration;
+    // Duplicate detection: maps content hash → last seen time
+    private readonly Dictionary<string, DateTimeOffset> recentPacketHashes = new(StringComparer.Ordinal);
+    private static readonly TimeSpan DupeWindow = TimeSpan.FromSeconds(30);
 
     public StationDatabase()
         : this(StationAgingConfiguration.Default, StationTrailConfiguration.Default)
@@ -216,6 +219,19 @@ public sealed class StationDatabase : IStationDatabase
         var realCallsign = FormatDisplayName(callsign, ssid);
         var tacticalLabel = GetTacticalLabelForKey(stationKey);
 
+        // Duplicate detection — hash the raw packet content; mark as dupe if seen within DupeWindow.
+        var contentHash = ComputePacketHash(packet.RawLine);
+        var isDuplicate = recentPacketHashes.TryGetValue(contentHash, out var lastSeen)
+            && (packet.ReceivedAtUtc - lastSeen) < DupeWindow;
+        recentPacketHashes[contentHash] = packet.ReceivedAtUtc;
+        // Prune old hashes periodically.
+        if (recentPacketHashes.Count > 2000)
+        {
+            var cutoff = packet.ReceivedAtUtc - DupeWindow;
+            foreach (var key in recentPacketHashes.Keys.Where(k => recentPacketHashes[k] < cutoff).ToList())
+                recentPacketHashes.Remove(key);
+        }
+
         return new StationSnapshot(
             callsign,
             ssid,
@@ -237,6 +253,7 @@ public sealed class StationDatabase : IStationDatabase
             existing?.SpeedKnots,
             existing?.AltitudeFeet,
             (existing?.PacketCount ?? 0) + 1,
+            isDuplicate ? (existing?.DuplicatePacketCount ?? 0) + 1 : (existing?.DuplicatePacketCount ?? 0),
             packet.Path,
             packetSource,
             existing?.HasMessagingCapability,
@@ -551,5 +568,15 @@ public sealed class StationDatabase : IStationDatabase
     public void RestoreTacticalLabel(TacticalLabel label)
     {
         tacticalLabels[NormalizeStationKey(label.RealCallsign)] = label;
+    }
+
+    private static string ComputePacketHash(string? rawLine)
+    {
+        if (string.IsNullOrEmpty(rawLine)) return Guid.NewGuid().ToString();
+        // Hash the information element — everything after source>dest,path:
+        // Find the colon that starts the info element (after the path).
+        var firstColon = rawLine.IndexOf(':');
+        var infoElement = firstColon >= 0 ? rawLine[(firstColon + 1)..] : rawLine;
+        return infoElement.GetHashCode(StringComparison.Ordinal).ToString();
     }
 }
