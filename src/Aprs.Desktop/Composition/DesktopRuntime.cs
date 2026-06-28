@@ -23,6 +23,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
 {
     private readonly ServiceProvider provider;
 
+    /// <summary>Resolves a service from the DI container — used by feature windows that need live services.</summary>
+    public T GetService<T>() where T : notnull => provider.GetRequiredService<T>();
+
     public MainWindowViewModel MainViewModel { get; }
     public LiveDataCoordinator Coordinator { get; }
     public BeaconService BeaconService { get; }
