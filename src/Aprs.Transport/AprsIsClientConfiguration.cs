@@ -14,7 +14,8 @@ public sealed record AprsIsClientConfiguration(
     bool TransmitEnabled,
     bool RequireTransmitConfirmation,
     string? DefaultTransmitSource,
-    DateTimeOffset? LastTransmitTimestampUtc)
+    DateTimeOffset? LastTransmitTimestampUtc,
+    IReadOnlyList<(string Host, int Port)>? FailoverServers = null)
 {
     public static AprsIsClientConfiguration Default { get; } = new(
         ServerHost: "rotate.aprs2.net",
@@ -30,7 +31,8 @@ public sealed record AprsIsClientConfiguration(
         TransmitEnabled: false,
         RequireTransmitConfirmation: true,
         DefaultTransmitSource: null,
-        LastTransmitTimestampUtc: null);
+        LastTransmitTimestampUtc: null,
+        FailoverServers: null);
 
     public AprsIsClientConfiguration WithServer(AprsIsServerDefinition server)
     {
@@ -41,5 +43,16 @@ public sealed record AprsIsClientConfiguration(
             ServerHost = server.HostName,
             ServerPort = server.Port
         };
+    }
+
+    /// <summary>
+    /// Returns the full ordered list of servers to try — primary first, then failovers.
+    /// </summary>
+    public IReadOnlyList<(string Host, int Port)> AllServers()
+    {
+        var list = new List<(string, int)> { (ServerHost, ServerPort) };
+        if (FailoverServers is not null)
+            list.AddRange(FailoverServers);
+        return list;
     }
 }

@@ -35,13 +35,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public KissTcpCoordinator KissTcpCoordinator { get; }
     public ManagedModemCoordinator? ManagedModemCoordinator { get; }
     public NwsAlertService NwsAlertService { get; }
+    public AprsIsFailoverCoordinator? FailoverCoordinator { get; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -55,6 +56,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         ConnectionHealthWatchdog = connectionHealthWatchdog;
         StationTrailService = stationTrailService;
         NwsAlertService = nwsAlertService;
+        FailoverCoordinator = failoverCoordinator;
     }
 
     public static DesktopRuntime Create()
@@ -163,6 +165,22 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var stationTrailService = new StationTrailService();
         var nwsAlertService = new NwsAlertService();
 
+        // Build failover coordinator from the configured APRS-IS port.
+        AprsIsFailoverCoordinator? failoverCoordinator = null;
+        var aprsIsPort = appSettings2.Connections.Ports.FirstOrDefault(p => p.Type == ConnectionPortType.AprsIs);
+        if (aprsIsPort?.Configuration.AprsIs is { } aprsIsConfig && aprsIsConfig.FailoverServers?.Count > 0)
+        {
+            var allServers = aprsIsConfig.AllServers();
+            if (allServers.Count > 1)
+            {
+                failoverCoordinator = new AprsIsFailoverCoordinator(
+                    coordinator,
+                    allServers,
+                    appSettings2.Station.Callsign,
+                    aprsIsPort.Configuration.AprsIs.Filter);
+            }
+        }
+
         var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             provider.GetRequiredService<AprsIngestionService>());
@@ -175,7 +193,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             managedModemCoordinator,
             watchdog,
             stationTrailService,
-            nwsAlertService);
+            nwsAlertService,
+            failoverCoordinator);
     }
 
     /// <summary>
@@ -192,6 +211,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         KissTcpCoordinator.Start();
         ManagedModemCoordinator?.Start();
         ConnectionHealthWatchdog.Start();
+        FailoverCoordinator?.Start();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -220,6 +240,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (FailoverCoordinator is not null) await FailoverCoordinator.DisposeAsync().ConfigureAwait(false);
         await NwsAlertService.DisposeAsync().ConfigureAwait(false);
         await ConnectionHealthWatchdog.DisposeAsync().ConfigureAwait(false);
         if (ManagedModemCoordinator is not null) await ManagedModemCoordinator.DisposeAsync().ConfigureAwait(false);
