@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Aprs.Desktop.ViewModels"
+             xmlns:cfg="using:Aprs.Desktop.Configuration"
+             x:Class="Aprs.Desktop.Views.MessageTemplatesView"
+             x:DataType="vm:MessageTemplatesViewModel">
+  <Grid RowDefinitions="*,Auto" ColumnDefinitions="200,*">
+
+    <!-- Template list -->
+    <Border Grid.Row="0" Grid.Column="0"
+            BorderBrush="{DynamicResource AppBorderBrush}"
+            BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="*,Auto">
+        <ListBox ItemsSource="{Binding Templates}"
+                 SelectedItem="{Binding SelectedTemplate}"
+                 Background="{DynamicResource SurfaceBgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="cfg:MessageTemplate">
+              <StackPanel Spacing="2" Margin="4,3">
+                <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding Body}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="6">
+          <Button Command="{Binding MoveUpCommand}"   Content="↑" Padding="8,4" ToolTip.Tip="Move up" />
+          <Button Command="{Binding MoveDownCommand}" Content="↓" Padding="8,4" ToolTip.Tip="Move down" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Editor panel -->
+    <ScrollViewer Grid.Row="0" Grid.Column="1" Padding="16,12">
+      <StackPanel Spacing="12">
+
+        <!-- View mode — show selected template details -->
+        <StackPanel Spacing="8" IsVisible="{Binding IsNotEditing}">
+          <TextBlock Text="Message Templates" FontSize="14" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Foreground="{DynamicResource TextSubtleBrush}" FontSize="11" TextWrapping="Wrap"
+                     Text="Templates let you send common messages with one click. Select a template in the Message Center to pre-fill the compose area. The recipient field is optional — leave blank to only fill the message body." />
+
+          <StackPanel Spacing="6" IsVisible="{Binding HasSelection}">
+            <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
+            <TextBlock Text="{Binding SelectedTemplate.Name}" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Grid ColumnDefinitions="80,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="4">
+              <TextBlock Text="Recipient:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding SelectedTemplate.Recipient}"
+                         FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Row="1" Text="Body:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedTemplate.Body}"
+                         FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+              <Button Command="{Binding EditTemplateCommand}" Content="Edit" Padding="12,6" />
+              <Button Command="{Binding DeleteTemplateCommand}" Content="Delete"
+                      Foreground="{DynamicResource ErrorTextBrush}" Padding="12,6" />
+            </StackPanel>
+          </StackPanel>
+        </StackPanel>
+
+        <!-- Edit mode -->
+        <StackPanel Spacing="10" IsVisible="{Binding IsEditing}">
+          <TextBlock Text="Edit Template" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <StackPanel Spacing="3">
+            <TextBlock Text="Template name *" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding EditName}" Watermark="e.g. Check In" />
+          </StackPanel>
+          <StackPanel Spacing="3">
+            <TextBlock Text="Default recipient (optional)" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       ToolTip.Tip="Leave blank to only pre-fill the message body. Enter a callsign to also set the recipient." />
+            <TextBox Text="{Binding EditRecipient}" Watermark="e.g. W4NET or leave blank" />
+          </StackPanel>
+          <StackPanel Spacing="3">
+            <TextBlock Text="Message body *" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding EditBody}" AcceptsReturn="False"
+                     Watermark="e.g. Checking in. All OK." Height="60" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Command="{Binding SaveTemplateCommand}" Content="Save" Padding="14,6" />
+            <Button Command="{Binding CancelEditCommand}" Content="Cancel" Padding="10,6" />
+          </StackPanel>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Bottom toolbar -->
+    <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="10,8"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Command="{Binding NewTemplateCommand}" Content="+ New Template" Padding="12,6" />
+        <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="11"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   VerticalAlignment="Center" Margin="10,0" />
+        <Button Grid.Column="2" Command="{Binding RestoreDefaultsCommand}"
+                Content="Restore defaults" Padding="10,6" FontSize="10" />
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

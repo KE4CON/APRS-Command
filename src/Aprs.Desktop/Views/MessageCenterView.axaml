@@ -197,28 +197,50 @@
               Background="{DynamicResource TextTitleBarBrush}"
               Padding="10">
         <Grid ColumnDefinitions="*,*,2*"
-              RowDefinitions="Auto,Auto"
+              RowDefinitions="Auto,Auto,Auto"
               ColumnSpacing="8"
               RowSpacing="6">
-          <StackPanel>
+          <!-- Template picker -->
+          <StackPanel Grid.ColumnSpan="3" Spacing="2" Margin="0,0,0,2">
+            <TextBlock Text="Template (optional)"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <ComboBox x:Name="TemplateCombo"
+                      ItemsSource="{Binding Templates.Templates}"
+                      PlaceholderText="Pick a template to pre-fill compose…"
+                      HorizontalAlignment="Stretch"
+                      SelectionChanged="TemplateCombo_SelectionChanged">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="11" />
+                    <TextBlock Text="{Binding Body}" FontSize="10"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               TextTrimming="CharacterEllipsis" MaxWidth="280" />
+                  </StackPanel>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </StackPanel>
+          <StackPanel Grid.Row="1">
             <TextBlock Text="From"
                        FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <TextBox Text="{Binding ComposeLocalStation}" />
           </StackPanel>
-          <StackPanel Grid.Column="1">
+          <StackPanel Grid.Row="1" Grid.Column="1">
             <TextBlock Text="To"
                        FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <TextBox Text="{Binding ComposeRecipient}" />
           </StackPanel>
-          <StackPanel Grid.Column="2">
+          <StackPanel Grid.Row="1" Grid.Column="2">
             <TextBlock Text="Message"
                        FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <TextBox Text="{Binding ComposeBody}" />
           </StackPanel>
-          <TextBlock Grid.Row="1"
+          <TextBlock Grid.Row="2"
                      Grid.ColumnSpan="3"
                      Text="{Binding ComposeValidationSummary}"
                      Foreground="{DynamicResource TextMutedBrush}"

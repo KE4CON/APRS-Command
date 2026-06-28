@@ -20,7 +20,8 @@ public sealed record AppSettings(
     WindowStates Windows,
     GpsSettings Gps,
     ManagedModemSettings ManagedModem,
-    bool DarkMode)
+    bool DarkMode,
+    MessageTemplatesSettings MessageTemplates)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -34,5 +35,6 @@ public sealed record AppSettings(
         Windows: WindowStates.Default,
         Gps: GpsSettings.Default,
         ManagedModem: ManagedModemSettings.Default,
-        DarkMode: false);
+        DarkMode: false,
+        MessageTemplates: MessageTemplatesSettings.Default);
 }
