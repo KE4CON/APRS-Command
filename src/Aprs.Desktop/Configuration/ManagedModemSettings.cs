@@ -12,7 +12,8 @@ public enum PttMethod
     /// <summary>DTR pin on a serial port.</summary>
     Dtr,
 
-    // GPIO planned for v0.2.0 (Raspberry Pi field server use case).
+    /// <summary>Raspberry Pi GPIO pin — for headless field server PTT without a serial adapter.</summary>
+    GpioPin,
 }
 
 /// <summary>
@@ -24,6 +25,7 @@ public sealed record ManagedModemSettings(
     string AudioOutputDevice,
     PttMethod PttMethod,
     string PttSerialPort,
+    int PttGpioPin,
     int CallsignSsid,
     string DirewolfPath,
     int KissPort,
@@ -35,6 +37,7 @@ public sealed record ManagedModemSettings(
         AudioOutputDevice: string.Empty,
         PttMethod:         PttMethod.None,
         PttSerialPort:     string.Empty,
+        PttGpioPin:        17,
         CallsignSsid:      0,
         DirewolfPath:      string.Empty,
         KissPort:          8001,
