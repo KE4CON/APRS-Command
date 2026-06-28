@@ -35,6 +35,11 @@ jobs:
             rid: linux-arm64
             artifact: APRSCommand-${{ github.ref_name }}-linux-arm64
 
+          - name: Linux (x64)
+            os: ubuntu-latest
+            rid: linux-x64
+            artifact: APRSCommand-${{ github.ref_name }}-linux-x64
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -103,6 +108,7 @@ jobs:
             | macOS (Intel) | `APRSCommand-${{ github.ref_name }}-macos-x64.zip` |
             | Windows 10/11 (64-bit) | `APRSCommand-${{ github.ref_name }}-windows-x64.zip` |
             | Linux / Raspberry Pi (ARM64) | `APRSCommand-${{ github.ref_name }}-linux-arm64.zip` |
+            | Linux (x64 — desktop/laptop/server) | `APRSCommand-${{ github.ref_name }}-linux-x64.zip` |
 
             ### Installation
 
