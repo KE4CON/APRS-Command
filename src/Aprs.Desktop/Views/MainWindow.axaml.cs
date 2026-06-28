@@ -54,6 +54,7 @@ public sealed partial class MainWindow : Window
             vm.NetControlRequested    -= OnNetControlRequested;
             vm.NwsAlertsRequested     -= OnNwsAlertsRequested;
             vm.AfterActionRequested   -= OnAfterActionRequested;
+            vm.OfflineMapRequested    -= OnOfflineMapRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -85,6 +86,7 @@ public sealed partial class MainWindow : Window
             vm.NetControlRequested    += OnNetControlRequested;
             vm.NwsAlertsRequested     += OnNwsAlertsRequested;
             vm.AfterActionRequested   += OnAfterActionRequested;
+            vm.OfflineMapRequested    += OnOfflineMapRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -153,6 +155,17 @@ public sealed partial class MainWindow : Window
         var rt = (Application.Current as App)?.Runtime;
         var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
         var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
+    }
+
+    private void OnOfflineMapRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new OfflineMapDownloadWindow
+        {
+            DataContext = rt.GetService<ViewModels.OfflineMapDownloadViewModel>()
+        };
         win.ShowDialog(this);
     }
 

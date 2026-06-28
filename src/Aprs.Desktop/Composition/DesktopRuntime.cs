@@ -94,6 +94,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new DirewolfProfileService(DateTimeOffset.UtcNow));
         services.AddSingleton<IWeatherDisplayService, WeatherDisplayService>();
 
+        // Offline map download
+        services.AddSingleton<Aprs.Mapping.IMapTileCalculationService, Aprs.Mapping.MapTileCalculationService>();
+        services.AddSingleton<Aprs.Mapping.IMapTileDownloadClient, Aprs.Mapping.HttpMapTileDownloadClient>();
+        services.AddSingleton<Aprs.Mapping.IMapTileCacheService>(_ =>
+            new Aprs.Mapping.MapTileCacheService(Aprs.Mapping.MapTileCacheConfiguration.Default));
+        services.AddSingleton<Aprs.Mapping.IOfflineMapDownloadManager, Aprs.Mapping.OfflineMapDownloadManager>();
+        services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
+
         var provider = services.BuildServiceProvider();
 
         // --- Live spine view models ---

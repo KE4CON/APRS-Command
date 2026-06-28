@@ -75,6 +75,7 @@
       <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
       <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
       <MenuItem Header="After-Action _Report" Command="{Binding OpenAfterActionCommand}" />
+      <MenuItem Header="Offline _Map Download" Command="{Binding OpenOfflineMapCommand}" />
       <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
       <MenuItem Header="_Tools">
         <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />
