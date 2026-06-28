@@ -17,6 +17,19 @@ public sealed class MessageCenterViewModel
     private readonly List<QueryRowViewModel> queries = [];
     private MessageAckCoordinator? ackCoordinator;
 
+    /// <summary>Templates viewmodel injected from DesktopRuntime after construction.</summary>
+    public MessageTemplatesViewModel? Templates { get; set; }
+
+    /// <summary>
+    /// Applies a template to the compose fields. If the template has a recipient it
+    /// replaces the current recipient; the body always replaces the compose body.
+    /// </summary>
+    public void ApplyTemplate(Configuration.MessageTemplate template)
+    {
+        if (!string.IsNullOrWhiteSpace(template.Recipient))
+            ComposeRecipient = template.Recipient;
+        ComposeBody = template.Body;
+    }
     public MessageCenterViewModel(IAprsMessageStoreService messageStore)
         : this(messageStore, new AprsBulletinService())
     {

@@ -73,6 +73,9 @@ public sealed partial class App : Application
         // SendMessageAsync uses the real retry engine.
         rt.MainViewModel.MessageCenter.SetAckCoordinator(rt.MessageAckCoordinator);
 
+        // Wire the templates viewmodel so the compose area can apply templates.
+        rt.MainViewModel.MessageCenter.Templates = rt.MainViewModel.MessageTemplates;
+
         // Route every parsed packet to the ACK coordinator so ACK/REJ packets
         // from APRS-IS are applied to outgoing messages immediately.
         rt.Coordinator.PacketParsed += (_, e) =>

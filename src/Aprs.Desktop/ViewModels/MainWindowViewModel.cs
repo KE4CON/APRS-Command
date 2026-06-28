@@ -36,7 +36,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             ManagedModemViewModel.CreateDesignTime(),
             ReadinessViewModel.CreateDesignTime(),
             NetControlViewModel.CreateDesignTime(),
-            NwsAlertsViewModel.CreateDesignTime())
+            NwsAlertsViewModel.CreateDesignTime(),
+            MessageTemplatesViewModel.CreateDesignTime())
     {
     }
 
@@ -70,7 +71,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ManagedModemViewModel managedModem,
         ReadinessViewModel readiness,
         NetControlViewModel netControl,
-        NwsAlertsViewModel nwsAlerts)
+        NwsAlertsViewModel nwsAlerts,
+        MessageTemplatesViewModel messageTemplates)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -103,6 +105,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Readiness = readiness;
         NetControl = netControl;
         NwsAlerts = nwsAlerts;
+        MessageTemplates = messageTemplates;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -187,6 +190,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public ReadinessViewModel Readiness { get; }
     public NetControlViewModel NetControl { get; }
     public NwsAlertsViewModel NwsAlerts { get; }
+    public MessageTemplatesViewModel MessageTemplates { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }
