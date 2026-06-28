@@ -87,6 +87,15 @@
                         PlaceholderText="Select serial port"
                         HorizontalAlignment="Stretch" />
             </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2" IsVisible="{Binding ShowGpioPinPicker}">
+              <TextBlock Text="GPIO pin (BCM number)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                         ToolTip.Tip="The Raspberry Pi GPIO pin number in BCM numbering. Default is BCM 17 (physical pin 11). Wire through a transistor or optoisolator to your radio's PTT input." />
+              <NumericUpDown Value="{Binding GpioPinNumber}" Minimum="1" Maximum="27"
+                             Increment="1" FormatString="0"
+                             ToolTip.Tip="BCM 17 = physical pin 11. Refer to your Pi's GPIO pinout diagram." />
+              <TextBlock Text="Raspberry Pi only — ignored on other platforms."
+                         FontSize="9" Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
           </Grid>
           <CheckBox Content="Enable RF transmit"
                     IsChecked="{Binding TransmitEnabled}"

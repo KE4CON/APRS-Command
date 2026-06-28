@@ -47,7 +47,7 @@ public sealed class ManagedModemViewModel : INotifyPropertyChanged
     public ObservableCollection<string> AvailableSerialPorts { get; }
 
     public IReadOnlyList<PttMethod> AvailablePttMethods { get; } =
-        [PttMethod.None, PttMethod.Rts, PttMethod.Dtr];
+        [PttMethod.None, PttMethod.Rts, PttMethod.Dtr, PttMethod.GpioPin];
 
     public bool Enabled
     {
@@ -70,10 +70,19 @@ public sealed class ManagedModemViewModel : INotifyPropertyChanged
     public PttMethod PttMethod
     {
         get => pttMethod;
-        set { if (pttMethod != value) { pttMethod = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowSerialPortPicker)); } }
+        set { if (pttMethod != value) { pttMethod = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowSerialPortPicker));
+                OnPropertyChanged(nameof(ShowGpioPinPicker)); } }
     }
 
     public bool ShowSerialPortPicker => PttMethod is PttMethod.Rts or PttMethod.Dtr;
+    public bool ShowGpioPinPicker => PttMethod is PttMethod.GpioPin;
+
+    private int gpioPinNumber = 17;
+    public int GpioPinNumber
+    {
+        get => gpioPinNumber;
+        set { if (gpioPinNumber != value) { gpioPinNumber = value; OnPropertyChanged(); } }
+    }
 
     public string PttSerialPort
     {
@@ -122,6 +131,7 @@ public sealed class ManagedModemViewModel : INotifyPropertyChanged
         AudioInputDevice   = s.AudioInputDevice;
         AudioOutputDevice  = s.AudioOutputDevice;
         PttMethod          = s.PttMethod;
+        GpioPinNumber      = s.PttGpioPin;
         PttSerialPort      = s.PttSerialPort;
         DirewolfPath       = s.DirewolfPath;
         KissPort           = s.KissPort;
@@ -136,6 +146,7 @@ public sealed class ManagedModemViewModel : INotifyPropertyChanged
             AudioInputDevice:  AudioInputDevice.Trim(),
             AudioOutputDevice: AudioOutputDevice.Trim(),
             PttMethod:         PttMethod,
+            PttGpioPin:        GpioPinNumber,
             PttSerialPort:     PttSerialPort.Trim(),
             CallsignSsid:      store.Load().Station.Ssid,
             DirewolfPath:      DirewolfPath.Trim(),

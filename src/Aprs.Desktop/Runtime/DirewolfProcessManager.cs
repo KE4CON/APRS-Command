@@ -207,6 +207,10 @@ public sealed class DirewolfProcessManager : IAsyncDisposable
             case PttMethod.Dtr when !string.IsNullOrWhiteSpace(settings.PttSerialPort):
                 sb.AppendLine($"PTT {settings.PttSerialPort} DTR");
                 break;
+            case PttMethod.GpioPin:
+                // Direwolf supports GPIO PTT on Linux via the GPIO keyword.
+                sb.AppendLine($"PTT GPIO {settings.PttGpioPin}");
+                break;
             case PttMethod.None:
             default:
                 sb.AppendLine("# PTT None — VOX or radio handles keying");
