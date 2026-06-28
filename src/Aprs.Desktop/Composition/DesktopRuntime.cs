@@ -36,13 +36,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public ManagedModemCoordinator? ManagedModemCoordinator { get; }
     public NwsAlertService NwsAlertService { get; }
     public AprsIsFailoverCoordinator? FailoverCoordinator { get; }
+    public Aprs.Desktop.Services.RadarAnimationService RadarAnimationService { get; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -57,6 +58,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         StationTrailService = stationTrailService;
         NwsAlertService = nwsAlertService;
         FailoverCoordinator = failoverCoordinator;
+        RadarAnimationService = radarAnimationService;
     }
 
     public static DesktopRuntime Create()
@@ -164,6 +166,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var watchdog = new ConnectionHealthWatchdog(coordinator);
         var stationTrailService = new StationTrailService();
         var nwsAlertService = new NwsAlertService();
+        var radarAnimationService = new Aprs.Desktop.Services.RadarAnimationService();
 
         // Build failover coordinator from the configured APRS-IS port.
         AprsIsFailoverCoordinator? failoverCoordinator = null;
@@ -194,7 +197,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             watchdog,
             stationTrailService,
             nwsAlertService,
-            failoverCoordinator);
+            failoverCoordinator,
+            radarAnimationService);
     }
 
     /// <summary>
@@ -240,6 +244,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await RadarAnimationService.DisposeAsync().ConfigureAwait(false);
         if (FailoverCoordinator is not null) await FailoverCoordinator.DisposeAsync().ConfigureAwait(false);
         await NwsAlertService.DisposeAsync().ConfigureAwait(false);
         await ConnectionHealthWatchdog.DisposeAsync().ConfigureAwait(false);

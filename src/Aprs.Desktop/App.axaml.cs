@@ -191,11 +191,47 @@ public sealed partial class App : Application
 
     private static void WireRadarRefresh(MainWindow mainWindow)
     {
-        // Refresh radar tiles every 5 minutes when the overlay is active.
+        var mapView = mainWindow.TheMapView;
+        if (mapView is null) return;
+
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+
+        // Subscribe RadarStepRequested from MapViewModel to MapView.StepFrame.
+        if (mainWindow.DataContext is ViewModels.MainWindowViewModel mvm)
+            mvm.Map.RadarStepRequested += (_, delta) => mapView.StepFrame(delta);
+
+        // Load animation frames when available.
+        rt.RadarAnimationService.FramesRefreshed += (_, frames) =>
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                mapView.LoadAnimationFrames(frames));
+        };
+
+        // Fetch animation frames on first radar enable — subscribe to ShowRadar changes.
+        if (mainWindow.DataContext is ViewModels.MainWindowViewModel vm)
+        {
+            vm.Map.PropertyChanged += async (_, e) =>
+            {
+                if (e.PropertyName == nameof(ViewModels.MapViewModel.ShowRadar)
+                    && vm.Map.ShowRadar
+                    && rt.RadarAnimationService.Frames.Count == 0)
+                {
+                    await rt.RadarAnimationService.RefreshFramesAsync().ConfigureAwait(false);
+                }
+            };
+        }
+
+        // Refresh tiles every 5 minutes; also refresh frame list.
         var timer = new Avalonia.Threading.DispatcherTimer(
             TimeSpan.FromMinutes(5),
             Avalonia.Threading.DispatcherPriority.Background,
-            (_, _) => mainWindow.TheMapView?.RefreshRadar());
+            async (_, _) =>
+            {
+                mapView.RefreshRadar();
+                // Refresh frame list in the background.
+                await rt.RadarAnimationService.RefreshFramesAsync().ConfigureAwait(false);
+            });
         timer.Start();
     }
 
