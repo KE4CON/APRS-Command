@@ -53,6 +53,7 @@ public sealed partial class MainWindow : Window
             vm.DarkModeRequested      -= OnDarkModeRequested;
             vm.NetControlRequested    -= OnNetControlRequested;
             vm.NwsAlertsRequested     -= OnNwsAlertsRequested;
+            vm.AfterActionRequested   -= OnAfterActionRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -82,6 +83,7 @@ public sealed partial class MainWindow : Window
             vm.DarkModeRequested      += OnDarkModeRequested;
             vm.NetControlRequested    += OnNetControlRequested;
             vm.NwsAlertsRequested     += OnNwsAlertsRequested;
+            vm.AfterActionRequested   += OnAfterActionRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -142,6 +144,14 @@ public sealed partial class MainWindow : Window
     {
         var win = new NwsAlertsWindow { DataContext = vm?.NwsAlerts };
         win.Show(this);
+    }
+
+    private void OnAfterActionRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
+        var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
     }
 
     private void NwsBanner_PointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
