@@ -153,12 +153,31 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
         // GPS — only create a serial source when a port is configured and GPS is enabled.
         var gpsSettings = provider.GetRequiredService<IAppSettingsStore>().Load().Gps;
+        var gpsdSettings = provider.GetRequiredService<IAppSettingsStore>().Load().Gpsd;
+
         SerialNmeaGpsSource? gpsSource = null;
-        if (gpsSettings.Enabled && !string.IsNullOrWhiteSpace(gpsSettings.SerialPortName))
+        Aprs.Services.GpsdClient? gpsdClient = null;
+
+        if (gpsdSettings.Enabled)
         {
+            // GPSD mode — connect to the local GPS daemon.
+            var gpsdConfig = new Aprs.Services.GpsdConfiguration(
+                Host:            gpsdSettings.Host,
+                Port:            gpsdSettings.Port,
+                Enabled:         true,
+                ReconnectEnabled: true,
+                ReconnectDelay:  TimeSpan.FromSeconds(5),
+                ReadTimeout:     TimeSpan.FromSeconds(30),
+                SourceName:      "gpsd");
+            gpsdClient = new Aprs.Services.GpsdClient(gpsdConfig);
+        }
+        else if (gpsSettings.Enabled && !string.IsNullOrWhiteSpace(gpsSettings.SerialPortName))
+        {
+            // Serial NMEA mode.
             gpsSource = new SerialNmeaGpsSource(gpsSettings.SerialPortName, gpsSettings.BaudRate);
         }
-        var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource);
+
+        var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource, gpsdClient);
 
         var appSettings2 = provider.GetRequiredService<IAppSettingsStore>().Load();
         var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>());

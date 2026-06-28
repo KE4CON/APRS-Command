@@ -15,6 +15,11 @@ public sealed class GpsConfigViewModel : INotifyPropertyChanged
     private bool updateStationPosition;
     private string statusText = string.Empty;
 
+    // GPSD settings
+    private bool gpsdEnabled;
+    private string gpsdHost = "127.0.0.1";
+    private int gpsdPort = 2947;
+
     public GpsConfigViewModel(IAppSettingsStore store)
     {
         this.store = store ?? throw new ArgumentNullException(nameof(store));
@@ -61,12 +66,35 @@ public sealed class GpsConfigViewModel : INotifyPropertyChanged
         private set { if (statusText != value) { statusText = value; OnPropertyChanged(); } }
     }
 
+    public bool GpsdEnabled
+    {
+        get => gpsdEnabled;
+        set { if (gpsdEnabled != value) { gpsdEnabled = value; OnPropertyChanged(); } }
+    }
+
+    public string GpsdHost
+    {
+        get => gpsdHost;
+        set { if (gpsdHost != value) { gpsdHost = value; OnPropertyChanged(); } }
+    }
+
+    public int GpsdPort
+    {
+        get => gpsdPort;
+        set { if (gpsdPort != value) { gpsdPort = value; OnPropertyChanged(); } }
+    }
+
     public DesktopCommand SaveCommand { get; }
     public DesktopCommand RevertCommand { get; }
 
     public void Load()
     {
-        var s = store.Load().Gps;
+        var settings = store.Load();
+        var s = settings.Gps;
+        var g = settings.Gpsd;
+        GpsdEnabled = g.Enabled;
+        GpsdHost    = g.Host;
+        GpsdPort    = g.Port;
         Enabled               = s.Enabled;
         SerialPortName        = s.SerialPortName;
         BaudRate              = s.BaudRate;
@@ -81,7 +109,11 @@ public sealed class GpsConfigViewModel : INotifyPropertyChanged
             SerialPortName:        SerialPortName.Trim(),
             BaudRate:              BaudRate,
             UpdateStationPosition: UpdateStationPosition);
-        store.Update(s => s with { Gps = settings });
+        var gpsdSettings = new Aprs.Desktop.Configuration.GpsdSettings(
+            Enabled: GpsdEnabled,
+            Host:    GpsdHost.Trim(),
+            Port:    GpsdPort);
+        store.Update(s => s with { Gps = settings, Gpsd = gpsdSettings });
         StatusText = Enabled
             ? $"GPS enabled on {SerialPortName} at {BaudRate} baud. Restart the app to apply."
             : "GPS disabled.";
