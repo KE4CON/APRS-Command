@@ -1,6 +1,6 @@
 # APRS Command
 
-A cross-platform APRS client for amateur radio operators, written in C# / .NET 10 with the Avalonia UI framework. Runs on macOS, Windows, and Raspberry Pi from a single codebase.
+A cross-platform APRS client for amateur radio operators, written in C# / .NET 10 with the Avalonia UI framework. Runs on macOS, Windows, Linux (x64), and Raspberry Pi from a single codebase.
 
 ## Philosophy
 
@@ -42,7 +42,8 @@ APRS Command is released under **GPL v3** so that it can live on and be improved
 | macOS (Apple Silicon) | Primary development platform |
 | macOS (Intel) | Supported |
 | Windows 10/11 (x64) | Supported |
-| Raspberry Pi (ARM64) | Supported |
+| Linux x64 (Ubuntu, Debian, Fedora, Arch, etc.) | Supported |
+| Raspberry Pi 4/5 (ARM64) | Supported |
 
 ---
 
