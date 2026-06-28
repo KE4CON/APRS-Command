@@ -222,6 +222,18 @@
                            Watermark="e.g. m/100" />
                 </StackPanel>
               </Grid>
+
+              <!-- Failover servers -->
+              <StackPanel Spacing="3" Margin="0,6,0,0">
+                <TextBlock Text="Failover servers (optional)"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                           Text="If the primary server is unreachable for 3+ minutes, APRS Command tries these in order. One server per line, format: host:port" />
+                <TextBox Text="{Binding SelectedPort.AprsIsFailoverServers}"
+                         AcceptsReturn="True" Height="72"
+                         Watermark="noam.aprs2.net:14580&#x0a;euro.aprs2.net:14580" />
+              </StackPanel>
             </StackPanel>
 
           </StackPanel>

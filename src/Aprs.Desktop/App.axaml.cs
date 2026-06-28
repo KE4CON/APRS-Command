@@ -147,6 +147,21 @@ public sealed partial class App : Application
                 toast.Show();
             });
         };
+
+        // Wire failover server switch notification.
+        if (rt.FailoverCoordinator is not null)
+        {
+            rt.FailoverCoordinator.ServerSwitched += (_, host) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    var toast = new Aprs.Desktop.Views.ToastNotification(
+                        "⇄ APRS-IS Failover",
+                        $"Switched to failover server: {host}");
+                    toast.Show();
+                });
+            };
+        }
     }
 
     private static void WireTrails(DesktopRuntime rt, MainWindow mainWindow)

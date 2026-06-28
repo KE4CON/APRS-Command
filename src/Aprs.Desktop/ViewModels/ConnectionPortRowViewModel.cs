@@ -111,6 +111,43 @@ public sealed class ConnectionPortRowViewModel : INotifyPropertyChanged
         set => Update(port with { Configuration = port.Configuration with { AprsIs = Is with { Filter = value } } });
     }
 
+    /// <summary>
+    /// Failover servers as a newline-separated list of "host:port" entries.
+    /// Displayed in the APRS-IS editor; parsed and saved as FailoverServers on the config.
+    /// </summary>
+    public string AprsIsFailoverServers
+    {
+        get
+        {
+            var servers = Is.FailoverServers;
+            if (servers is null || servers.Count == 0) return string.Empty;
+            return string.Join(Environment.NewLine, servers.Select(s => $"{s.Host}:{s.Port}"));
+        }
+        set
+        {
+            var parsed = ParseFailoverServers(value);
+            Update(port with { Configuration = port.Configuration with
+            {
+                AprsIs = Is with { FailoverServers = parsed }
+            }});
+        }
+    }
+
+    private static IReadOnlyList<(string Host, int Port)>? ParseFailoverServers(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return null;
+        var result = new List<(string, int)>();
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var colonIdx = line.LastIndexOf(':');
+            if (colonIdx > 0 && int.TryParse(line[(colonIdx + 1)..], out var port))
+                result.Add((line[..colonIdx].Trim(), port));
+            else if (!string.IsNullOrWhiteSpace(line))
+                result.Add((line.Trim(), 14580)); // default port if not specified
+        }
+        return result.Count > 0 ? result : null;
+    }
+
     /// <summary>Serial ports available on this machine, for the serial port name dropdown.</summary>
     public IReadOnlyList<string> AvailableSerialPorts { get; } =
         new SerialPortDiscovery().GetAvailablePortNames();
