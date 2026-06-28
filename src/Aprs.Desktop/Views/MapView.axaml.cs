@@ -389,13 +389,16 @@ public sealed partial class MapView : UserControl
 
     private static void AddStationStyles(PointFeature feature, StationMarkerViewModel marker, bool selected)
     {
-        var table = marker.SymbolTableIdentifier;
-        var code = marker.SymbolCode;
+        var table   = marker.SymbolTableIdentifier;
+        var code    = marker.SymbolCode;
+        var opacity = StationOpacity(marker.AgeState);
 
         // No usable APRS symbol: fall back to the colored category dot.
         if (table is null || code is null || !TryRegion(code.Value, out var region))
         {
-            feature.Styles.Add(DotStyle(StationColor(marker), SymbolType.Ellipse, selected));
+            var dot = DotStyle(StationColor(marker), SymbolType.Ellipse, selected);
+            dot.Opacity = opacity;
+            feature.Styles.Add(dot);
             return;
         }
 
@@ -412,11 +415,13 @@ public sealed partial class MapView : UserControl
 
         var scale = selected ? SelectedIconScale : IconScale;
         var sheet = table.Value == '/' ? PrimarySheet : SecondarySheet;
-        feature.Styles.Add(new ImageStyle
+        var imgStyle = new ImageStyle
         {
             Image = new Mapsui.Styles.Image { Source = sheet, BitmapRegion = region },
-            SymbolScale = scale
-        });
+            SymbolScale = scale,
+            Opacity = opacity
+        };
+        feature.Styles.Add(imgStyle);
 
         // For overlay symbols (table id other than '/' or '\'), draw the overlay
         // character glyph on top of the base symbol.
@@ -693,6 +698,15 @@ public sealed partial class MapView : UserControl
             RefreshFeatures();
         }
     }
+
+    private static float StationOpacity(StationLifecycleState state) => state switch
+    {
+        StationLifecycleState.Active  => 1.0f,
+        StationLifecycleState.Stale   => 0.5f,
+        StationLifecycleState.Expired => 0.25f,
+        StationLifecycleState.Hidden  => 0.15f,
+        _                             => 1.0f
+    };
 
     private static Color StationColor(StationMarkerViewModel marker)
     {
