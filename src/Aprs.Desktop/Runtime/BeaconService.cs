@@ -81,7 +81,7 @@ public sealed class BeaconService : IAsyncDisposable
             MinimumBeaconInterval:   TimeSpan.FromMinutes(5),
             Destination:             "APRS",
             RequireTransmitConfirmation: false,
-            SmartBeaconing:          SmartBeaconingConfiguration.Default);
+            SmartBeaconing:          settings.SmartBeaconing.ToServiceConfig());
 
         var beaconFormatter = new AprsBeaconFormatter();
         IAprsIsClient clientForScheduler = aprsIsClient ?? (IAprsIsClient)new NullAprsIsClient();

@@ -129,7 +129,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new ReadinessViewModel(), // LIVE — refreshed by WireReadiness() in App.axaml.cs
             new NetControlViewModel(provider.GetRequiredService<IStationDatabase>()), // LIVE
             new NwsAlertsViewModel(), // LIVE — updated by WireNwsAlerts() in App.axaml.cs
-            new MessageTemplatesViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
+            new MessageTemplatesViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
+            new SmartBeaconingViewModel(provider.GetRequiredService<IAppSettingsStore>())); // LIVE
 
         var coordinator = new LiveDataCoordinator(
             provider.GetRequiredService<AprsIngestionService>(),

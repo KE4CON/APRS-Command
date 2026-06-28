@@ -37,7 +37,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
             ReadinessViewModel.CreateDesignTime(),
             NetControlViewModel.CreateDesignTime(),
             NwsAlertsViewModel.CreateDesignTime(),
-            MessageTemplatesViewModel.CreateDesignTime())
+            MessageTemplatesViewModel.CreateDesignTime(),
+            SmartBeaconingViewModel.CreateDesignTime())
     {
     }
 
@@ -72,7 +73,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         ReadinessViewModel readiness,
         NetControlViewModel netControl,
         NwsAlertsViewModel nwsAlerts,
-        MessageTemplatesViewModel messageTemplates)
+        MessageTemplatesViewModel messageTemplates,
+        SmartBeaconingViewModel smartBeaconing)
     {
         Map = map;
         StationList = new StationListViewModel(map);
@@ -106,6 +108,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         NetControl = netControl;
         NwsAlerts = nwsAlerts;
         MessageTemplates = messageTemplates;
+        SmartBeaconing = smartBeaconing;
         Map.AttachObjectManager(ObjectManager);
 
         // All feature panels now open as their own windows.
@@ -193,6 +196,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public NetControlViewModel NetControl { get; }
     public NwsAlertsViewModel NwsAlerts { get; }
     public MessageTemplatesViewModel MessageTemplates { get; }
+    public SmartBeaconingViewModel SmartBeaconing { get; }
 
     public DesktopCommand OpenMessagesCommand { get; }
     public DesktopCommand OpenObjectsCommand { get; }

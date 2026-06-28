@@ -92,6 +92,15 @@
           <views:MessageTemplatesView DataContext="{Binding MessageTemplates}" />
         </Border>
       </TabItem>
+      <TabItem Header="Smart Beaconing">
+        <Border BorderBrush="{DynamicResource AppBorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="0"
+                Background="{DynamicResource CardBgBrush}">
+          <views:SmartBeaconingView DataContext="{Binding SmartBeaconing}" />
+        </Border>
+      </TabItem>
       <TabItem Header="Ports">
         <Border BorderBrush="{DynamicResource TextSidebarBrush}"
                 BorderThickness="1"
