@@ -27,7 +27,19 @@ public sealed class StationDetailsViewModel
             : $"{station.SpeedKnots?.ToString() ?? "--"} kt / {station.CourseDegrees?.ToString() ?? "---"} deg";
         Altitude = station.AltitudeFeet is null ? "Unknown" : $"{station.AltitudeFeet} ft";
         DistanceFromMyStation = "Unknown";
-        BearingFromMyStation = "Unknown";
+        BearingFromMyStation  = "Unknown";
+    }
+
+    public StationDetailsViewModel(StationMarkerViewModel station, DateTimeOffset now,
+        double myLat, double myLon)
+        : this(station, now)
+    {
+        var result = Services.GeoMath.FromMyStation(myLat, myLon, station.Latitude, station.Longitude);
+        if (result.HasValue)
+        {
+            DistanceFromMyStation = result.Value.Distance;
+            BearingFromMyStation  = result.Value.Bearing;
+        }
     }
 
     public string Callsign { get; }

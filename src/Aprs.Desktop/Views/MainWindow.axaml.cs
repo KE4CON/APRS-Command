@@ -234,10 +234,10 @@ public sealed partial class MainWindow : Window
 
             if (mFrom is null || mTo is null) { resultText.Text = $"{(mFrom is null ? from : to)} not found in station list."; return; }
 
-            var distKm  = HaversineKm(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
+            var distKm  = Aprs.Desktop.Services.GeoMath.HaversineKm(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
             var distMi  = distKm * 0.621371;
-            var bearing = BearingDeg(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
-            resultText.Text = $"{from} → {to}\nDistance: {distKm:F1} km  ({distMi:F1} mi)\nBearing: {bearing:F0}° ({CardinalBearing(bearing)})";
+            var bearing = Aprs.Desktop.Services.GeoMath.BearingDeg(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
+            resultText.Text = $"{from} → {to}\nDistance: {distKm:F1} km  ({distMi:F1} mi)\nBearing: {bearing:F0}° ({Aprs.Desktop.Services.GeoMath.CardinalBearing(bearing)})";
         };
 
         await dialog.ShowDialog(this);
