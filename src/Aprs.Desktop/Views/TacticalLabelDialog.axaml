@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aprs.Desktop.Views.TacticalLabelDialog"
+        Title="Assign Tactical Callsign"
+        Width="360" Height="200"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        SizeToContent="Height">
+  <Grid RowDefinitions="Auto,Auto,Auto" Background="{DynamicResource AppBgBrush}" Margin="20">
+    <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,12">
+      <TextBlock x:Name="CallsignLabel" FontSize="12" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock Text="Enter a tactical label for this station (e.g. NET CTL, MOBILE 1, EOC)."
+                 FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+    </StackPanel>
+    <TextBox Grid.Row="1" x:Name="LabelInput"
+             Watermark="e.g. NET CTL"
+             MaxLength="20"
+             Margin="0,0,0,12" />
+    <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="ClearButton" Content="Clear label" Padding="10,6" />
+      <Button x:Name="CancelButton" Content="Cancel" Padding="10,6" />
+      <Button x:Name="OkButton" Content="Assign" Padding="14,6" IsDefault="True" />
+    </StackPanel>
+  </Grid>
+</Window>

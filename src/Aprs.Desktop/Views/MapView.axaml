@@ -9,7 +9,15 @@
           CornerRadius="6"
           ClipToBounds="True">
     <Grid>
-      <mapsui:MapControl x:Name="MapControl" />
+      <mapsui:MapControl x:Name="MapControl">
+        <mapsui:MapControl.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="Assign tactical callsign…"
+                      Command="{Binding AssignTacticalCommand}"
+                      IsEnabled="{Binding HasSelectedStation}" />
+          </ContextMenu>
+        </mapsui:MapControl.ContextMenu>
+      </mapsui:MapControl>
 
       <!-- Base map selector — top left -->
       <Border HorizontalAlignment="Left"

@@ -52,6 +52,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         ToggleTrailsCommand         = new DesktopCommand(() => ShowTrails = !ShowTrails);
         ToggleRadarCommand          = new DesktopCommand(() => ShowRadar = !ShowRadar);
         ToggleRingsCommand          = new DesktopCommand(() => ShowRings = !ShowRings);
+        AssignTacticalCommand       = new DesktopCommand(() => AssignTacticalRequested?.Invoke(this, SelectedStation));
     }
 
     /// <summary>Fired when a sidebar navigation button or station list click requests map navigation.</summary>
@@ -60,6 +61,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public event EventHandler? FindStationRequested;
     public event EventHandler? ToggleMapLayerRequested;
     public event EventHandler? MeasureDistanceRequested;
+    public event EventHandler<StationMarkerViewModel?>? AssignTacticalRequested;
     public event EventHandler? AlertStatusRequested;
 
     private bool showTrails;
@@ -219,6 +221,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand ToggleTrailsCommand { get; }
     public DesktopCommand ToggleRadarCommand { get; }
     public DesktopCommand ToggleRingsCommand { get; }
+    public DesktopCommand AssignTacticalCommand { get; }
 
     public DesktopCommand AlertStatusCommand { get; }
 

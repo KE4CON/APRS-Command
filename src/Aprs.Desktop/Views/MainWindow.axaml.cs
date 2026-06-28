@@ -58,6 +58,7 @@ public sealed partial class MainWindow : Window
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
                 vm.Map.MeasureDistanceRequested -= OnMeasureDistanceRequested;
+            vm.Map.AssignTacticalRequested  -= OnAssignTacticalRequested;
             }
         }
 
@@ -88,6 +89,7 @@ public sealed partial class MainWindow : Window
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
                 vm.Map.MeasureDistanceRequested += OnMeasureDistanceRequested;
+            vm.Map.AssignTacticalRequested  += OnAssignTacticalRequested;
             }
         }
     }
@@ -162,6 +164,28 @@ public sealed partial class MainWindow : Window
 
     private void OnAlertStatusRequested(object? s, EventArgs e)
         => ShowWithState(new AlertsWindow { DataContext = vm });
+
+    private async void OnAssignTacticalRequested(object? sender, ViewModels.StationMarkerViewModel? station)
+    {
+        if (station is null) return;
+
+        var rt = (Application.Current as App)?.Runtime;
+        var db = rt?.GetService<Aprs.Services.IStationDatabase>();
+        if (db is null) return;
+
+        var current = db.GetTacticalLabel(station.Callsign)?.Label;
+        var dialog  = new TacticalLabelDialog(station.Callsign, current);
+        await dialog.ShowDialog(this);
+
+        if (dialog.Cleared)
+        {
+            db.RemoveTacticalLabel(station.Callsign);
+        }
+        else if (!string.IsNullOrWhiteSpace(dialog.ResultLabel))
+        {
+            db.SetTacticalLabel(station.Callsign, dialog.ResultLabel, null, DateTimeOffset.UtcNow);
+        }
+    }
 
     private async void OnMeasureDistanceRequested(object? s, EventArgs e)
     {
