@@ -22,7 +22,8 @@ public sealed record AppSettings(
     ManagedModemSettings ManagedModem,
     bool DarkMode,
     MessageTemplatesSettings MessageTemplates,
-    SmartBeaconingSettings SmartBeaconing)
+    SmartBeaconingSettings SmartBeaconing,
+    GpsdSettings Gpsd)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -38,5 +39,6 @@ public sealed record AppSettings(
         ManagedModem: ManagedModemSettings.Default,
         DarkMode: false,
         MessageTemplates: MessageTemplatesSettings.Default,
-        SmartBeaconing: SmartBeaconingSettings.Default);
+        SmartBeaconing: SmartBeaconingSettings.Default,
+        Gpsd: GpsdSettings.Default);
 }

@@ -158,7 +158,7 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var gps = settings.Gps ?? GpsSettings.Default;
         var managedModem = settings.ManagedModem ?? ManagedModemSettings.Default;
 
-        var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps, ManagedModem = managedModem, DarkMode = settings.DarkMode, MessageTemplates = settings.MessageTemplates ?? MessageTemplatesSettings.Default, SmartBeaconing = settings.SmartBeaconing ?? SmartBeaconingSettings.Default };
+        var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps, ManagedModem = managedModem, DarkMode = settings.DarkMode, MessageTemplates = settings.MessageTemplates ?? MessageTemplatesSettings.Default, SmartBeaconing = settings.SmartBeaconing ?? SmartBeaconingSettings.Default, Gpsd = settings.Gpsd ?? GpsdSettings.Default };
         return Migrate(normalized);
     }
 
@@ -230,7 +230,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var darkMode = root.TryGetPropertyValue("darkMode", out var dmNode) && dmNode is System.Text.Json.Nodes.JsonValue dmVal && dmVal.TryGetValue<bool>(out var dmBool) && dmBool;
         var messageTemplates = TryDeserializeSection(root, "messageTemplates", MessageTemplatesSettings.Default) ?? MessageTemplatesSettings.Default;
         var smartBeaconing = TryDeserializeSection(root, "smartBeaconing", SmartBeaconingSettings.Default) ?? SmartBeaconingSettings.Default;
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing));
+        var gpsd = TryDeserializeSection(root, "gpsd", GpsdSettings.Default) ?? GpsdSettings.Default;
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)

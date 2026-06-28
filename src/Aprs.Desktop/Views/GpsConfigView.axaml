@@ -4,17 +4,20 @@
              x:Class="Aprs.Desktop.Views.GpsConfigView"
              x:DataType="vm:GpsConfigViewModel">
   <ScrollViewer>
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
 
       <StackPanel Spacing="2">
         <TextBlock Text="GPS Setup" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
         <TextBlock Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap"
-                   Text="Connect a USB GPS receiver to get live position data. Any standard NMEA-0183 GPS works — plug it in and select its serial port below. A restart is required after changing GPS settings." />
+                   Text="Connect a USB GPS receiver to get live position data. Choose Serial for a direct USB connection, or GPSD to connect to the GPS daemon (recommended on Linux and Raspberry Pi)." />
       </StackPanel>
 
+      <!-- Serial NMEA -->
       <Border Grid.Row="1" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1" CornerRadius="6" Padding="14" Background="{DynamicResource TextTitleBarBrush}">
         <StackPanel Spacing="10">
-          <CheckBox Content="Enable GPS" IsChecked="{Binding Enabled}" FontWeight="SemiBold" />
+          <TextBlock Text="Serial GPS (direct NMEA)" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <CheckBox Content="Enable serial GPS" IsChecked="{Binding Enabled}" FontWeight="SemiBold" />
 
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
             <StackPanel Spacing="2">
@@ -42,14 +45,41 @@
         </StackPanel>
       </Border>
 
-      <Border Grid.Row="2" Background="{DynamicResource WarnBgBrush}" BorderBrush="{DynamicResource WarnBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12">
+      <!-- GPSD -->
+      <Border Grid.Row="2" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1" CornerRadius="6" Padding="14" Background="{DynamicResource TextTitleBarBrush}">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="GPSD (GPS Daemon)" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Recommended on Linux and Raspberry Pi. GPSD manages the GPS hardware and provides data to multiple applications simultaneously. Install: sudo apt install gpsd gpsd-clients"
+                       FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+          </StackPanel>
+          <CheckBox Content="Enable GPSD" IsChecked="{Binding GpsdEnabled}" FontWeight="SemiBold" />
+
+          <Grid ColumnDefinitions="*,120" ColumnSpacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Host" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                         ToolTip.Tip="The hostname or IP address where GPSD is running. Use 127.0.0.1 for the local machine." />
+              <TextBox Text="{Binding GpsdHost}" Watermark="127.0.0.1" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="Port" FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                         ToolTip.Tip="GPSD default port is 2947." />
+              <NumericUpDown Value="{Binding GpsdPort}" Minimum="1" Maximum="65535"
+                             Increment="1" FormatString="0" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="3" Background="{DynamicResource WarnBgBrush}" BorderBrush="{DynamicResource WarnBorderBrush}" BorderThickness="1" CornerRadius="5" Padding="12">
         <TextBlock Foreground="{DynamicResource WarnTextStrongBrush}" FontSize="11" TextWrapping="Wrap">
           <Run FontWeight="SemiBold">Note: </Run>
           <Run>GPS changes take effect after restarting APRS Command. The GPS Status window (Settings → GPS → Status) shows the current fix quality, satellite count, and live coordinates once the GPS is connected and running.</Run>
         </TextBlock>
       </Border>
 
-      <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+      <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
         <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
         <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
