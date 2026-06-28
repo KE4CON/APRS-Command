@@ -146,6 +146,13 @@
             <TextBlock Text="{Binding SelectedStationDetails.LastPath}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
             <TextBlock Text="Heard by" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" />
             <TextBlock Text="{Binding SelectedStationDetails.HeardBy}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+            <Border IsVisible="{Binding SelectedStationDetails.HasDuplicates}"
+                    Background="#fff7ed" CornerRadius="4" Padding="6,3" Margin="0,5,0,0"
+                    HorizontalAlignment="Left">
+              <TextBlock Foreground="#c2410c" FontSize="10" FontWeight="SemiBold">
+                <Run Text="⚡ " /><Run Text="{Binding SelectedStationDetails.DuplicatePacketCount}" /><Run Text=" duplicate packets detected" />
+              </TextBlock>
+            </Border>
             <TextBlock Text="Comment" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" />
             <TextBlock Text="{Binding SelectedStationDetails.Comment}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
           </StackPanel>

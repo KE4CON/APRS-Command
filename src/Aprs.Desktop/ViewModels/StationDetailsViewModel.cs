@@ -41,6 +41,7 @@ public sealed class StationDetailsViewModel
         HeardBy = heardBy.Count > 0
             ? string.Join(", ", heardBy)
             : station.LastPath.Count == 0 ? "Direct / APRS-IS" : "Direct (no digipeater)";
+        DuplicatePacketCount = station.DuplicatePacketCount;
     }
 
     public StationDetailsViewModel(StationMarkerViewModel station, DateTimeOffset now,
@@ -77,6 +78,12 @@ public sealed class StationDetailsViewModel
 
     /// <summary>Digipeaters that heard and relayed the last packet (from the APRS path).</summary>
     public string HeardBy { get; }
+
+    /// <summary>Number of duplicate packets seen from this station (same payload, different path/time).</summary>
+    public int DuplicatePacketCount { get; }
+
+    /// <summary>True when at least one duplicate packet has been detected.</summary>
+    public bool HasDuplicates => DuplicatePacketCount > 0;
 
     public DateTimeOffset LastHeardUtc { get; }
 

@@ -44,6 +44,7 @@ public sealed record StationSnapshot(
     int? SpeedKnots,
     int? AltitudeFeet,
     int PacketCount,
+    int DuplicatePacketCount,
     IReadOnlyList<string> SourcePath,
     AprsPacketSource PacketSource,
     bool? HasMessagingCapability,

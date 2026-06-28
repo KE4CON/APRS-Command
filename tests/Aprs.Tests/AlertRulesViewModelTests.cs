@@ -61,7 +61,7 @@ public sealed class AlertRulesViewModelTests
 
     private static StationSnapshot CreateStation(string callsign)
     {
-        return new StationSnapshot(callsign, null, callsign, null, callsign, StationLifecycleState.Active, false, null, null, null, null, null, Now, Now, null, "Status", null, null, null, 1, [], AprsPacketSource.Rf, null, null);
+        return new StationSnapshot(callsign, null, callsign, null, callsign, StationLifecycleState.Active, false, null, null, null, null, null, Now, Now, null, "Status", null, null, null, 1, 0, [], AprsPacketSource.Rf, null, null);
     }
 
     private sealed class FakeClock : IBeaconSchedulerClock
