@@ -29,6 +29,7 @@ public sealed partial class MapView : UserControl
     private MapViewModel? currentViewModel;
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
     private WritableLayer? trailLayer;
+    private WritableLayer? ringsLayer;
     private TileLayer? radarLayer;
     private WmsRadarTileSource? radarTileSource;
     private ILayer? currentBaseLayer;
@@ -63,6 +64,10 @@ public sealed partial class MapView : UserControl
         // Trail layer sits between the base map and APRS markers.
         trailLayer = new WritableLayer { Name = "Station trails" };
         map.Layers.Add(trailLayer);
+
+        // Range rings layer — above trails, below radar.
+        ringsLayer = new WritableLayer { Name = "Range rings" };
+        map.Layers.Add(ringsLayer);
 
         // Radar layer — between trails and markers, initially hidden.
         radarTileSource = new WmsRadarTileSource();
@@ -274,6 +279,81 @@ public sealed partial class MapView : UserControl
             MapControl.Map.RefreshData();
             MapControl.RefreshGraphics();
         }
+
+        // When rings toggle changes, draw or clear.
+        if (e.PropertyName == nameof(MapViewModel.ShowRings))
+        {
+            if ((DataContext as MapViewModel)?.ShowRings == true)
+                DrawRings();
+            else
+                ClearRings();
+        }
+    }
+
+    /// <summary>Draws range rings at 10, 25, and 50 mile intervals around the operator's station.</summary>
+    private void DrawRings()
+    {
+        if (ringsLayer is null) return;
+        ringsLayer.Clear();
+
+        var profile = Configuration.StationProfile.Load();
+        if (profile.Latitude == 0 && profile.Longitude == 0)
+        {
+            ringsLayer.DataHasChanged();
+            return;
+        }
+
+        // Ring distances in miles
+        var ringMiles = new[] { (10, "#60a5fa", "10 mi"), (25, "#34d399", "25 mi"), (50, "#f87171", "50 mi") };
+
+        foreach (var (miles, color, _) in ringMiles)
+        {
+            var radiusMeters = miles * 1609.344;
+            var circle       = CreateCircle(profile.Latitude, profile.Longitude, radiusMeters);
+            if (circle is null) continue;
+
+            var feature = new GeometryFeature(circle);
+            feature.Styles.Add(new VectorStyle
+            {
+                Line = new Pen(Mapsui.Styles.Color.FromString(color), 1.5f) { PenStyle = PenStyle.Dash },
+                Fill = null
+            });
+            ringsLayer.Add(feature);
+        }
+
+        ringsLayer.DataHasChanged();
+        MapControl.RefreshGraphics();
+    }
+
+    private void ClearRings()
+    {
+        if (ringsLayer is null) return;
+        ringsLayer.Clear();
+        ringsLayer.DataHasChanged();
+        MapControl.RefreshGraphics();
+    }
+
+    /// <summary>Creates a circle polygon in Web Mercator (EPSG:3857) around a lat/lon point.</summary>
+    private static NetTopologySuite.Geometries.Geometry? CreateCircle(
+        double latDeg, double lonDeg, double radiusMeters)
+    {
+        try
+        {
+            const int segments = 64;
+            var (cx, cy) = Mapsui.Projections.SphericalMercator.FromLonLat(lonDeg, latDeg);
+            var coords = new NetTopologySuite.Geometries.Coordinate[segments + 1];
+            for (int i = 0; i < segments; i++)
+            {
+                var angle = 2 * Math.PI * i / segments;
+                coords[i] = new NetTopologySuite.Geometries.Coordinate(
+                    cx + radiusMeters * Math.Cos(angle),
+                    cy + radiusMeters * Math.Sin(angle));
+            }
+            coords[segments] = coords[0]; // close the ring
+            var factory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory();
+            return factory.CreatePolygon(coords);
+        }
+        catch { return null; }
     }
 
     /// <summary>Called by the radar refresh timer to force new tiles to be fetched.</summary>

@@ -181,6 +181,17 @@
             <TextBlock Text="🔔" />
           </Button>
 
+          <Button ToolTip.Tip="{Binding Map.RingsButtonTooltip}"
+                  Command="{Binding Map.ToggleRingsCommand}"
+                  Padding="0" Width="36" Height="36"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}">
+            <TextBlock Text="⊙" />
+          </Button>
+
           <Button ToolTip.Tip="{Binding Map.TrailsButtonTooltip}"
                   Command="{Binding Map.ToggleTrailsCommand}"
                   Padding="0" Width="36" Height="36"
