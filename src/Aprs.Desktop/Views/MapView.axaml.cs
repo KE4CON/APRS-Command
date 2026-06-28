@@ -30,8 +30,12 @@ public sealed partial class MapView : UserControl
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
     private WritableLayer? trailLayer;
     private WritableLayer? ringsLayer;
-    private TileLayer? radarLayer;
+    private TileLayer? radarLayer;           // single static layer (legacy, kept for compat)
     private WmsRadarTileSource? radarTileSource;
+    private readonly List<TileLayer> radarFrameLayers = [];             // animation frames
+    private readonly List<WmsRadarTileSource> radarFrameSources = [];   // one source per frame
+    private Avalonia.Threading.DispatcherTimer? radarAnimTimer;
+    private int currentFrameIndex;
     private ILayer? currentBaseLayer;
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private StationTrailService? trailService; // set by WireTrailService()
@@ -275,9 +279,22 @@ public sealed partial class MapView : UserControl
         // When radar toggle changes, enable/disable the layer.
         if (e.PropertyName == nameof(MapViewModel.ShowRadar) && radarLayer is not null)
         {
-            radarLayer.Enabled = (DataContext as MapViewModel)?.ShowRadar ?? false;
+            var show = (DataContext as MapViewModel)?.ShowRadar ?? false;
+            radarLayer.Enabled = show && radarFrameLayers.Count == 0;
+            foreach (var fl in radarFrameLayers)
+                fl.Enabled = false; // animation handles enabling the right one
+            if (!show) StopAnimation();
             MapControl.Map.RefreshData();
             MapControl.RefreshGraphics();
+        }
+
+        // When animation toggle changes, start or stop.
+        if (e.PropertyName == nameof(MapViewModel.RadarAnimating))
+        {
+            if ((DataContext as MapViewModel)?.RadarAnimating == true)
+                StartAnimation();
+            else
+                StopAnimation();
         }
 
         // When rings toggle changes, draw or clear.
@@ -356,13 +373,134 @@ public sealed partial class MapView : UserControl
         catch { return null; }
     }
 
-    /// <summary>Called by the radar refresh timer to force new tiles to be fetched.</summary>
+    /// <summary>
+    /// Called from App.axaml.cs when animation frames are available from RadarAnimationService.
+    /// Creates one TileLayer per frame and inserts them into the map layer stack.
+    /// </summary>
+    public void LoadAnimationFrames(IReadOnlyList<Aprs.Desktop.Services.RadarFrame> frames)
+    {
+        // Remove old animation layers from the map.
+        foreach (var fl in radarFrameLayers)
+            MapControl.Map.Layers.Remove(fl);
+        radarFrameLayers.Clear();
+        radarFrameSources.Clear();
+
+        if (frames.Count == 0) return;
+
+        // Find the index where the static radar layer sits so we insert at the same position.
+        int insertIdx = MapControl.Map.Layers.Count - 1;
+        if (radarLayer is not null)
+        {
+            var layerList = MapControl.Map.Layers.ToList();
+            for (int i = 0; i < layerList.Count; i++)
+            {
+                if (layerList[i] == radarLayer) { insertIdx = i; break; }
+            }
+        }
+
+        // Create a TileLayer for each frame, all disabled initially.
+        foreach (var frame in frames)
+        {
+            var src   = new Aprs.Desktop.Mapping.WmsRadarTileSource(frame.Timestamp);
+            var layer = new TileLayer(src)
+            {
+                Name    = $"Radar {frame.Label}",
+                Opacity = 0.65f,
+                Enabled = false
+            };
+            radarFrameSources.Add(src);
+            radarFrameLayers.Add(layer);
+            MapControl.Map.Layers.Insert(insertIdx, layer);
+        }
+
+        // Disable the static layer — animation layers take over.
+        if (radarLayer is not null) radarLayer.Enabled = false;
+
+        // Update the viewmodel with frame count.
+        if (DataContext is MapViewModel vm)
+        {
+            vm.RadarFrameCount = frames.Count;
+            vm.RadarFrameIndex = frames.Count - 1; // start on the latest frame
+            vm.RadarFrameTime  = frames[^1].Label;
+        }
+
+        // Show the latest frame immediately.
+        currentFrameIndex = frames.Count - 1;
+        ShowFrame(currentFrameIndex);
+    }
+
+    private void StartAnimation()
+    {
+        if (radarFrameLayers.Count == 0) return;
+        currentFrameIndex = 0;
+        radarAnimTimer?.Stop();
+        radarAnimTimer = new Avalonia.Threading.DispatcherTimer(
+            TimeSpan.FromMilliseconds(500),
+            Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) => AdvanceFrame());
+        radarAnimTimer.Start();
+    }
+
+    private void StopAnimation()
+    {
+        radarAnimTimer?.Stop();
+        radarAnimTimer = null;
+        // Show the latest frame when stopped.
+        if (radarFrameLayers.Count > 0)
+        {
+            currentFrameIndex = radarFrameLayers.Count - 1;
+            ShowFrame(currentFrameIndex);
+        }
+    }
+
+    private void AdvanceFrame()
+    {
+        if (radarFrameLayers.Count == 0) return;
+        currentFrameIndex = (currentFrameIndex + 1) % radarFrameLayers.Count;
+        ShowFrame(currentFrameIndex);
+    }
+
+    /// <summary>Called from RadarStepRequested event — step one frame forward or back manually.</summary>
+    public void StepFrame(int delta)
+    {
+        if (radarFrameLayers.Count == 0) return;
+        currentFrameIndex = (currentFrameIndex + delta + radarFrameLayers.Count) % radarFrameLayers.Count;
+        ShowFrame(currentFrameIndex);
+    }
+
+    private void ShowFrame(int index)
+    {
+        for (int i = 0; i < radarFrameLayers.Count; i++)
+            radarFrameLayers[i].Enabled = i == index;
+
+        MapControl.Map.RefreshData();
+        MapControl.RefreshGraphics();
+
+        if (DataContext is MapViewModel vm && index < radarFrameLayers.Count)
+        {
+            vm.RadarFrameIndex = index;
+            // Extract time from layer name "Radar HH:mm"
+            var parts = radarFrameLayers[index].Name.Split(' ');
+            vm.RadarFrameTime  = parts.Length > 1 ? parts[^1] : string.Empty;
+        }
+    }
+
+    /// <summary>Called by the 5-minute refresh timer to fetch new frames.</summary>
     public void RefreshRadar()
     {
         if (radarLayer is null || radarTileSource is null) return;
-        if (!(DataContext is MapViewModel { ShowRadar: true })) return;
-
-        radarTileSource.InvalidateCache();
+        if (radarFrameLayers.Count == 0)
+        {
+            // Static mode — just invalidate the cache.
+            if (!(DataContext is MapViewModel { ShowRadar: true })) return;
+            radarTileSource.InvalidateCache();
+        }
+        else
+        {
+            // Animation mode — invalidate all frame caches.
+            foreach (var src in radarFrameSources)
+                src.InvalidateCache();
+        }
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
     }

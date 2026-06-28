@@ -50,7 +50,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
         MeasureDistanceCommand      = new DesktopCommand(() => MeasureDistanceRequested?.Invoke(this, EventArgs.Empty));
         AlertStatusCommand          = new DesktopCommand(() => AlertStatusRequested?.Invoke(this, EventArgs.Empty));
         ToggleTrailsCommand         = new DesktopCommand(() => ShowTrails = !ShowTrails);
-        ToggleRadarCommand          = new DesktopCommand(() => ShowRadar = !ShowRadar);
+        ToggleRadarCommand             = new DesktopCommand(() => ShowRadar = !ShowRadar);
+        ToggleRadarAnimationCommand    = new DesktopCommand(() => RadarAnimating = !RadarAnimating);
+        RadarPreviousFrameCommand      = new DesktopCommand(() => RadarStepRequested?.Invoke(this, -1));
+        RadarNextFrameCommand          = new DesktopCommand(() => RadarStepRequested?.Invoke(this, +1));
         ToggleRingsCommand          = new DesktopCommand(() => ShowRings = !ShowRings);
         AssignTacticalCommand       = new DesktopCommand(() => AssignTacticalRequested?.Invoke(this, SelectedStation));
     }
@@ -62,6 +65,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public event EventHandler? ToggleMapLayerRequested;
     public event EventHandler? MeasureDistanceRequested;
     public event EventHandler<StationMarkerViewModel?>? AssignTacticalRequested;
+    public event EventHandler<int>? RadarStepRequested;
     public event EventHandler? AlertStatusRequested;
 
     private bool showTrails;
@@ -92,11 +96,63 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 showRadar = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(RadarButtonTooltip));
+                OnPropertyChanged(nameof(ShowAnimationControls));
             }
         }
     }
 
     public string RadarButtonTooltip => ShowRadar ? "Radar overlay ON — click to hide" : "Radar overlay OFF — click to show";
+
+    // ── Radar animation state ──────────────────────────────────────────
+
+    private bool radarAnimating;
+    public bool RadarAnimating
+    {
+        get => radarAnimating;
+        set
+        {
+            if (radarAnimating != value)
+            {
+                radarAnimating = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(AnimationButtonLabel));
+                OnPropertyChanged(nameof(ShowAnimationControls));
+            }
+        }
+    }
+
+    private int radarFrameIndex;
+    public int RadarFrameIndex
+    {
+        get => radarFrameIndex;
+        set
+        {
+            if (radarFrameIndex != value)
+            {
+                radarFrameIndex = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RadarFrameLabel));
+            }
+        }
+    }
+
+    private int radarFrameCount;
+    public int RadarFrameCount
+    {
+        get => radarFrameCount;
+        set { if (radarFrameCount != value) { radarFrameCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(RadarFrameLabel)); } }
+    }
+
+    private string radarFrameTime = string.Empty;
+    public string RadarFrameTime
+    {
+        get => radarFrameTime;
+        set { if (radarFrameTime != value) { radarFrameTime = value; OnPropertyChanged(); } }
+    }
+
+    public bool ShowAnimationControls => ShowRadar && radarFrameCount > 0;
+    public string AnimationButtonLabel => radarAnimating ? "⏸" : "▶";
+    public string RadarFrameLabel => radarFrameCount > 0 ? $"{radarFrameIndex + 1} / {radarFrameCount}" : string.Empty;
 
     private bool showRings;
     public bool ShowRings
@@ -220,6 +276,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand MeasureDistanceCommand { get; }
     public DesktopCommand ToggleTrailsCommand { get; }
     public DesktopCommand ToggleRadarCommand { get; }
+    public DesktopCommand ToggleRadarAnimationCommand { get; }
+    public DesktopCommand RadarPreviousFrameCommand { get; }
+    public DesktopCommand RadarNextFrameCommand { get; }
     public DesktopCommand ToggleRingsCommand { get; }
     public DesktopCommand AssignTacticalCommand { get; }
 

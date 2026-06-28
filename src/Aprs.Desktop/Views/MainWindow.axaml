@@ -69,6 +69,8 @@
         <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
         <Separator />
         <MenuItem Header="Toggle Radar Overlay 🌧" Command="{Binding Map.ToggleRadarCommand}" />
+        <MenuItem Header="Animate Radar ▶" Command="{Binding Map.ToggleRadarAnimationCommand}"
+                  IsEnabled="{Binding Map.ShowAnimationControls}" />
       </MenuItem>
       <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
       <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
@@ -98,7 +100,8 @@
               Background="{DynamicResource AppBgAltBrush}"
               BorderBrush="{DynamicResource TitleBarBorderBrush}"
               BorderThickness="0,0,1,0">
-        <StackPanel VerticalAlignment="Top"
+        <Grid RowDefinitions="*,Auto">
+          <StackPanel VerticalAlignment="Top"
                     Spacing="4"
                     Margin="4,12">
 
@@ -214,6 +217,46 @@
             <TextBlock Text="🌧" />
           </Button>
         </StackPanel>
+
+        <!-- Radar animation controls — visible when radar is on and frames are loaded -->
+        <Border Grid.Row="1"
+                IsVisible="{Binding Map.ShowAnimationControls}"
+                Background="{DynamicResource AppBgAltBrush}"
+                BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="4,6">
+          <StackPanel Spacing="3" HorizontalAlignment="Center">
+            <!-- Play/Pause button -->
+            <Button Command="{Binding Map.ToggleRadarAnimationCommand}"
+                    Content="{Binding Map.AnimationButtonLabel}"
+                    HorizontalAlignment="Center"
+                    Padding="0" Width="32" Height="24"
+                    FontSize="13"
+                    Background="Transparent" BorderThickness="0"
+                    Foreground="{DynamicResource TextSidebarBrush}"
+                    ToolTip.Tip="Play/pause radar animation" />
+            <!-- Frame counter -->
+            <TextBlock Text="{Binding Map.RadarFrameLabel}"
+                       FontSize="9" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <!-- Frame time -->
+            <TextBlock Text="{Binding Map.RadarFrameTime}"
+                       FontSize="9" HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <!-- Step buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Center">
+              <Button Command="{Binding Map.RadarPreviousFrameCommand}"
+                      Content="◀" Padding="0" Width="22" Height="18"
+                      FontSize="9" Background="Transparent" BorderThickness="0"
+                      Foreground="{DynamicResource TextSidebarBrush}" />
+              <Button Command="{Binding Map.RadarNextFrameCommand}"
+                      Content="▶" Padding="0" Width="22" Height="18"
+                      FontSize="9" Background="Transparent" BorderThickness="0"
+                      Foreground="{DynamicResource TextSidebarBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        </Grid>
       </Border>
 
       <!-- Map fills everything -->
