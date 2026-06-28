@@ -142,7 +142,9 @@ public sealed class MapViewModel : INotifyPropertyChanged
             selectedStation = value;
             selectedStationDetails = value is null
                 ? null
-                : new StationDetailsViewModel(value, DateTimeOffset.UtcNow);
+                : new StationDetailsViewModel(value, DateTimeOffset.UtcNow,
+                    Configuration.StationProfile.Load().Latitude,
+                    Configuration.StationProfile.Load().Longitude);
             OnPropertyChanged();
             OnPropertyChanged(nameof(SelectedStationDetails));
             OnPropertyChanged(nameof(HasSelectedStation));
