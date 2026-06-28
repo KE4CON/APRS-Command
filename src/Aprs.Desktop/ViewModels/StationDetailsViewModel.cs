@@ -1,3 +1,4 @@
+using System.Linq;
 using Aprs.Mapping;
 
 namespace Aprs.Desktop.ViewModels;
@@ -28,6 +29,18 @@ public sealed class StationDetailsViewModel
         Altitude = station.AltitudeFeet is null ? "Unknown" : $"{station.AltitudeFeet} ft";
         DistanceFromMyStation = "Unknown";
         BearingFromMyStation  = "Unknown";
+
+        // Parse heard-by digipeaters from path — entries marked with * were actually relayed.
+        var heardBy = station.LastPath
+            .Where(p => p.EndsWith('*'))
+            .Select(p => p.TrimEnd('*'))
+            .Where(p => !p.StartsWith("WIDE",  StringComparison.OrdinalIgnoreCase)
+                     && !p.StartsWith("TRACE", StringComparison.OrdinalIgnoreCase)
+                     && !p.StartsWith("RELAY", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        HeardBy = heardBy.Count > 0
+            ? string.Join(", ", heardBy)
+            : station.LastPath.Count == 0 ? "Direct / APRS-IS" : "Direct (no digipeater)";
     }
 
     public StationDetailsViewModel(StationMarkerViewModel station, DateTimeOffset now,
@@ -58,9 +71,12 @@ public sealed class StationDetailsViewModel
 
     public string MaidenheadGridSquare { get; }
 
-    public string DistanceFromMyStation { get; }
+    public string DistanceFromMyStation { get; private set; }
 
-    public string BearingFromMyStation { get; }
+    public string BearingFromMyStation { get; private set; }
+
+    /// <summary>Digipeaters that heard and relayed the last packet (from the APRS path).</summary>
+    public string HeardBy { get; }
 
     public DateTimeOffset LastHeardUtc { get; }
 
