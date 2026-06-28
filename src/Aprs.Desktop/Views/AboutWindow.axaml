@@ -67,6 +67,21 @@
                  Foreground="{DynamicResource TextSubtleBrush}"
                  TextWrapping="Wrap"
                  Text="Inspired by the vision of Bob Bruninga WB4APR, father of APRS, who designed it as a situational awareness tool — and by UI-View32, written by Roger Barker G4IDE. Released under GPL v3 so it can live on." />
+
+      <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,16,0,12" />
+
+      <!-- Update check -->
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button x:Name="CheckUpdateButton" Content="Check for updates" Padding="12,6" />
+          <TextBlock x:Name="UpdateStatusText" VerticalAlignment="Center"
+                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                     Text="Not checked yet." />
+        </StackPanel>
+        <TextBlock x:Name="UpdateDetailText" FontSize="10"
+                   Foreground="{DynamicResource TextSubtleBrush}"
+                   TextWrapping="Wrap" IsVisible="False" />
+      </StackPanel>
     </StackPanel>
 
     <!-- Close button -->
