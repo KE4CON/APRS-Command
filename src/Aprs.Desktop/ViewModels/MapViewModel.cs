@@ -51,6 +51,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         AlertStatusCommand          = new DesktopCommand(() => AlertStatusRequested?.Invoke(this, EventArgs.Empty));
         ToggleTrailsCommand         = new DesktopCommand(() => ShowTrails = !ShowTrails);
         ToggleRadarCommand          = new DesktopCommand(() => ShowRadar = !ShowRadar);
+        ToggleRingsCommand          = new DesktopCommand(() => ShowRings = !ShowRings);
     }
 
     /// <summary>Fired when a sidebar navigation button or station list click requests map navigation.</summary>
@@ -94,6 +95,23 @@ public sealed class MapViewModel : INotifyPropertyChanged
     }
 
     public string RadarButtonTooltip => ShowRadar ? "Radar overlay ON — click to hide" : "Radar overlay OFF — click to show";
+
+    private bool showRings;
+    public bool ShowRings
+    {
+        get => showRings;
+        private set
+        {
+            if (showRings != value)
+            {
+                showRings = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RingsButtonTooltip));
+            }
+        }
+    }
+
+    public string RingsButtonTooltip => ShowRings ? "Range rings ON — click to hide" : "Range rings OFF — click to show";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -198,6 +216,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand MeasureDistanceCommand { get; }
     public DesktopCommand ToggleTrailsCommand { get; }
     public DesktopCommand ToggleRadarCommand { get; }
+    public DesktopCommand ToggleRingsCommand { get; }
 
     public DesktopCommand AlertStatusCommand { get; }
 
