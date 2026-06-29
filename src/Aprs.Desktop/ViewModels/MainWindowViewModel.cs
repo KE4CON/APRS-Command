@@ -137,6 +137,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenShadowBeaconCommand    = new DesktopCommand(() => ShadowBeaconRequested?.Invoke(this, EventArgs.Empty));
         OpenCoverageCommand        = new DesktopCommand(() => CoverageRequested?.Invoke(this, EventArgs.Empty));
         OpenNetScriptCommand       = new DesktopCommand(() => NetScriptRequested?.Invoke(this, EventArgs.Empty));
+        OpenBroadcastCommand       = new DesktopCommand(() => BroadcastRequested?.Invoke(this, EventArgs.Empty));
         ToggleDarkModeCommand  = new DesktopCommand(() => DarkModeRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -168,6 +169,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? ShadowBeaconRequested;
     public event EventHandler? CoverageRequested;
     public event EventHandler? NetScriptRequested;
+    public event EventHandler? BroadcastRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -235,6 +237,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenShadowBeaconCommand { get; }
     public DesktopCommand OpenCoverageCommand { get; }
     public DesktopCommand OpenNetScriptCommand { get; }
+    public DesktopCommand OpenBroadcastCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
