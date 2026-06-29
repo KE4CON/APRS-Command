@@ -243,6 +243,7 @@ public sealed partial class MapView : UserControl
             currentViewModel.ToggleMapLayerRequested -= OnToggleMapLayerRequested;
             currentViewModel.DrawModeChanged -= OnDrawModeChanged;
             currentViewModel.ClearDrawingsRequested -= OnClearDrawings;
+            currentViewModel.RingCenterChanged -= OnRingCenterChanged;
         }
 
         currentViewModel = DataContext as MapViewModel;
@@ -255,6 +256,7 @@ public sealed partial class MapView : UserControl
             currentViewModel.ToggleMapLayerRequested += OnToggleMapLayerRequested;
             currentViewModel.DrawModeChanged += OnDrawModeChanged;
             currentViewModel.ClearDrawingsRequested += OnClearDrawings;
+            currentViewModel.RingCenterChanged += OnRingCenterChanged;
         }
 
         UpdatePanels();
@@ -325,11 +327,25 @@ public sealed partial class MapView : UserControl
         if (ringsLayer is null) return;
         ringsLayer.Clear();
 
-        var profile = Configuration.StationProfile.Load();
-        if (profile.Latitude == 0 && profile.Longitude == 0)
+        double lat, lon;
+
+        // Use custom ring center if set, otherwise fall back to station position
+        var vm = DataContext as MapViewModel;
+        if (vm?.CustomRingCenter.HasValue == true)
         {
-            ringsLayer.DataHasChanged();
-            return;
+            lat = vm.CustomRingCenter.Value.Lat;
+            lon = vm.CustomRingCenter.Value.Lon;
+        }
+        else
+        {
+            var profile = Configuration.StationProfile.Load();
+            if (profile.Latitude == 0 && profile.Longitude == 0)
+            {
+                ringsLayer.DataHasChanged();
+                return;
+            }
+            lat = profile.Latitude;
+            lon = profile.Longitude;
         }
 
         // Ring distances in miles
@@ -338,7 +354,7 @@ public sealed partial class MapView : UserControl
         foreach (var (miles, color, _) in ringMiles)
         {
             var radiusMeters = miles * 1609.344;
-            var circle       = CreateCircle(profile.Latitude, profile.Longitude, radiusMeters);
+            var circle       = CreateCircle(lat, lon, radiusMeters);
             if (circle is null) continue;
 
             var feature = new GeometryFeature(circle);
@@ -352,6 +368,25 @@ public sealed partial class MapView : UserControl
 
         ringsLayer.DataHasChanged();
         MapControl.RefreshGraphics();
+    }
+
+    private void OnRingCenterChanged(object? sender, (double Lat, double Lon)? center)
+    {
+        DrawRings();
+    }
+
+    /// <summary>
+    /// Called from the map context menu or double-click handler to set the
+    /// ring center to a specific world coordinate.
+    /// </summary>
+    public void SetRingCenterFromMap(double lat, double lon)
+    {
+        if (DataContext is MapViewModel vm)
+        {
+            vm.CustomRingCenter = (lat, lon);
+            if (!vm.ShowRings)
+                vm.ToggleRingsCommand.Execute(null);
+        }
     }
 
     private void ClearRings()

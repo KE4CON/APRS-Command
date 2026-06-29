@@ -197,7 +197,7 @@
             <TextBlock Text="🔔" />
           </Button>
 
-          <Button ToolTip.Tip="{Binding Map.RingsButtonTooltip}"
+          <Button ToolTip.Tip="{Binding Map.CustomRingCenterLabel}"
                   Command="{Binding Map.ToggleRingsCommand}"
                   Padding="0" Width="36" Height="36"
                   HorizontalContentAlignment="Center"
