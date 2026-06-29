@@ -170,6 +170,26 @@
                    Watermark="Describe the assignment..."
                    FontSize="10" />
 
+          <!-- Resource typing -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <StackPanel Spacing="2">
+              <TextBlock Text="Resource type (ICS)" FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         ToolTip.Tip="ICS resource typing: Type 1 = highest capability, Type 4 = basic. Used by incident commanders to request resources by capability level." />
+              <ComboBox ItemsSource="{Binding AvailableResourceTypes}"
+                        SelectedItem="{Binding SelectedEntry.ResourceType}"
+                        HorizontalAlignment="Stretch" FontSize="10" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock Text="Category" FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         ToolTip.Tip="Resource category e.g. Communications, Medical, Logistics, Operations" />
+              <TextBox Text="{Binding SelectedEntry.ResourceCategory}"
+                       Watermark="e.g. Communications"
+                       FontSize="10" />
+            </StackPanel>
+          </Grid>
+
           <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
 
           <!-- Notes -->

@@ -104,6 +104,8 @@ public sealed class NetControlViewModel : INotifyPropertyChanged
 
     // ── Commands ──────────────────────────────────────────────────────
 
+    public IReadOnlyList<ResourceType> AvailableResourceTypes { get; } = [ResourceType.Untyped, ResourceType.Type1, ResourceType.Type2, ResourceType.Type3, ResourceType.Type4];
+
     public DesktopCommand CheckInCommand       { get; }
     public DesktopCommand StandbyCommand       { get; }
     public DesktopCommand DepartCommand        { get; }
