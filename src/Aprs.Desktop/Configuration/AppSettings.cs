@@ -25,7 +25,8 @@ public sealed record AppSettings(
     SmartBeaconingSettings SmartBeaconing,
     GpsdSettings Gpsd,
     FrequencyReferenceSettings FrequencyReference,
-    NetScriptSettings NetScripts)
+    NetScriptSettings NetScripts,
+    WinlinkSettings Winlink)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -44,5 +45,6 @@ public sealed record AppSettings(
         SmartBeaconing: SmartBeaconingSettings.Default,
         Gpsd: GpsdSettings.Default,
         FrequencyReference: FrequencyReferenceSettings.Default,
-        NetScripts: NetScriptSettings.Default);
+        NetScripts: NetScriptSettings.Default,
+        Winlink: WinlinkSettings.Default);
 }
