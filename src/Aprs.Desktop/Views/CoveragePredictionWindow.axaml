@@ -1,0 +1,170 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.CoveragePredictionWindow"
+        x:DataType="vm:CoveragePredictionViewModel"
+        Title="Coverage Prediction (PHG)"
+        Width="600" Height="560"
+        MinWidth="480" MinHeight="380"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Input form -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="16,12">
+      <StackPanel Spacing="10">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Coverage Prediction (PHG)" FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextTitleBarBrush}" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource TextSidebarBrush}" TextWrapping="Wrap"
+                     Text="Shows estimated coverage circles based on PHG data. Pre-filled with your station — click 'Add My Station' to show it, or enter any callsign manually." />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Callsign" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding Callsign}" Watermark="e.g. KE4CON" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="PHG string" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       ToolTip.Tip="PHG format: PHGphgd — Power(0-9), Height(0-9), Gain(0-9), Directivity(0-8). Example: PHG7370 = 49W, 80ft, 7dBd, Omni" />
+            <TextBox Text="{Binding PhgString}" Watermark="e.g. PHG7370" MaxLength="7" />
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Latitude" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding LatText}" Watermark="e.g. 33.7490" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="Longitude" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding LonText}" Watermark="e.g. -84.3880" />
+          </StackPanel>
+        </Grid>
+
+        <TextBlock Text="{Binding StatusText}" FontSize="10"
+                   Foreground="{DynamicResource AccentBlueMidBrush}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Tab: Active overlays + PHG calculator -->
+    <TabControl Grid.Row="1" Margin="0">
+
+      <!-- Tab 1: Active overlays -->
+      <TabItem Header="Active overlays">
+        <ListBox ItemsSource="{Binding Overlays}"
+                 SelectedItem="{Binding SelectedOverlay}"
+                 Background="{DynamicResource AppBgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:CoverageOverlayViewModel">
+              <Grid ColumnDefinitions="110,*" Margin="4,3">
+                <TextBlock Text="{Binding Callsign}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBlueMidBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Summary}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </TabItem>
+
+      <!-- Tab 2: PHG Calculator -->
+      <TabItem Header="PHG Calculator">
+        <ScrollViewer Padding="14,10">
+          <StackPanel Spacing="12">
+            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                       Text="Enter your station specs below. The calculator finds the closest PHG encoding and estimates your radio coverage. The result is automatically copied to the overlay form." />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+              <!-- Power -->
+              <StackPanel Spacing="3">
+                <TextBlock Text="Transmitter power (watts)" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <NumericUpDown Value="{Binding CalcPowerW}" Minimum="0" Maximum="81"
+                               Increment="1" FormatString="F0" />
+                <TextBlock Text="0–81W (PHG codes: 0,1,4,9,16,25,36,49,64,81W)"
+                           FontSize="9" Foreground="{DynamicResource TextSubtleBrush}" />
+              </StackPanel>
+
+              <!-- HAAT -->
+              <StackPanel Grid.Column="1" Spacing="3">
+                <TextBlock Text="Antenna height HAAT (feet)" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <NumericUpDown Value="{Binding CalcHaatFt}" Minimum="10" Maximum="5120"
+                               Increment="10" FormatString="F0" />
+                <TextBlock Text="Height Above Average Terrain — not structure height"
+                           FontSize="9" Foreground="{DynamicResource TextSubtleBrush}" />
+              </StackPanel>
+
+              <!-- Gain -->
+              <StackPanel Grid.Row="1" Spacing="3">
+                <TextBlock Text="Antenna gain (dBd)" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <NumericUpDown Value="{Binding CalcGainDbd}" Minimum="0" Maximum="9"
+                               Increment="0.5" FormatString="F1" />
+                <TextBlock Text="dBd = dBi − 2.15. Omni dipole = 0 dBd"
+                           FontSize="9" Foreground="{DynamicResource TextSubtleBrush}" />
+              </StackPanel>
+
+              <!-- Directivity -->
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="3">
+                <TextBlock Text="Beam direction" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <ComboBox ItemsSource="{Binding DirectivityOptions}"
+                          SelectedIndex="{Binding CalcDirCode}"
+                          HorizontalAlignment="Stretch" FontSize="11" />
+              </StackPanel>
+            </Grid>
+
+            <Button Command="{Binding CalculatePhgCommand}"
+                    Content="⚡ Calculate PHG"
+                    Padding="14,7" HorizontalAlignment="Left" />
+
+            <!-- Result -->
+            <Border IsVisible="{Binding CalcPhgString, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                    Background="{DynamicResource AppBgAltBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    BorderThickness="1" CornerRadius="4" Padding="12,10">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding CalcPhgString}" FontSize="22" FontWeight="Bold"
+                             Foreground="{DynamicResource AccentBlueMidBrush}"
+                             FontFamily="Courier New, Cascadia Code, Menlo, monospace" />
+                  <Button Grid.Column="1" Content="Copy"
+                          Click="CopyPhgButton_Click"
+                          Padding="8,4" FontSize="10" VerticalAlignment="Center" />
+                </Grid>
+                <TextBox Text="{Binding CalcResult}" IsReadOnly="True"
+                         FontFamily="Courier New, Cascadia Code, Menlo, monospace"
+                         FontSize="10" Background="Transparent"
+                         BorderThickness="0" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,Auto,*,Auto" ColumnSpacing="8">
+        <Button Command="{Binding AddOwnCommand}" Content="◯ Add my station"
+                Padding="10,5" FontSize="10" />
+        <Button Grid.Column="1" Command="{Binding FromSelectedStationCommand}"
+                Content="◉ From selected station" Padding="10,5" FontSize="10"
+                ToolTip.Tip="Pre-fill from the station currently selected on the map. PHG is extracted from the station's comment field if present." />
+        <Button Grid.Column="2" Command="{Binding AddCommand}"
+                Content="◯ Add overlay" Padding="10,5" FontSize="10" />
+        <Button Grid.Column="4" Command="{Binding RemoveCommand}"
+                Content="Remove" Padding="8,5" FontSize="10"
+                IsEnabled="{Binding SelectedOverlay, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Button Grid.Column="5" Command="{Binding ClearCommand}"
+                Content="Clear all" Padding="8,5" FontSize="10" />
+        <Grid />
+        <Button Grid.Column="6" x:Name="CloseButton" Content="Close" Padding="12,5" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

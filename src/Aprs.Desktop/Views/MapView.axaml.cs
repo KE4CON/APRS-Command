@@ -1133,4 +1133,66 @@ public sealed partial class MapView : UserControl
         catch { return null; }
     }
 
+
+    // ── PHG coverage overlays ─────────────────────────────────────────────────
+
+    private WritableLayer? coverageLayer;
+
+    /// <summary>
+    /// Renders PHG coverage circles on the map for the given overlays.
+    /// Called from the coverage prediction window whenever the overlay list changes.
+    /// </summary>
+    public void ApplyCoverageOverlays(IReadOnlyList<ViewModels.CoverageOverlayViewModel> overlays)
+    {
+        if (coverageLayer is null)
+        {
+            coverageLayer = new WritableLayer { Name = "PHG Coverage", Style = null };
+            // Insert below drawing layer
+            MapControl.Map.Layers.Add(coverageLayer);
+        }
+
+        coverageLayer.Clear();
+
+        foreach (var overlay in overlays)
+        {
+            try
+            {
+                // Convert lat/lon centre to world coordinates
+                var worldCentre = Mapsui.Projections.SphericalMercator.FromLonLat(
+                    overlay.Longitude, overlay.Latitude);
+
+                // Radius in metres (world units ≈ metres at equator, close enough for this use)
+                var radiusMetres = overlay.Phg.RangeKm * 1000.0;
+
+                var factory = new NetTopologySuite.Geometries.GeometryFactory();
+                var centre  = new NetTopologySuite.Geometries.Coordinate(
+                    worldCentre.x, worldCentre.y);
+                var circle  = factory.CreatePoint(centre).Buffer(radiusMetres, 48);
+
+                var hex   = overlay.Color.TrimStart('#');
+                var r     = Convert.ToByte(hex[..2], 16);
+                var g     = Convert.ToByte(hex[2..4], 16);
+                var b     = Convert.ToByte(hex[4..6], 16);
+                var color = new Color(255, r, g, b);
+
+                var style = new VectorStyle
+                {
+                    Line = new Pen(color, 1.5),
+                    Fill = new Brush(Color.FromArgb(25, color.R, color.G, color.B))
+                };
+
+                var feature = new GeometryFeature
+                {
+                    Geometry = circle,
+                    Styles   = [style]
+                };
+                coverageLayer.Add(feature);
+            }
+            catch { /* skip invalid overlay */ }
+        }
+
+        MapControl.Map.RefreshData();
+        MapControl.RefreshGraphics();
+    }
+
 }
