@@ -30,6 +30,10 @@ public sealed partial class MapView : UserControl
     private GenericCollectionLayer<List<IFeature>>? markerLayer;
     private WritableLayer? trailLayer;
     private WritableLayer? ringsLayer;
+    private WritableLayer? drawingLayer;
+    private readonly List<DrawingShape> completedShapes = [];
+    private DrawingShape? shapeInProgress;
+    private DrawMode currentDrawMode = DrawMode.None;
     private TileLayer? radarLayer;           // single static layer (legacy, kept for compat)
     private WmsRadarTileSource? radarTileSource;
     private readonly List<TileLayer> radarFrameLayers = [];             // animation frames
@@ -72,6 +76,10 @@ public sealed partial class MapView : UserControl
         // Range rings layer — above trails, below radar.
         ringsLayer = new WritableLayer { Name = "Range rings" };
         map.Layers.Add(ringsLayer);
+
+        // Draw tools layer — above rings, below radar and markers.
+        drawingLayer = new WritableLayer { Name = "Draw tools", Style = null };
+        map.Layers.Add(drawingLayer);
 
         // Radar layer — between trails and markers, initially hidden.
         radarTileSource = new WmsRadarTileSource();
@@ -233,6 +241,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.NavigationRequested -= OnNavigationRequested;
             currentViewModel.FindStationRequested -= OnFindStationRequested;
             currentViewModel.ToggleMapLayerRequested -= OnToggleMapLayerRequested;
+            currentViewModel.DrawModeChanged -= OnDrawModeChanged;
+            currentViewModel.ClearDrawingsRequested -= OnClearDrawings;
         }
 
         currentViewModel = DataContext as MapViewModel;
@@ -243,6 +253,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.NavigationRequested += OnNavigationRequested;
             currentViewModel.FindStationRequested += OnFindStationRequested;
             currentViewModel.ToggleMapLayerRequested += OnToggleMapLayerRequested;
+            currentViewModel.DrawModeChanged += OnDrawModeChanged;
+            currentViewModel.ClearDrawingsRequested += OnClearDrawings;
         }
 
         UpdatePanels();
@@ -861,6 +873,13 @@ public sealed partial class MapView : UserControl
             return;
         }
 
+        // Handle draw tool clicks before station selection.
+        if (currentDrawMode != DrawMode.None && e.GetMapInfo([])?.WorldPosition is { } worldPos)
+        {
+            OnDrawToolClick(new MPoint(worldPos.X, worldPos.Y));
+            return;
+        }
+
         var feature = e.GetMapInfo(new ILayer[] { markerLayer })?.Feature;
         if (feature is not null)
         {
@@ -962,4 +981,156 @@ public sealed partial class MapView : UserControl
             ? new Color(217, 119, 6)
             : new Color(202, 138, 4);
     }
+
+    // ── Draw tools engine ─────────────────────────────────────────────────────
+
+    private void OnDrawModeChanged(object? sender, DrawMode mode)
+    {
+        currentDrawMode = mode;
+        shapeInProgress = null;
+        circleFirstClick = true;
+        MapControl.Cursor = mode == DrawMode.None
+            ? Avalonia.Input.Cursor.Default
+            : new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Cross);
+    }
+
+    private void OnClearDrawings(object? sender, EventArgs e)
+    {
+        completedShapes.Clear();
+        shapeInProgress = null;
+        drawingLayer?.Clear();
+        MapControl.Map.RefreshData();
+        MapControl.RefreshGraphics();
+    }
+
+    private void OnDrawToolClick(MPoint worldPoint)
+    {
+        if (currentDrawMode == DrawMode.None || drawingLayer is null) return;
+        switch (currentDrawMode)
+        {
+            case DrawMode.Line:    HandleLineClick(worldPoint);    break;
+            case DrawMode.Polygon: HandlePolygonClick(worldPoint); break;
+            case DrawMode.Circle:  HandleCircleClick(worldPoint);  break;
+            case DrawMode.Erase:   EraseShapeAt(worldPoint);       break;
+        }
+    }
+
+    private void HandleLineClick(MPoint pt)
+    {
+        if (shapeInProgress is null)
+        {
+            shapeInProgress = new DrawingShape { ShapeType = DrawShapeType.Line };
+            shapeInProgress.Points.Add((pt.X, pt.Y));
+        }
+        else
+        {
+            shapeInProgress.Points.Add((pt.X, pt.Y));
+            RenderShapePreview();
+        }
+    }
+
+    private void HandlePolygonClick(MPoint pt)
+    {
+        shapeInProgress ??= new DrawingShape { ShapeType = DrawShapeType.Polygon };
+        shapeInProgress.Points.Add((pt.X, pt.Y));
+        RenderShapePreview();
+    }
+
+    private bool circleFirstClick = true;
+    private void HandleCircleClick(MPoint pt)
+    {
+        if (circleFirstClick)
+        {
+            shapeInProgress = new DrawingShape { ShapeType = DrawShapeType.Circle };
+            shapeInProgress.Centre = (pt.X, pt.Y);
+            circleFirstClick = false;
+        }
+        else
+        {
+            var dx = pt.X - shapeInProgress!.Centre.X;
+            var dy = pt.Y - shapeInProgress.Centre.Y;
+            shapeInProgress.RadiusMetres = Math.Sqrt(dx * dx + dy * dy);
+            FinaliseShape(shapeInProgress);
+            circleFirstClick = true;
+        }
+    }
+
+    private void EraseShapeAt(MPoint pt)
+    {
+        const double hitRadius = 20000;
+        var toRemove = completedShapes.FirstOrDefault(s =>
+        {
+            if (s.ShapeType == DrawShapeType.Circle)
+            {
+                var dx = pt.X - s.Centre.X;
+                var dy = pt.Y - s.Centre.Y;
+                return Math.Abs(Math.Sqrt(dx * dx + dy * dy) - s.RadiusMetres) < hitRadius;
+            }
+            return s.Points.Any(p =>
+            {
+                var dx = pt.X - p.X; var dy = pt.Y - p.Y;
+                return Math.Sqrt(dx * dx + dy * dy) < hitRadius;
+            });
+        });
+        if (toRemove is not null) { completedShapes.Remove(toRemove); RedrawAllShapes(); }
+    }
+
+    public void FinaliseCurrentShape()
+    {
+        if (shapeInProgress is null || shapeInProgress.Points.Count < 2) { shapeInProgress = null; return; }
+        FinaliseShape(shapeInProgress);
+    }
+
+    private void FinaliseShape(DrawingShape shape) { completedShapes.Add(shape); shapeInProgress = null; RedrawAllShapes(); }
+    private void RenderShapePreview() => RedrawAllShapes();
+
+    private void RedrawAllShapes()
+    {
+        if (drawingLayer is null) return;
+        drawingLayer.Clear();
+        var all = completedShapes.ToList();
+        if (shapeInProgress is not null) all.Add(shapeInProgress);
+        foreach (var shape in all) { var f = BuildShapeFeature(shape); if (f is not null) drawingLayer.Add(f); }
+        MapControl.Map.RefreshData();
+        MapControl.RefreshGraphics();
+    }
+
+    private static GeometryFeature? BuildShapeFeature(DrawingShape shape)
+    {
+        try
+        {
+            var hex   = shape.Color.TrimStart('#');
+            var r     = Convert.ToByte(hex[..2], 16);
+            var g     = Convert.ToByte(hex[2..4], 16);
+            var b     = Convert.ToByte(hex[4..6], 16);
+            var color = new Color(255, r, g, b);
+            var style = new VectorStyle
+            {
+                Line = new Pen(color, shape.StrokeWidth),
+                Fill = shape.ShapeType == DrawShapeType.Polygon
+                       ? new Brush(Color.FromArgb(40, color.R, color.G, color.B))
+                       : null
+            };
+            var factory = new NetTopologySuite.Geometries.GeometryFactory();
+            NetTopologySuite.Geometries.Geometry? geom = null;
+
+            if (shape.ShapeType == DrawShapeType.Circle && shape.RadiusMetres > 0)
+            {
+                var centre = new NetTopologySuite.Geometries.Coordinate(shape.Centre.X, shape.Centre.Y);
+                geom = factory.CreatePoint(centre).Buffer(shape.RadiusMetres, 32);
+            }
+            else if (shape.Points.Count >= 2)
+            {
+                var coords = shape.Points.Select(p => new NetTopologySuite.Geometries.Coordinate(p.X, p.Y)).ToArray();
+                if (shape.ShapeType == DrawShapeType.Polygon && coords.Length >= 3)
+                    geom = factory.CreatePolygon(factory.CreateLinearRing(coords.Append(coords[0]).ToArray()));
+                else
+                    geom = factory.CreateLineString(coords);
+            }
+            if (geom is null) return null;
+            return new GeometryFeature { Geometry = geom, Styles = [style] };
+        }
+        catch { return null; }
+    }
+
 }

@@ -6,6 +6,8 @@ using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
 
+public enum DrawMode { None, Line, Polygon, Circle, Erase }
+
 public sealed class MapViewModel : INotifyPropertyChanged
 {
     private StationMarkerViewModel? selectedStation;
@@ -51,6 +53,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
         AlertStatusCommand          = new DesktopCommand(() => AlertStatusRequested?.Invoke(this, EventArgs.Empty));
         ToggleTrailsCommand         = new DesktopCommand(() => ShowTrails = !ShowTrails);
         ToggleRadarCommand             = new DesktopCommand(() => ShowRadar = !ShowRadar);
+        DrawLineCommand                = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Line    ? DrawMode.None : DrawMode.Line);
+        DrawPolygonCommand             = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Polygon ? DrawMode.None : DrawMode.Polygon);
+        DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
+        DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
+        ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
+        
         ToggleRadarAnimationCommand    = new DesktopCommand(() => RadarAnimating = !RadarAnimating);
         RadarPreviousFrameCommand      = new DesktopCommand(() => RadarStepRequested?.Invoke(this, -1));
         RadarNextFrameCommand          = new DesktopCommand(() => RadarStepRequested?.Invoke(this, +1));
@@ -66,6 +74,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public event EventHandler? MeasureDistanceRequested;
     public event EventHandler<StationMarkerViewModel?>? AssignTacticalRequested;
     public event EventHandler<int>? RadarStepRequested;
+    public event EventHandler? ClearDrawingsRequested;
     public event EventHandler? AlertStatusRequested;
 
     private bool showTrails;
@@ -105,7 +114,46 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     // ── Radar animation state ──────────────────────────────────────────
 
+    private DrawMode drawMode = DrawMode.None;
+    private string drawModeLabel = string.Empty;
+    private bool isDrawing;
+
     private bool radarAnimating;
+    public DrawMode DrawMode
+    {
+        get => drawMode;
+        set
+        {
+            if (drawMode != value)
+            {
+                drawMode = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsDrawModeActive));
+                OnPropertyChanged(nameof(DrawModeTooltip));
+                DrawModeChanged?.Invoke(this, value);
+            }
+        }
+    }
+
+    public bool IsDrawModeActive => drawMode != DrawMode.None;
+
+    public string DrawModeTooltip => drawMode switch
+    {
+        DrawMode.Line    => "Drawing: Line — click to add points, double-click to finish",
+        DrawMode.Polygon => "Drawing: Polygon — click to add points, double-click to close",
+        DrawMode.Circle  => "Drawing: Circle — click centre, drag to set radius",
+        DrawMode.Erase   => "Erase mode — click a shape to delete it",
+        _                => "Draw tools — add lines, polygons, and circles to the map"
+    };
+
+    public event EventHandler<DrawMode>? DrawModeChanged;
+
+    public DesktopCommand DrawLineCommand { get; }
+    public DesktopCommand DrawPolygonCommand { get; }
+    public DesktopCommand DrawCircleCommand { get; }
+    public DesktopCommand DrawEraseCommand { get; }
+    public DesktopCommand ClearDrawingsCommand { get; }
+
     public bool RadarAnimating
     {
         get => radarAnimating;
