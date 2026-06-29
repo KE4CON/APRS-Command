@@ -86,6 +86,7 @@
       <MenuItem Header="Offline _Map Download" Command="{Binding OpenOfflineMapCommand}" />
       <MenuItem Header="_Frequency Reference" Command="{Binding OpenFrequencyRefCommand}" />
       <MenuItem Header="_Elevation Profile" Command="{Binding OpenElevationCommand}" />
+      <MenuItem Header="_Shadow Beacon" Command="{Binding OpenShadowBeaconCommand}" />
       <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
       <MenuItem Header="_Tools">
         <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />

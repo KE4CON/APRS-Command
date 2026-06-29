@@ -58,6 +58,7 @@ public sealed partial class MainWindow : Window
             vm.OfflineMapRequested    -= OnOfflineMapRequested;
             vm.FrequencyRefRequested  -= OnFrequencyRefRequested;
             vm.ElevationRequested     -= OnElevationRequested;
+            vm.ShadowBeaconRequested  -= OnShadowBeaconRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -92,6 +93,7 @@ public sealed partial class MainWindow : Window
             vm.OfflineMapRequested    += OnOfflineMapRequested;
             vm.FrequencyRefRequested  += OnFrequencyRefRequested;
             vm.ElevationRequested     += OnElevationRequested;
+            vm.ShadowBeaconRequested  += OnShadowBeaconRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -160,6 +162,17 @@ public sealed partial class MainWindow : Window
         var rt = (Application.Current as App)?.Runtime;
         var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
         var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
+    }
+
+    private void OnShadowBeaconRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new ShadowBeaconWindow
+        {
+            DataContext = rt.GetService<ViewModels.ShadowBeaconViewModel>()
+        };
         win.ShowDialog(this);
     }
 

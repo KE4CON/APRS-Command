@@ -1,0 +1,102 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.ShadowBeaconWindow"
+        x:DataType="vm:ShadowBeaconViewModel"
+        Title="Shadow Beacon"
+        Width="620" Height="500"
+        MinWidth="500" MinHeight="400"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Input form -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="16,12">
+      <StackPanel Spacing="10">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Shadow Beacon" FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource TextTitleBarBrush}" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource TextSidebarBrush}" TextWrapping="Wrap"
+                     Text="Transmit a position on behalf of a non-APRS station. The station will appear on all APRS maps." />
+        </StackPanel>
+
+        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Callsign to track *" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding TrackedCallsign}" Watermark="e.g. W4ABC-9" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="Latitude *" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding LatitudeText}" Watermark="e.g. 33.7490" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="2">
+            <TextBlock Text="Longitude *" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding LongitudeText}" Watermark="e.g. -84.3880" />
+          </StackPanel>
+        </Grid>
+
+        <Grid ColumnDefinitions="80,80,*,Auto" ColumnSpacing="8">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Symbol table" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding SymbolTable}" Watermark="/" MaxLength="1" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="Symbol code" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding SymbolCode}" Watermark=">" MaxLength="1" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="2">
+            <TextBlock Text="Comment" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding Comment}" Watermark="Optional description" />
+          </StackPanel>
+          <Button Grid.Column="3" Command="{Binding TransmitCommand}"
+                  Content="📡 Transmit" Padding="14,6"
+                  IsEnabled="{Binding IsNotTransmitting}"
+                  VerticalAlignment="Bottom" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- Active shadow stations list -->
+    <Grid Grid.Row="1" RowDefinitions="Auto,*">
+      <Border Grid.Row="0" Padding="14,8,14,4">
+        <TextBlock Text="Active shadow stations" FontSize="11" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+      </Border>
+      <ListBox Grid.Row="1"
+               ItemsSource="{Binding ActiveStations}"
+               SelectedItem="{Binding SelectedStation}"
+               Background="{DynamicResource AppBgBrush}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ShadowStationRowViewModel">
+            <Grid ColumnDefinitions="120,140,80,*" Margin="4,3">
+              <TextBlock Text="{Binding Callsign}" FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AccentBlueMidBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{Binding PositionText}" FontSize="10"
+                         Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{Binding LastTx}" FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="{Binding Comment}" FontSize="10"
+                         Foreground="{DynamicResource TextSubtleBrush}" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Text="{Binding StatusText}" FontSize="10"
+                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                   TextWrapping="Wrap" />
+        <Button Grid.Column="1" Command="{Binding RemoveCommand}" Content="Remove selected"
+                Padding="8,5" FontSize="10"
+                IsEnabled="{Binding SelectedStation, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Button Grid.Column="2" Command="{Binding ClearAllCommand}" Content="Clear all"
+                Padding="8,5" FontSize="10" />
+        <Button Grid.Column="3" x:Name="CloseButton" Content="Close" Padding="12,5" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
