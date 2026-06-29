@@ -116,6 +116,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
                     await msgCenter.SendMessageAsync(callsign, recipient, body).ConfigureAwait(false));
         });
         services.AddSingleton<ViewModels.ScheduledMessagesViewModel>();
+        services.AddSingleton<ViewModels.MessageReceiptsDashboardViewModel>();
 
         // Replay service
         services.AddSingleton<IReplayPacketSink, LiveReplayPacketSink>();
