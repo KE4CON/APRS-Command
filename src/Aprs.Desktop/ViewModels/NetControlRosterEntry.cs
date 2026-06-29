@@ -39,6 +39,7 @@ public sealed class NetControlRosterEntry : INotifyPropertyChanged
     private string assignment = string.Empty;
     private string notes = string.Empty;
     private DateTimeOffset? checkedInAt;
+    public DateTimeOffset? CheckedInAt => checkedInAt;
     private DateTimeOffset lastHeardUtc;
     private double? latitude;
     private double? longitude;

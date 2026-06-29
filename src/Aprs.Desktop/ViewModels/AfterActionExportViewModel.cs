@@ -16,6 +16,7 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private readonly IAprsMessageStoreService messageStore;
     private readonly IRawPacketLogService packetLog;
     private readonly IAppSettingsStore settingsStore;
+    private NetControlViewModel? netControlRoster;
 
     private string eventName = string.Empty;
     private bool includeStations = true;
@@ -26,6 +27,8 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private bool isExporting;
     private bool includeIcs214 = true;
     private bool includeIcs205 = true;
+    private bool includeIcs211 = true;
+    private string checkInLocation = "Incident Command Post";
     private string specialInstructions = string.Empty;
     private string operatorName = string.Empty;
     private string icsPosition = "Communications Unit Leader";
@@ -36,13 +39,15 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
         IStationDatabase stationDatabase,
         IAprsMessageStoreService messageStore,
         IRawPacketLogService packetLog,
-        IAppSettingsStore settingsStore)
+        IAppSettingsStore settingsStore,
+        NetControlViewModel? netControlRoster = null)
     {
         this.stationDatabase  = stationDatabase;
         this.messageStore     = messageStore;
         this.packetLog        = packetLog;
         this.settingsStore    = settingsStore;
         sessionStart          = DateTimeOffset.UtcNow;
+        this.netControlRoster = netControlRoster;
 
         ExportCommand = new DesktopCommand(async () => await ExportAsync());
     }
@@ -90,6 +95,18 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     {
         get => includePacketLog;
         set { if (includePacketLog != value) { includePacketLog = value; OnPropertyChanged(); } }
+    }
+
+    public bool IncludeIcs211
+    {
+        get => includeIcs211;
+        set { if (includeIcs211 != value) { includeIcs211 = value; OnPropertyChanged(); } }
+    }
+
+    public string CheckInLocation
+    {
+        get => checkInLocation;
+        set { if (checkInLocation != value) { checkInLocation = value; OnPropertyChanged(); } }
     }
 
     public bool IncludeIcs205
@@ -201,6 +218,44 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                 filesExported++;
             }
 
+            if (IncludeIcs211)
+            {
+                StatusText = "Generating ICS-211…";
+                await Task.Delay(50);
+                var opName = string.IsNullOrWhiteSpace(OperatorName) ? callsign : OperatorName;
+                // Build roster entries from the net control roster if available,
+                // otherwise from the station database.
+                var rosterEntries = netControlRoster?.Roster
+                    .Select(e => new Ics211RosterEntry(
+                        e.Callsign, e.TacticalLabel,
+                        null,
+                        e.Status switch
+                        {
+                            CheckInStatus.CheckedIn    => "Checked In",
+                            CheckInStatus.Standby      => "Standby",
+                            CheckInStatus.Departed     => "Departed",
+                            _                          => "Not Checked In"
+                        },
+                        e.CheckedInAt, null))
+                    .ToList()
+                    ?? stationDatabase.GetAllStations()
+                        .Select(s => new Ics211RosterEntry(
+                            s.Callsign, s.TacticalLabel,
+                            null, "Observed", s.LastHeardUtc, null))
+                        .ToList();
+
+                var ics211 = Ics211ExportService.GenerateIcs211(
+                    incidentName:     name,
+                    operatorCallsign: callsign,
+                    operatorName:     opName,
+                    checkInLocation:  CheckInLocation,
+                    periodFrom:       sessionStart,
+                    periodTo:         reportTime,
+                    entries:          rosterEntries);
+                SaveFileRequested?.Invoke(this, ($"ICS211_{dateStamp}.txt", ics211));
+                filesExported++;
+            }
+
             if (IncludeIcs205)
             {
                 StatusText = "Generating ICS-205…";
@@ -269,11 +324,13 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     public static AfterActionExportViewModel CreateFromRuntime(Aprs.Desktop.Composition.DesktopRuntime? rt)
     {
         if (rt is null) return CreateDesignTime();
+        var mainVm = rt.GetService<Aprs.Desktop.ViewModels.MainWindowViewModel>();
         return new AfterActionExportViewModel(
             rt.GetService<IStationDatabase>(),
             rt.GetService<IAprsMessageStoreService>(),
             rt.GetService<IRawPacketLogService>(),
-            rt.GetService<IAppSettingsStore>());
+            rt.GetService<IAppSettingsStore>(),
+            mainVm?.NetControl);
     }
 
     private void OnPropertyChanged([CallerMemberName] string? n = null)
