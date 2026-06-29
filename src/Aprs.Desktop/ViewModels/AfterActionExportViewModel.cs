@@ -28,6 +28,7 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private bool includeIcs214 = true;
     private bool includeIcs205 = true;
     private bool includeIcs211 = true;
+    private bool includeIcs213 = false; // off by default — generates one form per message
     private string checkInLocation = "Incident Command Post";
     private string specialInstructions = string.Empty;
     private string operatorName = string.Empty;
@@ -95,6 +96,12 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     {
         get => includePacketLog;
         set { if (includePacketLog != value) { includePacketLog = value; OnPropertyChanged(); } }
+    }
+
+    public bool IncludeIcs213
+    {
+        get => includeIcs213;
+        set { if (includeIcs213 != value) { includeIcs213 = value; OnPropertyChanged(); } }
     }
 
     public bool IncludeIcs211
@@ -215,6 +222,25 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                 var packets = packetLog.GetRecentEntries();
                 var csv     = AfterActionReportService.GeneratePacketLogCsv(packets, reportTime);
                 SaveFileRequested?.Invoke(this, ($"AAR_{dateStamp}_PacketLog.csv", csv));
+                filesExported++;
+            }
+
+            if (IncludeIcs213)
+            {
+                StatusText = "Generating ICS-213 message forms…";
+                await Task.Delay(50);
+                var messages = messageStore.GetAllMessages();
+                var opName = string.IsNullOrWhiteSpace(OperatorName) ? callsign : OperatorName;
+                var ics213Messages = messages.Select(m => new Ics213Message(
+                    m.Sender, m.Recipient, m.MessageBody,
+                    m.Direction == AprsMessageDirection.Outgoing,
+                    m.CreatedAtUtc, m.SentAtUtc, m.ReceivedAtUtc)).ToList();
+                var ics213 = Ics213ExportService.GenerateIcs213Bundle(
+                    operatorCallsign: callsign,
+                    operatorName:     opName,
+                    incidentName:     name,
+                    messages:         ics213Messages);
+                SaveFileRequested?.Invoke(this, ($"ICS213_{dateStamp}.txt", ics213));
                 filesExported++;
             }
 
