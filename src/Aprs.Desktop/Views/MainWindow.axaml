@@ -88,6 +88,7 @@
       <MenuItem Header="_Elevation Profile" Command="{Binding OpenElevationCommand}" />
       <MenuItem Header="_Shadow Beacon" Command="{Binding OpenShadowBeaconCommand}" />
       <MenuItem Header="_Coverage Prediction" Command="{Binding OpenCoverageCommand}" />
+      <MenuItem Header="_Net Script Editor" Command="{Binding OpenNetScriptCommand}" />
       <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
       <MenuItem Header="_Tools">
         <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />

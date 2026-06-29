@@ -24,7 +24,8 @@ public sealed record AppSettings(
     MessageTemplatesSettings MessageTemplates,
     SmartBeaconingSettings SmartBeaconing,
     GpsdSettings Gpsd,
-    FrequencyReferenceSettings FrequencyReference)
+    FrequencyReferenceSettings FrequencyReference,
+    NetScriptSettings NetScripts)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -42,5 +43,6 @@ public sealed record AppSettings(
         MessageTemplates: MessageTemplatesSettings.Default,
         SmartBeaconing: SmartBeaconingSettings.Default,
         Gpsd: GpsdSettings.Default,
-        FrequencyReference: FrequencyReferenceSettings.Default);
+        FrequencyReference: FrequencyReferenceSettings.Default,
+        NetScripts: NetScriptSettings.Default);
 }
