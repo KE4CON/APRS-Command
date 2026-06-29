@@ -29,9 +29,14 @@ public sealed class NetControlViewModel : INotifyPropertyChanged
         Roster = [];
         FilteredRoster = [];
 
-        CheckInCommand    = new DesktopCommand(CheckInSelected);
-        StandbyCommand    = new DesktopCommand(StandbySelected);
-        DepartCommand     = new DesktopCommand(DepartSelected);
+        CheckInCommand       = new DesktopCommand(CheckInSelected);
+        StandbyCommand       = new DesktopCommand(StandbySelected);
+        DepartCommand        = new DesktopCommand(DepartSelected);
+        SetAvailableCommand  = new DesktopCommand(() => SetResourceStatus(ResourceStatus.Available));
+        SetAssignedCommand   = new DesktopCommand(() => SetResourceStatus(ResourceStatus.Assigned));
+        SetOnSceneCommand    = new DesktopCommand(() => SetResourceStatus(ResourceStatus.OnScene));
+        SetReturningCommand  = new DesktopCommand(() => SetResourceStatus(ResourceStatus.Returning));
+        SetOutOfServiceCommand = new DesktopCommand(() => SetResourceStatus(ResourceStatus.OutOfService));
         RemoveCommand     = new DesktopCommand(RemoveSelected);
         ClearAllCommand   = new DesktopCommand(ClearAll);
         RefreshCommand    = new DesktopCommand(RefreshFromDatabase);
@@ -99,9 +104,14 @@ public sealed class NetControlViewModel : INotifyPropertyChanged
 
     // ── Commands ──────────────────────────────────────────────────────
 
-    public DesktopCommand CheckInCommand     { get; }
-    public DesktopCommand StandbyCommand     { get; }
-    public DesktopCommand DepartCommand      { get; }
+    public DesktopCommand CheckInCommand       { get; }
+    public DesktopCommand StandbyCommand       { get; }
+    public DesktopCommand DepartCommand        { get; }
+    public DesktopCommand SetAvailableCommand  { get; }
+    public DesktopCommand SetAssignedCommand   { get; }
+    public DesktopCommand SetOnSceneCommand    { get; }
+    public DesktopCommand SetReturningCommand  { get; }
+    public DesktopCommand SetOutOfServiceCommand { get; }
     public DesktopCommand RemoveCommand      { get; }
     public DesktopCommand ClearAllCommand    { get; }
     public DesktopCommand RefreshCommand     { get; }
@@ -292,4 +302,13 @@ public sealed class NetControlViewModel : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? n = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+
+    private void SetResourceStatus(ResourceStatus status)
+    {
+        var selected = SelectedEntry;
+        if (selected is null) { StatusText = "Select a station first."; return; }
+        selected.ResourceStatus = status;
+        StatusText = $"{selected.DisplayName} → {selected.ResourceStatusLabel}";
+    }
 }
