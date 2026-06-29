@@ -48,7 +48,13 @@ public sealed class WeatherViewModel
 
     public bool HasStations => Rows.Count > 0;
 
-    public WeatherBeaconSettingsViewModel BeaconSettings { get; }
+    public WeatherBeaconSettingsViewModel BeaconSettings { get; private set; }
+
+    /// <summary>Called post-construction to inject the live weather beacon scheduler.</summary>
+    public void SetBeaconScheduler(IWeatherBeaconScheduler scheduler)
+    {
+        BeaconSettings = new WeatherBeaconSettingsViewModel(scheduler);
+    }
 
     public WeatherStationSetupViewModel Setup { get; }
 

@@ -113,6 +113,11 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // Geofence service
         services.AddSingleton<IGeofenceService, GeofenceService>();
 
+        // Weather beacon scheduler
+        services.AddSingleton<IWeatherInputDriverManager, WeatherInputDriverManager>();
+        services.AddSingleton<IWeatherObservationSourceProvider, WeatherDriverObservationSourceProvider>();
+        services.AddSingleton<IAprsWeatherFormatter, AprsWeatherFormatter>();
+
         // Object manager and editor
         services.AddSingleton<IAprsObjectManager, AprsObjectManager>();
         services.AddSingleton<IAprsObjectEditorService>(provider =>
@@ -191,6 +196,14 @@ public sealed class DesktopRuntime : IAsyncDisposable
             var objEditor   = provider.GetRequiredService<IAprsObjectEditorService>();
             var objTransmit = new ObjectTransmitService(objEditor, objManager, beaconService.AprsIsClient);
             mainViewModel.ObjectManager.SetTransmitService(objTransmit);
+
+            // Weather beacon scheduler — reuses the same live APRS-IS client.
+            var wxScheduler = new WeatherBeaconScheduler(
+                provider.GetRequiredService<ILocalStationProfileService>(),
+                provider.GetRequiredService<IAprsWeatherFormatter>(),
+                provider.GetRequiredService<IWeatherObservationSourceProvider>(),
+                beaconService.AprsIsClient);
+            mainViewModel.Weather.SetBeaconScheduler(wxScheduler);
         }
 
         // GPS — only create a serial source when a port is configured and GPS is enabled.
