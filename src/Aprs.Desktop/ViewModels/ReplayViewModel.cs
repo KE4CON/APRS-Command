@@ -15,7 +15,8 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     {
         this.replayService = replayService;
         Entries = new ObservableCollection<string>();
-        LoadCommand = new DesktopCommand(LoadSelectedFile);
+        LoadCommand   = new DesktopCommand(LoadSelectedFile);
+        BrowseCommand = new DesktopCommand(async () => await BrowseForLogFileAsync());
         PlayCommand = new DesktopCommand(Play);
         PauseCommand = new DesktopCommand(Pause);
         ResumeCommand = new DesktopCommand(Resume);
@@ -28,6 +29,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     public ObservableCollection<string> Entries { get; }
 
     public DesktopCommand LoadCommand { get; }
+    public DesktopCommand BrowseCommand { get; }
 
     public DesktopCommand PlayCommand { get; }
 
@@ -164,6 +166,46 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(TotalPackets));
         OnPropertyChanged(nameof(SpeedMultiplier));
         OnPropertyChanged(nameof(LoopReplay));
+    }
+
+    private async Task BrowseForLogFileAsync()
+    {
+        try
+        {
+            var topLevel = Avalonia.Application.Current?.ApplicationLifetime is
+                Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop
+                ? desktop.MainWindow
+                : null;
+            if (topLevel is null) return;
+
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(
+                new Avalonia.Platform.Storage.FilePickerOpenOptions
+                {
+                    Title = "Open APRS packet log",
+                    AllowMultiple = false,
+                    FileTypeFilter =
+                    [
+                        new Avalonia.Platform.Storage.FilePickerFileType("APRS log files")
+                        {
+                            Patterns = ["*.txt", "*.log", "*.csv", "*.aprs"]
+                        },
+                        new Avalonia.Platform.Storage.FilePickerFileType("All files")
+                        {
+                            Patterns = ["*.*"]
+                        }
+                    ]
+                });
+
+            if (files.Count > 0)
+            {
+                SelectedReplayFilePath = files[0].Path.LocalPath;
+                LoadSelectedFile();
+            }
+        }
+        catch (Exception ex)
+        {
+            LastError = ex.Message;
+        }
     }
 
     public static ReplayViewModel CreateDesignTime()

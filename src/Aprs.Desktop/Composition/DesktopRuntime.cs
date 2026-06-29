@@ -103,6 +103,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
         services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
 
+        // Replay service
+        services.AddSingleton<IReplayPacketSink, LiveReplayPacketSink>();
+        services.AddSingleton<IReplayService>(provider =>
+            new ReplayService(
+                provider.GetRequiredService<IReplayPacketSink>(),
+                ReplaySessionConfiguration.Default));
+
         // Object manager and editor
         services.AddSingleton<IAprsObjectManager, AprsObjectManager>();
         services.AddSingleton<IAprsObjectEditorService>(provider =>
@@ -133,7 +140,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new IGateStatusViewModel(provider.GetRequiredService<IIGateService>()),     // LIVE
             new DigipeaterStatusViewModel(provider.GetRequiredService<IDigipeaterService>()), // LIVE
             new WeatherViewModel(provider.GetRequiredService<IWeatherDisplayService>(), DateTimeOffset.UtcNow), // LIVE
-            ReplayViewModel.CreateDesignTime(),             // TODO: wire to replay service (feed ingestion, source=Replay)
+            new ReplayViewModel(provider.GetRequiredService<IReplayService>()),  // LIVE
             new RfDiagnosticsViewModel(provider.GetRequiredService<IRfDiagnosticsService>()), // LIVE
             new AlertRulesViewModel(provider.GetRequiredService<IAlertRuleService>()),  // LIVE
             GeofenceEditorViewModel.CreateDesignTime(),     // TODO: wire to geofence service
