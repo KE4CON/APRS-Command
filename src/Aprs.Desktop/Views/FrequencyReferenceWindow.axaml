@@ -1,0 +1,152 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:cfg="using:Aprs.Desktop.Configuration"
+        x:Class="Aprs.Desktop.Views.FrequencyReferenceWindow"
+        x:DataType="vm:FrequencyReferenceViewModel"
+        Title="Frequency Reference"
+        Width="700" Height="540"
+        MinWidth="600" MinHeight="440"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="16,12">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Frequency Reference" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextTitleBarBrush}" />
+        <TextBlock FontSize="11" Foreground="{DynamicResource TextSidebarBrush}"
+                   Text="Standard APRS and EmComm frequencies. Add your local nets and repeaters." />
+      </StackPanel>
+    </Border>
+
+    <!-- Main content -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,280" ColumnSpacing="0">
+
+      <!-- Frequency list -->
+      <Grid RowDefinitions="*,Auto">
+        <ListBox Grid.Row="0"
+                 ItemsSource="{Binding Entries}"
+                 SelectedItem="{Binding SelectedEntry}"
+                 Background="{DynamicResource AppBgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="cfg:FrequencyEntry">
+              <Grid ColumnDefinitions="90,110,130,*" Margin="4,3">
+                <TextBlock Text="{Binding FrequencyMhz}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentBlueMidBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1" Text="{Binding Mode}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding Name}" FontSize="11"
+                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding Notes}" FontSize="10"
+                           Foreground="{DynamicResource TextSubtleBrush}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Column headers -->
+        <Grid Grid.Row="1" ColumnDefinitions="90,110,130,*" Margin="8,4"
+              Background="{DynamicResource AppBgAltBrush}">
+          <TextBlock Text="MHz" FontSize="9" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Grid.Column="1" Text="Mode" FontSize="9" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Grid.Column="2" Text="Name" FontSize="9" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Grid.Column="3" Text="Notes" FontSize="9" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+        </Grid>
+      </Grid>
+
+      <!-- Detail / edit panel -->
+      <Border Grid.Column="1" BorderBrush="{DynamicResource AppBorderBrush}"
+              BorderThickness="1,0,0,0" Background="{DynamicResource AppBgAltBrush}">
+        <ScrollViewer Padding="14,12">
+          <StackPanel Spacing="12">
+
+            <!-- Selected entry detail (read mode) -->
+            <StackPanel IsVisible="{Binding IsNotEditing}" Spacing="8">
+              <TextBlock Text="Selected Frequency" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <StackPanel Spacing="4" IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding SelectedEntry.Name}" FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
+                <TextBlock FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource AccentBlueMidBrush}">
+                  <Run Text="{Binding SelectedEntry.FrequencyMhz}" /><Run Text=" MHz" />
+                </TextBlock>
+                <TextBlock Text="{Binding SelectedEntry.Mode}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding SelectedEntry.Notes}" FontSize="10"
+                           Foreground="{DynamicResource TextSubtleBrush}"
+                           TextWrapping="Wrap" Margin="0,4,0,0" />
+              </StackPanel>
+              <TextBlock IsVisible="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNull}}"
+                         Text="Select a frequency to see details." FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+
+            <!-- Edit form -->
+            <StackPanel IsVisible="{Binding IsEditing}" Spacing="8">
+              <TextBlock Text="Edit Frequency" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <StackPanel Spacing="3">
+                <TextBlock Text="Name *" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding EditName}" Watermark="e.g. Club Net Repeater" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Frequency (MHz) *" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding EditFrequency}" Watermark="e.g. 146.520" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Mode" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding EditMode}" Watermark="e.g. FM, USB, 1200 baud" />
+              </StackPanel>
+              <StackPanel Spacing="3">
+                <TextBlock Text="Notes" FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding EditNotes}" Watermark="Optional description"
+                         TextWrapping="Wrap" AcceptsReturn="True" Height="60" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Command="{Binding SaveCommand}" Content="Save" Padding="12,5" />
+                <Button Command="{Binding CancelCommand}" Content="Cancel" Padding="8,5" />
+              </StackPanel>
+            </StackPanel>
+
+            <Separator />
+
+            <!-- Action buttons -->
+            <StackPanel Spacing="6" IsVisible="{Binding IsNotEditing}">
+              <Button Command="{Binding AddCommand}" Content="＋ Add frequency"
+                      HorizontalAlignment="Stretch" Padding="8,5" />
+              <Button Command="{Binding EditCommand}" Content="✎ Edit selected"
+                      HorizontalAlignment="Stretch" Padding="8,5"
+                      IsEnabled="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <Button Command="{Binding DeleteCommand}" Content="✕ Delete selected"
+                      HorizontalAlignment="Stretch" Padding="8,5"
+                      IsEnabled="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <Button Command="{Binding CopyCommand}" Content="⧉ Copy to clipboard"
+                      HorizontalAlignment="Stretch" Padding="8,5"
+                      IsEnabled="{Binding SelectedEntry, Converter={x:Static ObjectConverters.IsNotNull}}" />
+              <Button Command="{Binding ResetCommand}" Content="↺ Reset to defaults"
+                      HorizontalAlignment="Stretch" Padding="8,5" />
+            </StackPanel>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Padding="14,10" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBlock Text="{Binding StatusText}" FontSize="10"
+                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+        <Button Grid.Column="1" x:Name="CloseButton" Content="Close" Padding="12,6" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>
