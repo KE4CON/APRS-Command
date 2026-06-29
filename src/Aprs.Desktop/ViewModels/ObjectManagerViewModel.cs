@@ -1,4 +1,5 @@
 using Aprs.Core;
+using Aprs.Desktop.Runtime;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -7,19 +8,24 @@ public sealed class ObjectManagerViewModel
 {
     private readonly IAprsObjectManager objectManager;
     private readonly IAprsObjectEditorService editorService;
+    private ObjectTransmitService? transmitService;
     private readonly List<ObjectListRowViewModel> objects = [];
 
-    public ObjectManagerViewModel(IAprsObjectManager objectManager, IAprsObjectEditorService editorService)
+    public ObjectManagerViewModel(IAprsObjectManager objectManager, IAprsObjectEditorService editorService,
+        ObjectTransmitService? transmitService = null)
     {
-        this.objectManager = objectManager;
-        this.editorService = editorService;
+        this.objectManager  = objectManager;
+        this.editorService  = editorService;
+        this.transmitService = transmitService;
         Editor = new ObjectEditorViewModel(editorService, editorService.CreateNewDraft(DateTimeOffset.UtcNow));
-        NewObjectCommand = new DesktopCommand(CreateNewObject);
-        EditSelectedCommand = new DesktopCommand(EditSelectedObject);
-        SaveCommand = new DesktopCommand(() => Save());
-        CancelCommand = new DesktopCommand(Cancel);
-        MarkKilledCommand = new DesktopCommand(() => MarkKilled());
-        DeleteCommand = new DesktopCommand(() => DeleteSelectedObject());
+        NewObjectCommand     = new DesktopCommand(CreateNewObject);
+        EditSelectedCommand  = new DesktopCommand(EditSelectedObject);
+        SaveCommand          = new DesktopCommand(() => Save());
+        CancelCommand        = new DesktopCommand(Cancel);
+        MarkKilledCommand    = new DesktopCommand(() => MarkKilled());
+        DeleteCommand        = new DesktopCommand(() => DeleteSelectedObject());
+        TransmitNowCommand   = new DesktopCommand(async () => await TransmitSelectedAsync());
+        TransmitAllCommand   = new DesktopCommand(async () => await TransmitAllAsync());
         Refresh();
     }
 
@@ -47,6 +53,10 @@ public sealed class ObjectManagerViewModel
     public DesktopCommand MarkKilledCommand { get; }
 
     public DesktopCommand DeleteCommand { get; }
+
+    public DesktopCommand TransmitNowCommand { get; }
+
+    public DesktopCommand TransmitAllCommand { get; }
 
     public static ObjectManagerViewModel CreateDesignTime()
     {
@@ -149,7 +159,9 @@ public sealed class ObjectManagerViewModel
     {
         var result = editorService.Save(Editor.ToModel(), DateTimeOffset.UtcNow);
         Editor.Load(result.Model);
-        StatusText = result.IsSuccess ? $"Saved {result.ObjectState!.Name} locally." : string.Join("; ", result.Errors);
+        StatusText = result.IsSuccess
+            ? $"Saved {result.ObjectState!.Name}. Click 'Transmit Now' to send to the network."
+            : string.Join("; ", result.Errors);
         Refresh();
         return result;
     }
@@ -183,9 +195,35 @@ public sealed class ObjectManagerViewModel
         return removed;
     }
 
+    public bool CanTransmit => transmitService is not null;
+
+    public void SetTransmitService(ObjectTransmitService service)
+    {
+        transmitService = service;
+    }
+
     public void Refresh()
     {
         objects.Clear();
         objects.AddRange(objectManager.GetAllObjects().Select(state => new ObjectListRowViewModel(state)));
+    }
+
+    private async Task TransmitSelectedAsync()
+    {
+        if (transmitService is null) { StatusText = "Transmit service not available — check APRS-IS connection."; return; }
+        var name = SelectedObject?.Name ?? Editor.ObjectName;
+        if (string.IsNullOrWhiteSpace(name)) { StatusText = "Select or save an object first."; return; }
+        StatusText = $"Transmitting {name}…";
+        var result = await transmitService.TransmitObjectAsync(name).ConfigureAwait(false);
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => StatusText = result);
+    }
+
+    private async Task TransmitAllAsync()
+    {
+        if (transmitService is null) { StatusText = "Transmit service not available — check APRS-IS connection."; return; }
+        StatusText = "Transmitting all local objects…";
+        var count = await transmitService.TransmitAllLocalObjectsAsync().ConfigureAwait(false);
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            StatusText = count == 0 ? "No local objects to transmit." : $"Transmitted {count} object(s).");
     }
 }

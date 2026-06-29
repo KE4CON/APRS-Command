@@ -84,21 +84,33 @@
       </Grid>
 
       <Grid Grid.Row="2"
-            ColumnDefinitions="*,Auto,Auto,Auto,Auto"
+            ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
             ColumnSpacing="8">
-        <TextBlock Text="Local preview only. Object packets are not transmitted."
+        <TextBlock Text="{Binding StatusText}"
                    Foreground="{DynamicResource TextMutedBrush}"
                    VerticalAlignment="Center" />
         <Button Grid.Column="1"
+                Content="📡 Transmit Now"
+                Command="{Binding TransmitNowCommand}"
+                IsEnabled="{Binding CanTransmit}"
+                ToolTip.Tip="Transmit the selected object to APRS-IS now."
+                Padding="10,6" />
+        <Button Grid.Column="2"
+                Content="Transmit All"
+                Command="{Binding TransmitAllCommand}"
+                IsEnabled="{Binding CanTransmit}"
+                ToolTip.Tip="Transmit all locally-owned objects now."
+                Padding="8,6" />
+        <Button Grid.Column="3"
                 Content="Save"
                 Command="{Binding SaveCommand}" />
-        <Button Grid.Column="2"
+        <Button Grid.Column="4"
                 Content="Kill"
                 Command="{Binding MarkKilledCommand}" />
-        <Button Grid.Column="3"
+        <Button Grid.Column="5"
                 Content="Delete"
                 Command="{Binding DeleteCommand}" />
-        <Button Grid.Column="4"
+        <Button Grid.Column="6"
                 Content="Cancel"
                 Command="{Binding CancelCommand}" />
       </Grid>

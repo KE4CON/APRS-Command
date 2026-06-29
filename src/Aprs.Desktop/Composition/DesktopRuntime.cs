@@ -103,6 +103,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
         services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
 
+        // Object manager and editor
+        services.AddSingleton<IAprsObjectManager, AprsObjectManager>();
+        services.AddSingleton<IAprsObjectEditorService>(provider =>
+            new AprsObjectEditorService(
+                provider.GetRequiredService<IAprsObjectManager>(),
+                provider.GetRequiredService<ILocalStationProfileService>()));
+
         var provider = services.BuildServiceProvider();
 
         // --- Live spine view models ---
@@ -118,7 +125,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             DecodedEventLogViewModel.CreateDesignTime(),    // TODO: wire to decoded event log service
             EventMonitorViewModel.CreateDesignTime(),       // TODO: wire to IAprsEventBus
             new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
-            ObjectManagerViewModel.CreateDesignTime(),      // TODO: wire to object manager service
+            new ObjectManagerViewModel(
+                provider.GetRequiredService<IAprsObjectManager>(),
+                provider.GetRequiredService<IAprsObjectEditorService>()),  // LIVE — transmit service wired in Create()
             new DirewolfProfileViewModel(provider.GetRequiredService<DirewolfProfileService>()), // LIVE
             new PortStatusViewModel(provider.GetRequiredService<IAprsPortManager>()),   // LIVE
             new IGateStatusViewModel(provider.GetRequiredService<IIGateService>()),     // LIVE
@@ -159,6 +168,15 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var messageAckCoordinator = beaconService.AprsIsClient is not null
             ? MessageAckCoordinator.Create(messageStore, beaconService.AprsIsClient, transmitConfirmed: true)
             : MessageAckCoordinator.Create(messageStore, new NullAprsIsClient(), transmitConfirmed: false);
+
+        // Object transmit service — wires the live APRS-IS client into the object manager viewmodel.
+        if (beaconService.AprsIsClient is not null)
+        {
+            var objManager  = provider.GetRequiredService<IAprsObjectManager>();
+            var objEditor   = provider.GetRequiredService<IAprsObjectEditorService>();
+            var objTransmit = new ObjectTransmitService(objEditor, objManager, beaconService.AprsIsClient);
+            mainViewModel.ObjectManager.SetTransmitService(objTransmit);
+        }
 
         // GPS — only create a serial source when a port is configured and GPS is enabled.
         var gpsSettings = provider.GetRequiredService<IAppSettingsStore>().Load().Gps;
