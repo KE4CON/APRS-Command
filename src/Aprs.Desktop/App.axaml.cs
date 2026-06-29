@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Aprs.Core;
 using Aprs.Desktop.Composition;
+using Aprs.Desktop.Runtime;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Audio;
 using Aprs.Desktop.ViewModels;
@@ -235,6 +237,33 @@ public sealed partial class App : Application
         timer.Start();
     }
 
+    private static void WireGeofence(DesktopRuntime rt)
+    {
+        var geofenceService = rt.GetService<IGeofenceService>();
+        var coordinator = new GeofenceCoordinator(
+            geofenceService,
+            toastCallback: (message, _) =>
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    var toast = new Views.ToastNotification("Geofence Alert", message);
+                    toast.Show();
+                });
+            });
+
+        // Subscribe to parsed position packets and evaluate against geofences.
+        rt.GetService<AprsIngestionService>().PacketParsed += (_, args) =>
+        {
+            if (args.Packet is not PositionAprsPacket pos) return;
+            if (pos.Latitude is null || pos.Longitude is null) return;
+            coordinator.OnStationPositionUpdated(
+                pos.SourceCallsign,
+                pos.Latitude.Value,
+                pos.Longitude.Value,
+                DateTimeOffset.UtcNow);
+        };
+    }
+
     private static void WireNwsAlerts(DesktopRuntime rt)
     {
         var settings = JsonAppSettingsStore.Default.Load();
@@ -377,6 +406,7 @@ public sealed partial class App : Application
                     WireNetControl(runtime);
                     WireNwsAlerts(runtime);
                     WireRadarRefresh((MainWindow)desktop.MainWindow!);
+                    WireGeofence(runtime);
                 }
                 else
                 {

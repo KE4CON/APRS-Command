@@ -110,6 +110,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
                 provider.GetRequiredService<IReplayPacketSink>(),
                 ReplaySessionConfiguration.Default));
 
+        // Geofence service
+        services.AddSingleton<IGeofenceService, GeofenceService>();
+
         // Object manager and editor
         services.AddSingleton<IAprsObjectManager, AprsObjectManager>();
         services.AddSingleton<IAprsObjectEditorService>(provider =>
@@ -143,7 +146,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new ReplayViewModel(provider.GetRequiredService<IReplayService>()),  // LIVE
             new RfDiagnosticsViewModel(provider.GetRequiredService<IRfDiagnosticsService>()), // LIVE
             new AlertRulesViewModel(provider.GetRequiredService<IAlertRuleService>()),  // LIVE
-            GeofenceEditorViewModel.CreateDesignTime(),     // TODO: wire to geofence service
+            new GeofenceEditorViewModel(provider.GetRequiredService<IGeofenceService>()),  // LIVE
             SimulationViewModel.CreateDesignTime(),         // TODO: wire to simulation service (source=Simulation)
             TrainingModeViewModel.CreateDesignTime(),       // TODO: wire to training service
             FileHooksViewModel.CreateDesignTime(),          // TODO: wire to file hooks service
