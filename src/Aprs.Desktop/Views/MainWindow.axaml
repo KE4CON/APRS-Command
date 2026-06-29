@@ -10,7 +10,7 @@
         MinWidth="900"
         MinHeight="620">
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
 
     <!-- Title bar -->
     <Border Grid.Row="0"
@@ -64,6 +64,14 @@
       <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
       <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
       <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
+      <MenuItem Header="_Draw">
+        <MenuItem Header="✏ Draw Line"    Command="{Binding Map.DrawLineCommand}"    ToolTip.Tip="Click to add points, double-click to finish" />
+        <MenuItem Header="⬟ Draw Polygon" Command="{Binding Map.DrawPolygonCommand}" ToolTip.Tip="Click to add points, double-click to close" />
+        <MenuItem Header="◯ Draw Circle"  Command="{Binding Map.DrawCircleCommand}"  ToolTip.Tip="Click centre, click again to set radius" />
+        <MenuItem Header="✕ Erase Shape"  Command="{Binding Map.DrawEraseCommand}"   ToolTip.Tip="Click a shape to delete it" />
+        <Separator />
+        <MenuItem Header="Clear All Drawings" Command="{Binding Map.ClearDrawingsCommand}" />
+      </MenuItem>
       <MenuItem Header="_Weather">
         <MenuItem Header="Weather Stations" Command="{Binding OpenWeatherCommand}" />
         <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
@@ -273,6 +281,19 @@
                                Cursor="Hand"
                                PointerPressed="NwsBanner_PointerPressed" />
 
-    <views:MainStatusBarView Grid.Row="4" />
+    <!-- Draw mode indicator banner — visible when a draw tool is active -->
+    <Border Grid.Row="3" IsVisible="{Binding Map.IsDrawModeActive}"
+            Background="#1d4ed8" Padding="10,5">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Map.DrawModeTooltip}" FontSize="11" FontWeight="SemiBold"
+                   Foreground="White" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="✕ Exit" Padding="8,3" FontSize="10"
+                Command="{Binding Map.ClearDrawingsCommand}"
+                Background="Transparent" Foreground="White"
+                BorderThickness="1" BorderBrush="White" />
+      </Grid>
+    </Border>
+
+    <views:MainStatusBarView Grid.Row="5" />
   </Grid>
 </Window>
