@@ -7,6 +7,18 @@
         Width="820" Height="580"
         MinWidth="600" MinHeight="400"
         WindowStartupLocation="CenterOwner">
+  <Window.KeyBindings>
+    <!-- Net control keyboard shortcuts — documented in the status bar -->
+    <KeyBinding Gesture="F1" Command="{Binding CheckInCommand}" />
+    <KeyBinding Gesture="F2" Command="{Binding StandbyCommand}" />
+    <KeyBinding Gesture="F3" Command="{Binding DepartCommand}" />
+    <KeyBinding Gesture="F4" Command="{Binding SetAvailableCommand}" />
+    <KeyBinding Gesture="F5" Command="{Binding SetAssignedCommand}" />
+    <KeyBinding Gesture="F6" Command="{Binding SetOnSceneCommand}" />
+    <KeyBinding Gesture="F7" Command="{Binding SetReturningCommand}" />
+    <KeyBinding Gesture="F8" Command="{Binding SetOutOfServiceCommand}" />
+    <KeyBinding Gesture="Delete" Command="{Binding RemoveCommand}" />
+  </Window.KeyBindings>
   <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Background="{DynamicResource AppBgBrush}">
 
     <!-- Header -->
@@ -209,8 +221,13 @@
     <!-- Status bar -->
     <Border Grid.Row="3" Padding="10,5" Background="{DynamicResource HeaderBgBrush}"
             BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
-      <TextBlock Text="{Binding StatusText}" FontSize="11"
-                 Foreground="{DynamicResource TextMutedBrush}" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding StatusText}" FontSize="11"
+                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1" FontSize="9" Foreground="{DynamicResource TextSubtleBrush}"
+                   VerticalAlignment="Center"
+                   Text="F1 Check In  F2 Standby  F3 Depart  F4 Available  F5 Assigned  F6 On Scene  F7 Returning  F8 OOS  Del Remove" />
+      </Grid>
     </Border>
 
     <!-- Bottom toolbar -->
