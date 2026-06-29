@@ -105,6 +105,18 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.ShadowBeaconViewModel>();
         services.AddSingleton<ViewModels.NetScriptEditorViewModel>();
 
+        // Scheduled message service — created after MessageCenterViewModel is available
+        services.AddSingleton<Runtime.ScheduledMessageService>(provider =>
+        {
+            var msgCenter = provider.GetRequiredService<ViewModels.MessageCenterViewModel>();
+            var settings  = provider.GetRequiredService<IAppSettingsStore>().Load();
+            var callsign  = settings.Station.Callsign ?? string.Empty;
+            return new Runtime.ScheduledMessageService(
+                async (recipient, body, _) =>
+                    await msgCenter.SendMessageAsync(callsign, recipient, body).ConfigureAwait(false));
+        });
+        services.AddSingleton<ViewModels.ScheduledMessagesViewModel>();
+
         // Replay service
         services.AddSingleton<IReplayPacketSink, LiveReplayPacketSink>();
         services.AddSingleton<IReplayService>(provider =>
