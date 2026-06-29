@@ -61,6 +61,7 @@ public sealed partial class MainWindow : Window
             vm.ShadowBeaconRequested  -= OnShadowBeaconRequested;
             vm.CoverageRequested      -= OnCoverageRequested;
             vm.NetScriptRequested     -= OnNetScriptRequested;
+            vm.BroadcastRequested     -= OnBroadcastRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -98,6 +99,7 @@ public sealed partial class MainWindow : Window
             vm.ShadowBeaconRequested  += OnShadowBeaconRequested;
             vm.CoverageRequested      += OnCoverageRequested;
             vm.NetScriptRequested     += OnNetScriptRequested;
+            vm.BroadcastRequested     += OnBroadcastRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -166,6 +168,25 @@ public sealed partial class MainWindow : Window
         var rt = (Application.Current as App)?.Runtime;
         var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
         var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
+    }
+
+    private void OnBroadcastRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var mainVm   = rt.GetService<ViewModels.MainWindowViewModel>();
+        var msgCenter = rt.GetService<ViewModels.MessageCenterViewModel>();
+        var callsign = rt.GetService<IAppSettingsStore>().Load().Station.Callsign ?? string.Empty;
+        var vm = new ViewModels.MessageBroadcastViewModel(msgCenter, callsign);
+        // Wire roster callsigns
+        vm.RequestRosterCallsigns = () =>
+            mainVm?.NetControl.Roster
+                .Where(e => e.Status == ViewModels.CheckInStatus.CheckedIn ||
+                            e.Status == ViewModels.CheckInStatus.Standby)
+                .Select(e => e.Callsign)
+                .ToList() ?? [];
+        var win = new MessageBroadcastWindow { DataContext = vm };
         win.ShowDialog(this);
     }
 
