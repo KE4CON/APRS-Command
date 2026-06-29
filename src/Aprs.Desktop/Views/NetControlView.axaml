@@ -56,31 +56,40 @@
                  Background="{DynamicResource SurfaceBgBrush}">
           <ListBox.ItemTemplate>
             <DataTemplate DataType="vm:NetControlRosterEntry">
-              <Grid ColumnDefinitions="32,*,100,80" Margin="4,3">
-                <!-- Status icon -->
+              <Grid ColumnDefinitions="32,*,80,80,80" Margin="4,3">
+                <!-- Check-in status icon -->
                 <TextBlock Text="{Binding StatusIcon}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{Binding StatusColor}"
                            VerticalAlignment="Center" HorizontalAlignment="Center" />
-                <!-- Callsign + comment -->
+                <!-- Callsign + assignment -->
                 <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
                   <TextBlock Text="{Binding DisplayName}"
                              FontSize="12" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding Assignment}"
+                             FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                             TextTrimming="CharacterEllipsis"
+                             IsVisible="{Binding Assignment, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                   <TextBlock Text="{Binding Comment}"
                              FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
-                             TextTrimming="CharacterEllipsis" />
+                             TextTrimming="CharacterEllipsis"
+                             IsVisible="{Binding Assignment, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
                 </StackPanel>
+                <!-- Resource status badge -->
+                <Border Grid.Column="2" CornerRadius="3" Padding="4,2"
+                        VerticalAlignment="Center" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding ResourceStatusLabel}"
+                             FontSize="9" FontWeight="SemiBold"
+                             Foreground="{Binding ResourceStatusColor}" />
+                </Border>
                 <!-- Check-in time -->
-                <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
-                  <TextBlock Text="{Binding CheckedInAtText}"
-                             FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Text="checked in" FontSize="9"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             IsVisible="{Binding IsCheckedIn}" />
-                </StackPanel>
+                <TextBlock Grid.Column="3" Text="{Binding CheckedInAtText}"
+                           FontSize="10" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
                 <!-- Last heard -->
-                <TextBlock Grid.Column="3" Text="{Binding LastHeardText}"
+                <TextBlock Grid.Column="4" Text="{Binding LastHeardText}"
                            FontSize="10" VerticalAlignment="Center"
                            Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Right" />
@@ -115,6 +124,51 @@
             <Button Command="{Binding DepartCommand}" HorizontalAlignment="Stretch"
                     Padding="0,8" Content="✗ Departed" />
           </StackPanel>
+
+          <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
+
+          <!-- Resource status (ICS operational status) -->
+          <TextBlock Text="Resource Status" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <Border Background="{DynamicResource AppBgAltBrush}" CornerRadius="4" Padding="8,6">
+            <StackPanel Spacing="2" HorizontalAlignment="Center">
+              <TextBlock FontSize="18" HorizontalAlignment="Center"
+                         Text="{Binding SelectedEntry.ResourceStatusIcon}"
+                         Foreground="{Binding SelectedEntry.ResourceStatusColor}" />
+              <TextBlock FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center"
+                         Text="{Binding SelectedEntry.ResourceStatusLabel}"
+                         Foreground="{Binding SelectedEntry.ResourceStatusColor}" />
+            </StackPanel>
+          </Border>
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="4" RowSpacing="4">
+            <Button Grid.Column="0" Command="{Binding SetAvailableCommand}"
+                    Content="● Available" Padding="4,5" FontSize="10"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Station is available for assignment" />
+            <Button Grid.Column="1" Command="{Binding SetAssignedCommand}"
+                    Content="→ Assigned" Padding="4,5" FontSize="10"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Station has been given an assignment" />
+            <Button Grid.Row="1" Grid.Column="0" Command="{Binding SetOnSceneCommand}"
+                    Content="★ On Scene" Padding="4,5" FontSize="10"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Station is at the assigned location" />
+            <Button Grid.Row="1" Grid.Column="1" Command="{Binding SetReturningCommand}"
+                    Content="← Returning" Padding="4,5" FontSize="10"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Station has completed task and is returning" />
+            <Button Grid.Row="2" Grid.ColumnSpan="2" Command="{Binding SetOutOfServiceCommand}"
+                    Content="○ Out of Service" Padding="4,5" FontSize="10"
+                    HorizontalAlignment="Stretch"
+                    ToolTip.Tip="Station is unavailable for assignment" />
+          </Grid>
+
+          <!-- Assignment text -->
+          <TextBlock Text="Current assignment" FontSize="10"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBox Text="{Binding SelectedEntry.Assignment}"
+                   Watermark="Describe the assignment..."
+                   FontSize="10" />
 
           <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,4" />
 

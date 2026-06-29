@@ -12,10 +12,31 @@ public enum CheckInStatus
     Departed
 }
 
+/// <summary>
+/// ICS operational resource status — tracks the current assignment state
+/// of a resource during a net, exercise, or activation. Distinct from
+/// check-in status which tracks net participation.
+/// </summary>
+public enum ResourceStatus
+{
+    /// <summary>Not yet assigned — available for tasking.</summary>
+    Available,
+    /// <summary>Has been given an assignment and is en route or preparing.</summary>
+    Assigned,
+    /// <summary>At the assigned location and actively working the task.</summary>
+    OnScene,
+    /// <summary>Task complete, returning to staging or available position.</summary>
+    Returning,
+    /// <summary>Out of service — unavailable for assignment.</summary>
+    OutOfService
+}
+
 /// <summary>A single station entry in the net control roster.</summary>
 public sealed class NetControlRosterEntry : INotifyPropertyChanged
 {
     private CheckInStatus status = CheckInStatus.NotCheckedIn;
+    private ResourceStatus resourceStatus = ResourceStatus.Available;
+    private string assignment = string.Empty;
     private string notes = string.Empty;
     private DateTimeOffset? checkedInAt;
     private DateTimeOffset lastHeardUtc;
@@ -51,6 +72,28 @@ public sealed class NetControlRosterEntry : INotifyPropertyChanged
     {
         get => notes;
         set { if (notes != value) { notes = value; OnPropertyChanged(); } }
+    }
+
+    public ResourceStatus ResourceStatus
+    {
+        get => resourceStatus;
+        set
+        {
+            if (resourceStatus != value)
+            {
+                resourceStatus = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ResourceStatusLabel));
+                OnPropertyChanged(nameof(ResourceStatusColor));
+                OnPropertyChanged(nameof(ResourceStatusIcon));
+            }
+        }
+    }
+
+    public string Assignment
+    {
+        get => assignment;
+        set { if (assignment != value) { assignment = value; OnPropertyChanged(); } }
     }
 
     public DateTimeOffset LastHeardUtc
@@ -136,6 +179,36 @@ public sealed class NetControlRosterEntry : INotifyPropertyChanged
 
     public string DisplayName =>
         string.IsNullOrWhiteSpace(TacticalLabel) ? Callsign : $"{TacticalLabel} ({Callsign})";
+
+    public string ResourceStatusLabel => resourceStatus switch
+    {
+        ResourceStatus.Available    => "Available",
+        ResourceStatus.Assigned     => "Assigned",
+        ResourceStatus.OnScene      => "On Scene",
+        ResourceStatus.Returning    => "Returning",
+        ResourceStatus.OutOfService => "Out of Service",
+        _                           => "Available"
+    };
+
+    public string ResourceStatusColor => resourceStatus switch
+    {
+        ResourceStatus.Available    => "#15803d",   // green
+        ResourceStatus.Assigned     => "#1d4ed8",   // blue
+        ResourceStatus.OnScene      => "#7c3aed",   // purple
+        ResourceStatus.Returning    => "#b45309",   // amber
+        ResourceStatus.OutOfService => "#6b7280",   // gray
+        _                           => "#15803d"
+    };
+
+    public string ResourceStatusIcon => resourceStatus switch
+    {
+        ResourceStatus.Available    => "●",
+        ResourceStatus.Assigned     => "→",
+        ResourceStatus.OnScene      => "★",
+        ResourceStatus.Returning    => "←",
+        ResourceStatus.OutOfService => "○",
+        _                           => "●"
+    };
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? n = null)
