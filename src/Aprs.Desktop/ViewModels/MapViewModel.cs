@@ -58,6 +58,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
         DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
         ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
+        ClearCustomRingCenterCommand   = new DesktopCommand(() => CustomRingCenter = null);
+        SetRingsHereCommand            = new DesktopCommand(SetRingsAtSelectedStation, () => SelectedStation?.Latitude is not null);
         
         ToggleRadarAnimationCommand    = new DesktopCommand(() => RadarAnimating = !RadarAnimating);
         RadarPreviousFrameCommand      = new DesktopCommand(() => RadarStepRequested?.Invoke(this, -1));
@@ -201,6 +203,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public string RadarFrameLabel => radarFrameCount > 0 ? $"{radarFrameIndex + 1} / {radarFrameCount}" : string.Empty;
 
     private bool showRings;
+    private (double Lat, double Lon)? customRingCenter;
     public bool ShowRings
     {
         get => showRings;
@@ -216,6 +219,34 @@ public sealed class MapViewModel : INotifyPropertyChanged
     }
 
     public string RingsButtonTooltip => ShowRings ? "Range rings ON — click to hide" : "Range rings OFF — click to show";
+
+    /// <summary>
+    /// When set, range rings radiate from this point instead of the operator's station.
+    /// Null = use station position (original behaviour).
+    /// </summary>
+    public (double Lat, double Lon)? CustomRingCenter
+    {
+        get => customRingCenter;
+        set
+        {
+            if (customRingCenter != value)
+            {
+                customRingCenter = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(CustomRingCenterLabel));
+                RingCenterChanged?.Invoke(this, value);
+            }
+        }
+    }
+
+    public string CustomRingCenterLabel => customRingCenter.HasValue
+        ? $"Rings from {customRingCenter.Value.Lat:F4}°, {customRingCenter.Value.Lon:F4}°"
+        : "Rings from my station";
+
+    public event EventHandler<(double Lat, double Lon)?>? RingCenterChanged;
+
+    public DesktopCommand ClearCustomRingCenterCommand { get; }
+    public DesktopCommand SetRingsHereCommand { get; }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -633,5 +664,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
             AttributionText: "Placeholder grid, no external map tiles loaded.",
             SupportsOfflineCaching: true,
             InternetDownloadAllowed: false);
+    }
+
+
+    private void SetRingsAtSelectedStation()
+    {
+        if (SelectedStation?.Latitude is { } lat && SelectedStation?.Longitude is { } lon)
+            CustomRingCenter = (lat, lon);
     }
 }

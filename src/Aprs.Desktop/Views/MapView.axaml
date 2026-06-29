@@ -15,6 +15,14 @@
             <MenuItem Header="Assign tactical callsign…"
                       Command="{Binding AssignTacticalCommand}"
                       IsEnabled="{Binding HasSelectedStation}" />
+            <Separator />
+            <MenuItem Header="⊙ Draw rings from this station"
+                      Command="{Binding SetRingsHereCommand}"
+                      IsEnabled="{Binding HasSelectedStation}"
+                      ToolTip.Tip="Centre the range rings on the selected station" />
+            <MenuItem Header="⊙ Draw rings from my station"
+                      Command="{Binding ClearCustomRingCenterCommand}"
+                      ToolTip.Tip="Reset range rings to your own station position" />
           </ContextMenu>
         </mapsui:MapControl.ContextMenu>
       </mapsui:MapControl>
