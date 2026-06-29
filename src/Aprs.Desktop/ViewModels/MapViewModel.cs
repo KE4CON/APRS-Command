@@ -116,8 +116,6 @@ public sealed class MapViewModel : INotifyPropertyChanged
 
     private DrawMode drawMode = DrawMode.None;
     private string drawModeLabel = string.Empty;
-    private bool isDrawing;
-
     private bool radarAnimating;
     public DrawMode DrawMode
     {
