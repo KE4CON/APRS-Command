@@ -6,12 +6,26 @@ public sealed record AudioSettings(
     bool PlayOnMessageReceived,
     bool PlayOnWarningAlert,
     bool PlayOnCriticalAlert,
-    bool PlayOnConnectionEvents)
+    bool PlayOnConnectionEvents,
+    /// <summary>
+    /// Optional custom WAV file paths per alert type. Null or empty = use the built-in
+    /// synthesised tone. Must be a valid path to a .wav file readable by the OS audio player.
+    /// </summary>
+    string? CustomSoundMessageReceived,
+    string? CustomSoundWarningAlert,
+    string? CustomSoundCriticalAlert,
+    string? CustomSoundConnected,
+    string? CustomSoundDisconnected)
 {
     public static AudioSettings Default { get; } = new(
-        VolumePercent:          70,
-        PlayOnMessageReceived:  true,
-        PlayOnWarningAlert:     true,
-        PlayOnCriticalAlert:    true,
-        PlayOnConnectionEvents: false);
+        VolumePercent:                 70,
+        PlayOnMessageReceived:         true,
+        PlayOnWarningAlert:            true,
+        PlayOnCriticalAlert:           true,
+        PlayOnConnectionEvents:        false,
+        CustomSoundMessageReceived:    null,
+        CustomSoundWarningAlert:       null,
+        CustomSoundCriticalAlert:      null,
+        CustomSoundConnected:          null,
+        CustomSoundDisconnected:       null);
 }
