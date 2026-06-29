@@ -102,6 +102,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<Aprs.Mapping.IOfflineMapDownloadManager, Aprs.Mapping.OfflineMapDownloadManager>();
         services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
         services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
+        services.AddSingleton<ViewModels.ShadowBeaconViewModel>();
 
         // Replay service
         services.AddSingleton<IReplayPacketSink, LiveReplayPacketSink>();
@@ -204,6 +205,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
                 provider.GetRequiredService<IWeatherObservationSourceProvider>(),
                 beaconService.AprsIsClient);
             mainViewModel.Weather.SetBeaconScheduler(wxScheduler);
+
+            // Shadow beacon service — reuses the same live APRS-IS client.
+            var shadowService = new ShadowBeaconService(
+                beaconService.AprsIsClient,
+                provider.GetRequiredService<IAppSettingsStore>().Load().Station.Callsign);
+            provider.GetRequiredService<ViewModels.ShadowBeaconViewModel>().SetService(shadowService);
         }
 
         // GPS — only create a serial source when a port is configured and GPS is enabled.
