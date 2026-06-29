@@ -80,6 +80,9 @@
           <CheckBox IsChecked="{Binding IncludeIcs211}"
                     Content="ICS-211 Check-In/Check-Out List (ICS211_….txt)"
                     ToolTip.Tip="FEMA ICS-211 standard check-in list. Documents all personnel and resources that checked in during the incident." />
+          <CheckBox IsChecked="{Binding IncludeIcs213}"
+                    Content="ICS-213 General Message Forms (ICS213_….txt)"
+                    ToolTip.Tip="FEMA ICS-213 — one form per APRS message sent or received. Off by default for sessions with many messages. Required by some served agencies for message documentation." />
           <CheckBox IsChecked="{Binding IncludeIcs214}"
                     Content="ICS-214 Activity Log (ICS214_….txt)"
                     ToolTip.Tip="FEMA ICS-214 standard activity log form. Required by many served agencies for documentation of communications activities." />
