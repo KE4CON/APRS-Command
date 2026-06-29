@@ -159,7 +159,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var managedModem = settings.ManagedModem ?? ManagedModemSettings.Default;
 
         var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps, ManagedModem = managedModem, DarkMode = settings.DarkMode, MessageTemplates = settings.MessageTemplates ?? MessageTemplatesSettings.Default, SmartBeaconing = settings.SmartBeaconing ?? SmartBeaconingSettings.Default, Gpsd = settings.Gpsd ?? GpsdSettings.Default,
-            FrequencyReference = settings.FrequencyReference ?? FrequencyReferenceSettings.Default };
+            FrequencyReference = settings.FrequencyReference ?? FrequencyReferenceSettings.Default,
+            NetScripts = settings.NetScripts ?? NetScriptSettings.Default };
         return Migrate(normalized);
     }
 
@@ -233,7 +234,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var smartBeaconing = TryDeserializeSection(root, "smartBeaconing", SmartBeaconingSettings.Default) ?? SmartBeaconingSettings.Default;
         var gpsd = TryDeserializeSection(root, "gpsd", GpsdSettings.Default) ?? GpsdSettings.Default;
         var freqRef = TryDeserializeSection(root, "frequencyReference", FrequencyReferenceSettings.Default) ?? FrequencyReferenceSettings.Default;
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef));
+        var netScripts = TryDeserializeSection(root, "netScripts", NetScriptSettings.Default) ?? NetScriptSettings.Default;
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)

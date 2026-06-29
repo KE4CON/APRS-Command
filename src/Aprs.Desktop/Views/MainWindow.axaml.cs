@@ -60,6 +60,7 @@ public sealed partial class MainWindow : Window
             vm.ElevationRequested     -= OnElevationRequested;
             vm.ShadowBeaconRequested  -= OnShadowBeaconRequested;
             vm.CoverageRequested      -= OnCoverageRequested;
+            vm.NetScriptRequested     -= OnNetScriptRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -96,6 +97,7 @@ public sealed partial class MainWindow : Window
             vm.ElevationRequested     += OnElevationRequested;
             vm.ShadowBeaconRequested  += OnShadowBeaconRequested;
             vm.CoverageRequested      += OnCoverageRequested;
+            vm.NetScriptRequested     += OnNetScriptRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -164,6 +166,17 @@ public sealed partial class MainWindow : Window
         var rt = (Application.Current as App)?.Runtime;
         var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
         var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
+    }
+
+    private void OnNetScriptRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new NetScriptEditorWindow
+        {
+            DataContext = rt.GetService<ViewModels.NetScriptEditorViewModel>()
+        };
         win.ShowDialog(this);
     }
 

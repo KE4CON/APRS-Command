@@ -1,0 +1,92 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.NetScriptEditorWindow"
+        x:DataType="vm:NetScriptEditorViewModel"
+        Title="Net Script Editor"
+        Width="700" Height="540"
+        MinWidth="580" MinHeight="420"
+        WindowStartupLocation="CenterOwner">
+  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+
+    <!-- Header -->
+    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="16,12">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Net Script Editor" FontSize="16" FontWeight="Bold"
+                   Foreground="{DynamicResource TextTitleBarBrush}" />
+        <TextBlock FontSize="10" Foreground="{DynamicResource TextSidebarBrush}" TextWrapping="Wrap"
+                   Text="Pre-write net preambles and announcements. Template variables: {{callsign}}, {{date}}, {{time}}, {{net_name}}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Main content: script list + editor -->
+    <Grid Grid.Row="1" ColumnDefinitions="220,*">
+
+      <!-- Script list -->
+      <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0">
+      <Grid RowDefinitions="*,Auto">
+        <ListBox Grid.Row="0"
+                 ItemsSource="{Binding Scripts}"
+                 SelectedItem="{Binding SelectedScript}"
+                 Background="{DynamicResource AppBgBrush}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:NetScriptRowViewModel">
+              <StackPanel Spacing="2" Margin="6,4">
+                <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding Preview}" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <Button Grid.Row="1" Command="{Binding NewCommand}"
+                Content="＋ New script"
+                HorizontalAlignment="Stretch" Padding="0,8"
+                HorizontalContentAlignment="Center"
+                FontSize="11" />
+      </Grid></Border>
+
+      <!-- Editor -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,*" Margin="0">
+        <Border Grid.Row="0" Padding="14,10,14,6"><StackPanel Spacing="6">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Script name" FontSize="10"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding EditName}" Watermark="e.g. ARES Weekly Net" FontSize="12" />
+          </StackPanel>
+        </StackPanel></Border>
+        <TextBox Grid.Row="1"
+                 Text="{Binding EditBody}"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 FontFamily="Courier New, Cascadia Code, Menlo, Monaco, monospace"
+                 FontSize="11"
+                 Padding="14,8"
+                 BorderThickness="0,1,0,0"
+                 Watermark="Write your net preamble here…
+&#10;Template variables: {{callsign}}, {{date}}, {{time}}, {{net_name}}" />
+      </Grid>
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="2" Padding="12,8" Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+        <TextBlock Text="{Binding StatusText}" FontSize="10"
+                   Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Command="{Binding CopyCommand}"
+                Content="⧉ Copy to clipboard" Padding="10,5" FontSize="10"
+                ToolTip.Tip="Resolves {{callsign}}, {{date}}, {{time}} and copies to clipboard"
+                IsEnabled="{Binding SelectedScript, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Button Grid.Column="2" Command="{Binding SaveCommand}"
+                Content="Save" Padding="10,5" FontSize="10" />
+        <Button Grid.Column="3" Command="{Binding DeleteCommand}"
+                Content="Delete" Padding="8,5" FontSize="10"
+                IsEnabled="{Binding SelectedScript, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Button Grid.Column="4" x:Name="CloseButton" Content="Close" Padding="12,5" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

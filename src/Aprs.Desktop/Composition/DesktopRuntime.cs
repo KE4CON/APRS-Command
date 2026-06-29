@@ -103,6 +103,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
         services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
         services.AddSingleton<ViewModels.ShadowBeaconViewModel>();
+        services.AddSingleton<ViewModels.NetScriptEditorViewModel>();
 
         // Replay service
         services.AddSingleton<IReplayPacketSink, LiveReplayPacketSink>();
