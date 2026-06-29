@@ -60,11 +60,30 @@ public sealed class SoundAlertService
                 .ContinueWith(_ => { lock (gate) { recentlyPlayed.Remove(dedupeKey); } });
         }
 
-        var volume = Math.Clamp(settings.VolumePercent, 0, 100) / 100.0;
-        var wav = GenerateWav(sound, volume);
-
-        Task.Run(() => PlayWav(wav));
+        var customPath = GetCustomSoundPath(sound, settings);
+        if (!string.IsNullOrWhiteSpace(customPath) && File.Exists(customPath))
+        {
+            Task.Run(() => PlayFile(customPath));
+        }
+        else
+        {
+            var volume = Math.Clamp(settings.VolumePercent, 0, 100) / 100.0;
+            var wav = GenerateWav(sound, volume);
+            Task.Run(() => PlayWav(wav));
+        }
     }
+
+    // ── Custom sound path lookup ──────────────────────────────────────────
+
+    private static string? GetCustomSoundPath(AlertSound sound, AudioSettings s) => sound switch
+    {
+        AlertSound.MessageReceived => s.CustomSoundMessageReceived,
+        AlertSound.WarningAlert    => s.CustomSoundWarningAlert,
+        AlertSound.CriticalAlert   => s.CustomSoundCriticalAlert,
+        AlertSound.Connected       => s.CustomSoundConnected,
+        AlertSound.Disconnected    => s.CustomSoundDisconnected,
+        _                          => null
+    };
 
     // ── Settings gate ─────────────────────────────────────────────────────
 
@@ -135,6 +154,52 @@ public sealed class SoundAlertService
         foreach (var s in samples) w.Write(s);
 
         return ms.ToArray();
+    }
+
+    // ── Play an existing file directly ───────────────────────────────────────
+
+    private static void PlayFile(string path)
+    {
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "afplay", Arguments = $"\"{path}\"",
+                    UseShellExecute = false, RedirectStandardError = true
+                });
+                p?.WaitForExit(10_000);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                foreach (var player in new[] { "aplay", "paplay" })
+                {
+                    try
+                    {
+                        using var p = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = player, Arguments = $"\"{path}\"",
+                            UseShellExecute = false, RedirectStandardError = true
+                        });
+                        if (p is not null) { p.WaitForExit(10_000); return; }
+                    }
+                    catch { /* try next */ }
+                }
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                using var ms = new MemoryStream(File.ReadAllBytes(path));
+                var playerType = Type.GetType("System.Media.SoundPlayer, System.Windows.Extensions");
+                if (playerType is null) return;
+                using var player = (IDisposable?)Activator.CreateInstance(playerType, ms);
+                playerType.GetMethod("PlaySync")?.Invoke(player, null);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Audio] Could not play custom sound file '{path}': {ex.Message}");
+        }
     }
 
     // ── Platform playback ─────────────────────────────────────────────────

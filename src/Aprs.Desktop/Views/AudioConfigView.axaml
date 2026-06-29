@@ -4,7 +4,7 @@
              x:Class="Aprs.Desktop.Views.AudioConfigView"
              x:DataType="vm:AudioConfigViewModel">
   <ScrollViewer>
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
 
       <!-- Header -->
       <StackPanel Spacing="2">
@@ -64,8 +64,74 @@
         </StackPanel>
       </Border>
 
+      <!-- Custom sound files -->
+      <Border Grid.Row="3" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1"
+              CornerRadius="6" Padding="14" Background="{DynamicResource TextTitleBarBrush}">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Custom Sound Files" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                       Text="Optionally supply your own WAV files for each alert type. Leave blank to use the built-in synthesised tones." />
+          </StackPanel>
+
+          <!-- Message received -->
+          <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Message received" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding CustomSoundMessageReceived}"
+                     Watermark="Path to .wav file (leave blank for built-in tone)" FontSize="10" />
+            <Button Grid.Column="2" Content="Browse…" Padding="8,4"
+                    Command="{Binding BrowseMessageSoundCommand}" />
+          </Grid>
+
+          <!-- Warning alert -->
+          <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Warning alert" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding CustomSoundWarningAlert}"
+                     Watermark="Path to .wav file (leave blank for built-in tone)" FontSize="10" />
+            <Button Grid.Column="2" Content="Browse…" Padding="8,4"
+                    Command="{Binding BrowseWarningSoundCommand}" />
+          </Grid>
+
+          <!-- Critical alert -->
+          <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Critical alert" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding CustomSoundCriticalAlert}"
+                     Watermark="Path to .wav file (leave blank for built-in tone)" FontSize="10" />
+            <Button Grid.Column="2" Content="Browse…" Padding="8,4"
+                    Command="{Binding BrowseCriticalSoundCommand}" />
+          </Grid>
+
+          <!-- Connected -->
+          <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="APRS-IS connected" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding CustomSoundConnected}"
+                     Watermark="Path to .wav file (leave blank for built-in tone)" FontSize="10" />
+            <Button Grid.Column="2" Content="Browse…" Padding="8,4"
+                    Command="{Binding BrowseConnectedSoundCommand}" />
+          </Grid>
+
+          <!-- Disconnected -->
+          <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="APRS-IS disconnected" FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" Text="{Binding CustomSoundDisconnected}"
+                     Watermark="Path to .wav file (leave blank for built-in tone)" FontSize="10" />
+            <Button Grid.Column="2" Content="Browse…" Padding="8,4"
+                    Command="{Binding BrowseDisconnectedSoundCommand}" />
+          </Grid>
+
+          <Button Content="Test message sound" Command="{Binding TestSoundCommand}"
+                  Padding="10,5" HorizontalAlignment="Left" />
+        </StackPanel>
+      </Border>
+
       <!-- Save / Revert -->
-      <Grid Grid.Row="3" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+      <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
         <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
         <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
