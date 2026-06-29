@@ -160,6 +160,11 @@ public sealed class DesktopRuntime : IAsyncDisposable
             map,
             rawPacketLog);
 
+        // Simulation service — routes generated packets through the live ingestion pipeline.
+        var simulationSink    = new LiveSimulatedPacketSink(provider.GetRequiredService<AprsIngestionService>());
+        var simulationService = new SimulationService(simulationSink, SimulationConfiguration.Default);
+        mainViewModel.Simulation.SetSimulationService(simulationService);
+
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load());
 
