@@ -24,6 +24,10 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private bool includeTextSummary = true;
     private string statusText = string.Empty;
     private bool isExporting;
+    private bool includeIcs214 = true;
+    private string operatorName = string.Empty;
+    private string icsPosition = "Communications Unit Leader";
+    private string homeAgency = string.Empty;
     private DateTimeOffset sessionStart;
 
     public AfterActionExportViewModel(
@@ -43,6 +47,24 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler<(string FileName, string Content)>? SaveFileRequested;
+
+    public string OperatorName
+    {
+        get => operatorName;
+        set { if (operatorName != value) { operatorName = value; OnPropertyChanged(); } }
+    }
+
+    public string IcsPosition
+    {
+        get => icsPosition;
+        set { if (icsPosition != value) { icsPosition = value; OnPropertyChanged(); } }
+    }
+
+    public string HomeAgency
+    {
+        get => homeAgency;
+        set { if (homeAgency != value) { homeAgency = value; OnPropertyChanged(); } }
+    }
 
     public string EventName
     {
@@ -66,6 +88,12 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     {
         get => includePacketLog;
         set { if (includePacketLog != value) { includePacketLog = value; OnPropertyChanged(); } }
+    }
+
+    public bool IncludeIcs214
+    {
+        get => includeIcs214;
+        set { if (includeIcs214 != value) { includeIcs214 = value; OnPropertyChanged(); } }
     }
 
     public bool IncludeTextSummary
@@ -156,6 +184,30 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                 var packets = packetLog.GetRecentEntries();
                 var csv     = AfterActionReportService.GeneratePacketLogCsv(packets, reportTime);
                 SaveFileRequested?.Invoke(this, ($"AAR_{dateStamp}_PacketLog.csv", csv));
+                filesExported++;
+            }
+
+            if (IncludeIcs214)
+            {
+                StatusText = "Generating ICS-214…";
+                await Task.Delay(50);
+                var stations = stationDatabase.GetAllStations();
+                var messages = messageStore.GetAllMessages();
+                var msgSnapshots = messages.Select(m => new AprsMessageSnapshot(
+                    m.CreatedAtUtc, m.Sender, m.Recipient, m.MessageBody,
+                    m.Direction == AprsMessageDirection.Outgoing)).ToList();
+                var opName = string.IsNullOrWhiteSpace(OperatorName) ? callsign : OperatorName;
+                var ics214 = Ics214ExportService.GenerateIcs214(
+                    incidentName:      name,
+                    operatorName:      opName,
+                    operatorCallsign:  callsign,
+                    icsPosition:       IcsPosition,
+                    homeAgency:        HomeAgency,
+                    periodFrom:        sessionStart,
+                    periodTo:          reportTime,
+                    stations:          stations,
+                    messages:          msgSnapshots);
+                SaveFileRequested?.Invoke(this, ($"ICS214_{dateStamp}.txt", ics214));
                 filesExported++;
             }
 
