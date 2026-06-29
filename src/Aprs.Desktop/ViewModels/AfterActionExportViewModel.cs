@@ -25,6 +25,8 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private string statusText = string.Empty;
     private bool isExporting;
     private bool includeIcs214 = true;
+    private bool includeIcs205 = true;
+    private string specialInstructions = string.Empty;
     private string operatorName = string.Empty;
     private string icsPosition = "Communications Unit Leader";
     private string homeAgency = string.Empty;
@@ -88,6 +90,18 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     {
         get => includePacketLog;
         set { if (includePacketLog != value) { includePacketLog = value; OnPropertyChanged(); } }
+    }
+
+    public bool IncludeIcs205
+    {
+        get => includeIcs205;
+        set { if (includeIcs205 != value) { includeIcs205 = value; OnPropertyChanged(); } }
+    }
+
+    public string SpecialInstructions
+    {
+        get => specialInstructions;
+        set { if (specialInstructions != value) { specialInstructions = value; OnPropertyChanged(); } }
     }
 
     public bool IncludeIcs214
@@ -184,6 +198,26 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                 var packets = packetLog.GetRecentEntries();
                 var csv     = AfterActionReportService.GeneratePacketLogCsv(packets, reportTime);
                 SaveFileRequested?.Invoke(this, ($"AAR_{dateStamp}_PacketLog.csv", csv));
+                filesExported++;
+            }
+
+            if (IncludeIcs205)
+            {
+                StatusText = "Generating ICS-205…";
+                await Task.Delay(50);
+                var frequencies = settingsStore.Load().FrequencyReference.Entries;
+                var opName = string.IsNullOrWhiteSpace(OperatorName) ? callsign : OperatorName;
+                var ics205 = Ics205ExportService.GenerateIcs205(
+                    incidentName:        name,
+                    operatorCallsign:    callsign,
+                    operatorName:        opName,
+                    icsPosition:         IcsPosition,
+                    periodFrom:          sessionStart,
+                    periodTo:            reportTime,
+                    frequencies:         frequencies.ToList(),
+                    specialInstructions: string.IsNullOrWhiteSpace(SpecialInstructions)
+                                         ? null : SpecialInstructions);
+                SaveFileRequested?.Invoke(this, ($"ICS205_{dateStamp}.txt", ics205));
                 filesExported++;
             }
 
