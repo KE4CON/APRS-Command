@@ -23,7 +23,8 @@ public sealed record AppSettings(
     bool DarkMode,
     MessageTemplatesSettings MessageTemplates,
     SmartBeaconingSettings SmartBeaconing,
-    GpsdSettings Gpsd)
+    GpsdSettings Gpsd,
+    FrequencyReferenceSettings FrequencyReference)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -40,5 +41,6 @@ public sealed record AppSettings(
         DarkMode: false,
         MessageTemplates: MessageTemplatesSettings.Default,
         SmartBeaconing: SmartBeaconingSettings.Default,
-        Gpsd: GpsdSettings.Default);
+        Gpsd: GpsdSettings.Default,
+        FrequencyReference: FrequencyReferenceSettings.Default);
 }

@@ -55,6 +55,7 @@ public sealed partial class MainWindow : Window
             vm.NwsAlertsRequested     -= OnNwsAlertsRequested;
             vm.AfterActionRequested   -= OnAfterActionRequested;
             vm.OfflineMapRequested    -= OnOfflineMapRequested;
+            vm.FrequencyRefRequested  -= OnFrequencyRefRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     -= OnAlertStatusRequested;
@@ -87,6 +88,7 @@ public sealed partial class MainWindow : Window
             vm.NwsAlertsRequested     += OnNwsAlertsRequested;
             vm.AfterActionRequested   += OnAfterActionRequested;
             vm.OfflineMapRequested    += OnOfflineMapRequested;
+            vm.FrequencyRefRequested  += OnFrequencyRefRequested;
             if (vm.Map is not null)
             {
                 vm.Map.AlertStatusRequested     += OnAlertStatusRequested;
@@ -155,6 +157,17 @@ public sealed partial class MainWindow : Window
         var rt = (Application.Current as App)?.Runtime;
         var aarVm = AfterActionExportViewModel.CreateFromRuntime(rt);
         var win = new AfterActionExportWindow { DataContext = aarVm };
+        win.ShowDialog(this);
+    }
+
+    private void OnFrequencyRefRequested(object? s, EventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new FrequencyReferenceWindow
+        {
+            DataContext = rt.GetService<ViewModels.FrequencyReferenceViewModel>()
+        };
         win.ShowDialog(this);
     }
 

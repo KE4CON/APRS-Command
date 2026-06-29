@@ -101,6 +101,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new Aprs.Mapping.MapTileCacheService(Aprs.Mapping.MapTileCacheConfiguration.Default));
         services.AddSingleton<Aprs.Mapping.IOfflineMapDownloadManager, Aprs.Mapping.OfflineMapDownloadManager>();
         services.AddSingleton<ViewModels.OfflineMapDownloadViewModel>();
+        services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
 
         var provider = services.BuildServiceProvider();
 

@@ -132,6 +132,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenNwsAlertsCommand   = new DesktopCommand(() => NwsAlertsRequested?.Invoke(this, EventArgs.Empty));
         OpenAfterActionCommand     = new DesktopCommand(() => AfterActionRequested?.Invoke(this, EventArgs.Empty));
         OpenOfflineMapCommand      = new DesktopCommand(() => OfflineMapRequested?.Invoke(this, EventArgs.Empty));
+        OpenFrequencyRefCommand    = new DesktopCommand(() => FrequencyRefRequested?.Invoke(this, EventArgs.Empty));
         ToggleDarkModeCommand  = new DesktopCommand(() => DarkModeRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -158,6 +159,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? NwsAlertsRequested;
     public event EventHandler? AfterActionRequested;
     public event EventHandler? OfflineMapRequested;
+    public event EventHandler? FrequencyRefRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -220,6 +222,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenNwsAlertsCommand { get; }
     public DesktopCommand OpenAfterActionCommand { get; }
     public DesktopCommand OpenOfflineMapCommand { get; }
+    public DesktopCommand OpenFrequencyRefCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
