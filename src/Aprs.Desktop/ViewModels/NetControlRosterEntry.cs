@@ -13,6 +13,25 @@ public enum CheckInStatus
 }
 
 /// <summary>
+/// ICS resource typing — indicates the capability level of a resource.
+/// Type 1 is the highest capability, Type 4 the lowest. Typing allows
+/// incident commanders to request resources by capability level.
+/// </summary>
+public enum ResourceType
+{
+    /// <summary>Not typed / unknown.</summary>
+    Untyped,
+    /// <summary>Type 1 — highest capability, most experienced.</summary>
+    Type1,
+    /// <summary>Type 2 — high capability.</summary>
+    Type2,
+    /// <summary>Type 3 — moderate capability.</summary>
+    Type3,
+    /// <summary>Type 4 — entry level / basic capability.</summary>
+    Type4
+}
+
+/// <summary>
 /// ICS operational resource status — tracks the current assignment state
 /// of a resource during a net, exercise, or activation. Distinct from
 /// check-in status which tracks net participation.
@@ -36,6 +55,8 @@ public sealed class NetControlRosterEntry : INotifyPropertyChanged
 {
     private CheckInStatus status = CheckInStatus.NotCheckedIn;
     private ResourceStatus resourceStatus = ResourceStatus.Available;
+    private ResourceType resourceType = ResourceType.Untyped;
+    private string resourceCategory = string.Empty;
     private string assignment = string.Empty;
     private string notes = string.Empty;
     private DateTimeOffset? checkedInAt;
@@ -96,6 +117,28 @@ public sealed class NetControlRosterEntry : INotifyPropertyChanged
         get => assignment;
         set { if (assignment != value) { assignment = value; OnPropertyChanged(); } }
     }
+
+    public ResourceType ResourceType
+    {
+        get => resourceType;
+        set { if (resourceType != value) { resourceType = value; OnPropertyChanged(); OnPropertyChanged(nameof(ResourceTypeLabel)); } }
+    }
+
+    /// <summary>Optional category description e.g. "Communications", "Medical", "Logistics".</summary>
+    public string ResourceCategory
+    {
+        get => resourceCategory;
+        set { if (resourceCategory != value) { resourceCategory = value; OnPropertyChanged(); } }
+    }
+
+    public string ResourceTypeLabel => resourceType switch
+    {
+        ResourceType.Type1   => "Type 1",
+        ResourceType.Type2   => "Type 2",
+        ResourceType.Type3   => "Type 3",
+        ResourceType.Type4   => "Type 4",
+        _                    => string.Empty
+    };
 
     public DateTimeOffset LastHeardUtc
     {

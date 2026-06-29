@@ -254,7 +254,7 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                 var rosterEntries = netControlRoster?.Roster
                     .Select(e => new Ics211RosterEntry(
                         e.Callsign, e.TacticalLabel,
-                        null,
+                        e.ResourceCategory.Length > 0 ? $"{e.ResourceTypeLabel} {e.ResourceCategory}".Trim() : e.ResourceTypeLabel,
                         e.Status switch
                         {
                             CheckInStatus.CheckedIn    => "Checked In",
