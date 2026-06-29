@@ -56,8 +56,8 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
 
     public void Refresh()
     {
-        var status = simulationService.GetStatus();
-        var configuration = simulationService.Configuration;
+        var status = ActiveService.GetStatus();
+        var configuration = ActiveService.Configuration;
         State = status.State.ToString();
         SourceName = status.SimulationSourceName;
         PacketCountText = $"{status.GeneratedPacketCount} packets";
@@ -68,7 +68,7 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
         LastErrorText = status.LastError ?? string.Empty;
 
         RecentPackets.Clear();
-        foreach (var row in simulationService.GetRecentPackets(25).Select(packet => new SimulatedPacketRowViewModel(packet)))
+        foreach (var row in ActiveService.GetRecentPackets(25).Select(packet => new SimulatedPacketRowViewModel(packet)))
         {
             RecentPackets.Add(row);
         }
@@ -82,6 +82,20 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(TransmitStatusText));
         OnPropertyChanged(nameof(LastErrorText));
     }
+
+    /// <summary>Called post-construction to swap in the live simulation service.</summary>
+    public void SetSimulationService(ISimulationService service)
+    {
+        // Reassign the field — C# readonly fields can't be reassigned,
+        // so we use a backing field pattern via the constructor path.
+        // Since the design-time service is a throwaway, we just redirect calls.
+        liveService = service;
+        Refresh();
+    }
+
+    private ISimulationService? liveService;
+
+    private ISimulationService ActiveService => liveService ?? simulationService;
 
     public static SimulationViewModel CreateDesignTime()
     {
@@ -101,37 +115,37 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
 
     private void Start()
     {
-        simulationService.StartAsync().GetAwaiter().GetResult();
+        ActiveService.StartAsync().GetAwaiter().GetResult();
         Refresh();
     }
 
     private void Pause()
     {
-        simulationService.Pause();
+        ActiveService.Pause();
         Refresh();
     }
 
     private void Resume()
     {
-        simulationService.Resume();
+        ActiveService.Resume();
         Refresh();
     }
 
     private void Stop()
     {
-        simulationService.Stop();
+        ActiveService.Stop();
         Refresh();
     }
 
     private void Step()
     {
-        simulationService.GenerateNextBatchAsync().GetAwaiter().GetResult();
+        ActiveService.GenerateNextBatchAsync().GetAwaiter().GetResult();
         Refresh();
     }
 
     private void Reset()
     {
-        simulationService.Reset();
+        ActiveService.Reset();
         Refresh();
     }
 
