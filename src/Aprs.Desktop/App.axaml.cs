@@ -396,10 +396,38 @@ public sealed partial class App : Application
                 {
                     // Already configured: framework shows the main window after this returns.
                     runtime = DesktopRuntime.Create();
-                    desktop.MainWindow = new MainWindow
+                    var mainWindow = new MainWindow
                     {
                         DataContext = runtime.MainViewModel
                     };
+
+                    // Restore saved window position and size.
+                    var savedState = JsonAppSettingsStore.Default.Load().Windows.Get(nameof(MainWindow));
+                    if (savedState is not null)
+                    {
+                        mainWindow.Width  = savedState.Width;
+                        mainWindow.Height = savedState.Height;
+                        mainWindow.Position = new Avalonia.PixelPoint(
+                            (int)savedState.X, (int)savedState.Y);
+                    }
+                    else
+                    {
+                        mainWindow.Width  = 1200;
+                        mainWindow.Height = 800;
+                        mainWindow.WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterScreen;
+                    }
+
+                    // Save window position and size when closing.
+                    mainWindow.Closing += (_, _) =>
+                    {
+                        var pos = mainWindow.Position;
+                        var record = new Configuration.WindowStateRecord(
+                            pos.X, pos.Y, mainWindow.Width, mainWindow.Height);
+                        JsonAppSettingsStore.Default.Update(s =>
+                            s with { Windows = s.Windows.With(nameof(MainWindow), record) });
+                    };
+
+                    desktop.MainWindow = mainWindow;
                     runtime.Start();
                     runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
                         runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
@@ -412,10 +440,10 @@ public sealed partial class App : Application
                     WireConnectionWatchdog(runtime);
                     WireReadiness(runtime);
                     WireWeather(runtime);
-                    WireTrails(runtime, (MainWindow)desktop.MainWindow!);
+                    WireTrails(runtime, mainWindow);
                     WireNetControl(runtime);
                     WireNwsAlerts(runtime);
-                    WireRadarRefresh((MainWindow)desktop.MainWindow!);
+                    WireRadarRefresh(mainWindow);
                     WireGeofence(runtime);
                 }
                 else
