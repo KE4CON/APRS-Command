@@ -350,13 +350,12 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     public static AfterActionExportViewModel CreateFromRuntime(Aprs.Desktop.Composition.DesktopRuntime? rt)
     {
         if (rt is null) return CreateDesignTime();
-        var mainVm = rt.GetService<Aprs.Desktop.ViewModels.MainWindowViewModel>();
         return new AfterActionExportViewModel(
             rt.GetService<IStationDatabase>(),
             rt.GetService<IAprsMessageStoreService>(),
             rt.GetService<IRawPacketLogService>(),
             rt.GetService<IAppSettingsStore>(),
-            mainVm?.NetControl);
+            rt.MainViewModel.NetControl);
     }
 
     private void OnPropertyChanged([CallerMemberName] string? n = null)

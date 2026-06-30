@@ -216,7 +216,7 @@ public sealed partial class MainWindow : Window
     {
         var rt = (Application.Current as App)?.Runtime;
         if (rt is null) return;
-        var mainVm   = rt.GetService<ViewModels.MainWindowViewModel>();
+        var mainVm   = rt.MainViewModel;
         var msgCenter = rt.GetService<ViewModels.MessageCenterViewModel>();
         var callsign = rt.GetService<IAppSettingsStore>().Load().Station.Callsign ?? string.Empty;
         var vm = new ViewModels.MessageBroadcastViewModel(msgCenter, callsign);
@@ -246,7 +246,7 @@ public sealed partial class MainWindow : Window
     {
         var rt = (Application.Current as App)?.Runtime;
         if (rt is null) return;
-        var mainVm = rt.GetService<ViewModels.MainWindowViewModel>();
+        var mainVm = rt.MainViewModel;
         var vm = new ViewModels.CoveragePredictionViewModel(
             rt.GetService<ILocalStationProfileService>(),
             rt.GetService<IStationDatabase>())
