@@ -21,6 +21,7 @@ public sealed class StationListRowViewModel
         Comment = string.IsNullOrWhiteSpace(marker.Comment) ? "None" : marker.Comment;
         PacketSource = marker.PacketSource;
         PacketSourceLabel = marker.PacketSource.ToString();
+        IsLoRa = marker.IsLoRa;
     }
 
     public StationMarkerViewModel Marker { get; }
@@ -52,6 +53,7 @@ public sealed class StationListRowViewModel
     public AprsPacketSource PacketSource { get; }
 
     public string PacketSourceLabel { get; }
+    public bool IsLoRa { get; }
 
     private static string FormatAge(TimeSpan age)
     {

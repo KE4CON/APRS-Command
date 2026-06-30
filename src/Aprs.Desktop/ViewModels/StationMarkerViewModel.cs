@@ -34,6 +34,7 @@ public sealed class StationMarkerViewModel
         Comment = marker.Comment;
         LastRawPacket = marker.LastRawPacket;
         PacketCount = marker.PacketCount;
+        IsLoRa = marker.IsLoRa;
     }
 
     public string Callsign { get; }
@@ -78,6 +79,7 @@ public sealed class StationMarkerViewModel
     public string? LastRawPacket { get; }
 
     public int PacketCount { get; }
+    public bool IsLoRa { get; }
 
     public string SymbolLabel => Overlay is null
         ? FallbackMarkerText

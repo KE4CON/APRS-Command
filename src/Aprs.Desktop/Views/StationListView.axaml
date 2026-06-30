@@ -118,10 +118,18 @@
                       RowSpacing="3">
                   <Grid ColumnDefinitions="1.2*,1.2*,1.4*,.9*,.9*"
                         ColumnSpacing="6">
-                    <TextBlock Text="{Binding Callsign}"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               TextTrimming="CharacterEllipsis" />
+                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Callsign}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <Border IsVisible="{Binding IsLoRa}"
+                              Background="#7c3aed" CornerRadius="2"
+                              Padding="3,1" VerticalAlignment="Center">
+                        <TextBlock Text="LoRa" FontSize="8" FontWeight="Bold"
+                                   Foreground="White" />
+                      </Border>
+                    </StackPanel>
                     <TextBlock Grid.Column="1"
                                Text="{Binding DisplayName}"
                                Foreground="{DynamicResource TextPrimaryBrush}"

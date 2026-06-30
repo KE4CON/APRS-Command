@@ -48,7 +48,19 @@ public sealed record StationSnapshot(
     IReadOnlyList<string> SourcePath,
     AprsPacketSource PacketSource,
     bool? HasMessagingCapability,
-    StationWeatherSnapshot? Weather);
+    StationWeatherSnapshot? Weather,
+    string? Destination = null)
+{
+    /// <summary>
+    /// True when packets appear to originate from a LoRa APRS device.
+    /// Detected via tocall starting with APLT (TTGO T-Beam etc.) or
+    /// path elements containing LORA.
+    /// </summary>
+    public bool IsLoRa =>
+        (!string.IsNullOrEmpty(Destination) &&
+         Destination.StartsWith("APLT", StringComparison.OrdinalIgnoreCase)) ||
+        SourcePath.Any(p => p.Contains("LORA", StringComparison.OrdinalIgnoreCase));
+}
 
 public sealed record StationWeatherSnapshot(
     int? WindDirectionDegrees,
