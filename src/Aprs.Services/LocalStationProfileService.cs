@@ -28,8 +28,8 @@ public sealed partial class LocalStationProfileService : ILocalStationProfileSer
             : profile.CreatedAtUtc;
         currentProfile = profile with
         {
-            Callsign = profile.Callsign.Trim().ToUpperInvariant(),
-            BeaconPath = profile.BeaconPath.Trim().ToUpperInvariant(),
+            Callsign = (profile.Callsign ?? string.Empty).Trim().ToUpperInvariant(),
+            BeaconPath = (profile.BeaconPath ?? string.Empty).Trim().ToUpperInvariant(),
             CreatedAtUtc = createdAt,
             UpdatedAtUtc = updatedAtUtc
         };

@@ -175,7 +175,7 @@ public sealed class BeaconService : IAsyncDisposable
     private static LocalStationProfile ToLocalProfile(Configuration.StationProfile station)
     {
         return new LocalStationProfile(
-            Callsign:               station.Callsign,
+            Callsign:               station.Callsign ?? string.Empty,
             Ssid:                   station.Ssid > 0 ? station.Ssid : null,
             FixedLatitude:          station.Latitude,
             FixedLongitude:         station.Longitude,
@@ -184,7 +184,7 @@ public sealed class BeaconService : IAsyncDisposable
             Overlay:                null,
             StationComment:         station.StationComment,
             PhgData:                station.PhgData,
-            BeaconPath:             station.BeaconPath,
+            BeaconPath:             station.BeaconPath ?? string.Empty,
             AprsIsBeaconInterval:   TimeSpan.FromMinutes(station.AprsIsBeaconMinutes),
             RfBeaconInterval:       TimeSpan.FromMinutes(station.RfBeaconMinutes),
             FixedStationMode:       station.FixedStationMode,
