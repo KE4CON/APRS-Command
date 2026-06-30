@@ -206,6 +206,7 @@ public sealed partial class App : Application
         // Load animation frames when available.
         rt.RadarAnimationService.FramesRefreshed += (_, frames) =>
         {
+            Console.Error.WriteLine($"[RadarAnimDebug] FramesRefreshed fired with {frames.Count} frame(s).");
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
                 mapView.LoadAnimationFrames(frames));
         };
@@ -219,7 +220,16 @@ public sealed partial class App : Application
                     && vm.Map.ShowRadar
                     && rt.RadarAnimationService.Frames.Count == 0)
                 {
-                    await rt.RadarAnimationService.RefreshFramesAsync().ConfigureAwait(false);
+                    Console.Error.WriteLine("[RadarAnimDebug] ShowRadar=true and Frames.Count=0 — calling RefreshFramesAsync()...");
+                    try
+                    {
+                        await rt.RadarAnimationService.RefreshFramesAsync().ConfigureAwait(false);
+                        Console.Error.WriteLine($"[RadarAnimDebug] RefreshFramesAsync() completed. Frames.Count={rt.RadarAnimationService.Frames.Count}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine($"[RadarAnimDebug] RefreshFramesAsync() THREW: {ex}");
+                    }
                 }
             };
         }

@@ -175,6 +175,48 @@
           </StackPanel>
         </Grid>
       </Border>
+
+      <!-- Radar animation scrubber — bottom centre, visible only when radar is on and frames are loaded -->
+      <Border HorizontalAlignment="Center"
+              VerticalAlignment="Bottom"
+              Margin="0,0,0,16"
+              IsVisible="{Binding ShowAnimationControls}"
+              Background="{DynamicResource TextTitleBarBrush}"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
+              BorderThickness="1"
+              CornerRadius="20"
+              Padding="14,8">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Button Command="{Binding RadarPreviousFrameCommand}"
+                  Content="◀" Padding="0" Width="28" Height="28"
+                  FontSize="12" CornerRadius="14"
+                  Background="Transparent" BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}"
+                  ToolTip.Tip="Previous frame" />
+          <Button Command="{Binding ToggleRadarAnimationCommand}"
+                  Content="{Binding AnimationButtonLabel}"
+                  Padding="0" Width="34" Height="28"
+                  FontSize="14" CornerRadius="14"
+                  Background="Transparent" BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}"
+                  ToolTip.Tip="Play/pause radar animation" />
+          <Button Command="{Binding RadarNextFrameCommand}"
+                  Content="▶" Padding="0" Width="28" Height="28"
+                  FontSize="12" CornerRadius="14"
+                  Background="Transparent" BorderThickness="0"
+                  Foreground="{DynamicResource TextSidebarBrush}"
+                  ToolTip.Tip="Next frame" />
+          <Border Width="1" Background="{DynamicResource TextSidebarBrush}" Opacity="0.3" Margin="2,2" />
+          <StackPanel VerticalAlignment="Center" Spacing="0" MinWidth="60">
+            <TextBlock Text="{Binding RadarFrameTime}" FontSize="12" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{Binding RadarFrameLabel}" FontSize="9"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
     </Grid>
   </Border>
 </UserControl>
