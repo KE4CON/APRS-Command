@@ -298,6 +298,7 @@ public sealed partial class MapView : UserControl
         if (e.PropertyName == nameof(MapViewModel.ShowRadar) && radarLayer is not null)
         {
             var show = (DataContext as MapViewModel)?.ShowRadar ?? false;
+            Console.Error.WriteLine($"[RadarDebug] ShowRadar changed to {show}. radarFrameLayers.Count={radarFrameLayers.Count}, radarLayer.Enabled(before)={radarLayer.Enabled}");
 
             if (radarFrameLayers.Count > 0)
             {
@@ -325,6 +326,7 @@ public sealed partial class MapView : UserControl
             if (!show) StopAnimation();
             MapControl.Map.RefreshData();
             MapControl.RefreshGraphics();
+            Console.Error.WriteLine($"[RadarDebug] After toggle: radarLayer.Enabled={radarLayer.Enabled}, frame layers enabled=[{string.Join(",", radarFrameLayers.Select(l => l.Enabled))}], total map layers={MapControl.Map.Layers.Count}");
         }
 
         // When animation toggle changes, start or stop.

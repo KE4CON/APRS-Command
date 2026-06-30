@@ -76,7 +76,8 @@
         <MenuItem Header="Weather Stations" Command="{Binding OpenWeatherCommand}" />
         <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
         <Separator />
-        <MenuItem Header="Toggle Radar Overlay 🌧" Command="{Binding Map.ToggleRadarCommand}" />
+        <MenuItem x:Name="ToggleRadarMenuItem" Header="Toggle Radar Overlay 🌧"
+                  Click="ToggleRadarMenuItem_Click" />
         <MenuItem Header="Animate Radar ▶" Command="{Binding Map.ToggleRadarAnimationCommand}"
                   IsEnabled="{Binding Map.ShowAnimationControls}" />
       </MenuItem>

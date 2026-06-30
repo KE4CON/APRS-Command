@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Aprs.Desktop.Configuration;
@@ -269,6 +270,19 @@ public sealed partial class MainWindow : Window
             DataContext = rt.GetService<ViewModels.ShadowBeaconViewModel>()
         };
         win.ShowDialog(this);
+    }
+
+    private void ToggleRadarMenuItem_Click(object? sender, RoutedEventArgs e)
+    {
+        // Direct fallback in case the Command binding doesn't fire reliably for
+        // this nested MenuItem (observed inconsistently in testing). Executes
+        // the same command directly via code-behind as a guaranteed path.
+        Console.Error.WriteLine("[RadarDebug] ToggleRadarMenuItem_Click fired.");
+        if (DataContext is ViewModels.MainWindowViewModel vm
+            && vm.Map.ToggleRadarCommand.CanExecute(null))
+        {
+            vm.Map.ToggleRadarCommand.Execute(null);
+        }
     }
 
     private void OnElevationRequested(object? s, EventArgs e)
