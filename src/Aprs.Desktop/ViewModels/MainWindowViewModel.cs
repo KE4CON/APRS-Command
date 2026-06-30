@@ -140,6 +140,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenBroadcastCommand       = new DesktopCommand(() => BroadcastRequested?.Invoke(this, EventArgs.Empty));
         OpenScheduledCommand       = new DesktopCommand(() => ScheduledRequested?.Invoke(this, EventArgs.Empty));
         OpenReceiptsCommand        = new DesktopCommand(() => ReceiptsRequested?.Invoke(this, EventArgs.Empty));
+        OpenWinlinkCommand         = new DesktopCommand(() => WinlinkRequested?.Invoke(this, EventArgs.Empty));
         ToggleDarkModeCommand  = new DesktopCommand(() => DarkModeRequested?.Invoke(this, EventArgs.Empty));
     }
 
@@ -174,6 +175,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? BroadcastRequested;
     public event EventHandler? ScheduledRequested;
     public event EventHandler? ReceiptsRequested;
+    public event EventHandler? WinlinkRequested;
 
     public MapViewModel Map { get; }
     public StationListViewModel StationList { get; }
@@ -244,6 +246,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenBroadcastCommand { get; }
     public DesktopCommand OpenScheduledCommand { get; }
     public DesktopCommand OpenReceiptsCommand { get; }
+    public DesktopCommand OpenWinlinkCommand { get; }
 
     public static MainWindowViewModel CreateDesignTime()
     {
