@@ -52,6 +52,22 @@ public sealed class BeaconScheduler : IBeaconScheduler
         return state with { CurrentStationProfile = profileService.GetCurrentProfile() };
     }
 
+    /// <summary>
+    /// Updates the scheduler configuration from freshly-saved settings.
+    /// Call this whenever station settings change so that AprsIsBeaconEnabled,
+    /// RfBeaconEnabled, and SmartBeaconing reflect the current configuration.
+    /// </summary>
+    public void UpdateConfiguration(BeaconSchedulerConfiguration newConfiguration)
+    {
+        configuration = newConfiguration;
+        state = state with
+        {
+            AprsIsBeaconEnabled = newConfiguration.AprsIsBeaconEnabled,
+            RfBeaconEnabled     = newConfiguration.RfBeaconEnabled,
+            SchedulerEnabled    = newConfiguration.SchedulerEnabled,
+        };
+    }
+
     public BeaconSchedulerState Start()
     {
         configuration = configuration with { SchedulerEnabled = true };
