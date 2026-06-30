@@ -35,9 +35,9 @@ public sealed partial class MapView : UserControl
     private DrawingShape? shapeInProgress;
     private DrawMode currentDrawMode = DrawMode.None;
     private TileLayer? radarLayer;           // single static layer (legacy, kept for compat)
-    private WmsRadarTileSource? radarTileSource;
-    private readonly List<TileLayer> radarFrameLayers = [];             // animation frames
-    private readonly List<WmsRadarTileSource> radarFrameSources = [];   // one source per frame
+    private Mapping.WmsRadarUrlBuilder? radarUrlBuilder;
+    private readonly List<TileLayer> radarFrameLayers = [];                          // animation frames
+    private readonly List<Mapping.WmsRadarUrlBuilder> radarFrameUrlBuilders = [];     // one builder per frame
     private Avalonia.Threading.DispatcherTimer? radarAnimTimer;
     private int currentFrameIndex;
     private ILayer? currentBaseLayer;
@@ -82,8 +82,12 @@ public sealed partial class MapView : UserControl
         map.Layers.Add(drawingLayer);
 
         // Radar layer — between trails and markers, initially hidden.
-        radarTileSource = new WmsRadarTileSource();
-        radarLayer = new TileLayer(radarTileSource)
+        radarUrlBuilder = new Mapping.WmsRadarUrlBuilder();
+        var radarSchema = new BruTile.Predefined.GlobalSphericalMercator(0, 10) { Name = "NEXRAD Radar (latest)" };
+        var radarHttpSource = new BruTile.Web.HttpTileSource(
+            radarSchema, radarUrlBuilder, name: "NEXRAD Radar (latest)",
+            attribution: new BruTile.Attribution("NOAA/NWS NEXRAD", "https://www.weather.gov/"));
+        radarLayer = new TileLayer(radarHttpSource)
         {
             Name    = "NEXRAD Radar",
             Opacity = 0.65,
@@ -451,7 +455,7 @@ public sealed partial class MapView : UserControl
         foreach (var fl in radarFrameLayers)
             MapControl.Map.Layers.Remove(fl);
         radarFrameLayers.Clear();
-        radarFrameSources.Clear();
+        radarFrameUrlBuilders.Clear();
 
         if (frames.Count == 0) return;
 
@@ -469,14 +473,18 @@ public sealed partial class MapView : UserControl
         // Create a TileLayer for each frame, all disabled initially.
         foreach (var frame in frames)
         {
-            var src   = new Aprs.Desktop.Mapping.WmsRadarTileSource(frame.Timestamp);
-            var layer = new TileLayer(src)
+            var urlBuilder = new Mapping.WmsRadarUrlBuilder(frame.Timestamp);
+            var schema = new BruTile.Predefined.GlobalSphericalMercator(0, 10) { Name = $"Radar {frame.Label}" };
+            var httpSource = new BruTile.Web.HttpTileSource(
+                schema, urlBuilder, name: $"Radar {frame.Label}",
+                attribution: new BruTile.Attribution("NOAA/NWS NEXRAD", "https://www.weather.gov/"));
+            var layer = new TileLayer(httpSource)
             {
                 Name    = $"Radar {frame.Label}",
                 Opacity = 0.65f,
                 Enabled = false
             };
-            radarFrameSources.Add(src);
+            radarFrameUrlBuilders.Add(urlBuilder);
             radarFrameLayers.Add(layer);
             MapControl.Map.Layers.Insert(insertIdx, layer);
         }
@@ -557,18 +565,18 @@ public sealed partial class MapView : UserControl
     /// <summary>Called by the 5-minute refresh timer to fetch new frames.</summary>
     public void RefreshRadar()
     {
-        if (radarLayer is null || radarTileSource is null) return;
+        if (radarLayer is null) return;
         if (radarFrameLayers.Count == 0)
         {
-            // Static mode — just invalidate the cache.
+            // Static mode — clear the layer's own tile cache to force a refetch.
             if (!(DataContext is MapViewModel { ShowRadar: true })) return;
-            radarTileSource.InvalidateCache();
+            radarLayer.ClearCache();
         }
         else
         {
-            // Animation mode — invalidate all frame caches.
-            foreach (var src in radarFrameSources)
-                src.InvalidateCache();
+            // Animation mode — clear all frame layer caches.
+            foreach (var layer in radarFrameLayers)
+                layer.ClearCache();
         }
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
