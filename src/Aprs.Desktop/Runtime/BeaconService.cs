@@ -169,13 +169,14 @@ public sealed class BeaconService : IAsyncDisposable
 
             var clientConfig = AprsIsClientConfiguration.Default with
             {
-                ServerHost      = isConfig.ServerHost,
-                ServerPort      = isConfig.ServerPort,
-                Callsign        = station.FullCallsign,
-                Passcode        = passcode,
-                Filter          = string.IsNullOrWhiteSpace(isConfig.Filter) ? null : isConfig.Filter,
-                ReceiveOnly     = false,
-                TransmitEnabled = station.AprsIsTransmitEnabled && station.TransmitEnabled
+                ServerHost                 = isConfig.ServerHost,
+                ServerPort                 = isConfig.ServerPort,
+                Callsign                   = station.FullCallsign,
+                Passcode                   = passcode,
+                Filter                     = string.IsNullOrWhiteSpace(isConfig.Filter) ? null : isConfig.Filter,
+                ReceiveOnly                = false,
+                TransmitEnabled            = station.AprsIsTransmitEnabled && station.TransmitEnabled,
+                RequireTransmitConfirmation = false
             };
             return new AprsIsClient(clientConfig);
         }
