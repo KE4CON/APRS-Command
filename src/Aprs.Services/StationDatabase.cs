@@ -257,7 +257,8 @@ public sealed class StationDatabase : IStationDatabase
             packet.Path,
             packetSource,
             existing?.HasMessagingCapability,
-            existing?.Weather);
+            existing?.Weather,
+            packet.Destination);
     }
 
     private static StationSnapshot ApplyPacketSpecificFields(StationSnapshot station, AprsPacket packet)

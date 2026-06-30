@@ -24,7 +24,8 @@ public sealed record StationMarker(
     string? Comment,
     string? LastRawPacket,
     int PacketCount,
-    int DuplicatePacketCount)
+    int DuplicatePacketCount,
+    bool IsLoRa = false)
 {
     public static StationMarker Create(
         string callsign,
@@ -43,7 +44,8 @@ public sealed record StationMarker(
         string? comment = null,
         string? lastRawPacket = null,
         int packetCount = 0,
-        int duplicatePacketCount = 0)
+        int duplicatePacketCount = 0,
+        bool isLoRa = false)
     {
         var symbol = AprsSymbolLookupService.Default.Resolve(symbolTableIdentifier, symbolCode);
 
@@ -69,7 +71,8 @@ public sealed record StationMarker(
             comment,
             lastRawPacket,
             packetCount,
-            duplicatePacketCount);
+            duplicatePacketCount,
+            isLoRa);
     }
 
     public static bool TryCreate(StationSnapshot station, out StationMarker? marker)
@@ -97,7 +100,8 @@ public sealed record StationMarker(
             station.Comment,
             station.LastRawPacket,
             station.PacketCount,
-            station.DuplicatePacketCount);
+            station.DuplicatePacketCount,
+            station.IsLoRa);
 
         return true;
     }

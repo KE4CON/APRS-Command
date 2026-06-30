@@ -14,6 +14,7 @@ public sealed class StationListViewModel : INotifyPropertyChanged
     private bool showExpiredStations = true;
     private bool showActiveOnly;
     private AprsPacketSource? packetSourceFilter;
+    private bool loraFilter;
     private StationListSortField sortField = StationListSortField.Callsign;
 
     public StationListViewModel(MapViewModel map)
@@ -50,7 +51,8 @@ public sealed class StationListViewModel : INotifyPropertyChanged
         nameof(AprsPacketSource.Direwolf),
         nameof(AprsPacketSource.Agwpe),
         nameof(AprsPacketSource.Replay),
-        nameof(AprsPacketSource.Simulation)
+        nameof(AprsPacketSource.Simulation),
+        "LoRa"
     ];
 
     public StationListRowViewModel? SelectedRow
@@ -118,10 +120,11 @@ public sealed class StationListViewModel : INotifyPropertyChanged
 
     public string SelectedPacketSourceFilter
     {
-        get => packetSourceFilter?.ToString() ?? "All";
+        get => loraFilter ? "LoRa" : packetSourceFilter?.ToString() ?? "All";
         set
         {
-            packetSourceFilter = Enum.TryParse<AprsPacketSource>(value, out var parsed)
+            loraFilter = value == "LoRa";
+            packetSourceFilter = !loraFilter && Enum.TryParse<AprsPacketSource>(value, out var parsed)
                 ? parsed
                 : null;
             ApplyFiltersAndSort();
@@ -191,6 +194,11 @@ public sealed class StationListViewModel : INotifyPropertyChanged
         if (packetSourceFilter is not null)
         {
             rows = rows.Where(row => row.PacketSource == packetSourceFilter);
+        }
+
+        if (loraFilter)
+        {
+            rows = rows.Where(row => row.IsLoRa);
         }
 
         rows = sortField switch
