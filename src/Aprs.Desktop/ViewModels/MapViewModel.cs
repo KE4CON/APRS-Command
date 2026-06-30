@@ -196,7 +196,16 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public int RadarFrameCount
     {
         get => radarFrameCount;
-        set { if (radarFrameCount != value) { radarFrameCount = value; OnPropertyChanged(); OnPropertyChanged(nameof(RadarFrameLabel)); } }
+        set
+        {
+            if (radarFrameCount != value)
+            {
+                radarFrameCount = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(RadarFrameLabel));
+                OnPropertyChanged(nameof(ShowAnimationControls));
+            }
+        }
     }
 
     private string radarFrameTime = string.Empty;
