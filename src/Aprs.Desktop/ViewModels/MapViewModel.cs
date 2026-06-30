@@ -107,12 +107,15 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 showRadar = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(RadarButtonTooltip));
+                OnPropertyChanged(nameof(RadarMenuHeaderText));
                 OnPropertyChanged(nameof(ShowAnimationControls));
             }
         }
     }
 
     public string RadarButtonTooltip => ShowRadar ? "Radar overlay ON — click to hide" : "Radar overlay OFF — click to show";
+
+    public string RadarMenuHeaderText => ShowRadar ? "Radar Overlay: ON 🌧" : "Radar Overlay: OFF 🌧";
 
     // ── Radar animation state ──────────────────────────────────────────
 
