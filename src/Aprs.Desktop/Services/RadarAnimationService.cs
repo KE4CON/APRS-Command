@@ -74,7 +74,10 @@ public sealed class RadarAnimationService : IAsyncDisposable
             FramesRefreshed?.Invoke(this, timestamps);
         }
         catch (OperationCanceledException) { throw; }
-        catch { /* swallow — network error, keep previous frames */ }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[RadarAnimDebug] RefreshFramesAsync FAILED: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 
     public async ValueTask DisposeAsync()
