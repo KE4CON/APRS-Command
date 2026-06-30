@@ -100,7 +100,20 @@ public sealed class BeaconService : IAsyncDisposable
     /// </summary>
     public void ApplySettings(Configuration.AppSettings settings)
     {
-        profileService.UpdateProfile(ToLocalProfile(settings.Station), DateTimeOffset.UtcNow);
+        var station = settings.Station;
+        profileService.UpdateProfile(ToLocalProfile(station), DateTimeOffset.UtcNow);
+
+        // Also refresh the scheduler configuration so that changes to
+        // transmit-enabled flags, smart beaconing, etc. take effect immediately
+        // without requiring a restart.
+        scheduler.UpdateConfiguration(new Aprs.Services.BeaconSchedulerConfiguration(
+            SchedulerEnabled:            station.TransmitEnabled,
+            AprsIsBeaconEnabled:         station.AprsIsTransmitEnabled,
+            RfBeaconEnabled:             station.RfTransmitEnabled,
+            MinimumBeaconInterval:       TimeSpan.FromMinutes(5),
+            Destination:                 "APRS",
+            RequireTransmitConfirmation: false,
+            SmartBeaconing:              settings.SmartBeaconing.ToServiceConfig()));
     }
 
     /// <summary>Starts the scheduler and the background tick loop.</summary>
