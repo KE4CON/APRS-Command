@@ -294,9 +294,30 @@ public sealed partial class MapView : UserControl
         if (e.PropertyName == nameof(MapViewModel.ShowRadar) && radarLayer is not null)
         {
             var show = (DataContext as MapViewModel)?.ShowRadar ?? false;
-            radarLayer.Enabled = show && radarFrameLayers.Count == 0;
-            foreach (var fl in radarFrameLayers)
-                fl.Enabled = false; // animation handles enabling the right one
+
+            if (radarFrameLayers.Count > 0)
+            {
+                // Animation frames are loaded — toggle the current frame instead of the
+                // static layer, since the static layer is permanently disabled once
+                // animation frames exist.
+                radarLayer.Enabled = false;
+                if (show)
+                {
+                    var idx = Math.Clamp(currentFrameIndex, 0, radarFrameLayers.Count - 1);
+                    ShowFrame(idx);
+                }
+                else
+                {
+                    foreach (var fl in radarFrameLayers)
+                        fl.Enabled = false;
+                }
+            }
+            else
+            {
+                // No animation frames yet — show the static (current-time) radar layer.
+                radarLayer.Enabled = show;
+            }
+
             if (!show) StopAnimation();
             MapControl.Map.RefreshData();
             MapControl.RefreshGraphics();
@@ -471,9 +492,10 @@ public sealed partial class MapView : UserControl
             vm.RadarFrameTime  = frames[^1].Label;
         }
 
-        // Show the latest frame immediately.
+        // Show the latest frame immediately, but only if the operator has radar enabled.
         currentFrameIndex = frames.Count - 1;
-        ShowFrame(currentFrameIndex);
+        if ((DataContext as MapViewModel)?.ShowRadar == true)
+            ShowFrame(currentFrameIndex);
     }
 
     private void StartAnimation()
