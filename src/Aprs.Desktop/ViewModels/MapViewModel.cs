@@ -108,6 +108,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(RadarButtonTooltip));
                 OnPropertyChanged(nameof(RadarMenuHeaderText));
+                OnPropertyChanged(nameof(RadarButtonBackground));
                 OnPropertyChanged(nameof(ShowAnimationControls));
             }
         }
@@ -116,6 +117,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public string RadarButtonTooltip => ShowRadar ? "Radar overlay ON — click to hide" : "Radar overlay OFF — click to show";
 
     public string RadarMenuHeaderText => ShowRadar ? "Radar Overlay: ON 🌧" : "Radar Overlay: OFF 🌧";
+
+    public Avalonia.Media.IBrush RadarButtonBackground => ShowRadar
+        ? new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.FromArgb(51, 29, 78, 216)) // 20% opacity blue
+        : Avalonia.Media.Brushes.Transparent;
 
     // ── Radar animation state ──────────────────────────────────────────
 
