@@ -100,8 +100,11 @@
     <!-- Footer -->
     <Border Grid.Row="2" Padding="14,8" Background="{DynamicResource AppBgAltBrush}"
             BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
-      <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
-                 Text="Data from api.weather.gov — National Weather Service. Refreshes every 5 minutes." />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                   Text="Data from api.weather.gov — National Weather Service. Refreshes every 5 minutes." />
+        <Button Grid.Column="1" x:Name="CloseButton" Content="Close" Padding="12,6" />
+      </Grid>
     </Border>
   </Grid>
 </Window>
