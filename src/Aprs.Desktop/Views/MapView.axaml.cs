@@ -397,7 +397,8 @@ public sealed partial class MapView : UserControl
             feature.Styles.Add(new VectorStyle
             {
                 Line = new Pen(Mapsui.Styles.Color.FromString(color), 2.5f),
-                Fill = new Brush(Mapsui.Styles.Color.Transparent)
+                Fill = null,
+                Outline = null
             });
             ringsLayer.Add(feature);
         }
@@ -451,7 +452,8 @@ public sealed partial class MapView : UserControl
             }
             coords[segments] = coords[0]; // close the ring
             var factory = NetTopologySuite.NtsGeometryServices.Instance.CreateGeometryFactory();
-            return factory.CreatePolygon(coords);
+            // Use LinearRing (closed line) not Polygon — eliminates any fill rendering entirely.
+            return factory.CreateLinearRing(coords);
         }
         catch { return null; }
     }
