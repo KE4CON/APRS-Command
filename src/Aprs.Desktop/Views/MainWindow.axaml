@@ -127,20 +127,20 @@
           <Button ToolTip.Tip="Home / Reset view"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24"
+                  FontSize="30"
                   Command="{Binding Map.HomeCommand}">
             <TextBlock Text="⌂" />
           </Button>
           <Button ToolTip.Tip="Centre on my station"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24"
+                  FontSize="30"
                   Command="{Binding Map.CentreOnStationCommand}">
             <TextBlock Text="◎" />
           </Button>
@@ -148,30 +148,30 @@
                   Command="{Binding Map.FindStationCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24">
+                  FontSize="30">
             <TextBlock Text="🔍" />
           </Button>
           <Button ToolTip.Tip="Measure distance"
                   Command="{Binding Map.MeasureDistanceCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24">
+                  FontSize="30">
             <TextBlock Text="📏" />
           </Button>
           <Button ToolTip.Tip="Map layer toggle"
                   Command="{Binding Map.ToggleMapLayerCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24">
+                  FontSize="30">
             <TextBlock Text="🗺" />
           </Button>
 
@@ -184,10 +184,10 @@
           <Button ToolTip.Tip="Beacon Now — transmit your position"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24"
+                  FontSize="30"
                   Command="{Binding BeaconNowCommand}">
             <TextBlock Text="📡" />
           </Button>
@@ -195,43 +195,46 @@
                   Command="{Binding Map.AlertStatusCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="4,10"
+                  Padding="4,12"
                   Background="Transparent"
                   Foreground="{DynamicResource TextSidebarBrush}"
-                  FontSize="24">
+                  FontSize="30">
             <TextBlock Text="🔔" />
           </Button>
 
           <Button ToolTip.Tip="{Binding Map.CustomRingCenterLabel}"
                   Command="{Binding Map.ToggleRingsCommand}"
-                  Padding="0" Width="36" Height="36"
+                  Padding="4,12"
+                  HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  VerticalContentAlignment="Center"
                   Background="Transparent"
                   BorderThickness="0"
+                  FontSize="30"
                   Foreground="{DynamicResource TextSidebarBrush}">
             <TextBlock Text="⊙" />
           </Button>
 
           <Button ToolTip.Tip="{Binding Map.TrailsButtonTooltip}"
                   Command="{Binding Map.ToggleTrailsCommand}"
-                  Padding="0" Width="36" Height="36"
+                  Padding="4,12"
+                  HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  VerticalContentAlignment="Center"
                   Background="Transparent"
                   BorderThickness="0"
+                  FontSize="30"
                   Foreground="{DynamicResource TextSidebarBrush}">
             <TextBlock Text="🛤" />
           </Button>
 
           <Button ToolTip.Tip="{Binding Map.RadarButtonTooltip}"
                   Command="{Binding Map.ToggleRadarCommand}"
-                  Padding="0" Width="36" Height="36"
+                  Padding="4,12"
+                  HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  VerticalContentAlignment="Center"
                   Background="{Binding Map.RadarButtonBackground}"
                   BorderThickness="0"
                   CornerRadius="6"
+                  FontSize="30"
                   Foreground="{DynamicResource TextSidebarBrush}">
             <TextBlock Text="🌧" />
           </Button>
