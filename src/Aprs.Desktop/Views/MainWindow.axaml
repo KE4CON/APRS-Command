@@ -115,7 +115,7 @@
 
       <!-- Left icon sidebar -->
       <Border Grid.Column="0"
-              Background="{DynamicResource AppBgAltBrush}"
+              Background="{DynamicResource SidebarBgBrush}"
               BorderBrush="{DynamicResource TitleBarBorderBrush}"
               BorderThickness="0,0,1,0">
         <Grid RowDefinitions="*,Auto">
