@@ -424,7 +424,7 @@ public sealed partial class MainWindow : Window
             var distKm  = Aprs.Desktop.Services.GeoMath.HaversineKm(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
             var distMi  = distKm * 0.621371;
             var bearing = Aprs.Desktop.Services.GeoMath.BearingDeg(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
-            resultText.Text = $"{from} → {to}\nDistance: {distKm:F1} km  ({distMi:F1} mi)\nBearing: {bearing:F0}° ({Aprs.Desktop.Services.GeoMath.CardinalBearing(bearing)})";
+            resultText.Text = $"{from} → {to}\nDistance: {distMi:F1} mi  ({distKm:F1} km)\nBearing: {bearing:F0}° ({Aprs.Desktop.Services.GeoMath.CardinalBearing(bearing)})";
         };
 
         await dialog.ShowDialog(this);

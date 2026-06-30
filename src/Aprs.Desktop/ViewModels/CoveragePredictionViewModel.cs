@@ -148,7 +148,7 @@ public sealed class CoveragePredictionViewModel : INotifyPropertyChanged
             $"Encoded HAAT:    {calc.EncodedHaatFt}ft (entered: {calc.ActualHaatFt:F0}ft)\n" +
             $"Encoded gain:    {calc.EncodedGainDbd}dBd (entered: {calc.ActualGainDbd:F1}dBd)\n" +
             $"Directivity:     {calc.DirectivityLabel}\n" +
-            $"Estimated range: {calc.RangeKm:F1} km ({calc.RangeKm / 1.60934:F1} miles)\n\n" +
+            $"Estimated range: {calc.RangeKm / 1.60934:F1} miles ({calc.RangeKm:F1} km)\n\n" +
             $"Note: PHG encoding uses discrete steps. The actual encoded values may\n" +
             $"differ slightly from what you entered. The PHG string has been copied\n" +
             $"to the overlay form above.";

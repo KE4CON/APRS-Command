@@ -102,7 +102,7 @@ public sealed class ElevationProfileViewModel : INotifyPropertyChanged
                 }
 
                 ProfileText = profile.ToAsciiChart();
-                StatusText  = $"{from} → {to}  ·  {profile.TotalDistanceKm:F1} km  ·  " +
+                StatusText  = $"{from} → {to}  ·  {profile.TotalDistanceKm / 1.60934:F1} mi ({profile.TotalDistanceKm:F1} km)  ·  " +
                               $"Min {profile.MinElevationM:F0} m  ·  Max {profile.MaxElevationM:F0} m  ·  " +
                               $"Data: Open Elevation API";
             });
