@@ -129,6 +129,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IGeofenceService, GeofenceService>();
 
         // Weather beacon scheduler
+        services.AddSingleton<ILocalStationProfileService, LocalStationProfileService>();
         services.AddSingleton<IWeatherInputDriverManager, WeatherInputDriverManager>();
         services.AddSingleton<IWeatherObservationSourceProvider, WeatherDriverObservationSourceProvider>();
         services.AddSingleton<IAprsWeatherFormatter, AprsWeatherFormatter>();
