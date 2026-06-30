@@ -229,8 +229,9 @@
                   Padding="0" Width="36" Height="36"
                   HorizontalContentAlignment="Center"
                   VerticalContentAlignment="Center"
-                  Background="Transparent"
+                  Background="{Binding Map.RadarButtonBackground}"
                   BorderThickness="0"
+                  CornerRadius="6"
                   Foreground="{DynamicResource TextSidebarBrush}">
             <TextBlock Text="🌧" />
           </Button>
