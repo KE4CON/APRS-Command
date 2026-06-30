@@ -323,7 +323,16 @@ public sealed partial class MapView : UserControl
                 radarLayer.Enabled = show;
             }
 
-            if (!show) StopAnimation();
+            if (!show)
+            {
+                // Stop the animation timer without re-showing the latest frame —
+                // StopAnimation() normally restores the latest frame for the
+                // 'pause but keep radar visible' case, but here the operator has
+                // turned radar off entirely, so everything must stay disabled.
+                radarAnimTimer?.Stop();
+                radarAnimTimer = null;
+                if (DataContext is MapViewModel animVm) animVm.RadarAnimating = false;
+            }
             MapControl.Map.RefreshData();
             MapControl.RefreshGraphics();
             Console.Error.WriteLine($"[RadarDebug] After toggle: radarLayer.Enabled={radarLayer.Enabled}, frame layers enabled=[{string.Join(",", radarFrameLayers.Select(l => l.Enabled))}], total map layers={MapControl.Map.Layers.Count}");
