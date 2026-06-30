@@ -16,7 +16,7 @@ public sealed class BeaconService : IAsyncDisposable
 {
     private readonly LocalStationProfileService profileService;
     private readonly BeaconScheduler scheduler;
-    private readonly IAprsIsClient? aprsIsClient;
+    private IAprsIsClient? aprsIsClient;
 
     /// <summary>The transmit-capable APRS-IS client, if one is configured. Used by the message ACK coordinator.</summary>
     public IAprsIsClient? AprsIsClient => aprsIsClient;
@@ -44,35 +44,7 @@ public sealed class BeaconService : IAsyncDisposable
         profileService.UpdateProfile(profile, DateTimeOffset.UtcNow);
 
         // Build an APRS-IS client that can transmit when a real passcode is configured.
-        IAprsIsClient? aprsIsClient = null;
-        AprsIsClientConfiguration? clientConfig = null;
-
-        // Find the first APRS-IS port with a real passcode.
-        foreach (var port in settings.Connections.Ports)
-        {
-            if (port.Type != Configuration.ConnectionPortType.AprsIs)
-                continue;
-
-            var isConfig = port.Configuration.AprsIs;
-            if (isConfig is null) continue;
-
-            var passcode = isConfig.Passcode?.Trim();
-            if (string.IsNullOrEmpty(passcode) || passcode == "-1") continue;
-
-            clientConfig = AprsIsClientConfiguration.Default with
-            {
-                ServerHost    = isConfig.ServerHost,
-                ServerPort    = isConfig.ServerPort,
-                Callsign      = station.FullCallsign,
-                Passcode      = passcode,
-                Filter        = string.IsNullOrWhiteSpace(isConfig.Filter) ? null : isConfig.Filter,
-                ReceiveOnly   = false,
-                TransmitEnabled = station.AprsIsTransmitEnabled && station.TransmitEnabled
-            };
-
-            aprsIsClient = new AprsIsClient(clientConfig);
-            break;
-        }
+        var aprsIsClient = BuildAprsIsClient(settings);
 
         var schedulerConfig = new BeaconSchedulerConfiguration(
             SchedulerEnabled:        station.TransmitEnabled,
@@ -103,9 +75,26 @@ public sealed class BeaconService : IAsyncDisposable
         var station = settings.Station;
         profileService.UpdateProfile(ToLocalProfile(station), DateTimeOffset.UtcNow);
 
-        // Also refresh the scheduler configuration so that changes to
-        // transmit-enabled flags, smart beaconing, etc. take effect immediately
-        // without requiring a restart.
+        // Rebuild the APRS-IS transmit client if the connection configuration changed
+        // (e.g. a passcode was just entered). Disconnect the old client first.
+        if (aprsIsClient is not null)
+        {
+            _ = aprsIsClient.DisconnectAsync(CancellationToken.None);
+        }
+
+        var newClient = BuildAprsIsClient(settings);
+        aprsIsClient  = newClient;
+
+        // Re-wire the scheduler to use the new client.
+        scheduler.ReplaceAprsIsClient(newClient ?? new NullAprsIsClient());
+
+        // If transmit is enabled, connect the new client immediately.
+        if (newClient is not null && station.TransmitEnabled && station.AprsIsTransmitEnabled)
+        {
+            _ = newClient.ConnectAsync(cts.Token);
+        }
+
+        // Refresh scheduler configuration for transmit flags and intervals.
         scheduler.UpdateConfiguration(new Aprs.Services.BeaconSchedulerConfiguration(
             SchedulerEnabled:            station.TransmitEnabled,
             AprsIsBeaconEnabled:         station.AprsIsTransmitEnabled,
@@ -162,6 +151,36 @@ public sealed class BeaconService : IAsyncDisposable
 
     /// <summary>Current scheduler state — for the status display.</summary>
     public BeaconSchedulerState GetState() => scheduler.GetState();
+
+    /// <summary>
+    /// Builds a transmit-capable APRS-IS client from settings, or returns null if no
+    /// APRS-IS port with a real passcode is configured.
+    /// </summary>
+    private static IAprsIsClient? BuildAprsIsClient(Configuration.AppSettings settings)
+    {
+        var station = settings.Station;
+        foreach (var port in settings.Connections.Ports)
+        {
+            if (port.Type != Configuration.ConnectionPortType.AprsIs) continue;
+            var isConfig = port.Configuration.AprsIs;
+            if (isConfig is null) continue;
+            var passcode = isConfig.Passcode?.Trim();
+            if (string.IsNullOrEmpty(passcode) || passcode == "-1") continue;
+
+            var clientConfig = AprsIsClientConfiguration.Default with
+            {
+                ServerHost      = isConfig.ServerHost,
+                ServerPort      = isConfig.ServerPort,
+                Callsign        = station.FullCallsign,
+                Passcode        = passcode,
+                Filter          = string.IsNullOrWhiteSpace(isConfig.Filter) ? null : isConfig.Filter,
+                ReceiveOnly     = false,
+                TransmitEnabled = station.AprsIsTransmitEnabled && station.TransmitEnabled
+            };
+            return new AprsIsClient(clientConfig);
+        }
+        return null;
+    }
 
     public async ValueTask DisposeAsync()
     {

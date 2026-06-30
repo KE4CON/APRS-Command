@@ -6,7 +6,7 @@ public sealed class BeaconScheduler : IBeaconScheduler
 {
     private readonly ILocalStationProfileService profileService;
     private readonly IAprsBeaconFormatter beaconFormatter;
-    private readonly IAprsIsClient aprsIsClient;
+    private IAprsIsClient aprsIsClient;
     private readonly ISmartBeaconingDecisionService smartBeaconingDecisionService;
     private readonly IBeaconSchedulerClock clock;
     private BeaconSchedulerConfiguration configuration;
@@ -50,6 +50,15 @@ public sealed class BeaconScheduler : IBeaconScheduler
     public BeaconSchedulerState GetState()
     {
         return state with { CurrentStationProfile = profileService.GetCurrentProfile() };
+    }
+
+    /// <summary>
+    /// Replaces the APRS-IS transmit client. Call this when the operator saves new
+    /// connection settings (e.g. enters a passcode for the first time).
+    /// </summary>
+    public void ReplaceAprsIsClient(IAprsIsClient newClient)
+    {
+        aprsIsClient = newClient;
     }
 
     /// <summary>
