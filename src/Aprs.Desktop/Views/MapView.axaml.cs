@@ -396,8 +396,8 @@ public sealed partial class MapView : UserControl
             var feature = new GeometryFeature(circle);
             feature.Styles.Add(new VectorStyle
             {
-                Line = new Pen(Mapsui.Styles.Color.FromString(color), 1.5f) { PenStyle = PenStyle.Dash },
-                Fill = null
+                Line = new Pen(Mapsui.Styles.Color.FromString(color), 2.5f),
+                Fill = new Brush(Mapsui.Styles.Color.Transparent)
             });
             ringsLayer.Add(feature);
         }
