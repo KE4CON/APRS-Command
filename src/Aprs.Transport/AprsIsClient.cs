@@ -51,6 +51,12 @@ public sealed class AprsIsClient : IAprsIsClient
         {
             stream = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
             await WriteLoginLineAsync(stream, connectionCancellation.Token).ConfigureAwait(false);
+
+            // Wait for the server's logresp line before marking Connected.
+            // APRS-IS sends "# logresp CALLSIGN verified, server ..." or "unverified".
+            // Packets sent before this acknowledgment are silently discarded.
+            await WaitForLogrespAsync(stream, connectionCancellation.Token).ConfigureAwait(false);
+
             State = AprsIsConnectionState.Connected;
             receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);
         }
@@ -137,10 +143,61 @@ public sealed class AprsIsClient : IAprsIsClient
         connectionCancellation?.Dispose();
     }
 
+    private async Task WaitForLogrespAsync(Stream targetStream, CancellationToken cancellationToken)
+    {
+        // Read server lines until we find the logresp acknowledgment.
+        // APRS-IS sends "# logresp CALLSIGN verified, server ..." or "unverified".
+        // Packets sent before this acknowledgment are silently discarded by the server.
+        // Times out after 5 seconds and proceeds regardless — better to attempt
+        // transmit than to hang if the server is slow or non-standard.
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            var buf = new byte[1024];
+            var sb  = new System.Text.StringBuilder();
+            while (!timeoutCts.Token.IsCancellationRequested)
+            {
+                var n = await targetStream.ReadAsync(buf, timeoutCts.Token).ConfigureAwait(false);
+                if (n == 0) break;
+                sb.Append(Encoding.ASCII.GetString(buf, 0, n));
+                var text = sb.ToString();
+                if (text.Contains("# logresp", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Push any extra data (already-arrived packets) into the pending buffer.
+                    var logrespEnd = text.IndexOf('\n', text.IndexOf("# logresp", StringComparison.OrdinalIgnoreCase));
+                    if (logrespEnd >= 0 && logrespEnd + 1 < text.Length)
+                        pendingData = text[(logrespEnd + 1)..];
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Timed out — proceed anyway.
+        }
+    }
+
+    private string pendingData = string.Empty;
+
     private async Task ReceiveLoopAsync(CancellationToken cancellationToken)
     {
         try
         {
+            // Process any data that arrived before the receive loop started
+            // (buffered during WaitForLogrespAsync).
+            if (!string.IsNullOrEmpty(pendingData))
+            {
+                foreach (var pendingLine in pendingData.Split('\n'))
+                {
+                    var trimmed = pendingLine.TrimEnd('\r');
+                    if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith('#'))
+                        PublishPacket(trimmed);
+                }
+                pendingData = string.Empty;
+            }
+
             while (!cancellationToken.IsCancellationRequested && stream is not null)
             {
                 using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
@@ -170,6 +227,7 @@ public sealed class AprsIsClient : IAprsIsClient
                 await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
                 stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
                 await WriteLoginLineAsync(stream, cancellationToken).ConfigureAwait(false);
+                await WaitForLogrespAsync(stream, cancellationToken).ConfigureAwait(false);
                 State = AprsIsConnectionState.Connected;
             }
         }

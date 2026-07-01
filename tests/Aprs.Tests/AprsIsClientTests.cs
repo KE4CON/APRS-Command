@@ -48,7 +48,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task ConnectAsync_WritesLoginLineToStream()
     {
-        var stream = new TestDuplexStream("# server hello\r\n");
+        var stream = new TestDuplexStream("# logresp N0CALL verified, server test\r\n");
         var client = CreateClient(stream);
 
         await client.ConnectAsync(CancellationToken.None);
@@ -62,7 +62,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task ConnectAsync_IgnoresServerCommentsAndPublishesRawPacketLines()
     {
-        var stream = new TestDuplexStream("# aprsc server\r\nN0CALL>APRS:>Online\r\n");
+        var stream = new TestDuplexStream("# logresp N0CALL verified, server test\r\n# aprsc server\r\nN0CALL>APRS:>Online\r\n");
         var client = CreateClient(stream);
         var receivedPackets = new List<AprsIsRawPacketReceivedEventArgs>();
         using var received = new SemaphoreSlim(0);
@@ -85,7 +85,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task ConnectAsync_PublishesMalformedRawLinesWithoutCrashing()
     {
-        var stream = new TestDuplexStream("BADPACKETWITHOUTSEPARATOR\r\n");
+        var stream = new TestDuplexStream("# logresp N0CALL verified, server test\r\nBADPACKETWITHOUTSEPARATOR\r\n");
         var client = CreateClient(stream);
         string? receivedLine = null;
         using var received = new SemaphoreSlim(0);
@@ -107,7 +107,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task ReadPacketsAsync_ReceivesPublishedPackets()
     {
-        var stream = new TestDuplexStream("N0CALL>APRS:>Online\r\n");
+        var stream = new TestDuplexStream("# logresp N0CALL verified, server test\r\nN0CALL>APRS:>Online\r\n");
         var client = CreateClient(stream);
         using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(2));
 
@@ -137,7 +137,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task SendRawPacketAsync_WhenTransmitDisabled_FailsSafely()
     {
-        var client = CreateClient(new WriteCapturingBlockingReadStream());
+        var client = CreateClient(new LogrespThenBlockStream());
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -150,7 +150,7 @@ public sealed class AprsIsClientTests
     public async Task SendRawPacketAsync_WhenReceiveOnly_FailsSafely()
     {
         var configuration = CreateTransmitConfiguration() with { ReceiveOnly = true };
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), configuration);
+        var client = CreateClient(new LogrespThenBlockStream(), configuration);
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -161,7 +161,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task SendRawPacketAsync_WhenConfirmationMissing_FailsSafely()
     {
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), CreateTransmitConfiguration());
+        var client = CreateClient(new LogrespThenBlockStream(), CreateTransmitConfiguration());
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: false, CancellationToken.None);
 
@@ -173,7 +173,7 @@ public sealed class AprsIsClientTests
     public async Task SendRawPacketAsync_WhenCallsignMissing_FailsSafely()
     {
         var configuration = CreateTransmitConfiguration() with { Callsign = "" };
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), configuration);
+        var client = CreateClient(new LogrespThenBlockStream(), configuration);
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -185,7 +185,7 @@ public sealed class AprsIsClientTests
     public async Task SendRawPacketAsync_WhenPasscodeMissing_FailsSafely()
     {
         var configuration = CreateTransmitConfiguration() with { Passcode = "" };
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), configuration);
+        var client = CreateClient(new LogrespThenBlockStream(), configuration);
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -197,7 +197,7 @@ public sealed class AprsIsClientTests
     public async Task SendRawPacketAsync_WhenPasscodeInvalid_FailsSafely()
     {
         var configuration = CreateTransmitConfiguration() with { Passcode = "-1" };
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), configuration);
+        var client = CreateClient(new LogrespThenBlockStream(), configuration);
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -208,7 +208,7 @@ public sealed class AprsIsClientTests
     [Fact]
     public async Task SendRawPacketAsync_WhenDisconnected_FailsSafely()
     {
-        var client = CreateClient(new WriteCapturingBlockingReadStream(), CreateTransmitConfiguration());
+        var client = CreateClient(new LogrespThenBlockStream(), CreateTransmitConfiguration());
 
         var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
 
@@ -433,7 +433,51 @@ public sealed class AprsIsClientTests
         }
     }
 
-    private sealed class WriteCapturingBlockingReadStream : Stream
+    /// <summary>
+    /// Sends an immediate logresp then blocks reads forever (until cancelled).
+    /// Captures all written bytes for inspection.
+    /// </summary>
+    private sealed class LogrespThenBlockStream : Stream
+    {
+        private readonly MemoryStream writeStream = new();
+        private readonly byte[] logrespBytes = Encoding.ASCII.GetBytes("# logresp N0CALL verified, server test\r\n");
+        private bool logrespSent = false;
+
+        public string WrittenText => Encoding.ASCII.GetString(writeStream.ToArray());
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => true;
+        public override long Length => 0;
+        public override long Position { get => 0; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            Thread.Sleep(Timeout.Infinite);
+            return 0;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (!logrespSent)
+            {
+                logrespSent = true;
+                var n = Math.Min(buffer.Length, logrespBytes.Length);
+                logrespBytes.AsMemory(0, n).CopyTo(buffer);
+                return n;
+            }
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return 0;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) => writeStream.Write(buffer, offset, count);
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+    }
+
+        private sealed class WriteCapturingBlockingReadStream : Stream
     {
         private readonly MemoryStream writeStream = new();
 
