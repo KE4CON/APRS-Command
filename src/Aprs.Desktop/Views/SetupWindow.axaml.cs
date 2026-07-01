@@ -14,6 +14,22 @@ public sealed partial class SetupWindow : Window
     public SetupWindow()
     {
         InitializeComponent();
+        MilesRadio.IsCheckedChanged += (_, _) => UpdateRadiusLabel();
+        KmRadio.IsCheckedChanged    += (_, _) => UpdateRadiusLabel();
+    }
+
+    private void UpdateRadiusLabel()
+    {
+        var useMiles = MilesRadio.IsChecked == true;
+        RadiusLabel.Text = useMiles ? "Receive filter radius (miles)" : "Receive filter radius (km)";
+        // Convert the current value to the newly selected unit.
+        if (int.TryParse(RadiusBox.Text?.Trim(), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out var current) && current > 0)
+        {
+            RadiusBox.Text = useMiles
+                ? ((int)Math.Round(current * 0.621371)).ToString()
+                : ((int)Math.Round(current / 0.621371)).ToString();
+        }
     }
 
     private void OnSaveClick(object? sender, RoutedEventArgs e)
@@ -37,19 +53,28 @@ public sealed partial class SetupWindow : Window
             return;
         }
 
-        if (!int.TryParse(RadiusBox.Text?.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var radius)
-            || radius <= 0)
+        var unit = (MilesRadio.IsChecked == true) ? DistanceUnit.Miles : DistanceUnit.Kilometres;
+        var unitLabel = unit == DistanceUnit.Miles ? "miles" : "kilometres";
+
+        if (!int.TryParse(RadiusBox.Text?.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var radiusDisplay)
+            || radiusDisplay <= 0)
         {
-            ShowError("Range filter must be a whole number of kilometers greater than zero.");
+            ShowError($"Receive filter radius must be a whole number of {unitLabel} greater than zero.");
             return;
         }
 
+        // Convert to km for storage — APRS-IS filter always requires km internally.
+        var radiusKm = unit == DistanceUnit.Miles
+            ? (int)Math.Round(radiusDisplay / 0.621371)
+            : radiusDisplay;
+
         var profile = StationProfile.Default with
         {
-            Callsign = callsign.ToUpperInvariant(),
-            Latitude = latitude,
-            Longitude = longitude,
-            FilterRadiusKm = radius
+            Callsign       = callsign.ToUpperInvariant(),
+            Latitude       = latitude,
+            Longitude      = longitude,
+            FilterRadiusKm = Math.Max(1, radiusKm),
+            DistanceUnit   = unit
         };
         profile.Save();
 

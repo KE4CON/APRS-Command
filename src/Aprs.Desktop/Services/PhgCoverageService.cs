@@ -119,7 +119,7 @@ public static class PhgCoverageService
 
     /// <summary>Returns a human-readable summary of the PHG parameters.</summary>
     public static string FormatSummary(PhgParameters p) =>
-        $"{p.PowerWatts}W · {p.HeightFeet}ft HAAT · {p.GainDbd:F0}dBd · {p.DirectivityLabel} · ~{p.RangeKm:F1} km range";
+        $"{p.PowerWatts}W · {p.HeightFeet}ft HAAT · {p.GainDbd:F0}dBd · {p.DirectivityLabel} · ~{p.RangeKm / 1.60934:F1} mi ({p.RangeKm:F1} km) range";
 }
 
 public sealed record PhgCalculation(
