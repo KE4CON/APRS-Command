@@ -87,7 +87,7 @@
       </Border>
 
       <!-- Symbol picker -->
-      <Border Grid.Row="4"
+      <Border Grid.Row="3"
               BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
