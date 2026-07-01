@@ -23,6 +23,7 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
     private double latitude;
     private double longitude;
     private int filterRadiusKm;
+    private DistanceUnit distanceUnit = DistanceUnit.Miles;
     private char symbolTable = '/';
     private char symbolCode = '-';
     private string stationComment = string.Empty;
@@ -113,7 +114,57 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
     public int FilterRadiusKm
     {
         get => filterRadiusKm;
-        set { if (filterRadiusKm != value) { filterRadiusKm = value; OnPropertyChanged(); } }
+        set { if (filterRadiusKm != value) { filterRadiusKm = value; OnPropertyChanged(); OnPropertyChanged(nameof(FilterRadiusDisplay)); } }
+    }
+
+    /// <summary>
+    /// The operator's preferred distance unit. Miles for US operators, Kilometres for others.
+    /// The UI binds to this; the app converts to km behind the scenes wherever APRS-IS requires it.
+    /// </summary>
+    public DistanceUnit DistanceUnit
+    {
+        get => distanceUnit;
+        set
+        {
+            if (distanceUnit != value)
+            {
+                // Convert the current display radius to the new unit before switching.
+                var currentDisplay = FilterRadiusDisplay;
+                distanceUnit = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(UseMetric));
+                OnPropertyChanged(nameof(FilterUnitLabel));
+                // Restore the converted display value in the new unit.
+                FilterRadiusDisplay = currentDisplay;
+            }
+        }
+    }
+
+    public bool UseMetric
+    {
+        get => distanceUnit == DistanceUnit.Kilometres;
+        set => DistanceUnit = value ? DistanceUnit.Kilometres : DistanceUnit.Miles;
+    }
+
+    public string FilterUnitLabel => distanceUnit == DistanceUnit.Miles ? "miles" : "km";
+
+    /// <summary>
+    /// The filter radius in the operator's preferred unit. Converts to/from km on get/set.
+    /// The UI binds to this instead of FilterRadiusKm directly.
+    /// </summary>
+    public int FilterRadiusDisplay
+    {
+        get => distanceUnit == DistanceUnit.Miles
+            ? (int)Math.Round(filterRadiusKm * 0.621371)
+            : filterRadiusKm;
+        set
+        {
+            var newKm = distanceUnit == DistanceUnit.Miles
+                ? (int)Math.Round(value / 0.621371)
+                : value;
+            FilterRadiusKm = Math.Max(1, newKm);
+            OnPropertyChanged();
+        }
     }
 
     // ── Symbol (set automatically by SelectedSymbol) ─────────────────────────
@@ -243,6 +294,7 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
         Latitude             = p.Latitude;
         Longitude            = p.Longitude;
         FilterRadiusKm       = p.FilterRadiusKm;
+        distanceUnit         = p.DistanceUnit;
         symbolTable          = p.SymbolTable;
         symbolCode           = p.SymbolCode;
         StationComment       = p.StationComment;
@@ -285,7 +337,8 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
             TransmitEnabled:       TransmitEnabled,
             AprsIsTransmitEnabled: AprsIsTransmitEnabled,
             RfTransmitEnabled:     RfTransmitEnabled,
-            PhgData:               string.IsNullOrWhiteSpace(PhgData) ? null : PhgData.Trim());
+            PhgData:               string.IsNullOrWhiteSpace(PhgData) ? null : PhgData.Trim(),
+            DistanceUnit:          DistanceUnit);
         store.Update(s => s with { Station = profile });
         SettingsSaved?.Invoke(this, EventArgs.Empty);
 

@@ -39,10 +39,20 @@
       </StackPanel>
 
       <StackPanel Spacing="4">
-        <TextBlock Text="Station range filter (km)"
+        <TextBlock Text="Distance units"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <StackPanel Orientation="Horizontal" Spacing="20">
+          <RadioButton x:Name="MilesRadio" Content="Miles (US / UK)" IsChecked="True" />
+          <RadioButton x:Name="KmRadio" Content="Kilometres (metric)" />
+        </StackPanel>
+      </StackPanel>
+
+      <StackPanel Spacing="4">
+        <TextBlock x:Name="RadiusLabel"
+                   Text="Receive filter radius (miles)"
                    Foreground="{DynamicResource TextPrimaryBrush}" />
         <TextBox x:Name="RadiusBox"
-                 Text="200" />
+                 Text="125" />
       </StackPanel>
 
       <TextBlock x:Name="ErrorText"

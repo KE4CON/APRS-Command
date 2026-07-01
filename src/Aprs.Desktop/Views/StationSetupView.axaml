@@ -5,7 +5,7 @@
              x:Class="Aprs.Desktop.Views.StationSetupView"
              x:DataType="vm:StationSetupViewModel">
   <ScrollViewer>
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
           RowSpacing="14"
           Margin="0,4">
 
@@ -48,8 +48,46 @@
         </StackPanel>
       </Grid>
 
-      <!-- Symbol picker -->
+      <!-- Distance unit preference + filter radius (required) -->
       <Border Grid.Row="2"
+              BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+              BorderThickness="1"
+              CornerRadius="6"
+              Padding="12,10"
+              Background="{DynamicResource AccentBlueBgBrush}">
+        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="16">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Distance units  (required)"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock TextWrapping="Wrap" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       Text="Choose the unit system you prefer for all distances in the app. The app converts to kilometres behind the scenes wherever APRS-IS requires it." />
+            <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,4,0,0">
+              <RadioButton Content="Miles  (US / UK)"
+                           IsChecked="{Binding UseMetric, Converter={x:Static BoolConverters.Not}}"
+                           FontSize="13" />
+              <RadioButton Content="Kilometres  (metric)"
+                           IsChecked="{Binding UseMetric}"
+                           FontSize="13" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+              <Run Text="APRS-IS receive filter radius (" /><Run Text="{Binding FilterUnitLabel}" /><Run Text=")" />
+            </TextBlock>
+            <NumericUpDown Value="{Binding FilterRadiusDisplay}"
+                           Minimum="10" Maximum="5000"
+                           Width="160" />
+            <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap"
+                       Text="How far from your station to receive APRS traffic." />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Symbol picker -->
+      <Border Grid.Row="4"
               BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
@@ -125,7 +163,7 @@
       </Border>
 
       <!-- Beacon and comment -->
-      <Grid Grid.Row="3"
+      <Grid Grid.Row="4"
             ColumnDefinitions="*,*,Auto,Auto"
             ColumnSpacing="8">
         <StackPanel Spacing="2">
@@ -153,7 +191,7 @@
       </Grid>
 
       <!-- PHG encoder (Power, Height, Gain, Directivity) -->
-      <Border Grid.Row="4"
+      <Border Grid.Row="5"
               BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
@@ -202,7 +240,7 @@
       </Border>
 
       <!-- Transmit safety -->
-      <Border Grid.Row="5"
+      <Border Grid.Row="6"
               Background="{DynamicResource WarnBgBrush}"
               BorderBrush="{DynamicResource WarnBorderBrush}"
               BorderThickness="1"
@@ -232,7 +270,7 @@
       </Border>
 
       <!-- Save / Revert -->
-      <Grid Grid.Row="6"
+      <Grid Grid.Row="7"
             ColumnDefinitions="Auto,Auto,*"
             ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}"
