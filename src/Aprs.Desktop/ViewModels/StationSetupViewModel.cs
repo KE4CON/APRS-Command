@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Aprs.Desktop.Configuration;
 using Aprs.Mapping;
@@ -277,7 +278,7 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
             SymbolTable:           symbolTable,
             SymbolCode:            symbolCode,
             StationComment:        StationComment,
-            BeaconPath:            BeaconPath,
+            BeaconPath:            SanitizeBeaconPath(BeaconPath),
             AprsIsBeaconMinutes:   AprsIsBeaconMinutes,
             RfBeaconMinutes:       RfBeaconMinutes,
             FixedStationMode:      FixedStationMode,
@@ -287,7 +288,30 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
             PhgData:               string.IsNullOrWhiteSpace(PhgData) ? null : PhgData.Trim());
         store.Update(s => s with { Station = profile });
         SettingsSaved?.Invoke(this, EventArgs.Empty);
-        StatusText = "Saved.";
+
+        // Reflect the sanitized path back into the UI field.
+        var sanitized = SanitizeBeaconPath(BeaconPath);
+        if (sanitized != BeaconPath)
+        {
+            BeaconPath = sanitized;
+            StatusText = "Saved. Beacon path was corrected — spaces removed (APRS paths must not contain spaces).";
+        }
+        else
+        {
+            StatusText = "Saved.";
+        }
+    }
+
+    /// <summary>
+    /// Sanitizes an APRS beacon path by removing all spaces and uppercasing.
+    /// APRS path elements like WIDE1-1 must not contain spaces — a path like
+    /// "WIDE 1-1,WIDE 2-1" is invalid and will be silently dropped by APRS-IS.
+    /// </summary>
+    private static string SanitizeBeaconPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return string.Empty;
+        // Remove all whitespace and uppercase the result.
+        return new string(path.Where(c => !char.IsWhiteSpace(c)).ToArray()).ToUpperInvariant();
     }
 
     public static StationSetupViewModel CreateDesignTime()
