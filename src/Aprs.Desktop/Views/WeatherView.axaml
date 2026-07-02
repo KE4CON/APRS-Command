@@ -204,6 +204,104 @@
       <TabItem Header="Setup">
         <views:WeatherStationSetupView DataContext="{Binding Setup}" />
       </TabItem>
+      <TabItem Header="History">
+        <Grid RowDefinitions="Auto,*" Margin="8">
+          <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="12" Margin="0,0,0,8">
+            <TextBlock Text="Station:" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <ComboBox ItemsSource="{Binding Graph.Stations}"
+                      SelectedItem="{Binding Graph.SelectedStationId}"
+                      PlaceholderText="Select station…" Width="200" />
+            <TextBlock Text="{Binding Graph.ChartTitle}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextMutedBrush}" FontSize="11" />
+          </StackPanel>
+          <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="12" IsVisible="{Binding Graph.HasData}">
+              <!-- Temperature -->
+              <Border Background="{DynamicResource AppBgAltBrush}"
+                      BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1"
+                      CornerRadius="4" Padding="10">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Temperature (°F)" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <ItemsControl ItemsSource="{Binding Graph.TemperaturePoints}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="1" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:WeatherGraphPoint">
+                        <StackPanel Spacing="2" VerticalAlignment="Bottom" Width="18">
+                          <Border Background="#f97316" CornerRadius="2,2,0,0" MinHeight="2"
+                                  Height="{Binding Value}"
+                                  ToolTip.Tip="{Binding Value, StringFormat='{}{0:F1}°F'}" />
+                          <TextBlock Text="{Binding TimeLabel}" FontSize="7" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <!-- Humidity -->
+              <Border Background="{DynamicResource AppBgAltBrush}"
+                      BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1"
+                      CornerRadius="4" Padding="10">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Humidity (%)" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <ItemsControl ItemsSource="{Binding Graph.HumidityPoints}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="1" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:WeatherGraphPoint">
+                        <StackPanel Spacing="2" VerticalAlignment="Bottom" Width="18">
+                          <Border Background="#60a5fa" CornerRadius="2,2,0,0" MinHeight="2"
+                                  Height="{Binding Value}"
+                                  ToolTip.Tip="{Binding Value, StringFormat='{}{0:F0}%'}" />
+                          <TextBlock Text="{Binding TimeLabel}" FontSize="7" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+              <!-- Wind Speed -->
+              <Border Background="{DynamicResource AppBgAltBrush}"
+                      BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="1"
+                      CornerRadius="4" Padding="10">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="Wind Speed (mph)" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <ItemsControl ItemsSource="{Binding Graph.WindSpeedPoints}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="1" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:WeatherGraphPoint">
+                        <StackPanel Spacing="2" VerticalAlignment="Bottom" Width="18">
+                          <Border Background="#4ade80" CornerRadius="2,2,0,0" MinHeight="2"
+                                  Height="{Binding Value}"
+                                  ToolTip.Tip="{Binding Value, StringFormat='{}{0:F1} mph'}" />
+                          <TextBlock Text="{Binding TimeLabel}" FontSize="7" HorizontalAlignment="Center"
+                                     Foreground="{DynamicResource TextMutedBrush}" />
+                        </StackPanel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </TabItem>
     </TabControl>
   </Grid>
 </UserControl>

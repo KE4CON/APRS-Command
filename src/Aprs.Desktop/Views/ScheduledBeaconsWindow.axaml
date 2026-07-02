@@ -1,0 +1,144 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.ScheduledBeaconsWindow"
+        x:DataType="vm:ScheduledBeaconsViewModel"
+        Title="APRS Command — Scheduled Beacons"
+        Width="720" Height="520" MinWidth="560" MinHeight="380">
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <Border Grid.Row="0"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,0,0,1" Padding="22,10">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Scheduled Beacons" FontSize="18" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="Time-of-day beacon triggers. APRS Command fires a beacon automatically at the scheduled time."
+                   Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,320">
+
+      <!-- Entry list -->
+      <Grid RowDefinitions="Auto,*,Auto" Margin="8">
+
+        <!-- Column headers -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource AppBgAltBrush}"
+                BorderBrush="{DynamicResource TextSidebarBrush}"
+                BorderThickness="0,0,0,1" Padding="6,4">
+          <Grid ColumnDefinitions="40,*,70,130">
+            <TextBlock Grid.Column="0" Text="On"    FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Label" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="2" Text="Time"  FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="3" Text="Days"  FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+          </Grid>
+        </Border>
+
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding Entries}"
+                 SelectedItem="{Binding SelectedEntry}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ScheduledBeaconEntryEditViewModel">
+              <Grid ColumnDefinitions="40,*,70,130" Margin="0,2">
+                <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" IsEnabled="False" />
+                <TextBlock Grid.Column="1" Text="{Binding Label}"       FontSize="12" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding DisplayTime}" FontSize="12" FontFamily="Courier New" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding DaysDisplay}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button Content="+ Add" Command="{Binding AddCommand}" Padding="12,6" />
+          <Button Content="Remove" Command="{Binding RemoveCommand}"
+                  IsEnabled="{Binding HasSelection}" Padding="12,6" />
+          <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextMutedBrush}" FontSize="11" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Edit panel -->
+      <Border Grid.Column="1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
+              BorderThickness="1,0,0,0" Padding="16">
+        <StackPanel Spacing="12"
+                    IsVisible="{Binding HasSelection}">
+          <TextBlock Text="Edit Entry" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Label" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBox Text="{Binding SelectedEntry.Label}" IsEnabled="{Binding IsEditing}" />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+            <StackPanel>
+              <TextBlock Text="Hour (0-23)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <NumericUpDown Value="{Binding SelectedEntry.FireAtHour}"
+                             Minimum="0" Maximum="23" Increment="1"
+                             IsEnabled="{Binding IsEditing}" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text=":" FontSize="20" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="Minute" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <NumericUpDown Value="{Binding SelectedEntry.FireAtMinute}"
+                             Minimum="0" Maximum="59" Increment="5"
+                             IsEnabled="{Binding IsEditing}" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Days" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <WrapPanel>
+              <CheckBox Content="Mon" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Monday}"    IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Tue" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Tuesday}"   IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Wed" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Wednesday}" IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Thu" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Thursday}"  IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Fri" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Friday}"    IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Sat" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Saturday}"  IsEnabled="{Binding IsEditing}" />
+              <CheckBox Content="Sun" Margin="0,0,6,0" IsChecked="{Binding SelectedEntry.Sunday}"    IsEnabled="{Binding IsEditing}" />
+            </WrapPanel>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <TextBlock Text="Custom comment (optional — overrides station comment)"
+                       FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" />
+            <TextBox Text="{Binding SelectedEntry.CustomComment}"
+                     IsEnabled="{Binding IsEditing}"
+                     Watermark="Leave blank to use station comment" />
+          </StackPanel>
+
+          <CheckBox Content="Enabled"
+                    IsChecked="{Binding SelectedEntry.Enabled}"
+                    IsEnabled="{Binding IsEditing}" />
+
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button Content="Edit"   IsVisible="{Binding !IsEditing}"
+                    Click="EditButton_Click" Padding="12,6" />
+            <Button Content="Save"   IsVisible="{Binding IsEditing}"
+                    Command="{Binding SaveCommand}" Padding="12,6" />
+            <Button Content="Cancel" IsVisible="{Binding IsEditing}"
+                    Command="{Binding CancelCommand}" Padding="12,6" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <Border Grid.Row="2"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,1,0,0" Padding="12">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Beacons fire once per day at the scheduled time. APRS Command must be running at the scheduled time for the beacon to fire."
+                   Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
+                   TextWrapping="Wrap" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="Close" Padding="14,6" Click="Close_Click" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

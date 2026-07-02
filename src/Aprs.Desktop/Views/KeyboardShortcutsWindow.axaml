@@ -1,0 +1,165 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aprs.Desktop.Views.KeyboardShortcutsWindow"
+        Title="APRS Command — Keyboard Shortcuts"
+        Width="620" Height="680" MinWidth="480" MinHeight="400">
+
+  <Grid RowDefinitions="Auto,*,Auto">
+
+    <Border Grid.Row="0"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,0,0,1" Padding="22,10">
+      <StackPanel Spacing="2">
+        <TextBlock Text="Keyboard Shortcuts" FontSize="18" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock Text="All keyboard shortcuts available in APRS Command."
+                   Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" />
+      </StackPanel>
+    </Border>
+
+    <ScrollViewer Grid.Row="1" Padding="16">
+      <StackPanel Spacing="16">
+
+        <!-- Global -->
+        <StackPanel Spacing="6">
+          <TextBlock Text="Global" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <Border Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+M" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="Open Message Center" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="1" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+W" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="Open Weather Stations" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+R" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="Open Raw Packet Monitor" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="3" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+S" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="Open Settings" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="4" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+N" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="Open Net Control" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="5" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+B" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="Beacon Now (send immediate beacon)" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="6" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+D" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="6" Grid.Column="1" Text="Toggle Dark / Light mode" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="7" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Ctrl+/" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="7" Grid.Column="1" Text="Show this keyboard shortcuts window" VerticalAlignment="Center" FontSize="12" />
+          </Grid>
+        </StackPanel>
+
+        <!-- Map -->
+        <StackPanel Spacing="6">
+          <TextBlock Text="Map" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <Border Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="+ / =" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="Zoom in" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="1" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="-" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="Zoom out" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Home" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="Centre map on your station" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="3" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Right-click" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="Context menu — assign tactical label, draw range rings, place object" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="4" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Scroll wheel" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="Zoom in / out" VerticalAlignment="Center" FontSize="12" />
+          </Grid>
+        </StackPanel>
+
+        <!-- Net Control -->
+        <StackPanel Spacing="6">
+          <TextBlock Text="Net Control Window" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Grid ColumnDefinitions="160,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+            <Border Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F1" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="Check In selected station" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="1" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F2" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="1" Grid.Column="1" Text="Mark as Standby" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F3" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="2" Grid.Column="1" Text="Mark as Departed" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="3" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F4" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="3" Grid.Column="1" Text="Set Available" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="4" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F5" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="4" Grid.Column="1" Text="Set Assigned" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="5" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F6" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="5" Grid.Column="1" Text="Set On Scene" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="6" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F7" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="6" Grid.Column="1" Text="Set Returning" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="7" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="F8" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="7" Grid.Column="1" Text="Set Out of Service" VerticalAlignment="Center" FontSize="12" />
+
+            <Border Grid.Row="8" Background="{DynamicResource AppBgAltBrush}" CornerRadius="3" Padding="6,3">
+              <TextBlock Text="Delete" FontFamily="Courier New" FontSize="11" />
+            </Border>
+            <TextBlock Grid.Row="8" Grid.Column="1" Text="Remove selected station from roster" VerticalAlignment="Center" FontSize="12" />
+          </Grid>
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <Border Grid.Row="2"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,1,0,0" Padding="12">
+      <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
+    </Border>
+  </Grid>
+</Window>

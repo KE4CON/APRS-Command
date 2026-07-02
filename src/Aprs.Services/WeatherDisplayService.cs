@@ -5,6 +5,8 @@ namespace Aprs.Services;
 public sealed class WeatherDisplayService : IWeatherDisplayService
 {
     private readonly Dictionary<string, WeatherStationDisplayRecord> stations = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Queue<WeatherHistoryRecord>> history  = new(StringComparer.OrdinalIgnoreCase);
+    private const int MaxHistoryPerStation = 144; // 24h at 10-min intervals
     private readonly WeatherDisplayConfiguration configuration;
 
     public WeatherDisplayService()
@@ -57,6 +59,7 @@ public sealed class WeatherDisplayService : IWeatherDisplayService
             MapOrigin(packetSource));
 
         stations[stationId] = record;
+        RecordHistory(stationId, packet);
         return record;
     }
 
@@ -113,6 +116,39 @@ public sealed class WeatherDisplayService : IWeatherDisplayService
     public void Clear()
     {
         stations.Clear();
+        history.Clear();
+    }
+
+    /// <summary>Returns weather history for a specific station, oldest first.</summary>
+    public IReadOnlyList<WeatherHistoryRecord> GetHistory(string stationId)
+    {
+        return history.TryGetValue(NormalizeStationId(stationId), out var q)
+            ? q.ToList()
+            : [];
+    }
+
+    private void RecordHistory(string stationId, WeatherAprsPacket packet)
+    {
+        if (!history.TryGetValue(stationId, out var q))
+        {
+            q = new Queue<WeatherHistoryRecord>(MaxHistoryPerStation + 1);
+            history[stationId] = q;
+        }
+
+        q.Enqueue(new WeatherHistoryRecord(
+            Timestamp:              packet.ReceivedAtUtc,
+            TemperatureFahrenheit:  packet.TemperatureFahrenheit,
+            HumidityPercent:        packet.HumidityPercent,
+            PressureMillibars:      packet.BarometricPressureMillibars,
+            WindSpeedMph:           packet.WindSpeedMph,
+            WindGustMph:            packet.WindGustMph,
+            WindDirectionDegrees:   packet.WindDirectionDegrees,
+            RainLastHourInches:     packet.RainLastHourHundredthsInch.HasValue
+                ? packet.RainLastHourHundredthsInch.Value / 100.0
+                : null));
+
+        while (q.Count > MaxHistoryPerStation)
+            q.Dequeue();
     }
 
     private WeatherDataState CalculateState(DateTimeOffset lastUpdateUtc, DateTimeOffset now)
