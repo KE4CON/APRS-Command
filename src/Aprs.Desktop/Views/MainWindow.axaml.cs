@@ -285,6 +285,22 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OpenSessionTemplates_Click(object? sender, RoutedEventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new SessionTemplatesWindow
+        {
+            DataContext = new ViewModels.SessionTemplatesViewModel(
+                Configuration.JsonAppSettingsStore.Default,
+                msg => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    rt.BeaconService.ApplySettings(Configuration.JsonAppSettingsStore.Default.Load());
+                }))
+        };
+        win.Show();
+    }
+
     private void OpenPacketStatistics_Click(object? sender, RoutedEventArgs e)
     {
         var rt = (Application.Current as App)?.Runtime;

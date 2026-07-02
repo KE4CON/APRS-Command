@@ -1,0 +1,211 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.SessionTemplatesWindow"
+        x:DataType="vm:SessionTemplatesViewModel"
+        Title="Session Templates"
+        Width="860" Height="600"
+        MinWidth="700" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid RowDefinitions="*,Auto" Margin="0">
+
+    <Grid ColumnDefinitions="300,*" ColumnSpacing="0">
+
+      <!-- Left: template list -->
+      <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="0,0,1,0"
+              Background="{DynamicResource AppBgAltBrush}">
+        <Grid RowDefinitions="Auto,*,Auto" Margin="0">
+
+          <StackPanel Margin="16,14,16,10" Spacing="6">
+            <TextBlock Text="Session Templates" FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                       Text="Select a template and click Apply to configure the app for that event type. Built-in templates cannot be edited or deleted." />
+          </StackPanel>
+
+          <ListBox Grid.Row="1"
+                   ItemsSource="{Binding Templates}"
+                   SelectedItem="{Binding SelectedTemplate}"
+                   Background="Transparent"
+                   BorderThickness="0"
+                   Margin="8,0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:SessionTemplateRow">
+                <StackPanel Spacing="2" Margin="4,6">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding EventTypeLabel}"
+                               FontSize="10" Foreground="{DynamicResource TextMutedBrush}" />
+                  </Grid>
+                  <TextBlock Text="{Binding Description}" FontSize="10"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextWrapping="Wrap" MaxLines="2" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" Margin="12,8">
+            <Button Content="+ New Custom"
+                    Command="{Binding NewCustomCommand}"
+                    Padding="10,5" FontSize="11"
+                    ToolTip.Tip="Create a new custom session template with your own settings." />
+            <Button Content="Delete"
+                    Command="{Binding DeleteCustomCommand}"
+                    Padding="10,5" FontSize="11"
+                    ToolTip.Tip="Delete the selected custom template. Built-in templates cannot be deleted." />
+          </StackPanel>
+
+        </Grid>
+      </Border>
+
+      <!-- Right: detail / editor panel -->
+      <ScrollViewer Grid.Column="1">
+        <StackPanel Margin="20,16" Spacing="14">
+
+          <!-- Built-in detail view (read-only) -->
+          <StackPanel IsVisible="{Binding HasSelection}"
+                      Spacing="12">
+
+            <StackPanel IsVisible="{Binding !IsEditingCustom}" Spacing="10">
+              <TextBlock Text="{Binding SelectedTemplate.Name}"
+                         FontSize="17" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{Binding SelectedTemplate.EventTypeLabel}"
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Text="{Binding SelectedTemplate.Description}"
+                         FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap" />
+
+              <!-- Settings preview -->
+              <Border Background="{DynamicResource AccentBlueBgBrush}"
+                      BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                      BorderThickness="1" CornerRadius="6" Padding="12,10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Settings this template will apply:" FontSize="11"
+                             FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{Binding SelectedTemplate.BeaconSummary}"
+                             FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextWrapping="Wrap" />
+                </StackPanel>
+              </Border>
+
+              <!-- Operator notes -->
+              <StackPanel Spacing="4"
+                          IsVisible="{Binding SelectedTemplate.OperatorNotes,
+                            Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="Operator Notes" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <Border Background="{DynamicResource AppBgAltBrush}"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="1" CornerRadius="6" Padding="12,10">
+                  <TextBlock Text="{Binding SelectedTemplate.OperatorNotes}"
+                             FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextWrapping="Wrap" />
+                </Border>
+              </StackPanel>
+
+              <Button Content="Apply This Template"
+                      Command="{Binding ApplyCommand}"
+                      Padding="14,8" FontSize="13"
+                      ToolTip.Tip="Applies this template's beacon path, beacon comment, beacon interval, and filter radius to your current settings immediately. Your callsign, location, passcode, and other settings are not changed." />
+            </StackPanel>
+
+            <!-- Custom template editor -->
+            <StackPanel IsVisible="{Binding IsEditingCustom}" Spacing="10">
+              <TextBlock Text="Custom Template Editor" FontSize="15" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                         Text="Set any field you want the template to configure. Leave a field blank to leave that setting unchanged when the template is applied." />
+
+              <StackPanel Spacing="3">
+                <TextBlock Text="Template name  (required)" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding CustomName}" Watermark="e.g. My Club Net" />
+              </StackPanel>
+
+              <StackPanel Spacing="3">
+                <TextBlock Text="Description" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding CustomDescription}" Watermark="Brief description of when to use this template" />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="Beacon path" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox Text="{Binding CustomBeaconPath}"
+                           Watermark="e.g. WIDE1-1,WIDE2-1"
+                           ToolTip.Tip="No spaces. Leave blank to leave the current path unchanged when applied." />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Beacon comment" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox Text="{Binding CustomBeaconComment}"
+                           Watermark="e.g. Net Control"
+                           ToolTip.Tip="Text that appears next to your callsign on others' maps. Leave blank to leave unchanged." />
+                </StackPanel>
+              </Grid>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <StackPanel Spacing="3">
+                  <TextBlock Text="APRS-IS beacon interval (minutes)" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <NumericUpDown Value="{Binding CustomBeaconInterval}"
+                                 Minimum="5" Maximum="120" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="3">
+                  <TextBlock Text="Filter radius (miles)" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <NumericUpDown Value="{Binding CustomFilterRadius}"
+                                 Minimum="10" Maximum="3000"
+                                 ToolTip.Tip="How far from your station to receive APRS traffic. Stored as miles; converted to km for APRS-IS." />
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="3">
+                <TextBlock Text="Operator notes" FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBox Text="{Binding CustomOperatorNotes}"
+                         AcceptsReturn="True" Height="80"
+                         Watermark="Checklist, reminders, or instructions to display when this template is selected..."
+                         ToolTip.Tip="Notes visible in the template detail panel when this template is selected. Use this as a pre-activation checklist." />
+              </StackPanel>
+
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="Save Template"
+                        Command="{Binding SaveCustomCommand}"
+                        Padding="12,7" />
+                <Button Content="Apply Now"
+                        Command="{Binding ApplyCommand}"
+                        Padding="12,7"
+                        ToolTip.Tip="Save and immediately apply this template to your current settings." />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- No selection placeholder -->
+          <TextBlock IsVisible="{Binding !HasSelection}"
+                     Text="Select a template from the list on the left to see its details, or click + New Custom to create your own."
+                     FontSize="12" Foreground="{DynamicResource TextMutedBrush}"
+                     TextWrapping="Wrap" />
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Grid>
+
+    <!-- Status bar -->
+    <Border Grid.Row="1"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,8">
+      <TextBlock Text="{Binding StatusText}" FontSize="11"
+                 Foreground="{DynamicResource TextSecondaryBrush}" />
+    </Border>
+
+  </Grid>
+</Window>
