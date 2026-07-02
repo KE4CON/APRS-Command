@@ -34,7 +34,9 @@ public sealed class BeaconService : IAsyncDisposable
     }
 
     /// <summary>Creates a fully wired BeaconService from the persisted station settings.</summary>
-    public static BeaconService CreateFromSettings(Configuration.AppSettings settings)
+    public static BeaconService CreateFromSettings(
+        Configuration.AppSettings settings,
+        Aprs.Services.IRfBeaconTransmitClient? rfBeaconClient = null)
     {
         var station = settings.Station;
         var profileService = new LocalStationProfileService();
@@ -61,7 +63,8 @@ public sealed class BeaconService : IAsyncDisposable
             profileService,
             beaconFormatter,
             clientForScheduler,
-            schedulerConfig);
+            schedulerConfig,
+            rfBeaconClient: rfBeaconClient);
 
         return new BeaconService(profileService, scheduler, aprsIsClient);
     }
@@ -148,6 +151,10 @@ public sealed class BeaconService : IAsyncDisposable
         if (result.Transmitted) LastBeaconAt = DateTimeOffset.UtcNow;
         return result;
     }
+
+    /// <summary>Transmits a beacon immediately on all enabled RF paths.</summary>
+    public async Task<Aprs.Services.BeaconNowResult> BeaconOnRfNowAsync(CancellationToken cancellationToken = default)
+        => await scheduler.BeaconOnRfNowAsync(cancellationToken).ConfigureAwait(false);
 
     /// <summary>Current scheduler state — for the status display.</summary>
     public BeaconSchedulerState GetState() => scheduler.GetState();

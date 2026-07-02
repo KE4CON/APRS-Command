@@ -6,6 +6,7 @@ namespace Aprs.Transport;
 public sealed class SerialKissClient : ISerialKissClient
 {
     private readonly SerialKissConfiguration configuration;
+    public  SerialKissConfiguration Configuration => configuration;
     private readonly ISerialPortConnectionFactory connectionFactory;
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
     private readonly Channel<KissFrame> receivedFrames = Channel.CreateUnbounded<KissFrame>();

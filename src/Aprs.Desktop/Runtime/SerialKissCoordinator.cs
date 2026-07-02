@@ -64,6 +64,10 @@ public sealed class SerialKissCoordinator : IAsyncDisposable
     /// <summary>How many Serial KISS clients are configured.</summary>
     public int ClientCount => clients.Count;
 
+    /// <summary>Returns clients that are connected and have transmit enabled.</summary>
+    public IReadOnlyList<SerialKissClient> GetTransmitClients()
+        => clients.Where(c => c.Configuration.TransmitEnabled).ToList();
+
     /// <summary>Starts all clients and begins reading packets into the ingestion pipeline.</summary>
     public void Start()
     {
