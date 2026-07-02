@@ -94,8 +94,9 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         Alerts = alerts;
         Geofences = geofences;
         Simulation = simulation;
-        Training = training;
-        FileHooks = fileHooks;
+        Training   = training;
+        FileHooks  = fileHooks;
+        Telemetry  = new TelemetryViewModel();
         FirstRunSetup = firstRunSetup;
         Connections = connections;
         StationSetup = stationSetup;
@@ -123,6 +124,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenAlertsCommand      = new DesktopCommand(() => AlertsRequested?.Invoke(this, EventArgs.Empty));
         OpenStationListCommand = new DesktopCommand(() => StationListRequested?.Invoke(this, EventArgs.Empty));
         OpenRawPacketsCommand  = new DesktopCommand(() => RawPacketsRequested?.Invoke(this, EventArgs.Empty));
+        OpenTelemetryCommand   = new DesktopCommand(() => TelemetryRequested?.Invoke(this, EventArgs.Empty));
         OpenSettingsCommand    = new DesktopCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         OpenHelpCommand        = new DesktopCommand(() => HelpRequested?.Invoke(this, EventArgs.Empty));
         BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
@@ -157,6 +159,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? AlertsRequested;
     public event EventHandler? StationListRequested;
     public event EventHandler? RawPacketsRequested;
+    public event EventHandler? TelemetryRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? HelpRequested;
     public event EventHandler? BeaconNowRequested;
@@ -204,6 +207,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public SimulationViewModel Simulation { get; }
     public TrainingModeViewModel Training { get; }
     public FileHooksViewModel FileHooks { get; }
+    public TelemetryViewModel Telemetry { get; }
     public FirstRunSetupViewModel FirstRunSetup { get; }
     public ConnectionsViewModel Connections { get; }
     public StationSetupViewModel StationSetup { get; }
@@ -228,6 +232,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenAlertsCommand { get; }
     public DesktopCommand OpenStationListCommand { get; }
     public DesktopCommand OpenRawPacketsCommand { get; }
+    public DesktopCommand OpenTelemetryCommand { get; }
     public DesktopCommand OpenSettingsCommand { get; }
     public DesktopCommand OpenHelpCommand { get; }
     public DesktopCommand BeaconNowCommand { get; }

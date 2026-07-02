@@ -330,6 +330,19 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireTelemetry(DesktopRuntime rt)
+    {
+        // Route telemetry packets from the ingestion pipeline to the Telemetry Monitor.
+        rt.Coordinator.PacketParsed += (_, e) =>
+        {
+            if (e.Packet is Aprs.Core.TelemetryAprsPacket tp)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    rt.MainViewModel.Telemetry.AcceptPacket(tp));
+            }
+        };
+    }
+
     private static void WireReadiness(DesktopRuntime rt)
     {
         void Refresh()
@@ -454,6 +467,7 @@ public sealed partial class App : Application
                     WireConnectionWatchdog(runtime);
                     WireReadiness(runtime);
                     WireWeather(runtime);
+                    WireTelemetry(runtime);
                     WireTrails(runtime, mainWindow);
                     WireNetControl(runtime);
                     WireNwsAlerts(runtime);
@@ -487,6 +501,7 @@ public sealed partial class App : Application
                         WireConnectionWatchdog(runtime);
                         WireReadiness(runtime);
                         WireWeather(runtime);
+                        WireTelemetry(runtime);
                         WireNetControl(runtime);
                         WireNwsAlerts(runtime);
                         // Trail and radar wiring happen after main window is shown.
