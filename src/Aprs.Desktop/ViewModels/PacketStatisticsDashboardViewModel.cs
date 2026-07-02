@@ -157,6 +157,16 @@ public sealed class PacketStatisticsDashboardViewModel : INotifyPropertyChanged,
         private set { peakActivityLabel = value; OnPropertyChanged(); }
     }
 
+    // ── Aloha circle ─────────────────────────────────────────────────────────
+
+    private string alohaRadius   = "—";
+    private string alohaLoad     = "—";
+    private string alohaSummary  = "Calculating…";
+
+    public string AlohaRadius  { get => alohaRadius;  private set { alohaRadius  = value; OnPropertyChanged(); } }
+    public string AlohaLoad    { get => alohaLoad;    private set { alohaLoad    = value; OnPropertyChanged(); } }
+    public string AlohaSummary { get => alohaSummary; private set { alohaSummary = value; OnPropertyChanged(); } }
+
     // ── Commands ──────────────────────────────────────────────────────────────
     public void ResetStats()
     {
@@ -220,6 +230,12 @@ public sealed class PacketStatisticsDashboardViewModel : INotifyPropertyChanged,
         {
             PeakActivityLabel = "No activity yet";
         }
+
+        // Aloha circle
+        var aloha = AlohaCircleService.Calculate(stats.UniqueStations, stats.PacketsPerMinute);
+        AlohaRadius    = aloha?.RadiusDisplay    ?? "—";
+        AlohaLoad      = aloha?.LoadDisplay      ?? "—";
+        AlohaSummary   = aloha?.Summary          ?? "Insufficient data for Aloha circle calculation.";
     }
 
     public void Dispose()

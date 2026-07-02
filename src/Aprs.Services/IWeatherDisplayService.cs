@@ -18,5 +18,7 @@ public interface IWeatherDisplayService
 
     WeatherStationDisplayRecord? GetWeatherStation(string stationId);
 
+    IReadOnlyList<WeatherHistoryRecord> GetHistory(string stationId);
+
     void Clear();
 }

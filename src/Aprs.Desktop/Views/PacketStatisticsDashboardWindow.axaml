@@ -239,6 +239,30 @@
         </StackPanel>
       </Border>
 
+      <!-- Aloha Circle -->
+      <Border Background="{DynamicResource AppBgAltBrush}"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Aloha Circle" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto" ColumnSpacing="16">
+            <TextBlock Grid.Column="0" Text="Radius" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{Binding AlohaRadius}" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="Channel load" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="3" Text="{Binding AlohaLoad}" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" VerticalAlignment="Center"/>
+          </Grid>
+          <TextBlock Text="{Binding AlohaSummary}" FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+          <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                     Text="The Aloha circle is the range within which packets can be reliably received given current channel load. Beyond this radius, packet collisions make reception unreliable. Concept by Bob Bruninga WB4APR." />
+        </StackPanel>
+      </Border>
+
     </StackPanel>
   </ScrollViewer>
 </Window>

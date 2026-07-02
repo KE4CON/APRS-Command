@@ -76,6 +76,37 @@ public sealed class ObjectEditorViewModel : INotifyPropertyChanged
 
     public string OwnerCallsign { get; set; } = StationProfile.Load().FullCallsign;
 
+    // ── Area object shape properties ──────────────────────────────────────────
+
+    /// <summary>When true, this object is encoded as an APRS area object using the \l symbol.</summary>
+    public bool IsAreaObject { get; set; }
+
+    public AprsAreaObjectShape AreaShape { get; set; } = AprsAreaObjectShape.OpenBlueRectangle;
+
+    public int AreaColorCode { get; set; } = 1; // blue
+
+    public double AreaWidthKm { get; set; } = 1.0;
+
+    public double AreaHeightKm { get; set; } = 1.0;
+
+    public static IReadOnlyList<(AprsAreaObjectShape Shape, string Label)> AreaShapes { get; } =
+    [
+        (AprsAreaObjectShape.OpenBlackCircle,   "Open Circle (black)"),
+        (AprsAreaObjectShape.OpenRedLine,       "Open Line (red)"),
+        (AprsAreaObjectShape.OpenBlueTriangle,  "Open Triangle (blue)"),
+        (AprsAreaObjectShape.OpenBlueRectangle, "Open Rectangle (blue)"),
+        (AprsAreaObjectShape.FilledBlackCircle, "Filled Circle (black)"),
+        (AprsAreaObjectShape.FilledRedLine,     "Filled Line (red)"),
+        (AprsAreaObjectShape.FilledBlueTriangle,"Filled Triangle (blue)"),
+        (AprsAreaObjectShape.FilledBlueRectangle,"Filled Rectangle (blue)"),
+    ];
+
+    public static IReadOnlyList<(int Code, string Label)> AreaColors { get; } =
+    [
+        (0, "Black"), (1, "Blue"), (2, "Green"), (3, "Cyan"),
+        (4, "Red"),   (5, "Violet"), (6, "Amber"), (7, "White"),
+    ];
+
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     public DateTimeOffset UpdatedAtUtc { get; private set; }
@@ -88,14 +119,22 @@ public sealed class ObjectEditorViewModel : INotifyPropertyChanged
 
     public AprsObjectEditModel ToModel()
     {
+        // When IsAreaObject is enabled, override symbol and prepend area encoding to comment.
+        var (tableId, code, comment) = IsAreaObject
+            ? (AprsAreaObjectEncoder.AreaSymbol.Table,
+               AprsAreaObjectEncoder.AreaSymbol.Code,
+               AprsAreaObjectEncoder.Encode(AreaShape, AreaColorCode, AreaWidthKm, AreaHeightKm,
+                   string.IsNullOrWhiteSpace(Comment) ? null : Comment))
+            : (FirstCharOrNull(SymbolTableIdentifier), FirstCharOrNull(SymbolCode), Comment);
+
         return new AprsObjectEditModel(
             ObjectName,
             Latitude,
             Longitude,
-            FirstCharOrNull(SymbolTableIdentifier),
-            FirstCharOrNull(SymbolCode),
+            tableId,
+            code,
             FirstCharOrNull(Overlay),
-            Comment,
+            comment,
             TransmitIntervalMinutes is null ? null : TimeSpan.FromMinutes(TransmitIntervalMinutes.Value),
             AprsIsTransmitEnabled,
             RfTransmitEnabled,

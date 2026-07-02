@@ -27,6 +27,7 @@ public sealed class WeatherViewModel
         Summary = $"{Rows.Count} weather stations";
         BeaconSettings = beaconSettings;
         Setup = setup;
+        Graph = new WeatherGraphViewModel(weatherService);
     }
 
     /// <summary>Feeds a live weather packet into the service and refreshes the display.</summary>
@@ -38,6 +39,7 @@ public sealed class WeatherViewModel
         Rows.Clear();
         foreach (var station in weatherService.GetAllWeatherStations())
             Rows.Add(new WeatherStationRowViewModel(station, now));
+        Graph.Refresh();
     }
 
     public ObservableCollection<WeatherStationRowViewModel> Rows { get; }
@@ -49,6 +51,11 @@ public sealed class WeatherViewModel
     public bool HasStations => Rows.Count > 0;
 
     public WeatherBeaconSettingsViewModel BeaconSettings { get; private set; }
+
+    public WeatherGraphViewModel Graph { get; }
+
+    public IEnumerable<string> Stations =>
+        weatherService.GetAllWeatherStations().Select(s => s.StationId);
 
     /// <summary>Called post-construction to inject the live weather beacon scheduler.</summary>
     public void SetBeaconScheduler(IWeatherBeaconScheduler scheduler)
