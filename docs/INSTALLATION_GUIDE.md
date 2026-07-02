@@ -1,170 +1,150 @@
-# APRS Command Installation Guide
+# APRS Command — Installation Guide
 
-This guide explains how normal users can install or run APRS Command. Packaged installers are planned for later work. Until then, use a published folder or run from source.
+APRS Command ships as native installers and portable zip archives for all
+supported platforms. **No administrator account or special permissions are
+needed to run APRS Command** — only the installer itself requires admin to
+write to Program Files on Windows.
 
-The detailed installer/package strategy is tracked in `docs/INSTALLER_AND_PACKAGE_PLAN.md`.
+> **Why no code-signing?** Code-signing certificates cost $300–500 per year.
+> APRS Command is an open-source amateur radio project maintained voluntarily.
+> We do not pay for certificates. The one-time bypass described below is safe
+> and is standard practice for unsigned open-source software.
 
-Portable packages are written under `artifacts/packages/` when package scripts are run. Each package has a matching SHA256 checksum under `artifacts/checksums/`.
+---
+
+## macOS
+
+### Installer (.dmg) — recommended
+
+1. Download `APRSCommand-vX.Y.Z-macos-arm64.dmg` (Apple Silicon M1/M2/M3/M4)
+   or `APRSCommand-vX.Y.Z-macos-x64.dmg` (Intel Mac).
+2. Double-click the `.dmg` to mount it.
+3. Drag **APRS Command.app** to your Applications folder.
+4. **First launch only:** In Applications, **right-click** (or Control-click)
+   **APRS Command**, choose **Open**, then click **Open** again in the dialog.
+   macOS remembers the exception — subsequent launches work normally.
+
+### Portable zip
+
+```bash
+unzip APRSCommand-vX.Y.Z-macos-arm64.zip
+cd APRS-Command-osx-arm64
+xattr -cr .          # remove quarantine flag set by macOS on downloaded files
+./Aprs.Desktop
+```
+
+### Serial port access (hardware TNC)
+
+Add your user to the `dialout` group, then log out and back in:
+
+```bash
+sudo dseditgroup -o edit -a "$USER" -t user dialout 2>/dev/null || true
+```
+
+---
 
 ## Windows
 
-1. Download `APRS-Command-win-x64.zip` or use the `win-x64` publish output.
-2. Extract the folder to a user-writable location such as your profile folder.
-3. Run the APRS Command executable.
-4. Allow user data folders to be created under your application data area.
-5. If Windows blocks an unsigned development build, review the file source before allowing it.
+### Installer (.exe) — recommended
 
-Required permissions:
+1. Download `APRSCommand-vX.Y.Z-windows-x64-Setup.exe`.
+2. Double-click to run.
+3. **First launch only:** If Windows SmartScreen shows "Windows protected your PC",
+   click **More info**, then **Run anyway**.
+4. APRS Command is installed to `C:\Program Files\APRS Command` with Start
+   Menu and Desktop shortcuts.
+5. Uninstall via Settings → Apps → APRS Command.
 
-- user-writable configuration and log folders
-- network access for APRS-IS receive
-- optional serial access for hardware TNCs
+### Portable zip
 
-## macOS Apple Silicon
+1. Download `APRSCommand-vX.Y.Z-windows-x64.zip`.
+2. Extract to any folder (e.g. `C:\Users\You\APRSCommand`).
+3. Run `Aprs.Desktop.exe`. If SmartScreen appears, click More info → Run anyway.
 
-The Phase 15.10 portable Apple Silicon test package is:
+### Serial port access (hardware TNC)
 
-```text
-artifacts/packages/APRS-Command-osx-arm64-test.tar.gz
-```
+No extra configuration needed — Windows grants serial port access by default.
 
-The matching publish folder and checksum are:
+---
 
-```text
-artifacts/publish/osx-arm64/
-artifacts/checksums/APRS-Command-osx-arm64-test.tar.gz.sha256
-```
+## Linux
 
-From the repository root, verify the package and checksum:
+### .deb (Debian, Ubuntu, Raspberry Pi OS, Linux Mint, and derivatives)
 
 ```bash
-ls -la artifacts/packages/APRS-Command-osx-arm64-test.tar.gz
-ls -la artifacts/checksums/APRS-Command-osx-arm64-test.tar.gz.sha256
-cat artifacts/checksums/APRS-Command-osx-arm64-test.tar.gz.sha256
+# x64 desktop or laptop
+sudo dpkg -i aprs-command_X.Y.Z_amd64.deb
+
+# ARM64 (Raspberry Pi 4/5 running 64-bit OS, etc.)
+sudo dpkg -i aprs-command_X.Y.Z_arm64.deb
+
+# Launch
+aprs-command
 ```
 
-Extract the package to a clean temporary test folder:
+APRS Command installs to `/opt/aprs-command/` with a launcher at
+`/usr/local/bin/aprs-command` and a `.desktop` entry in your app menu.
+
+### .rpm (Fedora, RHEL, CentOS, openSUSE, and derivatives)
 
 ```bash
-rm -rf /tmp/aprs-command-osx-arm64-test
-mkdir -p /tmp/aprs-command-osx-arm64-test
-tar -xzf artifacts/packages/APRS-Command-osx-arm64-test.tar.gz -C /tmp/aprs-command-osx-arm64-test
-cd /tmp/aprs-command-osx-arm64-test/APRS-Command-osx-arm64
-ls -la
+sudo rpm -i aprs-command-X.Y.Z-1.x86_64.rpm    # x64
+sudo rpm -i aprs-command-X.Y.Z-1.aarch64.rpm   # ARM64
+aprs-command
 ```
 
-The launchable executable is `Aprs.Desktop`. The portable Finder-style launcher is `APRS Command.command`. This is not a signed `.app` bundle.
-
-1. Use `APRS-Command-osx-arm64-test.tar.gz`, `APRS-Command-osx-arm64.tar.gz`, or the `osx-arm64` publish output.
-2. Extract APRS Command to a user-writable folder or future application bundle.
-3. Open Terminal in the extracted `APRS-Command-osx-arm64` folder.
-4. If this is an unsigned portable test build, clear quarantine on the extracted folder if macOS blocks it:
-
-   ```bash
-   xattr -dr com.apple.quarantine . 2>/dev/null || true
-   ```
-
-5. Confirm the executable bit if needed:
-
-   ```bash
-   chmod +x ./Aprs.Desktop
-   chmod +x "./APRS Command.command"
-   ```
-
-6. Start the app from Terminal:
-
-   ```bash
-   ./Aprs.Desktop
-   ```
-
-   Or use the Finder-friendly launcher:
-
-   ```bash
-   open "./APRS Command.command"
-   ```
-
-7. To capture launch errors:
-
-   ```bash
-   ./Aprs.Desktop 2>&1 | tee launch-error.txt
-   ```
-
-8. If APRS Command reports a fatal startup error, also check the startup log under your macOS application data folder, normally `~/Library/Application Support/APRS Command/logs/startup-error.log`.
-9. If macOS warns about an unsigned development build, only open it if you trust the build source.
-
-Future packages should handle signing and notarization.
-
-## macOS Intel
-
-1. Use `APRS-Command-osx-x64.tar.gz` or the `osx-x64` publish output.
-2. Follow the same Terminal, quarantine, executable permission, and launch-error capture steps as macOS Apple Silicon.
-3. Verify Intel support remains part of the build you downloaded.
-
-## Linux x64
-
-1. Use `APRS-Command-linux-x64.tar.gz` or the `linux-x64` publish output.
-2. Extract it into your home directory or another user-writable location.
-3. Run the desktop executable from a terminal or future `.desktop` launcher.
-4. Ensure the app data folder is writable.
-
-Serial port permissions may require adding your user to a group such as `dialout`, depending on the distribution.
-
-## Linux ARM64
-
-1. Use `APRS-Command-linux-arm64.tar.gz` or the `linux-arm64` publish output.
-2. Extract it to user-writable storage.
-3. Run the app from a terminal first so launch errors are visible.
-4. Keep map cache and logs on storage with enough free space.
-
-## Raspberry Pi 5 / Linux ARM64
-
-1. Use `APRS-Command-linux-arm64.tar.gz`.
-2. Prefer a high-quality SD card or external storage for maps and logs.
-3. Verify desktop libraries required by Avalonia are installed by your distribution.
-4. Add your user to the serial device group if using USB TNC hardware.
-5. Test receive-only before connecting any transmit path.
-
-## Verify Checksums
-
-When checksum files are provided, compare the package SHA256 value before running APRS Command:
+### Portable .tar.gz (any Linux distribution)
 
 ```bash
-cd artifacts/packages
-shasum -a 256 APRS-Command-linux-x64.tar.gz
-cat ../checksums/APRS-Command-linux-x64.tar.gz.sha256
+tar -xzf APRSCommand-vX.Y.Z-linux-x64.tar.gz
+cd APRS-Command-linux-x64
+chmod +x Aprs.Desktop
+./Aprs.Desktop
 ```
 
-The values should match.
+### Serial port access (hardware TNC)
 
-## Build From Source
-
-Install the .NET 10 SDK, then run:
+On Linux your user must be in the `dialout` group to access serial ports:
 
 ```bash
-dotnet restore
-dotnet build
+sudo usermod -aG dialout "$USER"
+# Log out and back in for the group change to take effect
+```
+
+### Raspberry Pi notes
+
+- Use the `linux-arm64` package or archive
+- Raspberry Pi OS 64-bit (Bookworm) is the tested platform
+- The `.deb` is recommended: `sudo dpkg -i aprs-command_X.Y.Z_arm64.deb`
+- GrayWolf (KISS-TCP) is the recommended RF backend for field operations
+
+---
+
+## Running from source
+
+```bash
+git clone https://github.com/KE4CON/APRS-Command.git
+cd APRS-Command
 dotnet run --project src/Aprs.Desktop/Aprs.Desktop.csproj
 ```
 
-## Map Cache and Storage Notes
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
-Offline map tiles can use significant space. Choose a map cache folder that:
+---
 
-- has enough free space
-- is writable by your user
-- is not on a nearly full system disk
-- is backed up only if you need map/cache persistence
+## Building installers locally
 
-## Troubleshooting Launch Problems
+```bash
+# macOS .app + .dmg (run on macOS, requires brew install create-dmg)
+bash scripts/make-macos-app.sh osx-arm64
+bash scripts/make-macos-app.sh osx-x64
 
-If APRS Command will not start:
+# Windows .exe (run in PowerShell on Windows, requires NSIS)
+pwsh scripts/make-windows-installer.ps1
 
-1. Run it from a terminal to see error output.
-2. Confirm the .NET 10 SDK or runtime is installed when running from source.
-3. Confirm the app folder is not read-only.
-4. Confirm the application data folder is writable.
-5. Check logs under the configured `logs/` folder.
-6. On Linux, install missing desktop libraries reported by the terminal.
-7. On macOS, review security prompts for unsigned development builds.
-8. On macOS portable builds, run `xattr -dr com.apple.quarantine .` from inside the extracted package folder if Gatekeeper quarantined the archive.
-9. On macOS portable builds, launch with `./Aprs.Desktop 2>&1 | tee launch-error.txt` to capture startup errors.
+# Linux .deb + .rpm (run on Linux, requires dpkg-dev and rpm-build)
+bash scripts/make-linux-packages.sh linux-x64
+bash scripts/make-linux-packages.sh linux-arm64
+```
+
+Output goes to `artifacts/installers/`.
