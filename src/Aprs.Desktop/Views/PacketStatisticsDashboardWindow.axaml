@@ -4,7 +4,7 @@
         x:Class="Aprs.Desktop.Views.PacketStatisticsDashboardWindow"
         x:DataType="vm:PacketStatisticsDashboardViewModel"
         Title="Packet Statistics Dashboard"
-        Width="820" Height="640"
+        Width="820" Height="660"
         MinWidth="700" MinHeight="500"
         WindowStartupLocation="CenterOwner">
 
@@ -23,161 +23,151 @@
             <Run Text="  ·  Duration: " />
             <Run Text="{Binding SessionDuration}" />
           </TextBlock>
+          <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                     Text="Statistics are accumulated from the moment APRS Command connected this session. Hover over any item for an explanation. Click Reset to start fresh counts without disconnecting." />
         </StackPanel>
         <Button Grid.Column="1" Content="Reset Statistics"
                 Click="OnResetClick"
-                Padding="12,6" VerticalAlignment="Center" />
+                Padding="12,6" VerticalAlignment="Top"
+                ToolTip.Tip="Clears all counters and restarts accumulation from zero. Does not disconnect from APRS-IS — you will continue receiving packets and the counts will begin building again immediately." />
       </Grid>
 
       <!-- Top stats row -->
       <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+
         <Border Background="{DynamicResource AccentBlueBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16,12">
+                BorderThickness="1" CornerRadius="8" Padding="16,12"
+                ToolTip.Tip="Total Packets — Every APRS transmission received during this session counts as one packet, regardless of what type it is or which station sent it. This includes position beacons, messages, weather reports, objects, and everything else. A single station beaconing every 10 minutes will contribute 6 packets per hour to this total.">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding TotalPackets}"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="{DynamicResource AccentBlueBrush}"
-                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding TotalPackets}" FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" HorizontalAlignment="Center" />
             <TextBlock Text="Total Packets" FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
+
         <Border Grid.Column="1"
                 Background="{DynamicResource AccentBlueBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16,12">
+                BorderThickness="1" CornerRadius="8" Padding="16,12"
+                ToolTip.Tip="Unique Stations — The number of distinct callsigns heard this session. KE4CON and KE4CON-1 are counted separately since they are technically different stations (different SSIDs). A station is counted here the first time it is heard, regardless of how many packets it sends. This gives you a sense of how many different operators are active in your area.">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding UniqueStations}"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="{DynamicResource AccentBlueBrush}"
-                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding UniqueStations}" FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" HorizontalAlignment="Center" />
             <TextBlock Text="Unique Stations" FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
+
         <Border Grid.Column="2"
                 Background="{DynamicResource AccentBlueBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16,12">
+                BorderThickness="1" CornerRadius="8" Padding="16,12"
+                ToolTip.Tip="Packets Per Hour — The average rate of packet reception over your entire session, expressed as packets per hour. This is a running average, not the current rate. A quiet rural area might see 20-50 packets/hour. A busy urban area during a net might see 500+. The hourly bar chart below shows how this rate varied throughout the day.">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding PacketsPerHour}"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="{DynamicResource AccentBlueBrush}"
-                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding PacketsPerHour}" FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" HorizontalAlignment="Center" />
             <TextBlock Text="Packets / Hour" FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
+
         <Border Grid.Column="3"
                 Background="{DynamicResource AccentBlueBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16,12">
+                BorderThickness="1" CornerRadius="8" Padding="16,12"
+                ToolTip.Tip="Packets Per Minute — The average rate of packet reception expressed per minute instead of per hour. Useful for short sessions or busy events where activity is measured in minutes rather than hours. Divide this number by 60 to get an approximate packets-per-second rate.">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding PacketsPerMinute}"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="{DynamicResource AccentBlueBrush}"
-                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding PacketsPerMinute}" FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}" HorizontalAlignment="Center" />
             <TextBlock Text="Packets / Minute" FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center" />
+                       Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
+
       </Grid>
 
-      <!-- Packet types + Top stations side by side -->
+      <!-- Packet types + Top stations -->
       <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
 
-        <!-- Packet types breakdown -->
+        <!-- Packet types -->
         <Border Background="{DynamicResource AppBgAltBrush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16">
+                BorderThickness="1" CornerRadius="8" Padding="16"
+                ToolTip.Tip="Packet Types — APRS packets carry different kinds of information. The bars show what proportion of received traffic each type represents. Position is almost always the largest category since most stations beacon their location periodically.">
           <StackPanel Spacing="10">
             <TextBlock Text="Packet Types" FontSize="13" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
-            <!-- Position -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Position packets contain a station's latitude, longitude, symbol, and optional comment. This is the most common packet type — every beacon from a mobile or fixed station is a position packet. The map is populated almost entirely from these.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Position" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding PositionPackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding PositionPackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding PositionPct}" Maximum="100" Height="6"
-                           Foreground="#60a5fa" />
+              <ProgressBar Value="{Binding PositionPct}" Maximum="100" Height="6" Foreground="#60a5fa" />
             </StackPanel>
 
-            <!-- Message -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Message packets are direct messages sent from one callsign to another, similar to a text message. They include an acknowledgment mechanism — the receiving station sends back an ACK packet to confirm receipt. You can send and receive messages in the Messages menu.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Message" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding MessagePackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding MessagePackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding MessagePct}" Maximum="100" Height="6"
-                           Foreground="#34d399" />
+              <ProgressBar Value="{Binding MessagePct}" Maximum="100" Height="6" Foreground="#34d399" />
             </StackPanel>
 
-            <!-- Weather -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Weather packets contain meteorological data from APRS weather stations: temperature, wind speed and direction, barometric pressure, rainfall, humidity. Weather stations transmit these automatically at regular intervals. You can view weather station data in the Weather menu.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Weather" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding WeatherPackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding WeatherPackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding WeatherPct}" Maximum="100" Height="6"
-                           Foreground="#a78bfa" />
+              <ProgressBar Value="{Binding WeatherPct}" Maximum="100" Height="6" Foreground="#a78bfa" />
             </StackPanel>
 
-            <!-- Object -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Object and Item packets place markers on the map that represent a location or resource — not a radio station, but anything the operator wants to mark: an incident location, a repeater site, a resource staging area, a road closure, a point of interest. Objects can be created and transmitted by any station on behalf of anything.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Object / Item" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding ObjectPackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding ObjectPackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding ObjectPct}" Maximum="100" Height="6"
-                           Foreground="#f59e0b" />
+              <ProgressBar Value="{Binding ObjectPct}" Maximum="100" Height="6" Foreground="#f59e0b" />
             </StackPanel>
 
-            <!-- Status -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Status packets carry a text status message from a station — a brief announcement about what the operator is doing or their availability. Unlike position packets, status packets do not include coordinates. Examples: 'On 146.520 simplex', 'Net control W9NET', 'QRT for the evening'.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Status" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding StatusPackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusPackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding StatusPct}" Maximum="100" Height="6"
-                           Foreground="#94a3b8" />
+              <ProgressBar Value="{Binding StatusPct}" Maximum="100" Height="6" Foreground="#94a3b8" />
             </StackPanel>
 
-            <!-- Other -->
-            <StackPanel Spacing="3">
+            <StackPanel Spacing="3"
+                        ToolTip.Tip="Other packets are valid APRS packets that do not fall into the main categories above — telemetry data from sensors, third-party traffic forwarded by iGates, capabilities announcements, and other less common packet types defined in the APRS specification.">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="Other / Unknown" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1" Text="{Binding OtherPackets}"
-                           FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding OtherPackets}" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
               </Grid>
-              <ProgressBar Value="{Binding OtherPct}" Maximum="100" Height="6"
-                           Foreground="#64748b" />
+              <ProgressBar Value="{Binding OtherPct}" Maximum="100" Height="6" Foreground="#64748b" />
             </StackPanel>
 
-            <!-- Invalid -->
-            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0"
+                  ToolTip.Tip="Invalid or Malformed packets arrived on the wire but could not be parsed as valid APRS. This can happen due to RF interference corrupting a packet, non-standard formatting, or software bugs in the transmitting station. A small number of invalid packets is normal. A very high count may indicate interference or a problem with your connection.">
               <TextBlock Text="Invalid / Malformed" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding InvalidPackets}"
-                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding InvalidPackets}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
             </Grid>
+
           </StackPanel>
         </Border>
 
@@ -185,7 +175,8 @@
         <Border Grid.Column="1"
                 Background="{DynamicResource AppBgAltBrush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16">
+                BorderThickness="1" CornerRadius="8" Padding="16"
+                ToolTip.Tip="Most Active Stations — The top 15 callsigns ranked by total packets received this session. The bar behind each callsign shows its activity relative to the most active station (the top station always has a full-width bar). High packet counts typically indicate a digipeater or iGate that is relaying many other stations' traffic, or a very active mobile station. The number on the right is the raw packet count.">
           <StackPanel Spacing="8">
             <TextBlock Text="Most Active Stations" FontSize="13" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -196,8 +187,8 @@
                     <Grid ColumnDefinitions="*,Auto">
                       <TextBlock Text="{Binding Callsign}" FontSize="11" FontWeight="SemiBold"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
-                      <TextBlock Grid.Column="1" Text="{Binding Count}"
-                                 FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Count}" FontSize="11"
+                                 Foreground="{DynamicResource TextMutedBrush}" />
                     </Grid>
                     <ProgressBar Value="{Binding BarWidthPct}" Maximum="100" Height="4"
                                  Foreground="#60a5fa" />
@@ -210,23 +201,21 @@
 
       </Grid>
 
-      <!-- Hourly activity chart -->
+      <!-- Hourly chart -->
       <Border Background="{DynamicResource AppBgAltBrush}"
               BorderBrush="{DynamicResource BorderSubtleBrush}"
-              BorderThickness="1" CornerRadius="8" Padding="16">
+              BorderThickness="1" CornerRadius="8" Padding="16"
+              ToolTip.Tip="Hourly Activity Chart — Shows how many APRS packets were received in each of the last 24 hours. The tallest bar represents the busiest hour (shown in the Peak label). This lets you see patterns: morning commuter traffic, lunchtime activity, net times, and overnight quiet periods. Each bar is labeled with the hour in 12-hour format (a = AM, p = PM). Bars reset to zero as each new hour begins.">
         <StackPanel Spacing="8">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="Hourly Activity (last 24 hours)" FontSize="13" FontWeight="SemiBold"
+            <TextBlock Text="Hourly Activity  (last 24 hours)" FontSize="13" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Grid.Column="1" FontSize="11"
-                       Foreground="{DynamicResource TextMutedBrush}">
+            <TextBlock Grid.Column="1" FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
               <Run Text="Peak: " />
               <Run Text="{Binding PeakActivityLabel}" FontWeight="SemiBold" />
             </TextBlock>
           </Grid>
-
-          <!-- Bar chart -->
-          <ItemsControl ItemsSource="{Binding HourlyData}" Height="80">
+          <ItemsControl ItemsSource="{Binding HourlyData}" Height="90">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom" />
@@ -235,16 +224,13 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:HourlyBucket">
                 <StackPanel Spacing="2" VerticalAlignment="Bottom" Width="28">
-                  <TextBlock Text="{Binding Count}" FontSize="8"
-                             HorizontalAlignment="Center"
+                  <TextBlock Text="{Binding Count}" FontSize="8" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextMutedBrush}"
                              IsVisible="{Binding Count, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   <Border Background="#60a5fa" CornerRadius="2,2,0,0"
-                          Height="{Binding BarHeightPct}"
-                          MinHeight="2"
+                          Height="{Binding BarHeightPct}" MinHeight="2"
                           ToolTip.Tip="{Binding Count}" />
-                  <TextBlock Text="{Binding HourLabel}" FontSize="8"
-                             HorizontalAlignment="Center"
+                  <TextBlock Text="{Binding HourLabel}" FontSize="8" HorizontalAlignment="Center"
                              Foreground="{DynamicResource TextMutedBrush}" />
                 </StackPanel>
               </DataTemplate>
