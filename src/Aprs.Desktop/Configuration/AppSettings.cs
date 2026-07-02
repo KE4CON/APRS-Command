@@ -28,7 +28,8 @@ public sealed record AppSettings(
     NetScriptSettings NetScripts,
     WinlinkSettings Winlink,
     SessionTemplateSettings SessionTemplates,
-    VoiceSettings Voice)
+    VoiceSettings Voice,
+    RepeaterBookSettings RepeaterBook)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -50,5 +51,6 @@ public sealed record AppSettings(
         NetScripts: NetScriptSettings.Default,
         Winlink: WinlinkSettings.Default,
         SessionTemplates: SessionTemplateSettings.Default,
-        Voice: VoiceSettings.Default);
+        Voice: VoiceSettings.Default,
+        RepeaterBook: RepeaterBookSettings.Default);
 }

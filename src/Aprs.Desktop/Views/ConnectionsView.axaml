@@ -6,7 +6,7 @@
   <UserControl.Resources>
     <vm:ConnectionPortTypeConverter x:Key="PortTypeConverter" />
   </UserControl.Resources>
-  <Grid RowDefinitions="Auto,*,Auto"
+  <Grid RowDefinitions="Auto,*,Auto,Auto"
         RowSpacing="12">
 
     <!-- Header -->
@@ -243,8 +243,39 @@
       </Border>
     </Grid>
 
+    <!-- RepeaterBook API Token -->
+    <Border Grid.Row="2"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="1" CornerRadius="6" Padding="14,12"
+            Background="{DynamicResource AppBgAltBrush}">
+      <StackPanel Spacing="8">
+        <StackPanel Spacing="2">
+          <TextBlock Text="RepeaterBook API Token" FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock TextWrapping="Wrap" FontSize="11"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     Text="Required for the Club / Net Directory panel. Request a free token at repeaterbook.com/api/token_request.php — approval typically takes a few days. Leave blank until your token is approved." />
+        </StackPanel>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBox Text="{Binding RepeaterBookApiToken}"
+                   Watermark="Paste your approved RepeaterBook API token here"
+                   PasswordChar="•"
+                   ToolTip.Tip="Your approved RepeaterBook API token. Stored locally on your machine only — never transmitted anywhere except to repeaterbook.com when you use the directory panel." />
+          <StackPanel Grid.Column="1" Spacing="4" Orientation="Horizontal">
+            <NumericUpDown Value="{Binding RepeaterBookRadiusMiles}"
+                           Minimum="5" Maximum="250" Width="90"
+                           ToolTip.Tip="Default search radius in miles for the repeater directory." />
+            <TextBlock Text="mi" VerticalAlignment="Center" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+          </StackPanel>
+        </Grid>
+        <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                   Text="Search radius (miles) — how far from your station to search for repeaters." />
+      </StackPanel>
+    </Border>
+
     <!-- Footer: save / revert + status -->
-    <Grid Grid.Row="2"
+    <Grid Grid.Row="3"
           ColumnDefinitions="Auto,Auto,*"
           ColumnSpacing="8">
       <Button Command="{Binding SaveCommand}"

@@ -16,6 +16,8 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged
     private ConnectionPortRowViewModel? selectedPort;
     private ConnectionPortType newPortType = ConnectionPortType.AprsIs;
     private string statusText = string.Empty;
+    private string repeaterBookApiToken = string.Empty;
+    private int repeaterBookRadiusMiles = 25;
     private int addCounter;
 
     public ConnectionsViewModel(IAppSettingsStore store)
@@ -95,6 +97,18 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged
         }
     }
 
+    public string RepeaterBookApiToken
+    {
+        get => repeaterBookApiToken;
+        set { repeaterBookApiToken = value; OnPropertyChanged(); }
+    }
+
+    public int RepeaterBookRadiusMiles
+    {
+        get => repeaterBookRadiusMiles;
+        set { repeaterBookRadiusMiles = Math.Max(5, Math.Min(250, value)); OnPropertyChanged(); }
+    }
+
     public DesktopCommand AddPortCommand { get; }
 
     public DesktopCommand RemoveSelectedPortCommand { get; }
@@ -106,13 +120,16 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged
     /// <summary>(Re)loads the port list from the saved settings, discarding unsaved edits.</summary>
     public void Load()
     {
+        var settings = store.Load();
         Ports.Clear();
-        foreach (var port in store.Load().Connections.Normalized().Ports)
+        foreach (var port in settings.Connections.Normalized().Ports)
         {
             Ports.Add(new ConnectionPortRowViewModel(port));
         }
 
         SelectedPort = Ports.FirstOrDefault();
+        RepeaterBookApiToken    = settings.RepeaterBook.ApiToken ?? string.Empty;
+        RepeaterBookRadiusMiles = settings.RepeaterBook.SearchRadiusMiles;
         StatusText = $"{Ports.Count} port(s) loaded.";
     }
 
@@ -120,7 +137,14 @@ public sealed class ConnectionsViewModel : INotifyPropertyChanged
     public void Save()
     {
         var ports = Ports.Select(row => row.ToModel()).ToList();
-        store.Update(settings => settings with { Connections = new ConnectionSettings(ports) });
+        var rbSettings = new RepeaterBookSettings(
+            ApiToken:         string.IsNullOrWhiteSpace(RepeaterBookApiToken) ? null : RepeaterBookApiToken.Trim(),
+            SearchRadiusMiles: RepeaterBookRadiusMiles);
+        store.Update(settings => settings with
+        {
+            Connections  = new ConnectionSettings(ports),
+            RepeaterBook = rbSettings
+        });
         StatusText = $"Saved {ports.Count} port(s).";
     }
 

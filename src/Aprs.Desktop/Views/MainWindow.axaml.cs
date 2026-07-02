@@ -285,6 +285,16 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OpenRepeaterDirectory_Click(object? sender, RoutedEventArgs e)
+    {
+        var win = new RepeaterDirectoryWindow
+        {
+            DataContext = new ViewModels.RepeaterDirectoryViewModel(
+                Configuration.JsonAppSettingsStore.Default)
+        };
+        win.Show();
+    }
+
     private void OpenSessionTemplates_Click(object? sender, RoutedEventArgs e)
     {
         var rt = (Application.Current as App)?.Runtime;

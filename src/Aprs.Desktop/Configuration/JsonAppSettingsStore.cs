@@ -163,7 +163,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
             NetScripts = settings.NetScripts ?? NetScriptSettings.Default,
             Winlink = settings.Winlink ?? WinlinkSettings.Default,
             SessionTemplates = settings.SessionTemplates ?? SessionTemplateSettings.Default,
-            Voice = settings.Voice ?? VoiceSettings.Default };
+            Voice = settings.Voice ?? VoiceSettings.Default,
+            RepeaterBook = settings.RepeaterBook ?? RepeaterBookSettings.Default };
         return Migrate(normalized);
     }
 
@@ -241,7 +242,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var winlink = TryDeserializeSection(root, "winlink", WinlinkSettings.Default) ?? WinlinkSettings.Default;
         var sessionTemplates = TryDeserializeSection(root, "sessionTemplates", SessionTemplateSettings.Default) ?? SessionTemplateSettings.Default;
         var voice = TryDeserializeSection(root, "voice", VoiceSettings.Default) ?? VoiceSettings.Default;
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink, sessionTemplates, voice));
+        var repeaterBook = TryDeserializeSection(root, "repeaterBook", RepeaterBookSettings.Default) ?? RepeaterBookSettings.Default;
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink, sessionTemplates, voice, repeaterBook));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)
