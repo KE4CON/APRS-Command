@@ -106,7 +106,7 @@
               Padding="12"
               MaxWidth="430"
               IsVisible="False">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
           <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
             <StackPanel Spacing="1">
               <TextBlock Text="{Binding SelectedStationDetails.DisplayName}"
@@ -154,7 +154,27 @@
             </StackPanel>
           </UniformGrid>
 
-          <StackPanel Grid.Row="2" Spacing="2">
+          <!-- Dead reckoning estimate — only shown for moving stations with recent data -->
+          <Border Grid.Row="2"
+                  IsVisible="{Binding SelectedStationDetails.HasDeadReckoning}"
+                  Background="{DynamicResource AccentBlueBgBrush}"
+                  BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="4"
+                  Padding="8,5"
+                  Margin="0,2,0,0">
+            <StackPanel Spacing="2">
+              <TextBlock Text="🧭  Dead reckoning estimate"
+                         FontSize="10" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="{Binding SelectedStationDetails.DeadReckonedSummary}"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <StackPanel Grid.Row="3" Spacing="2">
             <TextBlock Text="Path" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{Binding SelectedStationDetails.LastPath}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
             <TextBlock Text="Heard by" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" Margin="0,5,0,0" />
@@ -170,7 +190,7 @@
             <TextBlock Text="{Binding SelectedStationDetails.Comment}" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" />
           </StackPanel>
 
-          <StackPanel Grid.Row="3" Spacing="2">
+          <StackPanel Grid.Row="4" Spacing="2">
             <TextBlock Text="Last Raw Packet" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{Binding SelectedStationDetails.LastRawPacket}"
                        Foreground="{DynamicResource TitleBarBorderBrush}"
