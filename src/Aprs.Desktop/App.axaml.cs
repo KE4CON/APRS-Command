@@ -41,6 +41,10 @@ public sealed partial class App : Application
                 toast.Clicked += (_, _) =>
                     rt.MainViewModel.OpenMessagesCommand.Execute(null);
                 toast.Show();
+
+                // Voice readout
+                var spoken = added == 1 ? $"Message from {from}. {body}" : $"{added} new messages";
+                rt.VoiceAlertService.Speak(spoken, Services.VoiceAlertType.IncomingMessage);
             });
         };
     }
@@ -136,6 +140,7 @@ public sealed partial class App : Application
                     "⚠ APRS-IS Disconnected",
                     "Connection has been down for 3+ minutes. Check your network and server settings.");
                 toast.Show();
+                rt.VoiceAlertService.Speak("APRS-IS connection lost.", Services.VoiceAlertType.ConnectionEvent);
             });
         };
 
@@ -147,6 +152,7 @@ public sealed partial class App : Application
                     "✓ APRS-IS Reconnected",
                     "Connection restored.");
                 toast.Show();
+                rt.VoiceAlertService.Speak("APRS-IS connection restored.", Services.VoiceAlertType.ConnectionEvent);
             });
         };
 
@@ -434,7 +440,11 @@ public sealed partial class App : Application
                     desktop.MainWindow = mainWindow;
                     runtime.Start();
                     runtime.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
-                        runtime.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
+                    {
+                        var s = JsonAppSettingsStore.Default.Load();
+                        runtime.BeaconService.ApplySettings(s);
+                        runtime.ApplyVoiceSettings(s.Voice);
+                    };
                     WireSoundAlerts(runtime);
                     WireMessageToast(runtime);
                     WireGpsWriteback(runtime);

@@ -4,7 +4,7 @@
              x:Class="Aprs.Desktop.Views.AudioConfigView"
              x:DataType="vm:AudioConfigViewModel">
   <ScrollViewer>
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="14" Margin="0,4">
 
       <!-- Header -->
       <StackPanel Spacing="2">
@@ -130,8 +130,80 @@
         </StackPanel>
       </Border>
 
+      <!-- Voice Readout -->
+      <Border Grid.Row="4"
+              BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+              BorderThickness="1" CornerRadius="6" Padding="14"
+              Background="{DynamicResource AccentBlueBgBrush}">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="2">
+            <TextBlock Text="Voice Readout" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock TextWrapping="Wrap" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       Text="Reads alerts aloud using your operating system's built-in text-to-speech. No internet or API key required. macOS uses 'say', Windows uses System.Speech, Linux uses espeak-ng." />
+          </StackPanel>
+
+          <CheckBox IsChecked="{Binding VoiceEnabled}"
+                    ToolTip.Tip="Master switch for all voice readout. Must be checked for any speech to occur.">
+            <TextBlock Text="Enable voice readout  (master switch)" FontWeight="SemiBold" />
+          </CheckBox>
+
+          <StackPanel Spacing="6" Margin="24,0,0,0">
+            <CheckBox IsChecked="{Binding VoiceSpeakMessages}"
+                      ToolTip.Tip="Reads the sender's callsign and message body when a direct APRS message arrives. Example: 'Message from W9ABC. Are you on frequency?'">
+              <StackPanel Spacing="1">
+                <TextBlock Text="Incoming messages" FontSize="12" />
+                <TextBlock Text="Reads callsign and body when a direct message arrives." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+            <CheckBox IsChecked="{Binding VoiceSpeakNetCheckIns}"
+                      ToolTip.Tip="Announces station callsigns as they check in to the net via the Net Control window.">
+              <StackPanel Spacing="1">
+                <TextBlock Text="Net check-ins" FontSize="12" />
+                <TextBlock Text="Announces callsigns as stations check in to the net." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+            <CheckBox IsChecked="{Binding VoiceSpeakWeatherAlerts}"
+                      ToolTip.Tip="Reads National Weather Service alerts aloud when they arrive. Useful during Skywarn activations.">
+              <StackPanel Spacing="1">
+                <TextBlock Text="NWS weather alerts" FontSize="12" />
+                <TextBlock Text="Reads severe weather alerts from the National Weather Service." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+            <CheckBox IsChecked="{Binding VoiceSpeakStationAlerts}"
+                      ToolTip.Tip="Announces tracked station movements and geofence triggers. Can be noisy in busy areas.">
+              <StackPanel Spacing="1">
+                <TextBlock Text="Station alerts" FontSize="12" />
+                <TextBlock Text="Announces tracked station movements and geofence triggers." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+            <CheckBox IsChecked="{Binding VoiceSpeakConnectionEvents}"
+                      ToolTip.Tip="Announces APRS-IS connect and disconnect events. Useful when the app is running in the background.">
+              <StackPanel Spacing="1">
+                <TextBlock Text="Connection events" FontSize="12" />
+                <TextBlock Text="Announces APRS-IS connect and disconnect events." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+            <CheckBox IsChecked="{Binding VoiceSpeakBeaconConfirmations}"
+                      ToolTip.Tip="Announces each successful beacon transmission. Most operators leave this off.">
+              <StackPanel Spacing="1">
+                <TextBlock Text="Beacon confirmations" FontSize="12" />
+                <TextBlock Text="Announces each successful beacon transmission." FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </CheckBox>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
       <!-- Save / Revert -->
-      <Grid Grid.Row="4" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+      <Grid Grid.Row="5" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}" Content="Save" Padding="14,6" />
         <Button Grid.Column="1" Command="{Binding RevertCommand}" Content="Revert" Padding="10,6" />
         <TextBlock Grid.Column="2" Text="{Binding StatusText}" Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" />
