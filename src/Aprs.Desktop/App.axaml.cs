@@ -264,6 +264,10 @@ public sealed partial class App : Application
         // Subscribe to parsed position packets and evaluate against geofences.
         rt.GetService<AprsIngestionService>().PacketParsed += (_, args) =>
         {
+            // Feed every packet into the statistics service.
+            if (args.Packet is not null)
+                rt.PacketStatisticsService.RecordPacket(args.Packet);
+
             if (args.Packet is not PositionAprsPacket pos) return;
             if (pos.Latitude is null || pos.Longitude is null) return;
             coordinator.OnStationPositionUpdated(
