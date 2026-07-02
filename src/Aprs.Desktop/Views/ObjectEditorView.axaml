@@ -4,7 +4,7 @@
              xmlns:mapping="using:Aprs.Mapping"
              x:Class="Aprs.Desktop.Views.ObjectEditorView"
              x:DataType="vm:ObjectEditorViewModel">
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
         RowSpacing="8">
     <Grid ColumnDefinitions="*,*,Auto,Auto"
           ColumnSpacing="8">
@@ -113,6 +113,51 @@
     </Grid>
 
     <Border Grid.Row="4"
+            BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="4"
+            Background="{DynamicResource AccentBlueBgBrush}"
+            Padding="8"
+            Margin="0,0,0,4">
+      <StackPanel Spacing="6">
+        <CheckBox Content="Area Object (encode shape in comment using APRS area object format)"
+                  IsChecked="{Binding IsAreaObject}"
+                  FontWeight="SemiBold" />
+        <Grid ColumnDefinitions="*,*,Auto,Auto"
+              ColumnSpacing="8"
+              IsVisible="{Binding IsAreaObject}">
+          <StackPanel>
+            <TextBlock Text="Shape" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <ComboBox ItemsSource="{Binding AreaShapes}"
+                      SelectedIndex="3"
+                      DisplayMemberBinding="{Binding Label}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="Color" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <ComboBox ItemsSource="{Binding AreaColors}"
+                      SelectedIndex="1"
+                      DisplayMemberBinding="{Binding Label}" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Text="Width (km)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <NumericUpDown Value="{Binding AreaWidthKm}" Minimum="0.1" Maximum="99" Increment="0.5"
+                           FormatString="0.0" Width="90" />
+          </StackPanel>
+          <StackPanel Grid.Column="3">
+            <TextBlock Text="Height (km)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            <NumericUpDown Value="{Binding AreaHeightKm}" Minimum="0.1" Maximum="99" Increment="0.5"
+                           FormatString="0.0" Width="90" />
+          </StackPanel>
+        </Grid>
+        <TextBlock Text="Area objects use the \l symbol and encode shape dimensions in the comment field per APRS spec §11."
+                   FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                   IsVisible="{Binding IsAreaObject}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="5"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="1"
             BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
             CornerRadius="4"

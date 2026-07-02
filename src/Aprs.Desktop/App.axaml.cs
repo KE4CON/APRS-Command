@@ -343,6 +343,16 @@ public sealed partial class App : Application
         };
     }
 
+    private static void WireScheduledBeacons(DesktopRuntime rt)
+    {
+        // Fire a tick every 60 seconds to evaluate scheduled beacon triggers.
+        var timer = new Avalonia.Threading.DispatcherTimer(
+            TimeSpan.FromSeconds(60),
+            Avalonia.Threading.DispatcherPriority.Background,
+            async (_, _) => await rt.ScheduledBeaconService.TickAsync().ConfigureAwait(false));
+        timer.Start();
+    }
+
     private static void WireReadiness(DesktopRuntime rt)
     {
         void Refresh()
@@ -473,6 +483,7 @@ public sealed partial class App : Application
                     WireNwsAlerts(runtime);
                     WireRadarRefresh(mainWindow);
                     WireGeofence(runtime);
+                    WireScheduledBeacons(runtime);
                 }
                 else
                 {
@@ -504,6 +515,7 @@ public sealed partial class App : Application
                         WireTelemetry(runtime);
                         WireNetControl(runtime);
                         WireNwsAlerts(runtime);
+                        WireScheduledBeacons(runtime);
                         // Trail and radar wiring happen after main window is shown.
                         setup.Closed += (_, _) =>
                         {

@@ -50,6 +50,8 @@ public sealed partial class MainWindow : Window
             vm.TelemetryRequested     -= OnTelemetryRequested;
             vm.SettingsRequested      -= OnSettingsRequested;
             vm.HelpRequested          -= OnHelpRequested;
+            vm.ShortcutsRequested     -= OnShortcutsRequested;
+            vm.ScheduledBeaconsRequested -= OnScheduledBeaconsRequested;
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
             vm.AboutRequested         -= OnAboutRequested;
@@ -92,6 +94,8 @@ public sealed partial class MainWindow : Window
             vm.TelemetryRequested     += OnTelemetryRequested;
             vm.SettingsRequested      += OnSettingsRequested;
             vm.HelpRequested          += OnHelpRequested;
+            vm.ShortcutsRequested     += OnShortcutsRequested;
+            vm.ScheduledBeaconsRequested += OnScheduledBeaconsRequested;
             vm.BeaconNowRequested     += OnBeaconNowRequested;
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
             vm.AboutRequested         += OnAboutRequested;
@@ -156,6 +160,18 @@ public sealed partial class MainWindow : Window
 
     private void OnHelpRequested(object? s, EventArgs e)
         => new HelpWindow { DataContext = HelpViewModel.CreateDefault() }.Show(this);
+
+    private void OnShortcutsRequested(object? s, EventArgs e)
+        => new KeyboardShortcutsWindow().Show(this);
+
+    private void OnScheduledBeaconsRequested(object? s, EventArgs e)
+    {
+        if (App.Current is App app && app.Runtime is { } rt)
+            new ScheduledBeaconsWindow
+            {
+                DataContext = new ScheduledBeaconsViewModel(rt.ScheduledBeaconService)
+            }.Show(this);
+    }
 
     private void OnAboutRequested(object? s, EventArgs e)
         => new AboutWindow().ShowDialog(this);

@@ -127,6 +127,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenTelemetryCommand   = new DesktopCommand(() => TelemetryRequested?.Invoke(this, EventArgs.Empty));
         OpenSettingsCommand    = new DesktopCommand(() => SettingsRequested?.Invoke(this, EventArgs.Empty));
         OpenHelpCommand        = new DesktopCommand(() => HelpRequested?.Invoke(this, EventArgs.Empty));
+        OpenShortcutsCommand   = new DesktopCommand(() => ShortcutsRequested?.Invoke(this, EventArgs.Empty));
+        OpenScheduledBeaconsCommand = new DesktopCommand(() => ScheduledBeaconsRequested?.Invoke(this, EventArgs.Empty));
         BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
         ToggleExerciseModeCommand = new DesktopCommand(() => ExerciseModeRequested?.Invoke(this, EventArgs.Empty));
         OpenAboutCommand       = new DesktopCommand(() => AboutRequested?.Invoke(this, EventArgs.Empty));
@@ -162,6 +164,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? TelemetryRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? HelpRequested;
+    public event EventHandler? ShortcutsRequested;
+    public event EventHandler? ScheduledBeaconsRequested;
     public event EventHandler? BeaconNowRequested;
     public event EventHandler? ExerciseModeRequested;
     public event EventHandler? AboutRequested;
@@ -235,6 +239,8 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenTelemetryCommand { get; }
     public DesktopCommand OpenSettingsCommand { get; }
     public DesktopCommand OpenHelpCommand { get; }
+    public DesktopCommand OpenShortcutsCommand { get; }
+    public DesktopCommand OpenScheduledBeaconsCommand { get; }
     public DesktopCommand BeaconNowCommand { get; }
     public DesktopCommand ToggleExerciseModeCommand { get; }
     public DesktopCommand OpenAboutCommand { get; }
