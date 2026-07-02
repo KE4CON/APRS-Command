@@ -4,5 +4,5 @@ public enum GeofenceType
 {
     Circle,
     Polygon,
-    RectanglePlaceholder
+    Rectangle
 }

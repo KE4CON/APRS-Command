@@ -127,9 +127,26 @@ public sealed class GeofenceService : IGeofenceService
                 }
 
                 break;
-            case GeofenceType.RectanglePlaceholder:
-                warnings.Add("Rectangle geofences are placeholders and are not evaluated yet.");
+            case GeofenceType.Rectangle:
+                if (geofence.PolygonPoints.Count < 2)
+                {
+                    errors.Add("Rectangle geofence requires at least two corner points.");
+                }
+                else
+                {
+                    foreach (var point in geofence.PolygonPoints)
+                    {
+                        ValidateCoordinate(point.Latitude, point.Longitude, errors, "Rectangle point");
+                    }
+                }
+
+                if (!allowLargeGeofence && EstimatePolygonSpanMeters(geofence.PolygonPoints) > LargeGeofenceRadiusMeters * 2)
+                {
+                    warnings.Add("Rectangle geofence spans a very large area.");
+                }
+
                 break;
+
         }
 
         if (geofence.Enabled && errors.Count > 0)
@@ -152,6 +169,8 @@ public sealed class GeofenceService : IGeofenceService
             GeofenceType.Circle when geofence.CenterLatitude is not null && geofence.CenterLongitude is not null && geofence.RadiusMeters is not null =>
                 CalculateDistanceMeters(geofence.CenterLatitude.Value, geofence.CenterLongitude.Value, latitude, longitude) <= geofence.RadiusMeters,
             GeofenceType.Polygon => IsPointInsidePolygon(latitude, longitude, geofence.PolygonPoints),
+            GeofenceType.Rectangle when geofence.PolygonPoints.Count >= 2 =>
+                IsPointInsideRectangle(latitude, longitude, geofence.PolygonPoints),
             _ => false
         };
     }
@@ -236,6 +255,19 @@ public sealed class GeofenceService : IGeofenceService
             geofence.AlertSeverity,
             $"{callsign} {action} geofence {geofence.Name}.",
             $"Station {callsign} {action} {geofence.Name} at {latitude:0.00000}, {longitude:0.00000}.");
+    }
+
+    private static bool IsPointInsideRectangle(double latitude, double longitude, IReadOnlyList<GeofencePoint> points)
+    {
+        // Rectangle is defined by its bounding box derived from all provided points.
+        // Supports both 2-point (NW + SE corners) and 4-point (all corners) definitions.
+        var minLat = points.Min(p => p.Latitude);
+        var maxLat = points.Max(p => p.Latitude);
+        var minLon = points.Min(p => p.Longitude);
+        var maxLon = points.Max(p => p.Longitude);
+
+        return latitude >= minLat && latitude <= maxLat
+            && longitude >= minLon && longitude <= maxLon;
     }
 
     private static bool IsPointInsidePolygon(double latitude, double longitude, IReadOnlyList<GeofencePoint> points)
