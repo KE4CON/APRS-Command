@@ -24,7 +24,10 @@ public sealed record StationProfile(
     bool AprsIsTransmitEnabled,
     bool RfTransmitEnabled,
     string? PhgData,
-    DistanceUnit DistanceUnit = DistanceUnit.Miles)
+    DistanceUnit DistanceUnit = DistanceUnit.Miles,
+    int Ring1Distance = 10,
+    int Ring2Distance = 25,
+    int Ring3Distance = 50)
 {
     public static StationProfile Default { get; } = new(
         Callsign:             "N0CALL",
@@ -43,7 +46,10 @@ public sealed record StationProfile(
         AprsIsTransmitEnabled:false,
         RfTransmitEnabled:    false,
         PhgData:              null,
-        DistanceUnit:         DistanceUnit.Miles);
+        DistanceUnit:         DistanceUnit.Miles,
+        Ring1Distance:        10,
+        Ring2Distance:        25,
+        Ring3Distance:        50);
 
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Callsign)

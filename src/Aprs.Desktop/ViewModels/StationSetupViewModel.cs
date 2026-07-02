@@ -35,6 +35,9 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
     private bool aprsIsTransmitEnabled;
     private bool rfTransmitEnabled;
     private string phgData = string.Empty;
+    private int ring1Distance = 10;
+    private int ring2Distance = 25;
+    private int ring3Distance = 50;
     private AprsSymbol? selectedSymbol;
     private string statusText = string.Empty;
 
@@ -219,6 +222,24 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
         set { if (phgData != value) { phgData = value; OnPropertyChanged(); } }
     }
 
+    public int Ring1Distance
+    {
+        get => ring1Distance;
+        set { if (ring1Distance != value) { ring1Distance = Math.Max(1, value); OnPropertyChanged(); } }
+    }
+
+    public int Ring2Distance
+    {
+        get => ring2Distance;
+        set { if (ring2Distance != value) { ring2Distance = Math.Max(1, value); OnPropertyChanged(); } }
+    }
+
+    public int Ring3Distance
+    {
+        get => ring3Distance;
+        set { if (ring3Distance != value) { ring3Distance = Math.Max(1, value); OnPropertyChanged(); } }
+    }
+
     // PHG encoder — four dropdowns that build the PHG string automatically.
     public IReadOnlyList<string> PhgPowerOptions { get; } =
         ["None", "0W (0)", "1W (1)", "4W (2)", "9W (3)", "16W (4)", "25W (5)", "36W (6)", "49W (7)", "64W (8)", "81W (9)"];
@@ -306,6 +327,9 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
         AprsIsTransmitEnabled = p.AprsIsTransmitEnabled;
         RfTransmitEnabled    = p.RfTransmitEnabled;
         PhgData              = p.PhgData ?? string.Empty;
+        ring1Distance        = p.Ring1Distance;
+        ring2Distance        = p.Ring2Distance;
+        ring3Distance        = p.Ring3Distance;
 
         // Sync symbol picker selection to the loaded symbol
         selectedSymbol = AvailableSymbols.FirstOrDefault(
@@ -338,7 +362,10 @@ public sealed class StationSetupViewModel : INotifyPropertyChanged
             AprsIsTransmitEnabled: AprsIsTransmitEnabled,
             RfTransmitEnabled:     RfTransmitEnabled,
             PhgData:               string.IsNullOrWhiteSpace(PhgData) ? null : PhgData.Trim(),
-            DistanceUnit:          DistanceUnit);
+            DistanceUnit:          DistanceUnit,
+            Ring1Distance:         Ring1Distance,
+            Ring2Distance:         Ring2Distance,
+            Ring3Distance:         Ring3Distance);
         store.Update(s => s with { Station = profile });
         SettingsSaved?.Invoke(this, EventArgs.Empty);
 

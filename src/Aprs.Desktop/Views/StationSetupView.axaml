@@ -5,7 +5,7 @@
              x:Class="Aprs.Desktop.Views.StationSetupView"
              x:DataType="vm:StationSetupViewModel">
   <ScrollViewer>
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
           RowSpacing="14"
           Margin="0,4">
 
@@ -194,8 +194,31 @@
         </StackPanel>
       </Grid>
 
+      <!-- Ring distances -->
+      <Grid Grid.Row="5"
+            ColumnDefinitions="Auto,*,Auto,*,Auto,*"
+            ColumnSpacing="8">
+        <TextBlock Text="Range rings:" VerticalAlignment="Center"
+                   FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        <NumericUpDown Grid.Column="1" Value="{Binding Ring1Distance}"
+                       Minimum="1" Maximum="9999"
+                       ToolTip.Tip="Inner ring distance (blue). Enter in your preferred unit (miles or km)." />
+        <TextBlock Grid.Column="2" Text="/" VerticalAlignment="Center"
+                   FontSize="13" Foreground="{DynamicResource TextMutedBrush}"
+                   Margin="4,0" />
+        <NumericUpDown Grid.Column="3" Value="{Binding Ring2Distance}"
+                       Minimum="1" Maximum="9999"
+                       ToolTip.Tip="Middle ring distance (green). Enter in your preferred unit (miles or km)." />
+        <TextBlock Grid.Column="4" Text="/" VerticalAlignment="Center"
+                   FontSize="13" Foreground="{DynamicResource TextMutedBrush}"
+                   Margin="4,0" />
+        <NumericUpDown Grid.Column="5" Value="{Binding Ring3Distance}"
+                       Minimum="1" Maximum="9999"
+                       ToolTip.Tip="Outer ring distance (red). Enter in your preferred unit (miles or km)." />
+      </Grid>
+
       <!-- PHG encoder (Power, Height, Gain, Directivity) -->
-      <Border Grid.Row="5"
+      <Border Grid.Row="6"
               BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1"
               CornerRadius="6"
@@ -248,7 +271,7 @@
       </Border>
 
       <!-- Transmit safety -->
-      <Border Grid.Row="6"
+      <Border Grid.Row="7"
               Background="{DynamicResource WarnBgBrush}"
               BorderBrush="{DynamicResource WarnBorderBrush}"
               BorderThickness="1"
@@ -282,7 +305,7 @@
       </Border>
 
       <!-- Save / Revert -->
-      <Grid Grid.Row="7"
+      <Grid Grid.Row="8"
             ColumnDefinitions="Auto,Auto,*"
             ColumnSpacing="8">
         <Button Command="{Binding SaveCommand}"
