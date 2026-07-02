@@ -13,10 +13,12 @@ public sealed class PacketStatisticsDashboardViewModel : INotifyPropertyChanged,
 {
     private readonly PacketStatisticsService stats;
     private readonly DispatcherTimer refreshTimer;
+    private readonly bool preferMiles;
 
-    public PacketStatisticsDashboardViewModel(PacketStatisticsService stats)
+    public PacketStatisticsDashboardViewModel(PacketStatisticsService stats, bool preferMiles = true)
     {
         this.stats = stats;
+        this.preferMiles = preferMiles;
         refreshTimer = new DispatcherTimer(
             TimeSpan.FromSeconds(2),
             DispatcherPriority.Background,
@@ -233,9 +235,20 @@ public sealed class PacketStatisticsDashboardViewModel : INotifyPropertyChanged,
 
         // Aloha circle
         var aloha = AlohaCircleService.Calculate(stats.UniqueStations, stats.PacketsPerMinute);
-        AlohaRadius    = aloha?.RadiusDisplay    ?? "—";
+        AlohaRadius    = aloha is null ? "—" : FormatAlohaRadius(aloha.RadiusKm);
         AlohaLoad      = aloha?.LoadDisplay      ?? "—";
-        AlohaSummary   = aloha?.Summary          ?? "Insufficient data for Aloha circle calculation.";
+        AlohaSummary   = aloha is null ? "Insufficient data for Aloha circle calculation."
+                       : $"Aloha radius {FormatAlohaRadius(aloha.RadiusKm)}  ·  {aloha.PacketsPerMinute:F1} pkt/min  ·  {aloha.UniqueStations} stations  ·  channel load {aloha.ChannelLoadFraction * 100:F0}%";
+    }
+
+    private string FormatAlohaRadius(double radiusKm)
+    {
+        if (preferMiles)
+        {
+            var miles = radiusKm * 0.621371;
+            return $"{miles:F1} mi";
+        }
+        return $"{radiusKm:F1} km";
     }
 
     public void Dispose()
