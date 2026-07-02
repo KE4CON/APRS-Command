@@ -1,0 +1,257 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:svc="using:Aprs.Desktop.Services"
+        x:Class="Aprs.Desktop.Views.RepeaterDirectoryWindow"
+        x:DataType="vm:RepeaterDirectoryViewModel"
+        Title="Club / Net Repeater Directory"
+        Width="900" Height="620"
+        MinWidth="700" MinHeight="450"
+        WindowStartupLocation="CenterOwner">
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- Header -->
+    <StackPanel Margin="16,14,16,8" Spacing="4">
+      <TextBlock Text="Club / Net Repeater Directory" FontSize="17" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                 Text="Repeater data from RepeaterBook.com — searched within your configured radius of your station location." />
+    </StackPanel>
+
+    <!-- Controls row -->
+    <Grid Grid.Row="1" Margin="16,0,16,10"
+          ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+      <TextBox Text="{Binding FilterText}"
+               Watermark="Filter by callsign, frequency, or city..."
+               VerticalAlignment="Center" />
+      <CheckBox Grid.Column="1" Content="Operational only"
+                IsChecked="{Binding ShowOperationalOnly}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="When checked, only shows repeaters marked as operational in RepeaterBook." />
+      <Button Grid.Column="2" Content="Search"
+              Command="{Binding SearchCommand}"
+              Padding="16,7" IsEnabled="{Binding IsNotSearching}"
+              ToolTip.Tip="Search RepeaterBook for repeaters near your station location. Requires an approved API token in Settings > Connections." />
+      <TextBlock Grid.Column="3" Text="Searching..."
+                 IsVisible="{Binding IsSearching}"
+                 VerticalAlignment="Center" FontSize="11"
+                 Foreground="{DynamicResource TextMutedBrush}" />
+    </Grid>
+
+    <!-- Main content -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,320" ColumnSpacing="0">
+
+      <!-- Results list -->
+      <Border BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1,1,0,1" Margin="16,0,0,0">
+        <Grid RowDefinitions="Auto,*">
+
+          <!-- Column headers -->
+          <Grid IsVisible="{Binding HasResults}"
+                ColumnDefinitions="100,100,80,100,*,85"
+                Background="{DynamicResource AppBgAltBrush}">
+            <TextBlock Text="Callsign"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Frequency"  Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="2" Text="Offset"     Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="3" Text="Tone/DCS"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="4" Text="Location"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="5" Text="Distance"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+          </Grid>
+
+          <!-- No token message -->
+          <StackPanel Grid.Row="1"
+                      IsVisible="{Binding NeedsToken}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="12" Margin="40">
+            <TextBlock Text="📡" FontSize="40" HorizontalAlignment="Center" />
+            <TextBlock Text="RepeaterBook API Token Required"
+                       FontSize="14" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Text="To use the repeater directory, you need a free API token from RepeaterBook." />
+            <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}">
+              1. Visit repeaterbook.com/api/token_request.php&#x0a;2. Submit a request describing APRS Command&#x0a;3. Once approved, paste your token in Settings → Connections → RepeaterBook API Token&#x0a;4. Click Search
+            </TextBlock>
+          </StackPanel>
+
+          <!-- Error message -->
+          <StackPanel Grid.Row="1"
+                      IsVisible="{Binding HasError}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="8" Margin="40">
+            <TextBlock Text="⚠️" FontSize="32" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
+                       TextAlignment="Center" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+
+          <!-- Empty / initial state -->
+          <StackPanel Grid.Row="1"
+                      IsVisible="{Binding !HasResults}"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      Spacing="8" Margin="40">
+            <TextBlock Text="Click Search to find repeaters near your station."
+                       FontSize="12" TextAlignment="Center"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       IsVisible="{Binding !NeedsToken}" />
+          </StackPanel>
+
+          <!-- Results -->
+          <!-- Column headers -->
+          <Grid IsVisible="{Binding HasResults}"
+                ColumnDefinitions="100,100,80,100,*,85"
+                Background="{DynamicResource AppBgAltBrush}"
+                Margin="0,0,0,0">
+            <TextBlock Text="Callsign"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Frequency"  Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="2" Text="Offset"     Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="3" Text="Tone/DCS"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="4" Text="Location"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="5" Text="Distance"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+          </Grid>
+
+          <ListBox Grid.Row="1"
+                   IsVisible="{Binding HasResults}"
+                   ItemsSource="{Binding Repeaters}"
+                   SelectedItem="{Binding SelectedRepeater}"
+                   Background="Transparent"
+                   BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="svc:RepeaterEntry">
+                <Grid ColumnDefinitions="100,100,80,100,*,85" Margin="0,1">
+                  <TextBlock Text="{Binding Callsign}"      Margin="8,3" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBlueBrush}" />
+                  <TextBlock Grid.Column="1" Text="{Binding Frequency}"     Margin="8,3" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Grid.Column="2" Text="{Binding OffsetLabel}"   Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Grid.Column="3" Text="{Binding ToneLabel}"     Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Grid.Column="4" Text="{Binding LocationLabel}" Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="5" Text="{Binding DistanceLabel}" Margin="8,3" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+        </Grid>
+      </Border>
+
+      <!-- Detail panel -->
+      <Border Grid.Column="1"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1" Margin="0,0,16,0"
+              Background="{DynamicResource AppBgAltBrush}">
+        <ScrollViewer>
+          <StackPanel Margin="16,14" Spacing="12"
+                      IsVisible="{Binding SelectedRepeater,
+                        Converter={x:Static ObjectConverters.IsNotNull}}">
+
+            <!-- Callsign and status -->
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding SelectedRepeater.Callsign}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         Text="{Binding SelectedRepeater.LocationLabel}" />
+            </StackPanel>
+
+            <!-- Frequency block -->
+            <Border Background="{DynamicResource AccentBlueBgBrush}"
+                    BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                    BorderThickness="1" CornerRadius="6" Padding="12,10">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Text="Output:" FontSize="11" Width="80"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="1" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource AccentBlueBrush}"
+                             Text="{Binding SelectedRepeater.Frequency}" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Text="Input:" FontSize="11" Width="80"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="1" FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Text="{Binding SelectedRepeater.InputFrequency}" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Text="Offset:" FontSize="11" Width="80"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="1" FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Text="{Binding SelectedRepeater.OffsetLabel}" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*">
+                  <TextBlock Text="Tone:" FontSize="11" Width="80"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="1" FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Text="{Binding SelectedRepeater.ToneLabel}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Button Content="Copy Frequency"
+                    Command="{Binding CopyFrequencyCommand}"
+                    CommandParameter="{Binding SelectedRepeater}"
+                    Padding="10,6" HorizontalAlignment="Left"
+                    ToolTip.Tip="Copy the output frequency to the clipboard." />
+
+            <!-- Notes -->
+            <StackPanel Spacing="4"
+                        IsVisible="{Binding SelectedRepeater.Notes,
+                          Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <TextBlock Text="Notes" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Text="{Binding SelectedRepeater.Notes}"
+                         FontSize="11" TextWrapping="Wrap"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+
+            <!-- Metadata -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Text="Use:" FontSize="10" Width="80"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Grid.Column="1" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Text="{Binding SelectedRepeater.Use}" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Text="Distance:" FontSize="10" Width="80"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Grid.Column="1" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Text="{Binding SelectedRepeater.DistanceLabel}" />
+              </Grid>
+              <Grid ColumnDefinitions="Auto,*">
+                <TextBlock Text="Updated:" FontSize="10" Width="80"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock Grid.Column="1" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           Text="{Binding SelectedRepeater.LastUpdate}" />
+              </Grid>
+            </StackPanel>
+
+            <TextBlock FontSize="10" Foreground="{DynamicResource TextMutedBrush}"
+                       TextWrapping="Wrap"
+                       Text="Data courtesy of RepeaterBook.com" />
+
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+
+    </Grid>
+
+    <!-- Status bar -->
+    <Border Grid.Row="3"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="0,1,0,0" Padding="16,7">
+      <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                 Foreground="{DynamicResource TextSecondaryBrush}" />
+    </Border>
+
+  </Grid>
+</Window>
