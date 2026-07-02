@@ -39,6 +39,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public Aprs.Desktop.Services.RadarAnimationService RadarAnimationService { get; }
 
     public Aprs.Services.PacketStatisticsService PacketStatisticsService { get; }
+    public Aprs.Desktop.Services.VoiceAlertService VoiceAlertService { get; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
@@ -62,6 +63,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         FailoverCoordinator = failoverCoordinator;
         RadarAnimationService = radarAnimationService;
         PacketStatisticsService = new Aprs.Services.PacketStatisticsService();
+        VoiceAlertService = new Aprs.Desktop.Services.VoiceAlertService();
+        ApplyVoiceSettings(JsonAppSettingsStore.Default.Load().Voice);
     }
 
     public static DesktopRuntime Create()
@@ -341,8 +344,21 @@ public sealed class DesktopRuntime : IAsyncDisposable
             filter: filter);
     }
 
+    public void ApplyVoiceSettings(Configuration.VoiceSettings v)
+    {
+        VoiceAlertService.IsEnabled                = v.Enabled;
+        VoiceAlertService.SpeakIncomingMessages    = v.SpeakIncomingMessages;
+        VoiceAlertService.SpeakNetCheckIns         = v.SpeakNetCheckIns;
+        VoiceAlertService.SpeakWeatherAlerts       = v.SpeakWeatherAlerts;
+        VoiceAlertService.SpeakStationAlerts       = v.SpeakStationAlerts;
+        VoiceAlertService.SpeakConnectionEvents    = v.SpeakConnectionEvents;
+        VoiceAlertService.SpeakBeaconConfirmations = v.SpeakBeaconConfirmations;
+        VoiceAlertService.PreferredVoiceName       = v.PreferredVoiceName;
+    }
+
     public async ValueTask DisposeAsync()
     {
+        VoiceAlertService.Dispose();
         await RadarAnimationService.DisposeAsync().ConfigureAwait(false);
         if (FailoverCoordinator is not null) await FailoverCoordinator.DisposeAsync().ConfigureAwait(false);
         await NwsAlertService.DisposeAsync().ConfigureAwait(false);

@@ -27,7 +27,8 @@ public sealed record AppSettings(
     FrequencyReferenceSettings FrequencyReference,
     NetScriptSettings NetScripts,
     WinlinkSettings Winlink,
-    SessionTemplateSettings SessionTemplates)
+    SessionTemplateSettings SessionTemplates,
+    VoiceSettings Voice)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -48,5 +49,6 @@ public sealed record AppSettings(
         FrequencyReference: FrequencyReferenceSettings.Default,
         NetScripts: NetScriptSettings.Default,
         Winlink: WinlinkSettings.Default,
-        SessionTemplates: SessionTemplateSettings.Default);
+        SessionTemplates: SessionTemplateSettings.Default,
+        Voice: VoiceSettings.Default);
 }

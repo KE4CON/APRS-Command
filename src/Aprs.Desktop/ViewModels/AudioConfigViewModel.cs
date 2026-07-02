@@ -12,6 +12,14 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
     private bool playOnWarningAlert;
     private bool playOnCriticalAlert;
     private bool playOnConnectionEvents;
+    private bool voiceEnabled;
+    private bool voiceSpeakMessages;
+    private bool voiceSpeakNetCheckIns;
+    private bool voiceSpeakWeatherAlerts;
+    private bool voiceSpeakStationAlerts;
+    private bool voiceSpeakConnectionEvents;
+    private bool voiceSpeakBeaconConfirmations;
+    private Services.VoiceOption? selectedVoice;
     private string statusText = string.Empty;
     private string? customSoundMessageReceived;
     private string? customSoundWarningAlert;
@@ -65,6 +73,55 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
         set { if (playOnConnectionEvents != value) { playOnConnectionEvents = value; OnPropertyChanged(); } }
     }
 
+    /// <summary>
+    /// All voices available on this platform, populated lazily on first access.
+    /// Always starts with "System Default".
+    /// </summary>
+    public IReadOnlyList<Services.VoiceOption> AvailableVoices
+        => Services.VoiceAlertService.GetAvailableVoices();
+
+    public Services.VoiceOption? SelectedVoice
+    {
+        get => selectedVoice;
+        set { selectedVoice = value; OnPropertyChanged(); }
+    }
+
+    public bool VoiceEnabled
+    {
+        get => voiceEnabled;
+        set { voiceEnabled = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakMessages
+    {
+        get => voiceSpeakMessages;
+        set { voiceSpeakMessages = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakNetCheckIns
+    {
+        get => voiceSpeakNetCheckIns;
+        set { voiceSpeakNetCheckIns = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakWeatherAlerts
+    {
+        get => voiceSpeakWeatherAlerts;
+        set { voiceSpeakWeatherAlerts = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakStationAlerts
+    {
+        get => voiceSpeakStationAlerts;
+        set { voiceSpeakStationAlerts = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakConnectionEvents
+    {
+        get => voiceSpeakConnectionEvents;
+        set { voiceSpeakConnectionEvents = value; OnPropertyChanged(); }
+    }
+    public bool VoiceSpeakBeaconConfirmations
+    {
+        get => voiceSpeakBeaconConfirmations;
+        set { voiceSpeakBeaconConfirmations = value; OnPropertyChanged(); }
+    }
+
     public string? CustomSoundMessageReceived
     {
         get => customSoundMessageReceived;
@@ -112,7 +169,8 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
 
     public void Load()
     {
-        var s = store.Load().Audio;
+        var all = store.Load();
+        var s   = all.Audio;
         VolumePercent          = s.VolumePercent;
         PlayOnMessageReceived  = s.PlayOnMessageReceived;
         PlayOnWarningAlert     = s.PlayOnWarningAlert;
@@ -123,12 +181,23 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
         CustomSoundCriticalAlert     = s.CustomSoundCriticalAlert;
         CustomSoundConnected         = s.CustomSoundConnected;
         CustomSoundDisconnected      = s.CustomSoundDisconnected;
+        var v = all.Voice;
+        VoiceEnabled                  = v.Enabled;
+        VoiceSpeakMessages            = v.SpeakIncomingMessages;
+        VoiceSpeakNetCheckIns         = v.SpeakNetCheckIns;
+        VoiceSpeakWeatherAlerts       = v.SpeakWeatherAlerts;
+        VoiceSpeakStationAlerts       = v.SpeakStationAlerts;
+        VoiceSpeakConnectionEvents    = v.SpeakConnectionEvents;
+        VoiceSpeakBeaconConfirmations = v.SpeakBeaconConfirmations;
+        // Restore selected voice — match by VoiceName, fall back to System Default
+        SelectedVoice = AvailableVoices.FirstOrDefault(o => o.VoiceName == v.PreferredVoiceName)
+                     ?? AvailableVoices.FirstOrDefault();
         StatusText = "Loaded.";
     }
 
     public void Save()
     {
-        var settings = new AudioSettings(
+        var audio = new AudioSettings(
             VolumePercent:                 VolumePercent,
             PlayOnMessageReceived:         PlayOnMessageReceived,
             PlayOnWarningAlert:            PlayOnWarningAlert,
@@ -139,7 +208,16 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
             CustomSoundCriticalAlert:      NullIfEmpty(CustomSoundCriticalAlert),
             CustomSoundConnected:          NullIfEmpty(CustomSoundConnected),
             CustomSoundDisconnected:       NullIfEmpty(CustomSoundDisconnected));
-        store.Update(s => s with { Audio = settings });
+        var voice = new VoiceSettings(
+            Enabled:                  VoiceEnabled,
+            SpeakIncomingMessages:    VoiceSpeakMessages,
+            SpeakNetCheckIns:         VoiceSpeakNetCheckIns,
+            SpeakWeatherAlerts:       VoiceSpeakWeatherAlerts,
+            SpeakStationAlerts:       VoiceSpeakStationAlerts,
+            SpeakConnectionEvents:    VoiceSpeakConnectionEvents,
+            SpeakBeaconConfirmations: VoiceSpeakBeaconConfirmations,
+            PreferredVoiceName:       SelectedVoice?.VoiceName);
+        store.Update(s => s with { Audio = audio, Voice = voice });
         StatusText = "Saved.";
     }
 
