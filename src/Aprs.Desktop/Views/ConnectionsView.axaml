@@ -211,7 +211,8 @@
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox Text="{Binding SelectedPort.AprsIsPasscode}"
                            Width="130"
-                           Watermark="-1 = RX only" />
+                           Watermark="-1 = RX only"
+                           ToolTip.Tip="Your APRS-IS passcode — a number calculated from your callsign. Required to transmit beacons and messages. Enter -1 for receive-only operation. Find your passcode at: apps.magicbug.co.uk/passcode" />
                 </StackPanel>
                 <StackPanel Grid.Column="1"
                             Spacing="2">
@@ -219,7 +220,8 @@
                              FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" />
                   <TextBox Text="{Binding SelectedPort.AprsIsFilter}"
-                           Watermark="e.g. m/100" />
+                           Watermark="e.g. m/100"
+                           ToolTip.Tip="Advanced: override the automatic geographic filter. Leave blank to use the radius set in Station Setup. Custom example: r/41.97/-88.45/200 receives stations within 200 km of that location. The number is always in kilometers regardless of your unit preference." />
                 </StackPanel>
               </Grid>
 

@@ -34,7 +34,8 @@
           <TextBlock Text="SSID" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
           <NumericUpDown Value="{Binding Ssid}"
                          Minimum="0" Maximum="15"
-                         Width="90" />
+                         Width="90"
+                         ToolTip.Tip="Secondary Station ID (0-15). Use 0 for your primary home station. Use 1-9 for mobile, portable, or secondary stations. KE4CON with SSID 1 appears as KE4CON-1 on the network." />
         </StackPanel>
         <StackPanel Grid.Column="2" Spacing="2">
           <TextBlock Text="Latitude" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
@@ -174,19 +175,22 @@
         <StackPanel Grid.Column="1" Spacing="2">
           <TextBlock Text="Beacon path" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
           <TextBox Text="{Binding BeaconPath}"
-                   Watermark="e.g. WIDE1-1,WIDE2-1" />
+                   Watermark="e.g. WIDE1-1,WIDE2-1"
+                   ToolTip.Tip="Controls how your packet is relayed by digipeaters. WIDE1-1,WIDE2-1 is correct for most US stations. IMPORTANT: no spaces — WIDE 1-1 is wrong and will be silently rejected by APRS-IS. Spaces are automatically removed when you save." />
         </StackPanel>
         <StackPanel Grid.Column="2" Spacing="2">
           <TextBlock Text="APRS-IS interval (min)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
           <NumericUpDown Value="{Binding AprsIsBeaconMinutes}"
                          Minimum="1" Maximum="120"
-                         Width="120" />
+                         Width="120"
+                         ToolTip.Tip="How often your position is automatically sent to APRS-IS, in minutes. Minimum is 5 minutes. 10-15 minutes is typical for a fixed home station. The Beacon Now button transmits immediately regardless of this interval." />
         </StackPanel>
         <StackPanel Grid.Column="3" Spacing="2">
           <TextBlock Text="RF interval (min)" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
           <NumericUpDown Value="{Binding RfBeaconMinutes}"
                          Minimum="1" Maximum="120"
-                         Width="120" />
+                         Width="120"
+                         ToolTip.Tip="How often your position is automatically sent over the radio (RF), in minutes. Only applies when RF transmit is enabled and a radio/TNC is connected. RF beaconing is independent of APRS-IS beaconing." />
         </StackPanel>
       </Grid>
 
@@ -209,28 +213,32 @@
               <ComboBox x:Name="PhgPowerCombo"
                         ItemsSource="{Binding PhgPowerOptions}"
                         HorizontalAlignment="Stretch"
-                        SelectionChanged="PhgDropdown_Changed" />
+                        SelectionChanged="PhgDropdown_Changed"
+                        ToolTip.Tip="Your station's transmit power in watts. Used to estimate RF coverage radius. Select None to omit PHG from your beacon." />
             </StackPanel>
             <StackPanel Grid.Column="1" Spacing="2">
               <TextBlock Text="Height HAAT" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
               <ComboBox x:Name="PhgHeightCombo"
                         ItemsSource="{Binding PhgHeightOptions}"
                         HorizontalAlignment="Stretch"
-                        SelectionChanged="PhgDropdown_Changed" />
+                        SelectionChanged="PhgDropdown_Changed"
+                        ToolTip.Tip="Height Above Average Terrain (HAAT) of your antenna in feet. This is the height of your antenna above the surrounding terrain, not above ground level. Has the biggest impact on coverage range." />
             </StackPanel>
             <StackPanel Grid.Column="2" Spacing="2">
               <TextBlock Text="Antenna gain" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
               <ComboBox x:Name="PhgGainCombo"
                         ItemsSource="{Binding PhgGainOptions}"
                         HorizontalAlignment="Stretch"
-                        SelectionChanged="PhgDropdown_Changed" />
+                        SelectionChanged="PhgDropdown_Changed"
+                        ToolTip.Tip="Your antenna's gain in dBd (decibels relative to a dipole). A simple vertical antenna is typically 0-3 dBd. A beam or high-gain vertical may be 6-9 dBd." />
             </StackPanel>
             <StackPanel Grid.Column="3" Spacing="2">
               <TextBlock Text="Directivity" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
               <ComboBox x:Name="PhgDirectivityCombo"
                         ItemsSource="{Binding PhgDirectivityOptions}"
                         HorizontalAlignment="Stretch"
-                        SelectionChanged="PhgDropdown_Changed" />
+                        SelectionChanged="PhgDropdown_Changed"
+                        ToolTip.Tip="The direction your antenna focuses its energy. Omni = equal coverage in all directions. Directional antennas point toward a specific compass heading." />
             </StackPanel>
           </Grid>
           <TextBlock x:Name="PhgResultText"
@@ -258,13 +266,17 @@
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="24">
             <CheckBox Content="Master transmit enabled"
-                      IsChecked="{Binding TransmitEnabled}" />
+                      IsChecked="{Binding TransmitEnabled}"
+                      ToolTip.Tip="Master on/off switch for all transmission. Must be checked before any beacon or message can be sent. Turn this off to operate in receive-only mode." />
             <CheckBox Content="APRS-IS transmit"
-                      IsChecked="{Binding AprsIsTransmitEnabled}" />
+                      IsChecked="{Binding AprsIsTransmitEnabled}"
+                      ToolTip.Tip="Allows sending beacons and messages to the APRS-IS internet network. Requires a valid passcode in Settings > Connections. Master transmit must also be enabled." />
             <CheckBox Content="RF transmit"
-                      IsChecked="{Binding RfTransmitEnabled}" />
+                      IsChecked="{Binding RfTransmitEnabled}"
+                      ToolTip.Tip="Allows sending beacons over the radio. Requires a connected TNC or sound card interface. Master transmit must also be enabled." />
             <CheckBox Content="Fixed station"
-                      IsChecked="{Binding FixedStationMode}" />
+                      IsChecked="{Binding FixedStationMode}"
+                      ToolTip.Tip="Check this if your station does not move. Uses the latitude and longitude you entered above rather than a GPS source. Most home stations should have this checked." />
           </StackPanel>
         </StackPanel>
       </Border>
