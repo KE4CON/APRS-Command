@@ -130,5 +130,7 @@ public sealed class ScheduledBeaconEntryEditViewModel : INotifyPropertyChanged
         Enabled:       Enabled,
         CustomComment: string.IsNullOrWhiteSpace(CustomComment) ? null : CustomComment);
 
+#pragma warning disable CS0067
     public event PropertyChangedEventHandler? PropertyChanged;
+#pragma warning restore CS0067
 }

@@ -158,8 +158,6 @@
     <Border Grid.Row="5"
             BorderBrush="{DynamicResource TextSidebarBrush}"
             BorderThickness="1"
-            BorderBrush="{DynamicResource TextSidebarBrush}"
-            BorderThickness="1"
             CornerRadius="4"
             Background="{DynamicResource TextTitleBarBrush}"
             Padding="8">

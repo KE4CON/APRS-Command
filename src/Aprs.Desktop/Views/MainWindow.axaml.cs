@@ -153,7 +153,7 @@ public sealed partial class MainWindow : Window
         => ShowWithState(new RawPacketsWindow { DataContext = vm });
 
     private void OnTelemetryRequested(object? s, EventArgs e)
-        => ShowWithState(new TelemetryWindow { DataContext = vm.Telemetry });
+        => ShowWithState(new TelemetryWindow { DataContext = vm?.Telemetry });
 
     private void OnSettingsRequested(object? s, EventArgs e)
         => ShowWithState(new SettingsWindow { DataContext = vm });
