@@ -346,9 +346,11 @@ public sealed partial class MainWindow : Window
     {
         var rt = (Application.Current as App)?.Runtime;
         if (rt is null) return;
+        var profile = Aprs.Desktop.Configuration.StationProfile.Load();
+        var preferMiles = profile.DistanceUnit == Aprs.Desktop.Configuration.DistanceUnit.Miles;
         var win = new PacketStatisticsDashboardWindow
         {
-            DataContext = new ViewModels.PacketStatisticsDashboardViewModel(rt.PacketStatisticsService)
+            DataContext = new ViewModels.PacketStatisticsDashboardViewModel(rt.PacketStatisticsService, preferMiles)
         };
         win.Show();
     }
