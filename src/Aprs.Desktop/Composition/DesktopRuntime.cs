@@ -160,6 +160,30 @@ public sealed class DesktopRuntime : IAsyncDisposable
                 provider.GetRequiredService<IAprsObjectManager>(),
                 provider.GetRequiredService<ILocalStationProfileService>()));
 
+        // Event bus — shared across decoded event log, event monitor, and file hooks
+        services.AddSingleton<IAprsEventBus, AprsEventBus>();
+
+        // Decoded event log — subscribes to the event bus and keeps a rolling log
+        services.AddSingleton<IDecodedEventLogService>(provider =>
+            new DecodedEventLogService(
+                DecodedEventLogConfiguration.Default,
+                eventBus: provider.GetRequiredService<IAprsEventBus>()));
+
+        // Training mode service
+        services.AddSingleton<ITrainingModeService>(provider =>
+            new TrainingModeService(
+                simulationService: new SimulationService(
+                    new LiveSimulatedPacketSink(provider.GetRequiredService<AprsIngestionService>()),
+                    SimulationConfiguration.Default),
+                replayService:     provider.GetRequiredService<IReplayService>(),
+                decodedEventLog:   provider.GetRequiredService<IDecodedEventLogService>()));
+
+        // File hook service — reads/writes the file-hooks folder
+        services.AddSingleton<IFileHookService>(provider =>
+            new FileHookService(
+                FileHookConfiguration.Default,
+                eventBus: provider.GetRequiredService<IAprsEventBus>()));
+
         var provider = services.BuildServiceProvider();
 
         // --- Live spine view models ---
@@ -172,8 +196,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             map,
             GpsStatusViewModel.FromGpsService(new Aprs.Services.GpsService(), DateTimeOffset.UtcNow), // TODO: update from live GpsCoordinator
             rawPacketLog,                                   // LIVE
-            DecodedEventLogViewModel.CreateDesignTime(),    // TODO: wire to decoded event log service
-            EventMonitorViewModel.CreateDesignTime(),       // TODO: wire to IAprsEventBus
+            new DecodedEventLogViewModel(provider.GetRequiredService<IDecodedEventLogService>()),  // LIVE
+            new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>()),               // LIVE
             new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
             new ObjectManagerViewModel(
                 provider.GetRequiredService<IAprsObjectManager>(),
@@ -187,9 +211,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             new RfDiagnosticsViewModel(provider.GetRequiredService<IRfDiagnosticsService>()), // LIVE
             new AlertRulesViewModel(provider.GetRequiredService<IAlertRuleService>()),  // LIVE
             new GeofenceEditorViewModel(provider.GetRequiredService<IGeofenceService>()),  // LIVE
-            SimulationViewModel.CreateDesignTime(),         // TODO: wire to simulation service (source=Simulation)
-            TrainingModeViewModel.CreateDesignTime(),       // TODO: wire to training service
-            FileHooksViewModel.CreateDesignTime(),          // TODO: wire to file hooks service
+            SimulationViewModel.CreateDesignTime(),         // wired below via SetSimulationService after simulationService is created
+            new TrainingModeViewModel(provider.GetRequiredService<ITrainingModeService>()),  // LIVE
+            new FileHooksViewModel(provider.GetRequiredService<IFileHookService>()),         // LIVE
             new FirstRunSetupViewModel(                     // LIVE — wired to real setup service
                 Aprs.Services.FirstRunSetupConfiguration.CreateDefault(DateTimeOffset.UtcNow),
                 new Aprs.Services.FirstRunSetupService()),
