@@ -95,6 +95,7 @@
       <MenuItem Header="_Packet Statistics Dashboard" Click="OpenPacketStatistics_Click" />
       <MenuItem Header="_Session Templates" Click="OpenSessionTemplates_Click" />
       <MenuItem Header="Club / Net _Repeater Directory" Click="OpenRepeaterDirectory_Click" />
+      <MenuItem Header="_Mobile Companion Web View" Click="OpenMobileCompanion_Click" />
       <MenuItem Header="_Winlink RMS Gateways" Command="{Binding OpenWinlinkCommand}" />
       <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
       <MenuItem Header="_Tools">

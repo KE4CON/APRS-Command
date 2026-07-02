@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Aprs.Desktop.Views.MobileCompanionUrlWindow"
+        Title="Mobile Companion Web View"
+        Width="420" Height="320"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+
+  <StackPanel Margin="24" Spacing="16">
+
+    <TextBlock Text="Mobile Companion Web View" FontSize="16" FontWeight="SemiBold"
+               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+    <TextBlock TextWrapping="Wrap" FontSize="12"
+               Foreground="{DynamicResource TextSecondaryBrush}"
+               Text="The companion web server is running. Open this URL on any device connected to the same network as this computer — your phone, tablet, or another laptop." />
+
+    <!-- URL display -->
+    <Border Background="{DynamicResource AccentBlueBgBrush}"
+            BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+            BorderThickness="1" CornerRadius="8" Padding="14,12">
+      <StackPanel Spacing="6">
+        <TextBlock Text="Open this URL on your phone:" FontSize="11"
+                   Foreground="{DynamicResource TextMutedBrush}" />
+        <TextBlock x:Name="UrlText" FontSize="18" FontWeight="Bold"
+                   Foreground="{DynamicResource AccentBlueBrush}"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock TextWrapping="Wrap" FontSize="11"
+               Foreground="{DynamicResource TextMutedBrush}"
+               Text="Your phone must be on the same WiFi network as this computer. The server runs only while APRS Command is open. Open this menu item again to see the URL if you close this window." />
+
+    <StackPanel Orientation="Horizontal" Spacing="10">
+      <Button x:Name="CopyButton" Content="Copy URL" Padding="14,7"
+              Click="OnCopyClick" />
+      <Button Content="Close" Padding="14,7"
+              Click="OnCloseClick" />
+    </StackPanel>
+
+  </StackPanel>
+</Window>

@@ -40,6 +40,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public Aprs.Services.PacketStatisticsService PacketStatisticsService { get; }
     public Aprs.Desktop.Services.VoiceAlertService VoiceAlertService { get; }
+    public Aprs.Desktop.Services.MobileCompanionServer? MobileCompanionServer { get; private set; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
@@ -344,6 +345,56 @@ public sealed class DesktopRuntime : IAsyncDisposable
             filter: filter);
     }
 
+    /// <summary>Starts the mobile companion web server and returns the URL operators open on their phone.</summary>
+    public string StartMobileCompanion()
+    {
+        if (MobileCompanionServer?.IsRunning == true)
+            return MobileCompanionServer.Url;
+
+        var msgCenter = MainViewModel.MessageCenter;
+        var netCtrl   = MainViewModel.NetControl;
+
+        MobileCompanionServer = new Aprs.Desktop.Services.MobileCompanionServer(
+            services:         provider,
+            getCallsign:      () => Configuration.StationProfile.Load().Callsign,
+            getConnected:     () => ConnectionState == Aprs.Transport.AprsIsConnectionState.Connected,
+            getTopStations:   () => PacketStatisticsService.GetTopStations(10),
+            getTotalPackets:  () => PacketStatisticsService.TotalPackets,
+            getPacketsPerHour:() => PacketStatisticsService.PacketsPerHour,
+            getMessages: () =>
+            {
+                var list = new List<Aprs.Desktop.Services.MessageSummary>();
+                foreach (var m in msgCenter.Inbox.TakeLast(25))
+                    list.Add(new(Direction:"in", Other:m.RemoteStation, Body:m.Body,
+                        Time: m.Timestamp));
+                return list.OrderByDescending(m => m.Time).Take(40).ToList();
+            },
+            getNetRoster: () =>
+                netCtrl.Roster.Select(r => new Aprs.Desktop.Services.NetRosterEntry(
+                    Callsign:       r.Callsign,
+                    CheckInStatus:  r.Status.ToString(),
+                    ResourceStatus: r.ResourceStatus.ToString(),
+                    StatusEmoji:    r.Status.ToString() switch
+                    {
+                        "CheckedIn" => "✅",
+                        "Standby"   => "⏸",
+                        "Departed"  => "🚪",
+                        _           => "📍"
+                    })).ToList());
+
+        MobileCompanionServer.Start();
+        return MobileCompanionServer.Url;
+    }
+
+    public async Task StopMobileCompanionAsync()
+    {
+        if (MobileCompanionServer is not null)
+        {
+            await MobileCompanionServer.DisposeAsync().ConfigureAwait(false);
+            MobileCompanionServer = null;
+        }
+    }
+
     public void ApplyVoiceSettings(Configuration.VoiceSettings v)
     {
         VoiceAlertService.IsEnabled                = v.Enabled;
@@ -359,6 +410,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         VoiceAlertService.Dispose();
+        if (MobileCompanionServer is not null)
+            await MobileCompanionServer.DisposeAsync().ConfigureAwait(false);
         await RadarAnimationService.DisposeAsync().ConfigureAwait(false);
         if (FailoverCoordinator is not null) await FailoverCoordinator.DisposeAsync().ConfigureAwait(false);
         await NwsAlertService.DisposeAsync().ConfigureAwait(false);
