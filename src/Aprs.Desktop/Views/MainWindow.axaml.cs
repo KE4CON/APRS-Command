@@ -285,6 +285,16 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OpenMobileCompanion_Click(object? sender, RoutedEventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+
+        var url = rt.StartMobileCompanion();
+        var win = new MobileCompanionUrlWindow(url);
+        win.Show();
+    }
+
     private void OpenRepeaterDirectory_Click(object? sender, RoutedEventArgs e)
     {
         var win = new RepeaterDirectoryWindow
