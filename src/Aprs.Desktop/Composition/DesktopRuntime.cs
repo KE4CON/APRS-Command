@@ -7,6 +7,7 @@ using Aprs.Desktop.Services;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Runtime;
 using Aprs.Desktop.ViewModels;
+using AprsCommand.Api;
 
 namespace Aprs.Desktop.Composition;
 
@@ -44,11 +45,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public Aprs.Desktop.Services.MobileCompanionServer? MobileCompanionServer { get; private set; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
+    public ILocalRestApiService LocalRestApiService { get; }
+    public IWebSocketEventStreamService WebSocketEventStreamService { get; }
 
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, SerialKissCoordinator serialKissCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, SerialKissCoordinator serialKissCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService, ILocalRestApiService localRestApiService, IWebSocketEventStreamService webSocketEventStreamService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -67,6 +70,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         RadarAnimationService = radarAnimationService;
         PacketStatisticsService = new Aprs.Services.PacketStatisticsService();
         VoiceAlertService = new Aprs.Desktop.Services.VoiceAlertService();
+        LocalRestApiService = localRestApiService;
+        WebSocketEventStreamService = webSocketEventStreamService;
         ApplyVoiceSettings(JsonAppSettingsStore.Default.Load().Voice);
     }
 
@@ -316,6 +321,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
         rfTransmitClient.GetTcpClients    = () => kissTcpCoordinator.GetTransmitClients();
         rfTransmitClient.GetSerialClients = () => serialKissCoordinator.GetTransmitClients();
 
+        // Developer API services — REST API and WebSocket event stream
+        var restApiService       = new LocalRestApiService(LocalRestApiConfiguration.Default, eventBus: provider.GetRequiredService<IAprsEventBus>());
+        var webSocketService     = new WebSocketEventStreamService(WebSocketEventStreamConfiguration.Default, eventBus: provider.GetRequiredService<IAprsEventBus>());
+
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),
             gpsCoordinator,
@@ -327,7 +336,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             stationTrailService,
             nwsAlertService,
             failoverCoordinator,
-            radarAnimationService);
+            radarAnimationService,
+            restApiService,
+            webSocketService);
     }
 
     /// <summary>
@@ -346,6 +357,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
         ManagedModemCoordinator?.Start();
         ConnectionHealthWatchdog.Start();
         FailoverCoordinator?.Start();
+
+        // Developer API — start REST API and WebSocket event stream
+        _ = LocalRestApiService.StartAsync();
+        _ = WebSocketEventStreamService.StartAsync();
 
         // Read the station profile and the first configured APRS-IS port so the receive
         // connection uses the operator's chosen server, port, and filter — not hardcoded defaults.
@@ -436,6 +451,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        await LocalRestApiService.StopAsync().ConfigureAwait(false);
+        await WebSocketEventStreamService.StopAsync().ConfigureAwait(false);
         VoiceAlertService.Dispose();
         if (MobileCompanionServer is not null)
             await MobileCompanionServer.DisposeAsync().ConfigureAwait(false);
