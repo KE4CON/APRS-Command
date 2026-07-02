@@ -149,6 +149,21 @@
             <TextBlock Text="Enable voice readout  (master switch)" FontWeight="SemiBold" />
           </CheckBox>
 
+          <!-- Voice picker -->
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Margin="0,4,0,0">
+            <TextBlock Text="Voice:" VerticalAlignment="Center" FontSize="12"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding AvailableVoices}"
+                      SelectedItem="{Binding SelectedVoice}"
+                      HorizontalAlignment="Stretch"
+                      ToolTip.Tip="Choose which voice to use for readout. 'System Default' uses whatever voice is set as the default in your operating system settings. On macOS you can add more voices in System Settings > Accessibility > Spoken Content. On Windows, install additional voices in Settings > Time and Language > Speech." />
+            <Button Grid.Column="2" Content="Test Voice"
+                    Padding="10,5" FontSize="11"
+                    Click="OnTestVoiceClick"
+                    ToolTip.Tip="Plays a short test phrase using the selected voice. Voice readout does not need to be enabled to test." />
+          </Grid>
+
           <StackPanel Spacing="6" Margin="24,0,0,0">
             <CheckBox IsChecked="{Binding VoiceSpeakMessages}"
                       ToolTip.Tip="Reads the sender's callsign and message body when a direct APRS message arrives. Example: 'Message from W9ABC. Are you on frequency?'">

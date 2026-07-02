@@ -19,6 +19,7 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
     private bool voiceSpeakStationAlerts;
     private bool voiceSpeakConnectionEvents;
     private bool voiceSpeakBeaconConfirmations;
+    private Services.VoiceOption? selectedVoice;
     private string statusText = string.Empty;
     private string? customSoundMessageReceived;
     private string? customSoundWarningAlert;
@@ -70,6 +71,19 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
     {
         get => playOnConnectionEvents;
         set { if (playOnConnectionEvents != value) { playOnConnectionEvents = value; OnPropertyChanged(); } }
+    }
+
+    /// <summary>
+    /// All voices available on this platform, populated lazily on first access.
+    /// Always starts with "System Default".
+    /// </summary>
+    public IReadOnlyList<Services.VoiceOption> AvailableVoices
+        => Services.VoiceAlertService.GetAvailableVoices();
+
+    public Services.VoiceOption? SelectedVoice
+    {
+        get => selectedVoice;
+        set { selectedVoice = value; OnPropertyChanged(); }
     }
 
     public bool VoiceEnabled
@@ -175,6 +189,9 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
         VoiceSpeakStationAlerts       = v.SpeakStationAlerts;
         VoiceSpeakConnectionEvents    = v.SpeakConnectionEvents;
         VoiceSpeakBeaconConfirmations = v.SpeakBeaconConfirmations;
+        // Restore selected voice — match by VoiceName, fall back to System Default
+        SelectedVoice = AvailableVoices.FirstOrDefault(o => o.VoiceName == v.PreferredVoiceName)
+                     ?? AvailableVoices.FirstOrDefault();
         StatusText = "Loaded.";
     }
 
@@ -198,7 +215,8 @@ public sealed class AudioConfigViewModel : INotifyPropertyChanged
             SpeakWeatherAlerts:       VoiceSpeakWeatherAlerts,
             SpeakStationAlerts:       VoiceSpeakStationAlerts,
             SpeakConnectionEvents:    VoiceSpeakConnectionEvents,
-            SpeakBeaconConfirmations: VoiceSpeakBeaconConfirmations);
+            SpeakBeaconConfirmations: VoiceSpeakBeaconConfirmations,
+            PreferredVoiceName:       SelectedVoice?.VoiceName);
         store.Update(s => s with { Audio = audio, Voice = voice });
         StatusText = "Saved.";
     }

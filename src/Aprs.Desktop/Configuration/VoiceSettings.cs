@@ -4,6 +4,7 @@ namespace Aprs.Desktop.Configuration;
 /// Persisted voice readout preferences.
 /// The master switch (Enabled) must be on for any speech to occur.
 /// Individual toggles allow fine-grained control over which events are spoken.
+/// PreferredVoiceName is the OS voice name to use — null means system default.
 /// </summary>
 public sealed record VoiceSettings(
     bool Enabled,
@@ -12,7 +13,8 @@ public sealed record VoiceSettings(
     bool SpeakWeatherAlerts,
     bool SpeakStationAlerts,
     bool SpeakConnectionEvents,
-    bool SpeakBeaconConfirmations)
+    bool SpeakBeaconConfirmations,
+    string? PreferredVoiceName = null)
 {
     public static VoiceSettings Default { get; } = new(
         Enabled:                  false,
@@ -21,5 +23,6 @@ public sealed record VoiceSettings(
         SpeakWeatherAlerts:       true,
         SpeakStationAlerts:       false,
         SpeakConnectionEvents:    false,
-        SpeakBeaconConfirmations: false);
+        SpeakBeaconConfirmations: false,
+        PreferredVoiceName:       null);
 }

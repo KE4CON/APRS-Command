@@ -353,6 +353,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         VoiceAlertService.SpeakStationAlerts       = v.SpeakStationAlerts;
         VoiceAlertService.SpeakConnectionEvents    = v.SpeakConnectionEvents;
         VoiceAlertService.SpeakBeaconConfirmations = v.SpeakBeaconConfirmations;
+        VoiceAlertService.PreferredVoiceName       = v.PreferredVoiceName;
     }
 
     public async ValueTask DisposeAsync()
