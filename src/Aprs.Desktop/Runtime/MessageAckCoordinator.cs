@@ -38,6 +38,21 @@ public sealed class MessageAckCoordinator : IAsyncDisposable
         return new MessageAckCoordinator(retryEngine);
     }
 
+    /// <summary>
+    /// Creates a coordinator wired to both APRS-IS and an optional RF transmit path.
+    /// Messages are sent on whichever paths are available and connected.
+    /// </summary>
+    public static MessageAckCoordinator CreateWithRf(
+        IAprsMessageStoreService messageStore,
+        IAprsIsClient? aprsIsClient,
+        IRfBeaconTransmitClient? rfClient,
+        bool transmitConfirmed = true)
+    {
+        var transmitService = new CompositeMessageTransmitService(aprsIsClient, rfClient, transmitConfirmed);
+        var retryEngine = new AprsMessageRetryEngine(messageStore, transmitService);
+        return new MessageAckCoordinator(retryEngine);
+    }
+
     /// <summary>Sends a message and starts the ACK/retry cycle for it.</summary>
     public Task<AprsMessageRecord> SendAsync(Guid messageRecordId, CancellationToken cancellationToken = default)
         => retryEngine.SendMessageAsync(messageRecordId, DateTimeOffset.UtcNow, cancellationToken);

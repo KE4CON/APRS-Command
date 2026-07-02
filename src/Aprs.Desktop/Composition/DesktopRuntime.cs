@@ -94,8 +94,11 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
         services.AddSingleton<IAprsMessageStoreService, AprsMessageStoreService>();
         services.AddSingleton<IAlertRuleService, AlertRuleService>();
+        // iGate — uses a deferred APRS-IS client; real client is wired after
+        // beaconService is created further down in Create().
+        var deferredIGateClient = new DeferredAprsIsClient();
         services.AddSingleton<IIGateService>(_ => new IGateService(
-            new NullAprsIsClient(), IGateConfiguration.Default, null));
+            deferredIGateClient, IGateConfiguration.Default, null));
         // rfTransmitClient delegates are wired after coordinators are created below.
         var rfTransmitClient = new KissRfBeaconTransmitClient();
         services.AddSingleton<IDigipeaterService>(p => new DigipeaterService(
@@ -182,7 +185,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
             SimulationViewModel.CreateDesignTime(),         // TODO: wire to simulation service (source=Simulation)
             TrainingModeViewModel.CreateDesignTime(),       // TODO: wire to training service
             FileHooksViewModel.CreateDesignTime(),          // TODO: wire to file hooks service
-            FirstRunSetupViewModel.CreateDesignTime(),      // TODO: wire to first-run/settings service
+            new FirstRunSetupViewModel(                     // LIVE — wired to real setup service
+                Aprs.Services.FirstRunSetupConfiguration.CreateDefault(DateTimeOffset.UtcNow),
+                new Aprs.Services.FirstRunSetupService()),
             new ConnectionsViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new StationSetupViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
             new IGateConfigViewModel(provider.GetRequiredService<IAppSettingsStore>()), // LIVE
@@ -211,11 +216,17 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             rfBeaconClient: rfTransmitClient);
 
+        // Wire the live APRS-IS client into the deferred iGate proxy now that it exists.
+        deferredIGateClient.InnerClient = beaconService.AprsIsClient;
+
         // Message ACK coordinator — reuses the beacon service's transmit-capable APRS-IS client.
         var messageStore = provider.GetRequiredService<IAprsMessageStoreService>();
-        var messageAckCoordinator = beaconService.AprsIsClient is not null
-            ? MessageAckCoordinator.Create(messageStore, beaconService.AprsIsClient, transmitConfirmed: true)
-            : MessageAckCoordinator.Create(messageStore, new NullAprsIsClient(), transmitConfirmed: false);
+        // Message ACK coordinator — sends on both APRS-IS and RF when both are available.
+        var messageAckCoordinator = MessageAckCoordinator.CreateWithRf(
+            messageStore,
+            aprsIsClient:      beaconService.AprsIsClient,
+            rfClient:          rfTransmitClient,
+            transmitConfirmed: beaconService.AprsIsClient is not null);
 
         // Object transmit service — wires the live APRS-IS client into the object manager viewmodel.
         if (beaconService.AprsIsClient is not null)
@@ -225,12 +236,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
             var objTransmit = new ObjectTransmitService(objEditor, objManager, beaconService.AprsIsClient);
             mainViewModel.ObjectManager.SetTransmitService(objTransmit);
 
-            // Weather beacon scheduler — reuses the same live APRS-IS client.
+            // Weather beacon scheduler — reuses the same live APRS-IS client and RF transmit client.
             var wxScheduler = new WeatherBeaconScheduler(
                 provider.GetRequiredService<ILocalStationProfileService>(),
                 provider.GetRequiredService<IAprsWeatherFormatter>(),
                 provider.GetRequiredService<IWeatherObservationSourceProvider>(),
-                beaconService.AprsIsClient);
+                beaconService.AprsIsClient,
+                rfTransmitClient: rfTransmitClient);
             mainViewModel.Weather.SetBeaconScheduler(wxScheduler);
 
             // Shadow beacon service — reuses the same live APRS-IS client.
