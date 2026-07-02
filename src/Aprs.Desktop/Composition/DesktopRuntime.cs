@@ -33,6 +33,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public GpsCoordinator GpsCoordinator { get; }
     public MessageAckCoordinator MessageAckCoordinator { get; }
     public KissTcpCoordinator KissTcpCoordinator { get; }
+    public SerialKissCoordinator SerialKissCoordinator { get; }
     public ManagedModemCoordinator? ManagedModemCoordinator { get; }
     public NwsAlertService NwsAlertService { get; }
     public AprsIsFailoverCoordinator? FailoverCoordinator { get; }
@@ -47,7 +48,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
-    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService)
+    private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, SerialKissCoordinator serialKissCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService)
     {
         this.provider = provider;
         MainViewModel = mainViewModel;
@@ -57,6 +58,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         GpsCoordinator = gpsCoordinator;
         MessageAckCoordinator = messageAckCoordinator;
         KissTcpCoordinator = kissTcpCoordinator;
+        SerialKissCoordinator = serialKissCoordinator;
         ManagedModemCoordinator = managedModemCoordinator;
         ConnectionHealthWatchdog = connectionHealthWatchdog;
         StationTrailService = stationTrailService;
@@ -291,11 +293,16 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             provider.GetRequiredService<AprsIngestionService>());
 
+        var serialKissCoordinator = SerialKissCoordinator.CreateFromSettings(
+            provider.GetRequiredService<IAppSettingsStore>().Load(),
+            provider.GetRequiredService<AprsIngestionService>());
+
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),
             gpsCoordinator,
             messageAckCoordinator,
             kissTcpCoordinator,
+            serialKissCoordinator,
             managedModemCoordinator,
             watchdog,
             stationTrailService,
@@ -316,6 +323,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         GpsCoordinator.Start();
         MessageAckCoordinator.Start();
         KissTcpCoordinator.Start();
+        SerialKissCoordinator.Start();
         ManagedModemCoordinator?.Start();
         ConnectionHealthWatchdog.Start();
         FailoverCoordinator?.Start();
@@ -417,6 +425,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         await NwsAlertService.DisposeAsync().ConfigureAwait(false);
         await ConnectionHealthWatchdog.DisposeAsync().ConfigureAwait(false);
         if (ManagedModemCoordinator is not null) await ManagedModemCoordinator.DisposeAsync().ConfigureAwait(false);
+        await SerialKissCoordinator.DisposeAsync().ConfigureAwait(false);
         await KissTcpCoordinator.DisposeAsync().ConfigureAwait(false);
         await MessageAckCoordinator.DisposeAsync().ConfigureAwait(false);
         await GpsCoordinator.DisposeAsync().ConfigureAwait(false);
