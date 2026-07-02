@@ -1,5 +1,6 @@
 using System.Linq;
 using Aprs.Mapping;
+using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
 
@@ -29,6 +30,54 @@ public sealed class StationDetailsViewModel
         Altitude = station.AltitudeFeet is null ? "Unknown" : $"{station.AltitudeFeet} ft";
         DistanceFromMyStation = "Unknown";
         BearingFromMyStation  = "Unknown";
+
+        // Dead reckoning — project the station's current position forward
+        // from the last known fix using course and speed.
+        var snapshot = new StationSnapshot(
+            Callsign:              station.Callsign,
+            Ssid:                  null,
+            RealCallsign:          station.Callsign,
+            TacticalLabel:         null,
+            DisplayName:           station.DisplayName,
+            LifecycleState:        station.AgeState,
+            IsManuallyHidden:      false,
+            Latitude:              station.Latitude,
+            Longitude:             station.Longitude,
+            SymbolTableIdentifier: station.SymbolTableIdentifier,
+            SymbolCode:            station.SymbolCode,
+            Comment:               station.Comment,
+            LastHeardUtc:          station.LastHeardUtc,
+            LastPacketUtc:         station.LastHeardUtc,
+            LastRawPacket:         station.LastRawPacket,
+            LastPacketType:        null,
+            CourseDegrees:         station.CourseDegrees,
+            SpeedKnots:            station.SpeedKnots,
+            AltitudeFeet:          station.AltitudeFeet,
+            PacketCount:           station.PacketCount,
+            DuplicatePacketCount:  station.DuplicatePacketCount,
+            SourcePath:            station.LastPath,
+            PacketSource:          station.PacketSource,
+            HasMessagingCapability: null,
+            Weather:               null);
+
+        var dr = DeadReckoningService.Project(snapshot, now);
+        if (dr is not null)
+        {
+            var preferMiles = Configuration.StationProfile.Load().DistanceUnit
+                              == Configuration.DistanceUnit.Miles;
+            var distStr = preferMiles
+                ? $"{dr.DistanceKm * 0.621371:F1} mi"
+                : $"{dr.DistanceKm:F1} km";
+            DeadReckonedSummary =
+                $"Est. {distStr} on {dr.CourseDegrees}° at {dr.SpeedKnots} kt " +
+                $"(based on fix {(int)dr.DataAge.TotalMinutes} min ago)";
+            HasDeadReckoning = true;
+        }
+        else
+        {
+            DeadReckonedSummary = null;
+            HasDeadReckoning = false;
+        }
 
         // Parse heard-by digipeaters from path — entries marked with * were actually relayed.
         var heardBy = station.LastPath
@@ -94,6 +143,15 @@ public sealed class StationDetailsViewModel
     public string SpeedCourse { get; }
 
     public string Altitude { get; }
+
+    /// <summary>
+    /// Dead-reckoned position estimate, or null if projection is not possible
+    /// (station is stationary, speed unknown, or data too old).
+    /// </summary>
+    public string? DeadReckonedSummary { get; }
+
+    /// <summary>True when a dead-reckoned estimate is available for this station.</summary>
+    public bool HasDeadReckoning { get; }
 
     public string PacketSource { get; }
 

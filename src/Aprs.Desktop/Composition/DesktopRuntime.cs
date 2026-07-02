@@ -16,9 +16,9 @@ namespace Aprs.Desktop.Composition;
 /// constructs the live receive spine (map, station list, packet monitor) backed by real
 /// services, and assembles the <see cref="MainWindowViewModel"/> used at runtime.
 ///
-/// Spine panels (map, station list, packet monitor) are LIVE. The remaining feature panels
-/// are still constructed from CreateDesignTime() sample data and are marked TODO below; wire
-/// each to its real service using the same pattern as the spine.
+/// All feature panels are wired to live services. GpsStatusViewModel is initialised from
+/// a blank GpsService on startup and updated live via WireGpsStatus() in App.axaml.cs,
+/// which subscribes to GpsCoordinator.PositionUpdated.
 /// </summary>
 public sealed class DesktopRuntime : IAsyncDisposable
 {
@@ -199,7 +199,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // station list is live automatically once the map is updated by the coordinator.
         var mainViewModel = new MainWindowViewModel(
             map,
-            GpsStatusViewModel.FromGpsService(new Aprs.Services.GpsService(), DateTimeOffset.UtcNow), // TODO: update from live GpsCoordinator
+            GpsStatusViewModel.FromGpsService(new Aprs.Services.GpsService(), DateTimeOffset.UtcNow), // initial state — WireGpsStatus() in App.axaml.cs subscribes to GpsCoordinator.PositionUpdated and calls MainViewModel.UpdateGpsStatus() on every fix
             rawPacketLog,                                   // LIVE
             new DecodedEventLogViewModel(provider.GetRequiredService<IDecodedEventLogService>()),  // LIVE
             new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>()),               // LIVE
