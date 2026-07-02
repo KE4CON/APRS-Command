@@ -23,6 +23,10 @@
             <MenuItem Header="⊙ Draw rings from my station"
                       Command="{Binding ClearCustomRingCenterCommand}"
                       ToolTip.Tip="Reset range rings to your own station position" />
+            <Separator />
+            <MenuItem Header="📍 Place object here…"
+                      Command="{Binding BeginCreateObjectCommand}"
+                      ToolTip.Tip="Start placing an APRS object — click the map to set position" />
           </ContextMenu>
         </mapsui:MapControl.ContextMenu>
       </mapsui:MapControl>
@@ -46,6 +50,7 @@
             <ComboBoxItem>USGS Topo</ComboBoxItem>
             <ComboBoxItem>USGS Imagery</ComboBoxItem>
             <ComboBoxItem>USGS Imagery + Topo</ComboBoxItem>
+            <ComboBoxItem>CartoDB Dark</ComboBoxItem>
           </ComboBox>
         </StackPanel>
       </Border>
