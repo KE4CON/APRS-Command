@@ -37,6 +37,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public NwsAlertService NwsAlertService { get; }
     public AprsIsFailoverCoordinator? FailoverCoordinator { get; }
     public Aprs.Desktop.Services.RadarAnimationService RadarAnimationService { get; }
+
+    public Aprs.Services.PacketStatisticsService PacketStatisticsService { get; }
     public ConnectionHealthWatchdog ConnectionHealthWatchdog { get; }
     public StationTrailService StationTrailService { get; }
 
@@ -59,6 +61,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         NwsAlertService = nwsAlertService;
         FailoverCoordinator = failoverCoordinator;
         RadarAnimationService = radarAnimationService;
+        PacketStatisticsService = new Aprs.Services.PacketStatisticsService();
     }
 
     public static DesktopRuntime Create()

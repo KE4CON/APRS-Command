@@ -1,0 +1,258 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.PacketStatisticsDashboardWindow"
+        x:DataType="vm:PacketStatisticsDashboardViewModel"
+        Title="Packet Statistics Dashboard"
+        Width="820" Height="640"
+        MinWidth="700" MinHeight="500"
+        WindowStartupLocation="CenterOwner">
+
+  <ScrollViewer>
+    <StackPanel Margin="20" Spacing="16">
+
+      <!-- Header -->
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Packet Statistics Dashboard"
+                     FontSize="20" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
+            <Run Text="Session started: " />
+            <Run Text="{Binding SessionStart}" />
+            <Run Text="  ·  Duration: " />
+            <Run Text="{Binding SessionDuration}" />
+          </TextBlock>
+        </StackPanel>
+        <Button Grid.Column="1" Content="Reset Statistics"
+                Click="OnResetClick"
+                Padding="12,6" VerticalAlignment="Center" />
+      </Grid>
+
+      <!-- Top stats row -->
+      <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+        <Border Background="{DynamicResource AccentBlueBgBrush}"
+                BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding TotalPackets}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Total Packets" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="1"
+                Background="{DynamicResource AccentBlueBgBrush}"
+                BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding UniqueStations}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Unique Stations" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="2"
+                Background="{DynamicResource AccentBlueBgBrush}"
+                BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding PacketsPerHour}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Packets / Hour" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+        <Border Grid.Column="3"
+                Background="{DynamicResource AccentBlueBgBrush}"
+                BorderBrush="{DynamicResource AccentBlueBorderBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16,12">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding PacketsPerMinute}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBlueBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="Packets / Minute" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- Packet types + Top stations side by side -->
+      <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
+        <!-- Packet types breakdown -->
+        <Border Background="{DynamicResource AppBgAltBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16">
+          <StackPanel Spacing="10">
+            <TextBlock Text="Packet Types" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Position -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Position" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding PositionPackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding PositionPct}" Maximum="100" Height="6"
+                           Foreground="#60a5fa" />
+            </StackPanel>
+
+            <!-- Message -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Message" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding MessagePackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding MessagePct}" Maximum="100" Height="6"
+                           Foreground="#34d399" />
+            </StackPanel>
+
+            <!-- Weather -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Weather" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding WeatherPackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding WeatherPct}" Maximum="100" Height="6"
+                           Foreground="#a78bfa" />
+            </StackPanel>
+
+            <!-- Object -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Object / Item" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding ObjectPackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding ObjectPct}" Maximum="100" Height="6"
+                           Foreground="#f59e0b" />
+            </StackPanel>
+
+            <!-- Status -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Status" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding StatusPackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding StatusPct}" Maximum="100" Height="6"
+                           Foreground="#94a3b8" />
+            </StackPanel>
+
+            <!-- Other -->
+            <StackPanel Spacing="3">
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="Other / Unknown" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding OtherPackets}"
+                           FontSize="11" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding OtherPct}" Maximum="100" Height="6"
+                           Foreground="#64748b" />
+            </StackPanel>
+
+            <!-- Invalid -->
+            <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+              <TextBlock Text="Invalid / Malformed" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding InvalidPackets}"
+                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Top stations -->
+        <Border Grid.Column="1"
+                Background="{DynamicResource AppBgAltBrush}"
+                BorderBrush="{DynamicResource BorderSubtleBrush}"
+                BorderThickness="1" CornerRadius="8" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Most Active Stations" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <ItemsControl ItemsSource="{Binding TopStations}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TopStationEntry">
+                  <StackPanel Spacing="2" Margin="0,2">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock Text="{Binding Callsign}" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Grid.Column="1" Text="{Binding Count}"
+                                 FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                    </Grid>
+                    <ProgressBar Value="{Binding BarWidthPct}" Maximum="100" Height="4"
+                                 Foreground="#60a5fa" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+      </Grid>
+
+      <!-- Hourly activity chart -->
+      <Border Background="{DynamicResource AppBgAltBrush}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="1" CornerRadius="8" Padding="16">
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Hourly Activity (last 24 hours)" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Grid.Column="1" FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}">
+              <Run Text="Peak: " />
+              <Run Text="{Binding PeakActivityLabel}" FontWeight="SemiBold" />
+            </TextBlock>
+          </Grid>
+
+          <!-- Bar chart -->
+          <ItemsControl ItemsSource="{Binding HourlyData}" Height="80">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:HourlyBucket">
+                <StackPanel Spacing="2" VerticalAlignment="Bottom" Width="28">
+                  <TextBlock Text="{Binding Count}" FontSize="8"
+                             HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             IsVisible="{Binding Count, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  <Border Background="#60a5fa" CornerRadius="2,2,0,0"
+                          Height="{Binding BarHeightPct}"
+                          MinHeight="2"
+                          ToolTip.Tip="{Binding Count}" />
+                  <TextBlock Text="{Binding HourLabel}" FontSize="8"
+                             HorizontalAlignment="Center"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</Window>

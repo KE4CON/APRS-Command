@@ -285,6 +285,17 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OpenPacketStatistics_Click(object? sender, RoutedEventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+        var win = new PacketStatisticsDashboardWindow
+        {
+            DataContext = new ViewModels.PacketStatisticsDashboardViewModel(rt.PacketStatisticsService)
+        };
+        win.Show();
+    }
+
     private void OnElevationRequested(object? s, EventArgs e)
     {
         var rt = (Application.Current as App)?.Runtime;
