@@ -26,7 +26,8 @@ public sealed record AppSettings(
     GpsdSettings Gpsd,
     FrequencyReferenceSettings FrequencyReference,
     NetScriptSettings NetScripts,
-    WinlinkSettings Winlink)
+    WinlinkSettings Winlink,
+    SessionTemplateSettings SessionTemplates)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -46,5 +47,6 @@ public sealed record AppSettings(
         Gpsd: GpsdSettings.Default,
         FrequencyReference: FrequencyReferenceSettings.Default,
         NetScripts: NetScriptSettings.Default,
-        Winlink: WinlinkSettings.Default);
+        Winlink: WinlinkSettings.Default,
+        SessionTemplates: SessionTemplateSettings.Default);
 }

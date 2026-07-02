@@ -161,7 +161,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var normalized = settings with { Station = station, Connections = connections, IGate = iGate, Digipeater = digipeater, Audio = audio, Windows = windows, Gps = gps, ManagedModem = managedModem, DarkMode = settings.DarkMode, MessageTemplates = settings.MessageTemplates ?? MessageTemplatesSettings.Default, SmartBeaconing = settings.SmartBeaconing ?? SmartBeaconingSettings.Default, Gpsd = settings.Gpsd ?? GpsdSettings.Default,
             FrequencyReference = settings.FrequencyReference ?? FrequencyReferenceSettings.Default,
             NetScripts = settings.NetScripts ?? NetScriptSettings.Default,
-            Winlink = settings.Winlink ?? WinlinkSettings.Default };
+            Winlink = settings.Winlink ?? WinlinkSettings.Default,
+            SessionTemplates = settings.SessionTemplates ?? SessionTemplateSettings.Default };
         return Migrate(normalized);
     }
 
@@ -237,7 +238,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var freqRef = TryDeserializeSection(root, "frequencyReference", FrequencyReferenceSettings.Default) ?? FrequencyReferenceSettings.Default;
         var netScripts = TryDeserializeSection(root, "netScripts", NetScriptSettings.Default) ?? NetScriptSettings.Default;
         var winlink = TryDeserializeSection(root, "winlink", WinlinkSettings.Default) ?? WinlinkSettings.Default;
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink));
+        var sessionTemplates = TryDeserializeSection(root, "sessionTemplates", SessionTemplateSettings.Default) ?? SessionTemplateSettings.Default;
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink, sessionTemplates));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)
