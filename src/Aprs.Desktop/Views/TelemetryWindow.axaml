@@ -1,0 +1,164 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        x:Class="Aprs.Desktop.Views.TelemetryWindow"
+        x:DataType="vm:TelemetryViewModel"
+        Title="APRS Command — Telemetry Monitor"
+        Width="900" Height="600" MinWidth="640" MinHeight="400">
+
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+    <!-- Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="22,10">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="2">
+          <TextBlock Text="Telemetry Monitor"
+                     FontSize="18" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{Binding Summary}"
+                     Foreground="{DynamicResource TextSubtleBrush}"
+                     FontSize="12" />
+        </StackPanel>
+        <Button Grid.Column="1"
+                Content="Clear"
+                Command="{Binding ClearCommand}"
+                Padding="14,6"
+                VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <!-- Filter bar -->
+    <Border Grid.Row="1"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,0,0,1"
+            Padding="16,8">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <TextBlock Text="Filter callsign:"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   FontSize="12" />
+        <TextBox Text="{Binding FilterCallsign}"
+                 Width="160" Height="28"
+                 Watermark="e.g. KE4CON-9"
+                 FontSize="12" />
+        <ComboBox ItemsSource="{Binding Stations}"
+                  SelectedItem="{Binding FilterCallsign}"
+                  PlaceholderText="Select station…"
+                  Width="180" Height="28"
+                  FontSize="12" />
+        <TextBlock Text="Showing live packets decoded from all active RF and APRS-IS connections."
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   VerticalAlignment="Center"
+                   FontSize="11" />
+      </StackPanel>
+    </Border>
+
+    <!-- Main content: packet list + detail panel -->
+    <Grid Grid.Row="2" ColumnDefinitions="*,280">
+
+      <!-- Packet list -->
+      <DataGrid Grid.Column="0"
+                ItemsSource="{Binding FilteredRecords}"
+                SelectedItem="{Binding SelectedRecord}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                CanUserReorderColumns="True"
+                CanUserResizeColumns="True"
+                GridLinesVisibility="Horizontal"
+                FontSize="12"
+                Margin="0">
+        <DataGrid.Columns>
+          <DataGridTextColumn Header="Time"     Binding="{Binding ReceivedAtDisplay}" Width="70" />
+          <DataGridTextColumn Header="Callsign" Binding="{Binding Callsign}"          Width="110" />
+          <DataGridTextColumn Header="Seq"      Binding="{Binding SequenceNumber}"    Width="50" />
+          <DataGridTextColumn Header="A1"       Binding="{Binding A1}"                Width="55" />
+          <DataGridTextColumn Header="A2"       Binding="{Binding A2}"                Width="55" />
+          <DataGridTextColumn Header="A3"       Binding="{Binding A3}"                Width="55" />
+          <DataGridTextColumn Header="A4"       Binding="{Binding A4}"                Width="55" />
+          <DataGridTextColumn Header="A5"       Binding="{Binding A5}"                Width="55" />
+          <DataGridTextColumn Header="Digital"  Binding="{Binding DigitalBits}"       Width="80" />
+          <DataGridTextColumn Header="Raw"      Binding="{Binding RawBody}"           Width="*" />
+        </DataGrid.Columns>
+      </DataGrid>
+
+      <!-- Detail panel -->
+      <Border Grid.Column="1"
+              BorderBrush="{DynamicResource TextSidebarBrush}"
+              BorderThickness="1,0,0,0"
+              Padding="16">
+        <ScrollViewer>
+          <StackPanel Spacing="10"
+                      IsVisible="{Binding SelectedRecord, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock Text="Packet Detail"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <TextBlock Text="{Binding SelectedRecord.Callsign}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <TextBlock Text="{Binding SelectedRecord.ReceivedAt, StringFormat='Received: {0:HH:mm:ss}'}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+
+            <Separator />
+
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="6">
+              <TextBlock Grid.Row="0" Grid.Column="0" Text="Sequence:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedRecord.SequenceNumber}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="1" Grid.Column="0" Text="A1:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedRecord.A1}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="2" Grid.Column="0" Text="A2:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedRecord.A2}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="3" Grid.Column="0" Text="A3:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedRecord.A3}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="4" Grid.Column="0" Text="A4:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedRecord.A4}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="5" Grid.Column="0" Text="A5:"  FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedRecord.A5}" FontFamily="Courier New" />
+
+              <TextBlock Grid.Row="6" Grid.Column="0" Text="Digital:" FontWeight="SemiBold" Margin="0,0,10,0" />
+              <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding SelectedRecord.DigitalBits}" FontFamily="Courier New" />
+            </Grid>
+
+            <Separator />
+            <TextBlock Text="Raw packet body:" FontWeight="SemiBold" FontSize="11"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBox Text="{Binding SelectedRecord.RawBody}"
+                     IsReadOnly="True"
+                     FontFamily="Courier New"
+                     FontSize="11"
+                     TextWrapping="Wrap"
+                     Background="Transparent" />
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
+    </Grid>
+
+    <!-- Footer -->
+    <Border Grid.Row="3"
+            Background="{DynamicResource AppBgAltBrush}"
+            BorderBrush="{DynamicResource TextSidebarBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="12">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="APRS telemetry packets carry up to 5 analog values (A1-A5) and 8 digital bits. Labels and scaling are defined by PARM/UNIT/EQNS metadata packets from the transmitting station."
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   FontSize="11"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="Close" Padding="14,6" Click="Close_Click" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

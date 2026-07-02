@@ -47,6 +47,7 @@ public sealed partial class MainWindow : Window
             vm.AlertsRequested        -= OnAlertsRequested;
             vm.StationListRequested   -= OnStationListRequested;
             vm.RawPacketsRequested    -= OnRawPacketsRequested;
+            vm.TelemetryRequested     -= OnTelemetryRequested;
             vm.SettingsRequested      -= OnSettingsRequested;
             vm.HelpRequested          -= OnHelpRequested;
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
@@ -88,6 +89,7 @@ public sealed partial class MainWindow : Window
             vm.AlertsRequested        += OnAlertsRequested;
             vm.StationListRequested   += OnStationListRequested;
             vm.RawPacketsRequested    += OnRawPacketsRequested;
+            vm.TelemetryRequested     += OnTelemetryRequested;
             vm.SettingsRequested      += OnSettingsRequested;
             vm.HelpRequested          += OnHelpRequested;
             vm.BeaconNowRequested     += OnBeaconNowRequested;
@@ -145,6 +147,9 @@ public sealed partial class MainWindow : Window
 
     private void OnRawPacketsRequested(object? s, EventArgs e)
         => ShowWithState(new RawPacketsWindow { DataContext = vm });
+
+    private void OnTelemetryRequested(object? s, EventArgs e)
+        => ShowWithState(new TelemetryWindow { DataContext = vm.Telemetry });
 
     private void OnSettingsRequested(object? s, EventArgs e)
         => ShowWithState(new SettingsWindow { DataContext = vm });

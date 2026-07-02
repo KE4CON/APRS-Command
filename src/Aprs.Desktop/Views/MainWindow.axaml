@@ -82,6 +82,7 @@
       </MenuItem>
       <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
       <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
+      <MenuItem Header="_Telemetry Monitor" Command="{Binding OpenTelemetryCommand}" />
       <MenuItem Header="After-Action _Report" Command="{Binding OpenAfterActionCommand}" />
       <MenuItem Header="Offline _Map Download" Command="{Binding OpenOfflineMapCommand}" />
       <MenuItem Header="_Frequency Reference" Command="{Binding OpenFrequencyRefCommand}" />
