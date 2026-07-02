@@ -357,7 +357,7 @@ public sealed partial class MapView : UserControl
         }
     }
 
-    /// <summary>Draws range rings at 10, 25, and 50 mile intervals around the operator's station.</summary>
+    /// <summary>Draws range rings at the operator's configured distances around the station.</summary>
     private void DrawRings()
     {
         if (ringsLayer is null) return;
@@ -382,14 +382,54 @@ public sealed partial class MapView : UserControl
             }
             lat = profile.Latitude;
             lon = profile.Longitude;
+
+            // Read configured ring distances — stored in miles, convert to meters.
+            var d1 = profile.Ring1Distance;
+            var d2 = profile.Ring2Distance;
+            var d3 = profile.Ring3Distance;
+            var unit = profile.DistanceUnit == Configuration.DistanceUnit.Kilometres ? "km" : "mi";
+            var metersPerUnit = profile.DistanceUnit == Configuration.DistanceUnit.Kilometres
+                ? 1000.0 : 1609.344;
+
+            var ringDefs = new[]
+            {
+                (d1, "#60a5fa", $"{d1} {unit}"),
+                (d2, "#34d399", $"{d2} {unit}"),
+                (d3, "#f87171", $"{d3} {unit}"),
+            };
+
+            foreach (var (dist, color, _) in ringDefs)
+            {
+                var radiusMeters = dist * metersPerUnit;
+                var circle       = CreateCircle(lat, lon, radiusMeters);
+                if (circle is null) continue;
+
+                var feature = new GeometryFeature(circle);
+                feature.Styles.Add(new VectorStyle
+                {
+                    Line = new Pen(Mapsui.Styles.Color.FromString(color), 2.5f),
+                    Fill = null,
+                    Outline = null
+                });
+                ringsLayer.Add(feature);
+            }
+
+            ringsLayer.DataHasChanged();
+            MapControl.RefreshGraphics();
+            return;
         }
 
-        // Ring distances in miles
-        var ringMiles = new[] { (10, "#60a5fa", "10 mi"), (25, "#34d399", "25 mi"), (50, "#f87171", "50 mi") };
+        // Custom ring center path — use profile ring distances
+        var profileForCenter = Configuration.StationProfile.Load();
+        var cd1 = profileForCenter.Ring1Distance;
+        var cd2 = profileForCenter.Ring2Distance;
+        var cd3 = profileForCenter.Ring3Distance;
+        var cMetersPerUnit = profileForCenter.DistanceUnit == Configuration.DistanceUnit.Kilometres
+            ? 1000.0 : 1609.344;
 
-        foreach (var (miles, color, _) in ringMiles)
+        foreach (var (dist, color) in new[] { (cd1, "#60a5fa"), (cd2, "#34d399"), (cd3, "#f87171") })
         {
-            var radiusMeters = miles * 1609.344;
+            var radiusMeters = dist * cMetersPerUnit;
             var circle       = CreateCircle(lat, lon, radiusMeters);
             if (circle is null) continue;
 
