@@ -96,8 +96,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IAlertRuleService, AlertRuleService>();
         services.AddSingleton<IIGateService>(_ => new IGateService(
             new NullAprsIsClient(), IGateConfiguration.Default, null));
+        // rfTransmitClient delegates are wired after coordinators are created below.
+        var rfTransmitClient = new KissRfBeaconTransmitClient();
         services.AddSingleton<IDigipeaterService>(p => new DigipeaterService(
-            p.GetRequiredService<IAprsPortManager>(), new NullRfBeaconTransmitClient(), null, null, p.GetRequiredService<ITransmitSafetyAuthority>()));
+            p.GetRequiredService<IAprsPortManager>(), rfTransmitClient, null, null, p.GetRequiredService<ITransmitSafetyAuthority>()));
         services.AddSingleton<IRfDiagnosticsService, RfDiagnosticsService>();
         services.AddSingleton<DirewolfProfileService>(_ =>
             new DirewolfProfileService(DateTimeOffset.UtcNow));
@@ -206,7 +208,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         mainViewModel.Simulation.SetSimulationService(simulationService);
 
         var beaconService = BeaconService.CreateFromSettings(
-            provider.GetRequiredService<IAppSettingsStore>().Load());
+            provider.GetRequiredService<IAppSettingsStore>().Load(),
+            rfBeaconClient: rfTransmitClient);
 
         // Message ACK coordinator — reuses the beacon service's transmit-capable APRS-IS client.
         var messageStore = provider.GetRequiredService<IAprsMessageStoreService>();
@@ -296,6 +299,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var serialKissCoordinator = SerialKissCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             provider.GetRequiredService<AprsIngestionService>());
+
+        // Wire real RF transmit delegates now that coordinators exist
+        rfTransmitClient.GetTcpClients    = () => kissTcpCoordinator.GetTransmitClients();
+        rfTransmitClient.GetSerialClients = () => serialKissCoordinator.GetTransmitClients();
 
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),

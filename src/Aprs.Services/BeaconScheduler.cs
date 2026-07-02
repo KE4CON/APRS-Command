@@ -7,6 +7,7 @@ public sealed class BeaconScheduler : IBeaconScheduler
     private readonly ILocalStationProfileService profileService;
     private readonly IAprsBeaconFormatter beaconFormatter;
     private IAprsIsClient aprsIsClient;
+    private IRfBeaconTransmitClient? rfBeaconClient;
     private readonly ISmartBeaconingDecisionService smartBeaconingDecisionService;
     private readonly IBeaconSchedulerClock clock;
     private BeaconSchedulerConfiguration configuration;
@@ -18,11 +19,13 @@ public sealed class BeaconScheduler : IBeaconScheduler
         IAprsIsClient aprsIsClient,
         BeaconSchedulerConfiguration? configuration = null,
         IBeaconSchedulerClock? clock = null,
-        ISmartBeaconingDecisionService? smartBeaconingDecisionService = null)
+        ISmartBeaconingDecisionService? smartBeaconingDecisionService = null,
+        IRfBeaconTransmitClient? rfBeaconClient = null)
     {
         this.profileService = profileService;
         this.beaconFormatter = beaconFormatter;
         this.aprsIsClient = aprsIsClient;
+        this.rfBeaconClient = rfBeaconClient;
         this.configuration = configuration ?? BeaconSchedulerConfiguration.Default;
         this.clock = clock ?? new SystemBeaconSchedulerClock();
         this.smartBeaconingDecisionService = smartBeaconingDecisionService
@@ -205,19 +208,63 @@ public sealed class BeaconScheduler : IBeaconScheduler
 
     public async Task<BeaconNowResult?> TickAsync(CancellationToken cancellationToken)
     {
-        if (!state.SchedulerEnabled || !configuration.AprsIsBeaconEnabled)
+        BeaconNowResult? result = null;
+
+        if (state.SchedulerEnabled && configuration.AprsIsBeaconEnabled)
         {
-            return null;
+            var nextAprsIs = state.NextAprsIsBeaconTimeUtc;
+            if (nextAprsIs is not null && clock.UtcNow >= nextAprsIs.Value)
+                result = await BeaconNowAsync(cancellationToken);
         }
 
-        var nextAprsIsBeaconTime = state.NextAprsIsBeaconTimeUtc;
-        if (nextAprsIsBeaconTime is null || clock.UtcNow < nextAprsIsBeaconTime.Value)
+        if (state.SchedulerEnabled && configuration.RfBeaconEnabled && rfBeaconClient is not null)
         {
-            return null;
+            var nextRf = state.NextRfBeaconTimeUtc;
+            if (nextRf is not null && clock.UtcNow >= nextRf.Value)
+                await BeaconOnRfNowAsync(cancellationToken);
         }
 
-        return await BeaconNowAsync(cancellationToken);
+        return result;
     }
+
+    /// <summary>
+    /// Transmits a beacon immediately on all enabled RF paths (Serial KISS and KISS-TCP).
+    /// Does not affect the APRS-IS beacon timer.
+    /// </summary>
+    public async Task<BeaconNowResult> BeaconOnRfNowAsync(CancellationToken cancellationToken)
+    {
+        if (rfBeaconClient is null)
+            return Block("No RF transmit client configured.", profileService.GetCurrentProfile());
+
+        var profile = profileService.GetCurrentProfile();
+
+        if (!state.SchedulerEnabled || !configuration.RfBeaconEnabled)
+            return Block("RF beaconing is disabled.", profile);
+
+        if (!profile.TransmitEnabled || !profile.RfTransmitEnabled)
+            return Block("RF transmit is disabled.", profile);
+
+        var formatResult = beaconFormatter.FormatFixedPositionBeacon(
+            beaconFormatter.CreateInputFromProfile(profile, configuration.Destination, rfPathRequired: true));
+        if (!formatResult.IsSuccess || formatResult.Packet is null)
+            return Block("RF beacon formatter failed.", profile, formatResult.ValidationErrors);
+
+        var rfResult = await rfBeaconClient.SendBeaconAsync(formatResult.Packet, cancellationToken)
+                                           .ConfigureAwait(false);
+
+        // Update RF beacon timer
+        state = CalculateNextBeaconTimes(state with
+        {
+            LastRfBeaconTimeUtc = rfResult.Transmitted ? DateTimeOffset.UtcNow : state.LastRfBeaconTimeUtc,
+            LastErrorOrWarning  = rfResult.Transmitted ? null : rfResult.Message,
+        }, clock.UtcNow);
+
+        return rfResult;
+    }
+
+    /// <summary>Replaces the RF transmit client (called when settings are saved).</summary>
+    public void ReplaceRfBeaconClient(IRfBeaconTransmitClient? client)
+        => rfBeaconClient = client;
 
     public SmartBeaconingDecision EvaluateSmartBeaconing(MobilePositionInput currentPosition)
     {

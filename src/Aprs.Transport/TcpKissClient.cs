@@ -7,6 +7,7 @@ namespace Aprs.Transport;
 public sealed class TcpKissClient : ITcpKissClient
 {
     private readonly TcpKissConfiguration configuration;
+    public  TcpKissConfiguration Configuration => configuration;
     private readonly Func<TcpKissConfiguration, CancellationToken, Task<Stream>> streamFactory;
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
     private readonly Channel<KissFrame> receivedFrames = Channel.CreateUnbounded<KissFrame>();
