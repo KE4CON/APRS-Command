@@ -1,4 +1,5 @@
 using Avalonia;
+using Velopack;
 
 namespace Aprs.Desktop;
 
@@ -7,7 +8,9 @@ public static class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        try
+        
+       VelopackApp.Build().Run();
+       try
         {
             AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
             {
