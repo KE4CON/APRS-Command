@@ -30,8 +30,7 @@ public sealed class UpdateCheckerService : IAsyncDisposable
     public UpdateCheckerService()
     {
         http = new HttpClient();
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "APRSCommand/0.2.0 (github.com/KE4CON/APRS-Command)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(AppVersion.UserAgent);
         http.Timeout = TimeSpan.FromSeconds(15);
     }
 
@@ -96,7 +95,7 @@ public sealed class UpdateCheckerService : IAsyncDisposable
     private static string GetCurrentVersion()
     {
         var asm = System.Reflection.Assembly.GetExecutingAssembly();
-        return asm.GetName().Version?.ToString(3) ?? "0.2.0";
+        return AppVersion.Numeric;
     }
 
     private static bool IsNewer(string? latest, string current)

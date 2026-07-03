@@ -38,8 +38,7 @@ public sealed class RadarAnimationService : IAsyncDisposable
     public RadarAnimationService()
     {
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "APRSCommand/0.3.0 (github.com/KE4CON/APRS-Command)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(AppVersion.UserAgent);
     }
 
     /// <summary>

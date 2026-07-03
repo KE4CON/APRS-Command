@@ -13,8 +13,9 @@ public sealed class HttpMapTileDownloadClient : IMapTileDownloadClient, IDisposa
     public HttpMapTileDownloadClient()
     {
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var version = typeof(HttpMapTileDownloadClient).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
         http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "APRSCommand/0.3.0 (github.com/KE4CON/APRS-Command; offline-map-download)");
+            $"APRSCommand/{version} (github.com/KE4CON/APRS-Command; offline-map-download)");
     }
 
     public async Task<byte[]> DownloadTileAsync(MapTileDescriptor tile,

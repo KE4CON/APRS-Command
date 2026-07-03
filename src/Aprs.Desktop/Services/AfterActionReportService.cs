@@ -172,7 +172,7 @@ public static class AfterActionReportService
 
         sb.AppendLine();
         sb.AppendLine("═══════════════════════════════════════════════════════════");
-        sb.AppendLine("End of Report — APRS Command v0.2.0 — github.com/KE4CON/APRS-Command");
+        sb.AppendLine($"End of Report — APRS Command v{AppVersion.Numeric} — github.com/KE4CON/APRS-Command");
         sb.AppendLine("═══════════════════════════════════════════════════════════");
 
         return sb.ToString();

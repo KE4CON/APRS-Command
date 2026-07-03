@@ -20,8 +20,7 @@ public sealed class ElevationProfileService : IAsyncDisposable
     public ElevationProfileService()
     {
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "APRSCommand/0.3.0 (github.com/KE4CON/APRS-Command)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(AppVersion.UserAgent);
     }
 
     /// <summary>

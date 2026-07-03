@@ -27,8 +27,7 @@ public sealed class WinlinkRmsGatewayService
     {
         this.apiKey = apiKey;
         http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "APRSCommand/0.3.0 (github.com/KE4CON/APRS-Command)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd(AppVersion.UserAgent);
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(apiKey);

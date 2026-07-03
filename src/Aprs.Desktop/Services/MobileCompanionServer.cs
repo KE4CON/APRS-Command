@@ -34,7 +34,13 @@ public sealed class MobileCompanionServer : IAsyncDisposable
 
     public int Port { get; private set; }
     public bool IsRunning { get; private set; }
-    public string Url => $"http://localhost:{Port}/";
+
+    /// <summary>
+    /// The URL operators open on their phone. Uses the machine's LAN IP so devices
+    /// on the same network can reach the server; falls back to localhost when no
+    /// LAN address can be determined.
+    /// </summary>
+    public string Url => $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/";
 
     public MobileCompanionServer(
         IServiceProvider services,
@@ -59,11 +65,48 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     public void Start(int port = 0)
     {
         Port = port == 0 ? FindFreePort() : port;
-        listener.Prefixes.Add($"http://localhost:{Port}/");
-        listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
-        listener.Start();
+
+        // Bind on all interfaces so phones on the same network can connect —
+        // that is the entire purpose of the mobile companion. On Windows,
+        // http://+: requires either admin rights or a urlacl reservation, so
+        // fall back to localhost-only if the wildcard bind is denied rather
+        // than failing to start at all.
+        try
+        {
+            listener.Prefixes.Add($"http://+:{Port}/");
+            listener.Start();
+        }
+        catch (HttpListenerException)
+        {
+            listener.Prefixes.Clear();
+            listener.Prefixes.Add($"http://localhost:{Port}/");
+            listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
+            listener.Start();
+        }
+
         IsRunning = true;
         listenerTask = Task.Run(ListenAsync, cts.Token);
+    }
+
+    /// <summary>
+    /// Best-effort discovery of this machine's LAN IPv4 address, so the
+    /// companion URL shown to the operator is reachable from their phone.
+    /// Uses a UDP "connect" (no packets sent) to learn the outbound interface.
+    /// </summary>
+    private static string? GetLanIpAddress()
+    {
+        try
+        {
+            using var socket = new System.Net.Sockets.Socket(
+                System.Net.Sockets.AddressFamily.InterNetwork,
+                System.Net.Sockets.SocketType.Dgram, 0);
+            socket.Connect("8.8.8.8", 65530);
+            return (socket.LocalEndPoint as IPEndPoint)?.Address.ToString();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static int FindFreePort()
