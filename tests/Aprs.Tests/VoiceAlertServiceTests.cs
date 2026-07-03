@@ -72,7 +72,9 @@ public sealed class VoiceAlertServiceTests
     [InlineData(VoiceAlertType.BeaconConfirmation, nameof(VoiceAlertService.SpeakBeaconConfirmations))]
     public void AllAlertTypes_HaveCorrespondingToggle(VoiceAlertType type, string toggleName)
     {
-        // Verifies all 6 alert types have a named toggle property
+        // Verifies all 6 alert types have a named toggle property,
+        // and that the enum value is defined (uses the 'type' parameter).
+        Assert.True(Enum.IsDefined(type));
         using var svc = new VoiceAlertService();
         var prop = typeof(VoiceAlertService).GetProperty(toggleName);
         Assert.NotNull(prop);

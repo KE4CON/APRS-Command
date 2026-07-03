@@ -18,10 +18,7 @@ public sealed partial class AboutWindow : Window
         InitializeComponent();
 
         // Version from assembly metadata.
-        var version = Assembly.GetExecutingAssembly()
-            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion ?? "0.2.0";
-        VersionText.Text = $"Version {version}";
+        VersionText.Text = $"Version {Services.AppVersion.Informational}";
 
         // Runtime info.
         RuntimeText.Text = $".NET {Environment.Version}";

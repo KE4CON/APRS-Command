@@ -569,13 +569,15 @@ public sealed partial class App : Application
             }
         };
 
-        // Connection events
+        // Connection events — DispatcherTimer instead of an unbounded Task.Run
+        // polling loop, so the check stops automatically when the app shuts down
+        // and state reads happen on the UI thread.
         var lastState = Aprs.Transport.AprsIsConnectionState.Disconnected;
-        _ = System.Threading.Tasks.Task.Run(async () =>
-        {
-            while (true)
+        var connectionSoundTimer = new Avalonia.Threading.DispatcherTimer(
+            TimeSpan.FromSeconds(1),
+            Avalonia.Threading.DispatcherPriority.Background,
+            (_, _) =>
             {
-                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1));
                 var state = rt.ConnectionState;
                 if (state != lastState)
                 {
@@ -585,7 +587,7 @@ public sealed partial class App : Application
                         sound.Play(AlertSound.Disconnected, $"disc-{DateTimeOffset.UtcNow.Ticks}");
                     lastState = state;
                 }
-            }
-        });
+            });
+        connectionSoundTimer.Start();
     }
 }
