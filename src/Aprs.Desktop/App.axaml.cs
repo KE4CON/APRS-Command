@@ -7,6 +7,7 @@ using Aprs.Desktop.Composition;
 using Aprs.Desktop.Runtime;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Audio;
+using Aprs.Desktop.Services;
 using Aprs.Desktop.ViewModels;
 using Aprs.Services;
 using Aprs.Desktop.Views;
@@ -484,6 +485,7 @@ public sealed partial class App : Application
                     WireRadarRefresh(mainWindow);
                     WireGeofence(runtime);
                     WireScheduledBeacons(runtime);
+                    WireStartupUpdateCheck();
                 }
                 else
                 {
@@ -516,6 +518,7 @@ public sealed partial class App : Application
                         WireNetControl(runtime);
                         WireNwsAlerts(runtime);
                         WireScheduledBeacons(runtime);
+                        WireStartupUpdateCheck();
                         // Trail and radar wiring happen after main window is shown.
                         setup.Closed += (_, _) =>
                         {
@@ -543,6 +546,65 @@ public sealed partial class App : Application
             await runtime.DisposeAsync();
             runtime = null;
         }
+    }
+
+    /// <summary>
+    /// Fires a background update check ~15 seconds after startup. Silent when
+    /// offline or when no update exists (field deployments never see noise).
+    /// When an update is found: Velopack installs get a click-to-install toast
+    /// that downloads and restarts; portable installs get a toast that opens
+    /// the GitHub releases page in the browser.
+    /// </summary>
+    private static void WireStartupUpdateCheck()
+    {
+        _ = Task.Run(async () =>
+        {
+            // Let startup finish and any network come up before checking.
+            await Task.Delay(TimeSpan.FromSeconds(15)).ConfigureAwait(false);
+
+            var updater = new AutoUpdateService();
+            var result  = await updater.CheckAsync().ConfigureAwait(false);
+            if (!result.UpdateAvailable) return;
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                var toast = result.CanAutoInstall
+                    ? new Views.ToastNotification(
+                        $"Update available: v{result.LatestVersion}",
+                        "Click to download and restart into the new version.")
+                    : new Views.ToastNotification(
+                        $"Update available: v{result.LatestVersion}",
+                        "Click to open the download page.");
+
+                toast.Clicked += async (_, _) =>
+                {
+                    if (result.CanAutoInstall)
+                    {
+                        var ok = await updater.DownloadAndRestartAsync();
+                        if (!ok)
+                        {
+                            new Views.ToastNotification(
+                                "Update failed",
+                                "Could not download the update. You can install it manually from the releases page.")
+                                .Show();
+                        }
+                    }
+                    else if (result.ReleaseUrl is not null)
+                    {
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName        = result.ReleaseUrl,
+                                UseShellExecute = true
+                            });
+                        }
+                        catch { /* browser launch is best-effort */ }
+                    }
+                };
+                toast.Show();
+            });
+        });
     }
 
     private static void WireSoundAlerts(DesktopRuntime rt)
