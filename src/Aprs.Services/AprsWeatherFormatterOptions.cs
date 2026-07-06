@@ -7,7 +7,7 @@ public sealed record AprsWeatherFormatterOptions(
     string? Comment)
 {
     public static AprsWeatherFormatterOptions Default { get; } = new(
-        Destination: "APRS",
+        Destination: Aprs.Core.AprsConstants.ToCall,
         Path: [],
         UsePosition: true,
         Comment: null);

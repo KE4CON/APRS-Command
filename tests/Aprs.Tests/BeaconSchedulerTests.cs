@@ -34,7 +34,7 @@ public sealed class BeaconSchedulerTests
         Assert.True(result.PacketGenerated);
         Assert.True(result.Blocked);
         Assert.False(result.TransmitAttempted);
-        Assert.Equal("KD8ABC-7>APRS,WIDE1-1:!3903.50N/08430.50W-Test scheduler beacon", result.Packet);
+        Assert.Equal("KD8ABC-7>APCMD0,WIDE1-1:!3903.50N/08430.50W-Test scheduler beacon", result.Packet);
         Assert.Contains("Transmit is disabled", result.Message);
     }
 
@@ -158,7 +158,7 @@ public sealed class BeaconSchedulerTests
         Assert.False(result.Blocked);
         Assert.Equal(1, client.SendCallCount);
         Assert.True(client.LastTransmitConfirmed);
-        Assert.Equal("KD8ABC-7>APRS,WIDE1-1:!3903.50N/08430.50W-Test scheduler beacon", client.LastPacket);
+        Assert.Equal("KD8ABC-7>APCMD0,WIDE1-1:!3903.50N/08430.50W-Test scheduler beacon", client.LastPacket);
     }
 
     [Fact]

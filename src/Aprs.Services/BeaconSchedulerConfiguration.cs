@@ -14,7 +14,7 @@ public sealed record BeaconSchedulerConfiguration(
         AprsIsBeaconEnabled: false,
         RfBeaconEnabled: false,
         MinimumBeaconInterval: TimeSpan.FromMinutes(5),
-        Destination: "APRS",
+        Destination: Aprs.Core.AprsConstants.ToCall,
         RequireTransmitConfirmation: true,
         SmartBeaconing: SmartBeaconingConfiguration.Default);
 }

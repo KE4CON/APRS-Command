@@ -53,7 +53,7 @@ public sealed class BeaconService : IAsyncDisposable
             AprsIsBeaconEnabled:     station.AprsIsTransmitEnabled,
             RfBeaconEnabled:         station.RfTransmitEnabled,
             MinimumBeaconInterval:   TimeSpan.FromMinutes(5),
-            Destination:             "APRS",
+            Destination:             Aprs.Core.AprsConstants.ToCall,
             RequireTransmitConfirmation: false,
             SmartBeaconing:          settings.SmartBeaconing.ToServiceConfig());
 

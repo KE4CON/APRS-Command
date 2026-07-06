@@ -23,4 +23,9 @@ public static class AppVersion
     /// <summary>Standard User-Agent string for all outbound HTTP requests.</summary>
     public static string UserAgent { get; } =
         $"APRSCommand/{Numeric} (github.com/KE4CON/APRS-Command)";
+
+    /// <summary>
+    /// AX.25 destination TOCALL — convenience accessor for AprsConstants.ToCall.
+    /// </summary>
+    public static string ToCall => Aprs.Core.AprsConstants.ToCall;
 }

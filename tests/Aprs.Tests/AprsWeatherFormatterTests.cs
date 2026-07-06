@@ -103,7 +103,7 @@ public sealed class AprsWeatherFormatterTests
         var result = formatter.FormatPreview(CreateObservation(), options: options);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("N0CALL>APRS,TCPIP*:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", result.Packet);
+        Assert.Equal("N0CALL>APCMD0,TCPIP*:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", result.Packet);
     }
 
     [Fact]
@@ -124,7 +124,7 @@ public sealed class AprsWeatherFormatterTests
             AprsWeatherFormatterOptions.Default with { Path = ["TCPIP*"] });
 
         Assert.True(result.IsSuccess);
-        Assert.StartsWith("KD8ABC-7>APRS,TCPIP*:!3903.50N/08430.50W_", result.Packet, StringComparison.Ordinal);
+        Assert.StartsWith("KD8ABC-7>APCMD0,TCPIP*:!3903.50N/08430.50W_", result.Packet, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class AprsWeatherFormatterTests
             options: AprsWeatherFormatterOptions.Default with { UsePosition = false });
 
         Assert.True(result.IsSuccess);
-        Assert.StartsWith("N0CALL>APRS:_120000180/005g010t072r000p000P000h50b10132", result.Packet, StringComparison.Ordinal);
+        Assert.StartsWith("N0CALL>APCMD0:_120000180/005g010t072r000p000P000h50b10132", result.Packet, StringComparison.Ordinal);
     }
 
     [Fact]

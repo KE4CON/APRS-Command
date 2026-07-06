@@ -9,6 +9,6 @@ public sealed record AprsMessageRetryConfiguration(
     public static AprsMessageRetryConfiguration Default { get; } = new(
         RetryInterval: TimeSpan.FromSeconds(30),
         MaximumRetries: 3,
-        Destination: "APRS",
+        Destination: Aprs.Core.AprsConstants.ToCall,
         RequireTransmitConfirmation: true);
 }
