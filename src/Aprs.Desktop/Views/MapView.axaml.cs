@@ -17,6 +17,7 @@ using Mapsui.Styles;
 using Mapsui.Tiling.Layers;
 using NetTopologySuite.Geometries;
 using Aprs.Desktop.Configuration;
+using Aprs.Desktop.Services;
 using BruTile;
 using BruTile.Cache;
 using BruTile.Predefined;
@@ -253,6 +254,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.ToggleMapLayerRequested -= OnToggleMapLayerRequested;
             currentViewModel.DrawModeChanged -= OnDrawModeChanged;
             currentViewModel.ClearDrawingsRequested -= OnClearDrawings;
+            currentViewModel.ImportGeoFileRequested -= OnImportGeoFile;
+            currentViewModel.ExportGeoFileRequested -= OnExportGeoFile;
             currentViewModel.RingCenterChanged -= OnRingCenterChanged;
         }
 
@@ -266,6 +269,8 @@ public sealed partial class MapView : UserControl
             currentViewModel.ToggleMapLayerRequested += OnToggleMapLayerRequested;
             currentViewModel.DrawModeChanged += OnDrawModeChanged;
             currentViewModel.ClearDrawingsRequested += OnClearDrawings;
+            currentViewModel.ImportGeoFileRequested += OnImportGeoFile;
+            currentViewModel.ExportGeoFileRequested += OnExportGeoFile;
             currentViewModel.RingCenterChanged += OnRingCenterChanged;
         }
 
@@ -1125,6 +1130,131 @@ public sealed partial class MapView : UserControl
         drawingLayer?.Clear();
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
+    }
+
+    private async void OnImportGeoFile(object? sender, EventArgs e)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(
+            new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = "Import GPX or KML File",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new Avalonia.Platform.Storage.FilePickerFileType("GPS Exchange / KML")
+                    {
+                        Patterns = ["*.gpx", "*.kml"],
+                        MimeTypes = ["application/gpx+xml", "application/vnd.google-earth.kml+xml"]
+                    },
+                    new Avalonia.Platform.Storage.FilePickerFileType("All files") { Patterns = ["*"] }
+                ]
+            });
+
+        if (files.Count == 0) return;
+
+        var path = files[0].Path.LocalPath;
+        if (string.IsNullOrEmpty(path)) return;
+
+        var result = GeoFileImportExportService.Import(path);
+
+        if (!result.Success)
+        {
+            // Show error to user — use a simple dialog
+            var dialog = new Avalonia.Controls.Window
+            {
+                Title       = "Import Failed",
+                Width       = 420,
+                Height      = 180,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+                Content     = new Avalonia.Controls.TextBlock
+                {
+                    Text        = result.ErrorMessage ?? "Unknown error.",
+                    Margin      = new Avalonia.Thickness(20),
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                }
+            };
+            await dialog.ShowDialog(topLevel as Avalonia.Controls.Window ?? new Avalonia.Controls.Window());
+            return;
+        }
+
+        // Add imported shapes to the drawing layer
+        foreach (var shape in result.Shapes)
+        {
+            completedShapes.Add(shape);
+        }
+
+        // Add waypoints as point markers via APRS objects if any
+        // (For now, convert them to single-point shapes labelled with their name)
+        foreach (var wpt in result.Waypoints)
+        {
+            var (x, y) = GeoFileImportExportService.LatLonToWorld(wpt.Latitude, wpt.Longitude);
+            var shape = new DrawingShape
+            {
+                ShapeType   = DrawShapeType.Line,
+                Label       = wpt.Name,
+                Color       = "#0F2A4A",
+                StrokeWidth = 3.0,
+            };
+            // A single-point "line" renders as a dot — waypoints show as labelled dots
+            shape.Points.Add((x, y));
+            shape.Points.Add((x, y));
+            completedShapes.Add(shape);
+        }
+
+        RedrawAllShapes();
+    }
+
+    private async void OnExportGeoFile(object? sender, EventArgs e)
+    {
+        if (completedShapes.Count == 0)
+        {
+            var dialog = new Avalonia.Controls.Window
+            {
+                Title   = "Nothing to Export",
+                Width   = 380,
+                Height  = 150,
+                WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+                Content = new Avalonia.Controls.TextBlock
+                {
+                    Text   = "No drawings on the map to export. Use the drawing tools to add lines or polygons first.",
+                    Margin = new Avalonia.Thickness(20),
+                    TextWrapping = Avalonia.Media.TextWrapping.Wrap,
+                }
+            };
+            var topLvl = TopLevel.GetTopLevel(this) as Avalonia.Controls.Window
+                         ?? new Avalonia.Controls.Window();
+            await dialog.ShowDialog(topLvl);
+            return;
+        }
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return;
+
+        var file = await topLevel.StorageProvider.SaveFilePickerAsync(
+            new Avalonia.Platform.Storage.FilePickerSaveOptions
+            {
+                Title           = "Export Drawings",
+                SuggestedFileName = $"aprs-command-export-{DateTime.Now:yyyyMMdd-HHmm}",
+                FileTypeChoices =
+                [
+                    new Avalonia.Platform.Storage.FilePickerFileType("GPX Track File") { Patterns = ["*.gpx"] },
+                    new Avalonia.Platform.Storage.FilePickerFileType("KML File")       { Patterns = ["*.kml"] },
+                ]
+            });
+
+        if (file is null) return;
+
+        var ext     = Path.GetExtension(file.Name).ToLowerInvariant();
+        var content = ext == ".kml"
+            ? GeoFileImportExportService.ExportToKml(completedShapes, [])
+            : GeoFileImportExportService.ExportToGpx(completedShapes, []);
+
+        await using var stream = await file.OpenWriteAsync();
+        await using var writer = new System.IO.StreamWriter(stream, System.Text.Encoding.UTF8);
+        await writer.WriteAsync(content);
     }
 
     private void OnDrawToolClick(MPoint worldPoint)
