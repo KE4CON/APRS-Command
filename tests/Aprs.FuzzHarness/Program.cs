@@ -84,6 +84,7 @@ catch (Exception ex)
 }
 
 Console.WriteLine($"Connected. Streaming for {durationMin} minute(s). Press Ctrl+C to stop early.");
+Console.WriteLine("  (Progress updates every 30 seconds. If no update appears, check connectivity.)");
 Console.WriteLine();
 
 // ── Packet loop — use ReadPacketsAsync (the correct consumption pattern) ──────
@@ -221,6 +222,7 @@ Console.WriteLine($"  Crashes:        {results.CrashCount}");
 Console.WriteLine($"  Misdecodes:     {results.Misdecodes.Count}");
 Console.WriteLine($"  Slow (≥{slowMs}ms): {results.SlowPackets.Count}");
 Console.WriteLine($"  Rate:           {results.TotalReceived / Math.Max(1, sw.Elapsed.TotalSeconds):F1} packets/sec");
+Console.WriteLine($"  Server comments:{results.ServerComments:N0} (# lines — if >0, connection is working)");
 
 Console.WriteLine();
 Console.WriteLine("  Packet types:");
