@@ -18,7 +18,16 @@ public sealed class AprsPositionParser
             validationErrors.Add("Position packet timestamp is missing or incomplete.");
         }
 
-        var parsedPosition = AprsPositionComponents.Parse(information, latitudeStart, "Position packet", validationErrors);
+        // Spec §9: detect compressed position by checking whether the character
+        // at the latitude-start position is a Symbol Table Identifier (/ or \)
+        // rather than a digit character. Normal lat/long always starts with digits.
+        if (AprsCompressedPositionDecoder.IsCompressed(information, latitudeStart))
+        {
+            return ParseCompressed(rawPacket, validationErrors, positionType, timestamp, latitudeStart);
+        }
+
+        var parsedPosition = AprsPositionComponents.Parse(
+            information, latitudeStart, "Position packet", validationErrors);
         var (courseDegrees, speedKnots) = AprsPositionComponents.ParseCourseAndSpeed(parsedPosition.Comment);
         var altitudeFeet = AprsPositionComponents.ParseAltitude(parsedPosition.Comment);
 
@@ -44,5 +53,39 @@ public sealed class AprsPositionParser
             speedKnots,
             altitudeFeet,
             parsedPosition.PositionAmbiguity);
+    }
+
+    private static PositionAprsPacket ParseCompressed(
+        RawAprsPacket rawPacket,
+        List<string> validationErrors,
+        char positionType,
+        string? timestamp,
+        int latitudeStart)
+    {
+        var compressed = AprsCompressedPositionDecoder.Decode(
+            rawPacket.Information, latitudeStart, "Position packet", validationErrors);
+
+        return new PositionAprsPacket(
+            rawPacket.RawLine,
+            rawPacket.SourceCallsign,
+            rawPacket.SourceSsid,
+            rawPacket.Destination,
+            rawPacket.Path,
+            rawPacket.Information,
+            rawPacket.ReceivedAtUtc,
+            rawPacket.IsValid && validationErrors.Count == 0,
+            validationErrors,
+            rawPacket.QConstruct,
+            positionType,
+            timestamp,
+            compressed.Latitude,
+            compressed.Longitude,
+            compressed.SymbolTableIdentifier,
+            compressed.SymbolCode,
+            compressed.Comment,
+            compressed.CourseDegrees,
+            compressed.SpeedKnots,
+            compressed.AltitudeFeet,
+            0); // Compressed position has no ambiguity (spec §9 p.36)
     }
 }
