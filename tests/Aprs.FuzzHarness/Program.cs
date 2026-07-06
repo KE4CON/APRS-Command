@@ -23,7 +23,6 @@ Console.WriteLine("╚═══════════════════�
 Console.WriteLine();
 Console.WriteLine($"  Server:    rotate.aprs2.net:14580");
 Console.WriteLine($"  Callsign:  {callsign}  (passcode {passcode})");
-Console.WriteLine($"  Filter:    r/0/0/{filterRadius} (world if radius ≥ 20000)");
 Console.WriteLine($"  Duration:  {durationMin} minute(s)");
 Console.WriteLine($"  Slow threshold: {slowMs} ms");
 Console.WriteLine();
@@ -33,10 +32,14 @@ var parser     = new AprsParser();
 var sw         = Stopwatch.StartNew();
 var lastReport = sw.Elapsed;
 
-// Use a world filter so we see a representative sample of all packet types
-var filter = int.Parse(filterRadius) >= 20000
-    ? null
-    : $"r/0/0/{filterRadius}";
+// World feed: no filter = full unfiltered stream (very high volume).
+// Regional: range filter centred at a useful location (Times Square, NYC).
+// APRS-IS max radius is ~3000 km — larger values are silently rejected.
+var radiusInt = int.Parse(filterRadius);
+Console.WriteLine($"  Filter:    {(radiusInt >= 20000 ? "(none — full world feed)" : $"r/40.7580/-73.9855/{radiusInt} km radius from NYC")}");
+var filter = radiusInt >= 20000
+    ? null                              // no filter = full world feed
+    : $"r/40.7580/-73.9855/{radiusInt}"; // NYC centre, radius in km
 
 var config = AprsIsClientConfiguration.Default with
 {
