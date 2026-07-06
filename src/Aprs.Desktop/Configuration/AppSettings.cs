@@ -29,7 +29,8 @@ public sealed record AppSettings(
     WinlinkSettings Winlink,
     SessionTemplateSettings SessionTemplates,
     VoiceSettings Voice,
-    RepeaterBookSettings RepeaterBook)
+    RepeaterBookSettings RepeaterBook,
+    CalTopoSettings CalTopo)
 {
     public const int CurrentSchemaVersion = 2;
 
@@ -52,5 +53,6 @@ public sealed record AppSettings(
         Winlink: WinlinkSettings.Default,
         SessionTemplates: SessionTemplateSettings.Default,
         Voice: VoiceSettings.Default,
-        RepeaterBook: RepeaterBookSettings.Default);
+        RepeaterBook: RepeaterBookSettings.Default,
+        CalTopo: CalTopoSettings.Default);
 }

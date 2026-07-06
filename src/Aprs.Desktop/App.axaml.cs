@@ -485,6 +485,7 @@ public sealed partial class App : Application
                     WireRadarRefresh(mainWindow);
                     WireGeofence(runtime);
                     WireScheduledBeacons(runtime);
+                    WireCalTopoForwarding(runtime);
                     WireStartupUpdateCheck();
                 }
                 else
@@ -518,6 +519,7 @@ public sealed partial class App : Application
                         WireNetControl(runtime);
                         WireNwsAlerts(runtime);
                         WireScheduledBeacons(runtime);
+                        WireCalTopoForwarding(runtime);
                         WireStartupUpdateCheck();
                         // Trail and radar wiring happen after main window is shown.
                         setup.Closed += (_, _) =>
@@ -555,6 +557,25 @@ public sealed partial class App : Application
     /// that downloads and restarts; portable installs get a toast that opens
     /// the GitHub releases page in the browser.
     /// </summary>
+    private static void WireCalTopoForwarding(DesktopRuntime rt)
+    {
+        var settings = JsonAppSettingsStore.Default.Load().CalTopo;
+        if (!settings.Enabled || string.IsNullOrWhiteSpace(settings.MapId)) return;
+
+        var forwarder = new Services.CalTopoForwardingService(settings);
+
+        // Subscribe to every parsed packet — the service filters internally
+        rt.Coordinator.PacketParsed += forwarder.OnPacketParsed;
+
+        // Re-apply settings when the operator changes CalTopo config mid-session
+        rt.MainViewModel.StationSetup.SettingsSaved += (_, _) =>
+        {
+            var updated = JsonAppSettingsStore.Default.Load().CalTopo;
+            forwarder.ApplySettings(updated);
+            if (!updated.Enabled) forwarder.ResetRateLimits();
+        };
+    }
+
     private static void WireStartupUpdateCheck()
     {
         _ = Task.Run(async () =>

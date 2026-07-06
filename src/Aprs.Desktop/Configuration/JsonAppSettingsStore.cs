@@ -243,7 +243,8 @@ public sealed class JsonAppSettingsStore : IAppSettingsStore
         var sessionTemplates = TryDeserializeSection(root, "sessionTemplates", SessionTemplateSettings.Default) ?? SessionTemplateSettings.Default;
         var voice = TryDeserializeSection(root, "voice", VoiceSettings.Default) ?? VoiceSettings.Default;
         var repeaterBook = TryDeserializeSection(root, "repeaterBook", RepeaterBookSettings.Default) ?? RepeaterBookSettings.Default;
-        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink, sessionTemplates, voice, repeaterBook));
+        var calTopo = TryDeserializeSection(root, "calTopo", CalTopoSettings.Default) ?? CalTopoSettings.Default;
+        return Migrate(new AppSettings(schemaVersion, station, connections, iGate, digipeater, audio, windows, gps, managedModem, darkMode, messageTemplates, smartBeaconing, gpsd, freqRef, netScripts, winlink, sessionTemplates, voice, repeaterBook, calTopo));
     }
 
     private static T? TryDeserializeSection<T>(JsonObject root, string name, T fallback)
