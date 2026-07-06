@@ -4,9 +4,6 @@ using Aprs.Core;
 using Aprs.Transport;
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-// All of these can be overridden with environment variables or command-line args.
-// Defaults are safe for an anonymous, read-only connection.
-
 var callsign        = GetArg(args, "--callsign",  env: "APRS_CALLSIGN",  def: "N0CALL");
 var passcode        = GetArg(args, "--passcode",  env: "APRS_PASSCODE",  def: "-1");
 var filterRadius    = GetArg(args, "--radius",    env: "APRS_RADIUS",    def: "500");
@@ -33,13 +30,12 @@ Console.WriteLine();
 
 var results    = new FuzzResults();
 var parser     = new AprsParser();
-var cts        = new CancellationTokenSource(TimeSpan.FromMinutes(durationMin));
 var sw         = Stopwatch.StartNew();
 var lastReport = sw.Elapsed;
 
 // Use a world filter so we see a representative sample of all packet types
 var filter = int.Parse(filterRadius) >= 20000
-    ? null          // no filter = full feed (extremely high volume — use with care)
+    ? null
     : $"r/0/0/{filterRadius}";
 
 var config = AprsIsClientConfiguration.Default with
@@ -51,139 +47,161 @@ var config = AprsIsClientConfiguration.Default with
     Filter             = filter,
     ReceiveOnly        = true,
     TransmitEnabled    = false,
-    ReconnectEnabled   = true,
+    ReconnectEnabled   = false,  // don't reconnect during a timed run
 };
 
-await using var client = new AprsIsClient(config);
+// Use a plain CancellationTokenSource — not linked to anything that gets
+// disposed before we're done. The harness controls cancellation entirely.
+using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(durationMin));
 
-client.RawPacketReceived += (_, e) =>
+Console.CancelKeyPress += (_, e) =>
 {
-    var raw = e.RawPacketLine;
-    if (string.IsNullOrWhiteSpace(raw) || raw.StartsWith('#'))
-    {
-        results.ServerComments++;
-        return;
-    }
-
-    results.TotalReceived++;
-
-    // ── Parse ──────────────────────────────────────────────────────────────
-    AprsPacket? packet = null;
-    Exception? parseException = null;
-    var parseTimer = Stopwatch.StartNew();
-
-    try
-    {
-        packet = parser.Parse(raw, DateTimeOffset.UtcNow);
-    }
-    catch (Exception ex)
-    {
-        parseException = ex;
-    }
-    finally
-    {
-        parseTimer.Stop();
-    }
-
-    // ── Record findings ────────────────────────────────────────────────────
-    if (parseException is not null)
-    {
-        results.Crashes.Add(new FuzzFinding(
-            raw, $"CRASH: {parseException.GetType().Name}: {parseException.Message}",
-            parseTimer.ElapsedMilliseconds));
-        results.CrashCount++;
-        return;
-    }
-
-    if (packet is null)
-    {
-        results.Crashes.Add(new FuzzFinding(raw, "CRASH: parser returned null", 0));
-        results.CrashCount++;
-        return;
-    }
-
-    if (parseTimer.ElapsedMilliseconds >= slowMs)
-    {
-        results.SlowPackets.Add(new FuzzFinding(
-            raw,
-            $"SLOW: {parseTimer.ElapsedMilliseconds} ms — {packet.GetType().Name}",
-            parseTimer.ElapsedMilliseconds));
-    }
-
-    // ── Sanity checks ──────────────────────────────────────────────────────
-    if (packet.IsValid)
-    {
-        results.ValidCount++;
-        results.TypeCounts.AddOrUpdate(packet.GetType().Name, 1, (_, n) => n + 1);
-
-        // Sanity: position packets must have in-range coordinates
-        if (packet is PositionAprsPacket pos)
-        {
-            if (pos.Latitude is < -90 or > 90)
-                results.Misdecodes.Add(new FuzzFinding(
-                    raw, $"MISDECODE: latitude {pos.Latitude} out of range", 0));
-
-            if (pos.Longitude is < -180 or > 180)
-                results.Misdecodes.Add(new FuzzFinding(
-                    raw, $"MISDECODE: longitude {pos.Longitude} out of range", 0));
-
-            if (pos.SpeedKnots is < 0 or > 3000)
-                results.Misdecodes.Add(new FuzzFinding(
-                    raw, $"MISDECODE: speed {pos.SpeedKnots} kn out of range", 0));
-
-            if (pos.CourseDegrees is < 0 or > 360)
-                results.Misdecodes.Add(new FuzzFinding(
-                    raw, $"MISDECODE: course {pos.CourseDegrees}° out of range", 0));
-
-            if (pos.AltitudeFeet is < -1500 or > 250000)
-                results.Misdecodes.Add(new FuzzFinding(
-                    raw, $"MISDECODE: altitude {pos.AltitudeFeet} ft out of range", 0));
-        }
-    }
-    else
-    {
-        results.InvalidCount++;
-    }
-
-    // ── Progress reporting (every 30 seconds) ─────────────────────────────
-    if (sw.Elapsed - lastReport > TimeSpan.FromSeconds(30))
-    {
-        lastReport = sw.Elapsed;
-        var elapsed = sw.Elapsed;
-        var pct = elapsed.TotalMinutes / durationMin * 100;
-        Console.WriteLine(
-            $"  [{elapsed:mm\\:ss}] {pct:F0}% — " +
-            $"{results.TotalReceived:N0} packets  " +
-            $"valid={results.ValidCount:N0}  " +
-            $"invalid={results.InvalidCount:N0}  " +
-            $"crashes={results.CrashCount}  " +
-            $"misdecodes={results.Misdecodes.Count}  " +
-            $"slow={results.SlowPackets.Count}");
-    }
+    e.Cancel = true;
+    if (!cts.IsCancellationRequested) cts.Cancel();
 };
 
 Console.WriteLine("Connecting to APRS-IS...");
 
+var client = new AprsIsClient(config);
 try
 {
     await client.ConnectAsync(cts.Token);
-    Console.WriteLine($"Connected. Streaming for {durationMin} minute(s). Press Ctrl+C to stop early.");
-    Console.WriteLine();
-
-    await Task.Delay(Timeout.Infinite, cts.Token);
 }
 catch (OperationCanceledException)
 {
-    // Normal completion after duration elapsed
+    Console.WriteLine("Cancelled before connection completed.");
+    await client.DisposeAsync();
+    return 0;
 }
-catch (Exception ex) when (!cts.IsCancellationRequested)
+catch (Exception ex)
 {
     Console.Error.WriteLine($"Connection failed: {ex.Message}");
+    await client.DisposeAsync();
     return 2;
+}
+
+Console.WriteLine($"Connected. Streaming for {durationMin} minute(s). Press Ctrl+C to stop early.");
+Console.WriteLine();
+
+// ── Packet loop — use ReadPacketsAsync (the correct consumption pattern) ──────
+try
+{
+    await foreach (var e in client.ReadPacketsAsync(cts.Token).ConfigureAwait(false))
+    {
+        var raw = e.RawPacketLine;
+
+        if (string.IsNullOrWhiteSpace(raw) || raw.StartsWith('#'))
+        {
+            results.ServerComments++;
+            continue;
+        }
+
+        results.TotalReceived++;
+
+        // ── Parse ──────────────────────────────────────────────────────────
+        AprsPacket? packet = null;
+        Exception? parseException = null;
+        var parseTimer = Stopwatch.StartNew();
+
+        try
+        {
+            packet = parser.Parse(raw, DateTimeOffset.UtcNow);
+        }
+        catch (Exception ex)
+        {
+            parseException = ex;
+        }
+        finally
+        {
+            parseTimer.Stop();
+        }
+
+        // ── Record findings ────────────────────────────────────────────────
+        if (parseException is not null)
+        {
+            results.Crashes.Add(new FuzzFinding(
+                raw, $"CRASH: {parseException.GetType().Name}: {parseException.Message}",
+                parseTimer.ElapsedMilliseconds));
+            results.CrashCount++;
+            continue;
+        }
+
+        if (packet is null)
+        {
+            results.Crashes.Add(new FuzzFinding(raw, "CRASH: parser returned null", 0));
+            results.CrashCount++;
+            continue;
+        }
+
+        if (parseTimer.ElapsedMilliseconds >= slowMs)
+        {
+            results.SlowPackets.Add(new FuzzFinding(
+                raw,
+                $"SLOW: {parseTimer.ElapsedMilliseconds} ms — {packet.GetType().Name}",
+                parseTimer.ElapsedMilliseconds));
+        }
+
+        // ── Sanity checks ──────────────────────────────────────────────────
+        if (packet.IsValid)
+        {
+            results.ValidCount++;
+            results.TypeCounts.AddOrUpdate(packet.GetType().Name, 1, (_, n) => n + 1);
+
+            if (packet is PositionAprsPacket pos)
+            {
+                if (pos.Latitude is < -90 or > 90)
+                    results.Misdecodes.Add(new FuzzFinding(
+                        raw, $"MISDECODE: latitude {pos.Latitude} out of range", 0));
+
+                if (pos.Longitude is < -180 or > 180)
+                    results.Misdecodes.Add(new FuzzFinding(
+                        raw, $"MISDECODE: longitude {pos.Longitude} out of range", 0));
+
+                if (pos.SpeedKnots is < 0 or > 3000)
+                    results.Misdecodes.Add(new FuzzFinding(
+                        raw, $"MISDECODE: speed {pos.SpeedKnots} kn out of range", 0));
+
+                if (pos.CourseDegrees is < 0 or > 360)
+                    results.Misdecodes.Add(new FuzzFinding(
+                        raw, $"MISDECODE: course {pos.CourseDegrees}° out of range", 0));
+
+                if (pos.AltitudeFeet is < -1500 or > 250000)
+                    results.Misdecodes.Add(new FuzzFinding(
+                        raw, $"MISDECODE: altitude {pos.AltitudeFeet} ft out of range", 0));
+            }
+        }
+        else
+        {
+            results.InvalidCount++;
+        }
+
+        // ── Progress reporting every 30 seconds ────────────────────────────
+        if (sw.Elapsed - lastReport > TimeSpan.FromSeconds(30))
+        {
+            lastReport = sw.Elapsed;
+            var elapsed = sw.Elapsed;
+            var pct = elapsed.TotalMinutes / durationMin * 100;
+            Console.WriteLine(
+                $"  [{elapsed:mm\\:ss}] {pct:F0}% — " +
+                $"{results.TotalReceived:N0} packets  " +
+                $"valid={results.ValidCount:N0}  " +
+                $"invalid={results.InvalidCount:N0}  " +
+                $"crashes={results.CrashCount}  " +
+                $"misdecodes={results.Misdecodes.Count}  " +
+                $"slow={results.SlowPackets.Count}");
+        }
+    }
+}
+catch (OperationCanceledException)
+{
+    // Normal end — timer expired or Ctrl+C
 }
 finally
 {
-    await client.DisposeAsync();
+    // Dispose carefully — the CTS may or may not already be triggered.
+    // DisconnectAsync inside DisposeAsync calls Cancel() on the internal
+    // CancellationTokenSource; guard against ObjectDisposedException.
+    try { await client.DisposeAsync(); } catch { /* best-effort cleanup */ }
 }
 
 // ── Final report ──────────────────────────────────────────────────────────────
@@ -216,7 +234,7 @@ if (results.Crashes.Count > 0)
         Console.WriteLine($"           raw: {Truncate(f.RawLine, 120)}");
     }
     if (results.Crashes.Count > 20)
-        Console.WriteLine($"    ... and {results.Crashes.Count - 20} more (see full log)");
+        Console.WriteLine($"    ... and {results.Crashes.Count - 20} more");
 }
 
 if (results.Misdecodes.Count > 0)
@@ -237,9 +255,7 @@ if (results.SlowPackets.Count > 0)
     Console.WriteLine();
     Console.WriteLine($"  ⚠️  SLOW PACKETS ({results.SlowPackets.Count}, ≥{slowMs}ms):");
     foreach (var f in results.SlowPackets.OrderByDescending(x => x.ElapsedMs).Take(10))
-    {
         Console.WriteLine($"    [{f.ElapsedMs}ms] {Truncate(f.RawLine, 120)}");
-    }
 }
 
 if (results.CrashCount == 0 && results.Misdecodes.Count == 0)
@@ -249,8 +265,6 @@ if (results.CrashCount == 0 && results.Misdecodes.Count == 0)
 }
 
 Console.WriteLine();
-
-// Return non-zero exit code if problems were found (useful in CI)
 return results.CrashCount > 0 || results.Misdecodes.Count > 0 ? 3 : 0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
