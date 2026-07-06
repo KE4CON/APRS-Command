@@ -58,6 +58,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
         DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
         ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
+        ImportGeoFileCommand           = new DesktopCommand(() => ImportGeoFileRequested?.Invoke(this, EventArgs.Empty));
+        ExportGeoFileCommand           = new DesktopCommand(() => ExportGeoFileRequested?.Invoke(this, EventArgs.Empty));
         ClearCustomRingCenterCommand   = new DesktopCommand(() => CustomRingCenter = null);
         SetRingsHereCommand            = new DesktopCommand(SetRingsAtSelectedStation, () => SelectedStation?.Latitude is not null);
         
@@ -77,6 +79,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public event EventHandler<StationMarkerViewModel?>? AssignTacticalRequested;
     public event EventHandler<int>? RadarStepRequested;
     public event EventHandler? ClearDrawingsRequested;
+    public event EventHandler? ImportGeoFileRequested;
+    public event EventHandler? ExportGeoFileRequested;
     public event EventHandler? AlertStatusRequested;
 
     private bool showTrails;
@@ -161,6 +165,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand DrawCircleCommand { get; }
     public DesktopCommand DrawEraseCommand { get; }
     public DesktopCommand ClearDrawingsCommand { get; }
+    public DesktopCommand ImportGeoFileCommand { get; }
+    public DesktopCommand ExportGeoFileCommand { get; }
 
     public bool RadarAnimating
     {
