@@ -28,7 +28,7 @@ public sealed class AprsObjectItemParser
         var liveKilledIndicatorIndex = 1 + ObjectNameLength;
         var liveKilledIndicator = TryGetChar(information, liveKilledIndicatorIndex);
         var isAlive = liveKilledIndicator == '*';
-        var isKilled = liveKilledIndicator == '_';
+        var isKilled = liveKilledIndicator == '_'; // Real-world convention (WB4APR PROTOCOL.TXT)
         var timestampStart = liveKilledIndicatorIndex + 1;
         var timestamp = information.Length >= timestampStart + ObjectTimestampLength
             ? information.Substring(timestampStart, ObjectTimestampLength)

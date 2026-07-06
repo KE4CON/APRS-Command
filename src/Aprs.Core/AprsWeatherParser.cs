@@ -38,7 +38,14 @@ public sealed class AprsWeatherParser
         else
         {
             weatherBody = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;
-            if (weatherBody.Length >= 6 && weatherBody.Take(6).All(char.IsDigit))
+            // MDHM timestamp (positionless weather) is 8 digits: MMDDhhmm (spec §6 p.22)
+            // HMS and DHM timestamps are 7 chars; MDHM is 8 chars followed by non-digit.
+            if (weatherBody.Length >= 8 && weatherBody.Take(8).All(char.IsDigit))
+            {
+                timestamp = weatherBody[..8]; // MDHM format
+                weatherBody = weatherBody[8..];
+            }
+            else if (weatherBody.Length >= 6 && weatherBody.Take(6).All(char.IsDigit))
             {
                 timestamp = weatherBody[..6];
                 weatherBody = weatherBody[6..];
