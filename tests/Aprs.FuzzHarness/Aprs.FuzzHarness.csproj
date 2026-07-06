@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyTitle>APRS Command — APRS-IS Fuzz Harness</AssemblyTitle>
+    <Description>
+      Connects to APRS-IS and feeds live packets through the parser to surface
+      crashes, misdecodes, and performance outliers. Run manually; not part of
+      the automated CI suite.
+    </Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Aprs.Core\Aprs.Core.csproj" />
+    <ProjectReference Include="..\..\src\Aprs.Transport\Aprs.Transport.csproj" />
+  </ItemGroup>
+</Project>
