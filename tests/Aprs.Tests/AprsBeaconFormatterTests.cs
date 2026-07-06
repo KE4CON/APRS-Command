@@ -17,7 +17,7 @@ public sealed class AprsBeaconFormatterTests
             comment: "Test beacon"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("N0CALL>APRS,WIDE1-1:!3903.50N/08430.50W-Test beacon", result.Packet);
+        Assert.Equal("N0CALL>APCMD0,WIDE1-1:!3903.50N/08430.50W-Test beacon", result.Packet);
     }
 
     [Fact]
@@ -33,7 +33,7 @@ public sealed class AprsBeaconFormatterTests
             comment: "APRS-IS beacon"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("N0CALL>APRS:!3903.50N/08430.50W-APRS-IS beacon", result.Packet);
+        Assert.Equal("N0CALL>APCMD0:!3903.50N/08430.50W-APRS-IS beacon", result.Packet);
     }
 
     [Theory]
@@ -66,7 +66,7 @@ public sealed class AprsBeaconFormatterTests
             comment: "Mobile test"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("W1AW-9>APRS,WIDE1-1,WIDE2-1:!4123.45N/07234.56W>Mobile test", result.Packet);
+        Assert.Equal("W1AW-9>APCMD0,WIDE1-1,WIDE2-1:!4123.45N/07234.56W>Mobile test", result.Packet);
     }
 
     [Fact]
@@ -140,7 +140,7 @@ public sealed class AprsBeaconFormatterTests
             comment: " Moving test"));
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("N0CALL>APRS,WIDE1-1:!3903.50N/08430.50W-PHG5130123/045/A=000789Moving test", result.Packet);
+        Assert.Equal("N0CALL>APCMD0,WIDE1-1:!3903.50N/08430.50W-PHG5130123/045/A=000789Moving test", result.Packet);
     }
 
     [Fact]
@@ -174,12 +174,12 @@ public sealed class AprsBeaconFormatterTests
         var result = formatter.FormatFixedPositionBeacon(input);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("KD8ABC-7>APRS,WIDE1-1,WIDE2-1:!3903.50N/08430.50W-Profile beacon", result.Packet);
+        Assert.Equal("KD8ABC-7>APCMD0,WIDE1-1,WIDE2-1:!3903.50N/08430.50W-Profile beacon", result.Packet);
     }
 
     private static AprsBeaconInput CreateInput(
         string source = "N0CALL",
-        string destination = "APRS",
+        string destination = Aprs.Core.AprsConstants.ToCall,
         IReadOnlyList<string>? path = null,
         double? latitude = 39.058333,
         double? longitude = -84.508333,

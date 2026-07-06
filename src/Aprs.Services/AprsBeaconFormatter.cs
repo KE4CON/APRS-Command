@@ -35,7 +35,7 @@ public sealed partial class AprsBeaconFormatter : IAprsBeaconFormatter
         return AprsBeaconFormatResult.Succeeded(packet);
     }
 
-    public AprsBeaconInput CreateInputFromProfile(LocalStationProfile profile, string destination = "APRS", bool rfPathRequired = false)
+    public AprsBeaconInput CreateInputFromProfile(LocalStationProfile profile, string destination = Aprs.Core.AprsConstants.ToCall, bool rfPathRequired = false)
     {
         var path = string.IsNullOrWhiteSpace(profile.BeaconPath)
             ? []

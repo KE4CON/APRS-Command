@@ -22,7 +22,7 @@ public sealed class AprsMessageRetryEngineTests
         Assert.Equal(TestNow, sent.FirstSentAtUtc);
         Assert.Equal(TestNow.AddSeconds(30), sent.NextRetryAtUtc);
         Assert.Equal(1, transmitter.SendCallCount);
-        Assert.Equal("N0CALL>APRS::K8ABC    :Hello{01", transmitter.LastPacket);
+        Assert.Equal("N0CALL>APCMD0::K8ABC    :Hello{01", transmitter.LastPacket);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class AprsMessageRetryEngineTests
         var draft = store.CreateDraft(new AprsMessageComposeRequest("N0CALL", "K8ABC", "Hello", "01"), TestNow);
         await engine.SendMessageAsync(draft.Id, TestNow, CancellationToken.None);
 
-        var acknowledged = engine.ProcessAckOrRej(ParseMessage("K8ABC>APRS::N0CALL   :ack01"), TestNow.AddSeconds(5));
+        var acknowledged = engine.ProcessAckOrRej(ParseMessage("K8ABC>APCMD0::N0CALL   :ack01"), TestNow.AddSeconds(5));
 
         Assert.NotNull(acknowledged);
         Assert.Equal(AprsMessageStatus.Acknowledged, acknowledged.Status);
@@ -48,7 +48,7 @@ public sealed class AprsMessageRetryEngineTests
         var draft = store.CreateDraft(new AprsMessageComposeRequest("N0CALL", "K8ABC", "Hello", "01"), TestNow);
         await engine.SendMessageAsync(draft.Id, TestNow, CancellationToken.None);
 
-        var rejected = engine.ProcessAckOrRej(ParseMessage("K8ABC>APRS::N0CALL   :rej01"), TestNow.AddSeconds(5));
+        var rejected = engine.ProcessAckOrRej(ParseMessage("K8ABC>APCMD0::N0CALL   :rej01"), TestNow.AddSeconds(5));
 
         Assert.NotNull(rejected);
         Assert.Equal(AprsMessageStatus.Rejected, rejected.Status);
@@ -63,7 +63,7 @@ public sealed class AprsMessageRetryEngineTests
         var draft = store.CreateDraft(new AprsMessageComposeRequest("N0CALL", "K8ABC", "Hello", "01"), TestNow);
         await engine.SendMessageAsync(draft.Id, TestNow, CancellationToken.None);
 
-        var result = engine.ProcessAckOrRej(ParseMessage("K8ABC>APRS::N0CALL   :ack99"), TestNow.AddSeconds(5));
+        var result = engine.ProcessAckOrRej(ParseMessage("K8ABC>APCMD0::N0CALL   :ack99"), TestNow.AddSeconds(5));
 
         Assert.Null(result);
         var stored = Assert.Single(store.GetOutboxMessages());
