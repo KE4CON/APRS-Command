@@ -39,8 +39,8 @@ jobs:
             artifact: APRSCommand-${{ github.ref_name }}-linux-x64
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
 
@@ -60,7 +60,7 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path publish/${{ matrix.rid }}/* -DestinationPath ${{ matrix.artifact }}.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}.zip
@@ -78,15 +78,15 @@ jobs:
           - rid: osx-x64
             artifact: APRSCommand-${{ github.ref_name }}-macos-x64-installer
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Install create-dmg
         run: brew install create-dmg
       - name: Build DMG
         run: bash scripts/make-macos-app.sh ${{ matrix.rid }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact }}
           path: artifacts/installers/APRSCommand-${{ matrix.rid }}.dmg
@@ -96,8 +96,8 @@ jobs:
     name: Windows NSIS installer
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Install NSIS
@@ -107,7 +107,7 @@ jobs:
         run: |
           $v = "${{ github.ref_name }}" -replace '^v',''
           pwsh scripts/make-windows-installer.ps1 -Version $v
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: APRSCommand-${{ github.ref_name }}-windows-x64-installer
           path: artifacts/installers/APRSCommand-windows-x64-Setup.exe
@@ -125,8 +125,8 @@ jobs:
           - rid: linux-arm64
             artifact: APRSCommand-${{ github.ref_name }}-linux-arm64-packages
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - name: Install packaging tools
@@ -142,7 +142,7 @@ jobs:
         run: |
           v="${{ github.ref_name }}"
           bash scripts/make-linux-packages.sh ${{ matrix.rid }} "${v#v}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact }}
           path: artifacts/installers/
@@ -154,8 +154,8 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
 
