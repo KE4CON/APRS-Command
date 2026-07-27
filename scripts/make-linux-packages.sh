@@ -33,7 +33,7 @@ if [[ ! -f "$PUBLISH_DIR/Aprs.Desktop" ]]; then
   echo "Publishing $RID..."
   dotnet publish "$REPO_ROOT/src/Aprs.Desktop/Aprs.Desktop.csproj" \
     -c Release -r "$RID" --self-contained true \
-    -p:PublishSingleFile=false -p:PublishReadyToRun=true \
+    -p:PublishSingleFile=false -p:PublishReadyToRun=true -p:Version="$VERSION" \
     -o "$PUBLISH_DIR"
 fi
 

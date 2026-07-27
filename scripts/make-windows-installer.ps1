@@ -36,7 +36,7 @@ if (-not (Test-Path (Join-Path $PublishDir "Aprs.Desktop.exe"))) {
     Write-Host "Publishing win-x64..."
     $proj = Join-Path $RepoRoot "src\Aprs.Desktop\Aprs.Desktop.csproj"
     dotnet publish $proj -c Release -r win-x64 --self-contained true `
-        -p:PublishSingleFile=false -p:PublishReadyToRun=true -o $PublishDir
+        -p:PublishSingleFile=false -p:PublishReadyToRun=true -p:Version=$Version -o $PublishDir
 }
 
 New-Item -ItemType Directory -Force -Path $InstallerDir | Out-Null
