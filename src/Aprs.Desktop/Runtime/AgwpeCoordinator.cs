@@ -1,4 +1,4 @@
-using Aprs.Core;
+﻿using Aprs.Core;
 using Aprs.Services;
 using Aprs.Transport;
 
@@ -35,9 +35,10 @@ public sealed class AgwpeCoordinator : IAsyncDisposable
             if (!port.Enabled || !port.ReceiveEnabled) continue;
 
             var agwpeConfig = port.Configuration.Agwpe;
-            if (agwpeConfig is null || !agwpeConfig.Enabled) continue;
+            if (agwpeConfig is null) continue;
 
-            coordinator.clients.Add(new AgwpeClient(agwpeConfig));
+            var config = agwpeConfig with { Enabled = true };
+            coordinator.clients.Add(new AgwpeClient(config));
         }
 
         return coordinator;
@@ -69,7 +70,7 @@ public sealed class AgwpeCoordinator : IAsyncDisposable
             catch (OperationCanceledException) { break; }
             catch
             {
-                // Connection error — pause before reconnecting
+                // Connection error â€” pause before reconnecting
                 try { await Task.Delay(TimeSpan.FromSeconds(10), ct).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
             }
@@ -86,3 +87,4 @@ public sealed class AgwpeCoordinator : IAsyncDisposable
         cts.Dispose();
     }
 }
+
