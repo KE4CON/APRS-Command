@@ -7,7 +7,20 @@ namespace Aprs.Desktop.Services;
 
 /// <summary>
 /// Client for the RepeaterBook Export API.
-/// Requires an approved API token from repeaterbook.com/api/token_request.php
+///
+/// Used by the Field Repeater Lookup panel to help an operator identify
+/// EmComm-affiliated (ARES/RACES/SKYWARN/CANWARN) and other local voice
+/// repeaters near their own configured station location, for net
+/// coordination and backup voice communications when planning or running
+/// a field deployment. This is not a general-purpose public repeater
+/// search feature: searches are always scoped to the operator's own
+/// Station Setup location, not an arbitrary user-entered location.
+///
+/// Requires an approved API token from repeaterbook.com/api/token_request.php,
+/// applied for under RepeaterBook's "distributed app" category. Once the
+/// application itself is approved, each operator generates their own
+/// personal rbuapp_-prefixed token from repeaterbook.com/user/api_apps.php
+/// and enters it in Settings — no token is bundled with the app.
 ///
 /// API documentation: https://www.repeaterbook.com/wiki/doku.php?id=api
 /// Authentication: X-RB-App-Token header (preferred) or Bearer token.
@@ -17,7 +30,7 @@ namespace Aprs.Desktop.Services;
 public sealed class RepeaterBookService : IDisposable
 {
     private const string BaseUrl    = "https://www.repeaterbook.com/api/export.php";
-    private const string UserAgent  = "APRS-Command/1.0 (github.com/KE4CON/APRS-Command; KE4CON)";
+    private const string UserAgent  = "APRS-Command/1.0 (+https://github.com/KE4CON/APRS-Command; ke4con@example.com)";
     private const int    MinQueryIntervalSeconds = 10;
 
     private readonly HttpClient http;
@@ -97,7 +110,11 @@ public sealed class RepeaterBookService : IDisposable
                     Operational:     string.Equals(r.Operational, "Yes", StringComparison.OrdinalIgnoreCase),
                     Notes:           r.Notes ?? string.Empty,
                     Use:             r.Use ?? string.Empty,
-                    LastUpdate:      r.Lastupdated ?? string.Empty))
+                    LastUpdate:      r.Lastupdated ?? string.Empty,
+                    Ares:            IsYes(r.Ares),
+                    Races:           IsYes(r.Races),
+                    Skywarn:         IsYes(r.Skywarn),
+                    Canwarn:         IsYes(r.Canwarn)))
                 .OrderBy(r => r.DistanceMiles)
                 .ToList();
 
@@ -120,6 +137,9 @@ public sealed class RepeaterBookService : IDisposable
     private static double ParseDouble(string? s)
         => double.TryParse(s, System.Globalization.NumberStyles.Any,
             System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : 0;
+
+    private static bool IsYes(string? s)
+        => string.Equals(s?.Trim(), "Yes", StringComparison.OrdinalIgnoreCase);
 
     public void Dispose() => http.Dispose();
 
@@ -147,6 +167,10 @@ public sealed class RepeaterBookService : IDisposable
         [JsonPropertyName("Notes")]       public string? Notes       { get; set; }
         [JsonPropertyName("Use")]         public string? Use         { get; set; }
         [JsonPropertyName("Last Updated")] public string? Lastupdated { get; set; }
+        [JsonPropertyName("ARES")]        public string? Ares        { get; set; }
+        [JsonPropertyName("RACES")]       public string? Races       { get; set; }
+        [JsonPropertyName("SKYWARN")]     public string? Skywarn     { get; set; }
+        [JsonPropertyName("CANWARN")]     public string? Canwarn     { get; set; }
     }
 }
 
@@ -192,8 +216,27 @@ public sealed record RepeaterEntry(
     bool   Operational,
     string Notes,
     string Use,
-    string LastUpdate)
+    string LastUpdate,
+    bool   Ares = false,
+    bool   Races = false,
+    bool   Skywarn = false,
+    bool   Canwarn = false)
 {
+    public bool IsEmCommAffiliated => Ares || Races || Skywarn || Canwarn;
+
+    public string EmCommLabel
+    {
+        get
+        {
+            var tags = new List<string>();
+            if (Ares) tags.Add("ARES");
+            if (Races) tags.Add("RACES");
+            if (Skywarn) tags.Add("SKYWARN");
+            if (Canwarn) tags.Add("CANWARN");
+            return tags.Count > 0 ? string.Join("/", tags) : string.Empty;
+        }
+    }
+
     public string OffsetLabel => OffsetMhz switch
     {
         > 0  => $"+{OffsetMhz:F3}",

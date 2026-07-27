@@ -38,11 +38,18 @@ A small number of optional features call third-party APIs. Each is
 opt-in, off by default, and used only for the specific purpose described
 below.
 
-### 2.1 RepeaterBook (Repeater Directory panel)
+### 2.1 RepeaterBook (Field Repeater Lookup panel)
 
-- **Purpose:** lets an operator look up repeaters near their own station
-  location from within the app. This is the only use of RepeaterBook
-  data anywhere in the application.
+- **Purpose:** helps an operator identify EmComm-affiliated (ARES/RACES/
+  SKYWARN/CANWARN) and other local voice repeaters near their own
+  configured station location, for net coordination and backup voice
+  communications when planning or running a field deployment. This is
+  the only use of RepeaterBook data anywhere in the application, and it
+  is deliberately scoped narrower than a general-purpose repeater
+  search: the app never accepts an arbitrary user-entered location —
+  every query uses the operator's own Station Setup coordinates, and an
+  "EmComm-affiliated only" filter is available in addition to the
+  existing "Operational only" filter.
 - **Trigger:** strictly user-initiated. The app never queries
   RepeaterBook automatically, on a timer, or in the background. A query
   only happens when the operator opens the panel and clicks Search.
@@ -57,13 +64,20 @@ below.
   requested them, on their own screen. APRS Command never redistributes,
   rebroadcasts, republishes, or shares RepeaterBook data with any other
   user or service.
-- **Token storage:** each operator supplies and stores their own personal
-  RepeaterBook API token (Settings → Connections → RepeaterBook API
-  Token). The token is saved locally in the operator's own settings file
-  and transmitted only to RepeaterBook's own API endpoint, over HTTPS,
-  via the `X-RB-App-Token` header. It is never logged, never included in
-  any error output, and never shared between users or bundled with the
-  application.
+- **Application approval model:** APRS Command applies under RepeaterBook's
+  "distributed app" category (installed by users, open source, cannot
+  keep a shared token secret). No shared token is requested or embedded
+  in the application.
+- **Token storage:** once the application itself is approved, each
+  operator individually logs into their own RepeaterBook account and
+  generates their own personal, app-bound token (RepeaterBook's
+  `rbuapp_`-prefixed token format) from RepeaterBook's own API Apps
+  dashboard, then pastes it into Settings → Connections → RepeaterBook
+  API Token. The token is saved locally in the operator's own settings
+  file and transmitted only to RepeaterBook's own API endpoint, over
+  HTTPS, via the `X-RB-App-Token` header. It is never logged, never
+  included in any error output, and never shared between users or
+  bundled with the application.
 - **Source:** `src/Aprs.Desktop/Services/RepeaterBookService.cs`,
   `src/Aprs.Desktop/ViewModels/RepeaterDirectoryViewModel.cs`,
   `src/Aprs.Desktop/Configuration/RepeaterBookSettings.cs`.
@@ -113,4 +127,4 @@ disclosure. There is no dedicated security contact email at this time.
 
 ---
 
-*Last updated: July 27, 2026 · Applies to v0.5.0-alpha*
+*Last updated: July 27, 2026 (rev. 2) · Applies to v0.5.0-alpha*

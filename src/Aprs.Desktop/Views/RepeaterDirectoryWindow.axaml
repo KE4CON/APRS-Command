@@ -4,7 +4,7 @@
         xmlns:svc="using:Aprs.Desktop.Services"
         x:Class="Aprs.Desktop.Views.RepeaterDirectoryWindow"
         x:DataType="vm:RepeaterDirectoryViewModel"
-        Title="Club / Net Repeater Directory"
+        Title="Field Repeater Lookup"
         Width="900" Height="620"
         MinWidth="700" MinHeight="450"
         WindowStartupLocation="CenterOwner">
@@ -13,15 +13,15 @@
 
     <!-- Header -->
     <StackPanel Margin="16,14,16,8" Spacing="4">
-      <TextBlock Text="Club / Net Repeater Directory" FontSize="17" FontWeight="SemiBold"
+      <TextBlock Text="Field Repeater Lookup" FontSize="17" FontWeight="SemiBold"
                  Foreground="{DynamicResource TextPrimaryBrush}" />
       <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
-                 Text="Repeater data from RepeaterBook.com — searched within your configured radius of your station location." />
+                 Text="EmComm-affiliated and local voice repeaters from RepeaterBook.com, for net coordination and backup communications when planning a field deployment. Always searched within your configured radius of your own station location — not a general-purpose repeater search." TextWrapping="Wrap" />
     </StackPanel>
 
     <!-- Controls row -->
     <Grid Grid.Row="1" Margin="16,0,16,10"
-          ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+          ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="10">
       <TextBox Text="{Binding FilterText}"
                Watermark="Filter by callsign, frequency, or city..."
                VerticalAlignment="Center" />
@@ -29,11 +29,15 @@
                 IsChecked="{Binding ShowOperationalOnly}"
                 VerticalAlignment="Center"
                 ToolTip.Tip="When checked, only shows repeaters marked as operational in RepeaterBook." />
-      <Button Grid.Column="2" Content="Search"
+      <CheckBox Grid.Column="2" Content="EmComm-affiliated only"
+                IsChecked="{Binding ShowEmCommOnly}"
+                VerticalAlignment="Center"
+                ToolTip.Tip="When checked, only shows repeaters tagged ARES, RACES, SKYWARN, or CANWARN — useful when planning net coordination for a field deployment." />
+      <Button Grid.Column="3" Content="Search"
               Command="{Binding SearchCommand}"
               Padding="16,7" IsEnabled="{Binding IsNotSearching}"
               ToolTip.Tip="Search RepeaterBook for repeaters near your station location. Requires an approved API token in Settings > Connections." />
-      <TextBlock Grid.Column="3" Text="Searching..."
+      <TextBlock Grid.Column="4" Text="Searching..."
                  IsVisible="{Binding IsSearching}"
                  VerticalAlignment="Center" FontSize="11"
                  Foreground="{DynamicResource TextMutedBrush}" />
@@ -74,7 +78,7 @@
                        Text="To use the repeater directory, you need a free API token from RepeaterBook." />
             <TextBlock TextWrapping="Wrap" TextAlignment="Center" FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}">
-              1. Visit repeaterbook.com/api/token_request.php&#x0a;2. Submit a request describing APRS Command&#x0a;3. Once approved, paste your token in Settings → Connections → RepeaterBook API Token&#x0a;4. Click Search
+              1. Visit repeaterbook.com/api/token_request.php (log in first)&#x0a;2. Once APRS Command is approved as a distributed app, generate your own personal token at repeaterbook.com/user/api_apps.php&#x0a;3. Paste your token in Settings → Connections → RepeaterBook API Token&#x0a;4. Click Search
             </TextBlock>
           </StackPanel>
 
@@ -103,7 +107,7 @@
           <!-- Results -->
           <!-- Column headers -->
           <Grid IsVisible="{Binding HasResults}"
-                ColumnDefinitions="100,100,80,100,*,85"
+                ColumnDefinitions="100,100,80,100,*,70,85"
                 Background="{DynamicResource AppBgAltBrush}"
                 Margin="0,0,0,0">
             <TextBlock Text="Callsign"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
@@ -111,7 +115,8 @@
             <TextBlock Grid.Column="2" Text="Offset"     Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Grid.Column="3" Text="Tone/DCS"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Grid.Column="4" Text="Location"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Grid.Column="5" Text="Distance"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="5" Text="EmComm"     Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="6" Text="Distance"   Margin="8,4" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMutedBrush}" />
           </Grid>
 
           <ListBox Grid.Row="1"
@@ -122,13 +127,14 @@
                    BorderThickness="0">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="svc:RepeaterEntry">
-                <Grid ColumnDefinitions="100,100,80,100,*,85" Margin="0,1">
+                <Grid ColumnDefinitions="100,100,80,100,*,70,85" Margin="0,1">
                   <TextBlock Text="{Binding Callsign}"      Margin="8,3" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource AccentBlueBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding Frequency}"     Margin="8,3" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   <TextBlock Grid.Column="2" Text="{Binding OffsetLabel}"   Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="3" Text="{Binding ToneLabel}"     Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="4" Text="{Binding LocationLabel}" Margin="8,3" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Grid.Column="5" Text="{Binding DistanceLabel}" Margin="8,3" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Grid.Column="5" Text="{Binding EmCommLabel}"   Margin="8,3" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource WarnTextStrongBrush}" />
+                  <TextBlock Grid.Column="6" Text="{Binding DistanceLabel}" Margin="8,3" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>

@@ -78,6 +78,13 @@ public sealed class RepeaterDirectoryViewModel : INotifyPropertyChanged, IDispos
         set { showOperationalOnly = value; OnPropertyChanged(); ApplyFilter(); }
     }
 
+    private bool showEmCommOnly;
+    public bool ShowEmCommOnly
+    {
+        get => showEmCommOnly;
+        set { showEmCommOnly = value; OnPropertyChanged(); ApplyFilter(); }
+    }
+
     // ── Data ──────────────────────────────────────────────────────────────────
     private IReadOnlyList<RepeaterEntry> allRepeaters = [];
     public ObservableCollection<RepeaterEntry> Repeaters { get; } = [];
@@ -158,6 +165,7 @@ public sealed class RepeaterDirectoryViewModel : INotifyPropertyChanged, IDispos
         foreach (var r in allRepeaters)
         {
             if (showOperationalOnly && !r.Operational) continue;
+            if (showEmCommOnly && !r.IsEmCommAffiliated) continue;
 
             if (!string.IsNullOrEmpty(q))
             {

@@ -254,7 +254,7 @@
                      Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock TextWrapping="Wrap" FontSize="11"
                      Foreground="{DynamicResource TextMutedBrush}"
-                     Text="Required for the Club / Net Directory panel. Request a free token at repeaterbook.com/api/token_request.php — approval typically takes a few days. Leave blank until your token is approved." />
+                     Text="Required for the Field Repeater Lookup panel. Request a free token at repeaterbook.com/api/token_request.php (choose &quot;I develop or maintain a distributed app&quot;) — approval typically takes a few days. Leave blank until your token is approved." />
         </StackPanel>
         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
           <TextBox Text="{Binding RepeaterBookApiToken}"
