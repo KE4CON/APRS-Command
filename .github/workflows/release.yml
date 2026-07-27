@@ -199,6 +199,13 @@ jobs:
             APRS Command is open-source (GPL v3). We do not purchase annual
             code-signing certificates ($300–500/yr) for open-source software.
 
+            Windows builds are in the process of being set up for free code
+            signing through [SignPath Foundation](https://signpath.org) —
+            application submitted, approval pending. Once live, this will
+            remove the Windows warning described below. macOS and Linux
+            builds remain unsigned, as is standard for open-source software
+            distributed outside an app store.
+
             **macOS:** Right-click the .app → Open → Open. One time only.
             **Windows:** Click "More info" → "Run anyway". One time only.
 
