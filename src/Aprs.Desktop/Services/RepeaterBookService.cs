@@ -30,7 +30,7 @@ namespace Aprs.Desktop.Services;
 public sealed class RepeaterBookService : IDisposable
 {
     private const string BaseUrl    = "https://www.repeaterbook.com/api/export.php";
-    private const string UserAgent  = "APRS-Command/1.0 (+https://github.com/KE4CON/APRS-Command; ke4con@example.com)";
+    private const string UserAgent  = "APRS-Command/1.0 (+https://github.com/KE4CON/APRS-Command; jrospopo@sbcglobal.net)";
     private const int    MinQueryIntervalSeconds = 10;
 
     private readonly HttpClient http;
