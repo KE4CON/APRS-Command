@@ -4,7 +4,13 @@ namespace Aprs.Core;
 
 public sealed class AprsWeatherParser
 {
-    private const int PositionWeatherSymbolCodeIndex = 19;
+    // Offset from the start of the position data to the symbol code in an uncompressed position:
+    // 8 lat chars + 1 symbol-table char + 9 lon chars.
+    private const int UncompressedSymbolCodeOffset = 18;
+
+    // A 7-char timestamp (DHM/HMS) follows the type character for '@' and '/' reports, so the
+    // position data starts 7 chars later than for the timestampless '!' and '=' reports.
+    private const int TimestampLength = 7;
 
     public bool CanParse(string information)
     {
@@ -24,9 +30,15 @@ public sealed class AprsWeatherParser
 
         if (IsPositionWeather(rawPacket.Information))
         {
+            var positionStart = PositionDataStart(rawPacket.Information[0]);
+
+            // '@' and '/' reports carry a 7-char timestamp between the type char and the position.
+            if (positionStart > 1 && rawPacket.Information.Length >= 1 + TimestampLength)
+                timestamp = rawPacket.Information.Substring(1, TimestampLength);
+
             var parsedPosition = AprsPositionComponents.Parse(
                 rawPacket.Information,
-                1,
+                positionStart,
                 "Weather position",
                 validationErrors);
             latitude = parsedPosition.Latitude;
@@ -85,11 +97,26 @@ public sealed class AprsWeatherParser
             parsedWeather.Comment);
     }
 
+    /// <summary>
+    /// The index at which the position data (latitude) begins for a given position-report type char.
+    /// '!' and '=' have no timestamp (position at index 1); '@' and '/' carry a 7-char timestamp
+    /// first (position at index 8).
+    /// </summary>
+    private static int PositionDataStart(char typeChar)
+        => typeChar is '@' or '/' ? 1 + TimestampLength : 1;
+
     private static bool IsPositionWeather(string information)
     {
-        return information.Length > PositionWeatherSymbolCodeIndex
-            && information[0] is '!' or '=' or '/' or '@'
-            && information[PositionWeatherSymbolCodeIndex] == '_';
+        if (information.Length == 0 || information[0] is not ('!' or '=' or '/' or '@'))
+        {
+            return false;
+        }
+
+        // The weather symbol code ('_') sits right after the position data. Its index depends on
+        // whether the report carries a timestamp, so compute it from the type char rather than
+        // assuming the timestampless layout.
+        var symbolCodeIndex = PositionDataStart(information[0]) + UncompressedSymbolCodeOffset;
+        return information.Length > symbolCodeIndex && information[symbolCodeIndex] == '_';
     }
 
     private static ParsedWeatherValues ParseWeatherBody(string body, List<string> validationErrors)

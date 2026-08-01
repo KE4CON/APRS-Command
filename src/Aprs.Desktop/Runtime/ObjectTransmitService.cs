@@ -49,6 +49,12 @@ public sealed class ObjectTransmitService
         if (string.IsNullOrWhiteSpace(packet))
             return $"Could not generate packet for '{objectName}'. Check that position and symbol are set.";
 
+        // Global inhibit (exercise/training mode) blocks object transmit up front with a clear
+        // message. The transport chokepoint enforces this again as a backstop, but catching it here
+        // avoids a misleading "sent" attempt and reports the reason the operator expects.
+        if (transmitSafety is { IsInhibited: true })
+            return $"'{objectName}' not transmitted — {transmitSafety.InhibitReason ?? "transmit is inhibited (exercise mode)."}";
+
         var results = new List<string>();
 
         // APRS-IS transmit

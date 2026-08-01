@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -19,7 +20,7 @@ public sealed class TrainingModeViewModel : INotifyPropertyChanged
         RecentEvents = new ObservableCollection<TrainingEventRowViewModel>();
         EnableCommand = new DesktopCommand(Enable);
         DisableCommand = new DesktopCommand(Disable);
-        StartCommand = new DesktopCommand(Start);
+        StartCommand = new AsyncDesktopCommand(StartAsync);
         PauseCommand = new DesktopCommand(Pause);
         ResumeCommand = new DesktopCommand(Resume);
         StopCommand = new DesktopCommand(Stop);
@@ -41,7 +42,7 @@ public sealed class TrainingModeViewModel : INotifyPropertyChanged
 
     public DesktopCommand DisableCommand { get; }
 
-    public DesktopCommand StartCommand { get; }
+    public ICommand StartCommand { get; }
 
     public DesktopCommand PauseCommand { get; }
 
@@ -139,9 +140,9 @@ public sealed class TrainingModeViewModel : INotifyPropertyChanged
         Refresh();
     }
 
-    private void Start()
+    public async Task StartAsync()
     {
-        trainingModeService.StartSelectedScenarioAsync().GetAwaiter().GetResult();
+        await trainingModeService.StartSelectedScenarioAsync().ConfigureAwait(true);
         Refresh();
     }
 

@@ -246,9 +246,16 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var simulationService = new SimulationService(simulationSink, SimulationConfiguration.Default);
         mainViewModel.Simulation.SetSimulationService(simulationService);
 
+        // The transmit-safety authority doubles as the global inhibit gate (exercise/training mode).
+        // Hand it to every transmit chokepoint so no path can key up while inhibited.
+        var transmitAuthority = provider.GetRequiredService<ITransmitSafetyAuthority>();
+        var inhibitGate = (ITransmitInhibitGate)transmitAuthority;
+        rfTransmitClient.InhibitGate = inhibitGate;
+
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
-            rfBeaconClient: rfTransmitClient);
+            rfBeaconClient: rfTransmitClient,
+            inhibitGate: inhibitGate);
 
         // Wire the live APRS-IS client into the deferred iGate proxy now that it exists.
         deferredIGateClient.InnerClient = beaconService.AprsIsClient;
@@ -267,7 +274,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         {
             var objManager  = provider.GetRequiredService<IAprsObjectManager>();
             var objEditor   = provider.GetRequiredService<IAprsObjectEditorService>();
-            var objTransmit = new ObjectTransmitService(objEditor, objManager, beaconService.AprsIsClient);
+            var objTransmit = new ObjectTransmitService(objEditor, objManager, beaconService.AprsIsClient, transmitAuthority);
             mainViewModel.ObjectManager.SetTransmitService(objTransmit);
 
             // Weather beacon scheduler — reuses the same live APRS-IS client and RF transmit client.

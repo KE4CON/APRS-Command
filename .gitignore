@@ -9,6 +9,9 @@ artifacts/
 
 .DS_Store
 
+# Microsoft Office owner/lock files (created while a doc is open)
+~$*
+
 .fake
 .vs/
 publish/

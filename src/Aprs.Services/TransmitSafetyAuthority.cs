@@ -13,8 +13,13 @@ namespace Aprs.Services;
 /// The inhibit state is guarded so a mode toggle on one thread is observed consistently by an
 /// evaluation on another.
 /// </summary>
-public sealed class TransmitSafetyAuthority : ITransmitSafetyAuthority
+public sealed class TransmitSafetyAuthority : ITransmitSafetyAuthority, Aprs.Transport.ITransmitInhibitGate
 {
+    // ITransmitInhibitGate — the minimal contract the transport transmit chokepoints consult so the
+    // global inhibit (exercise/training mode) hard-blocks every path, not just the ones that
+    // remember to call Evaluate(). InhibitReason below already satisfies the second member.
+    bool Aprs.Transport.ITransmitInhibitGate.IsTransmitInhibited => IsInhibited;
+
     private readonly IAprsPortManager portManager;
     private readonly ITransmitPolicyContext policy;
     private readonly object gate = new();

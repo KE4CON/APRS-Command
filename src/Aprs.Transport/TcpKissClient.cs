@@ -188,6 +188,16 @@ public sealed class TcpKissClient : ITcpKissClient
 
                     State = TcpKissConnectionState.Reconnecting;
                     await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
+
+                    // Dispose the closed stream before replacing it — otherwise each reconnect leaks
+                    // the previous NetworkStream/socket for the lifetime of the client.
+                    var closedStream = stream;
+                    if (closedStream is not null)
+                    {
+                        try { await closedStream.DisposeAsync().ConfigureAwait(false); }
+                        catch { /* best-effort cleanup of the dead stream */ }
+                    }
+
                     stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
                     State = TcpKissConnectionState.Connected;
                     continue;

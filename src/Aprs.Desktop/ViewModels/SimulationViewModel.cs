@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -13,11 +14,11 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
     {
         this.simulationService = simulationService;
         RecentPackets = new ObservableCollection<SimulatedPacketRowViewModel>();
-        StartCommand = new DesktopCommand(Start);
+        StartCommand = new AsyncDesktopCommand(StartAsync);
         PauseCommand = new DesktopCommand(Pause);
         ResumeCommand = new DesktopCommand(Resume);
         StopCommand = new DesktopCommand(Stop);
-        StepCommand = new DesktopCommand(Step);
+        StepCommand = new AsyncDesktopCommand(StepAsync);
         ResetCommand = new DesktopCommand(Reset);
         Refresh();
     }
@@ -26,7 +27,7 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
 
     public ObservableCollection<SimulatedPacketRowViewModel> RecentPackets { get; }
 
-    public DesktopCommand StartCommand { get; }
+    public ICommand StartCommand { get; }
 
     public DesktopCommand PauseCommand { get; }
 
@@ -34,7 +35,7 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
 
     public DesktopCommand StopCommand { get; }
 
-    public DesktopCommand StepCommand { get; }
+    public ICommand StepCommand { get; }
 
     public DesktopCommand ResetCommand { get; }
 
@@ -113,9 +114,9 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
         return new SimulationViewModel(service);
     }
 
-    private void Start()
+    public async Task StartAsync()
     {
-        ActiveService.StartAsync().GetAwaiter().GetResult();
+        await ActiveService.StartAsync().ConfigureAwait(true);
         Refresh();
     }
 
@@ -137,9 +138,9 @@ public sealed class SimulationViewModel : INotifyPropertyChanged
         Refresh();
     }
 
-    private void Step()
+    public async Task StepAsync()
     {
-        ActiveService.GenerateNextBatchAsync().GetAwaiter().GetResult();
+        await ActiveService.GenerateNextBatchAsync().ConfigureAwait(true);
         Refresh();
     }
 

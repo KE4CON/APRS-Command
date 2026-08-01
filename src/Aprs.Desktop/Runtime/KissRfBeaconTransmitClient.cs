@@ -18,9 +18,20 @@ public sealed class KissRfBeaconTransmitClient : IRfBeaconTransmitClient
     public Func<IReadOnlyList<SerialKissClient>> GetSerialClients { get; set; }
         = static () => Array.Empty<SerialKissClient>();
 
+    /// <summary>
+    /// Optional global transmit-inhibit gate. When set and inhibited (for example exercise mode),
+    /// RF transmit is blocked before any AX.25 frame reaches a KISS port.
+    /// </summary>
+    public ITransmitInhibitGate? InhibitGate { get; set; }
+
     public async Task<BeaconNowResult> SendBeaconAsync(
         string rawPacket, CancellationToken cancellationToken)
     {
+        // Global inhibit (exercise/training mode) hard-blocks every RF transmit path.
+        var gate = InhibitGate;
+        if (gate is not null && gate.IsTransmitInhibited)
+            return Fail(gate.InhibitReason ?? "Transmit is globally inhibited (exercise mode).", rawPacket);
+
         if (string.IsNullOrWhiteSpace(rawPacket))
             return Fail("Empty packet.", rawPacket);
 

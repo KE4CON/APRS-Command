@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Aprs.Services;
@@ -32,15 +33,27 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     private readonly Func<IReadOnlyList<NetRosterEntry>> getNetRoster;
     private Task? listenerTask;
 
+    /// <summary>
+    /// Per-session secret carried as the first path segment of every request. The companion server
+    /// binds to all interfaces and exposes the operator's callsign, live station positions, and
+    /// message traffic, so without this token anyone else on the same Wi-Fi could read it simply by
+    /// knowing the host and port. The token is embedded in the URL/QR the operator opens, so it is
+    /// transparent to them but unguessable to a bystander. Regenerated on every Start().
+    /// </summary>
+    private string sessionToken = GenerateToken();
+
     public int Port { get; private set; }
     public bool IsRunning { get; private set; }
 
     /// <summary>
     /// The URL operators open on their phone. Uses the machine's LAN IP so devices
     /// on the same network can reach the server; falls back to localhost when no
-    /// LAN address can be determined.
+    /// LAN address can be determined. Includes the per-session access token.
     /// </summary>
-    public string Url => $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/";
+    public string Url => $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/{sessionToken}/";
+
+    private static string GenerateToken()
+        => Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
 
     public MobileCompanionServer(
         IServiceProvider services,
@@ -65,6 +78,7 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     public void Start(int port = 0)
     {
         Port = port == 0 ? FindFreePort() : port;
+        sessionToken = GenerateToken();
 
         // Bind on all interfaces so phones on the same network can connect —
         // that is the entire purpose of the mobile companion. On Windows,
@@ -140,12 +154,22 @@ public sealed class MobileCompanionServer : IAsyncDisposable
 
         try
         {
-            var path = req.Url?.AbsolutePath.TrimEnd('/') ?? "/";
+            // Every request must present the per-session token as its first path segment. A caller
+            // that does not gets a bare 404 — the same response an unrelated host would get — so the
+            // server neither confirms it exists nor leaks any data to an unauthenticated client.
+            if (!TryStripToken(req.Url?.AbsolutePath ?? "/", out var path))
+            {
+                resp.StatusCode = 404;
+                resp.Close();
+                return;
+            }
+
+            path = path.TrimEnd('/');
 
             switch (path)
             {
                 case "" or "/":
-                    await ServeHtmlAsync(resp);
+                    await ServeHtmlAsync(resp, sessionToken);
                     break;
                 case "/api/stations":
                     await ServeJsonAsync(resp, BuildStationsPayload());
@@ -169,6 +193,32 @@ public sealed class MobileCompanionServer : IAsyncDisposable
             }
         }
         catch { resp.StatusCode = 500; resp.Close(); }
+    }
+
+    /// <summary>
+    /// Validates and strips the session-token path segment. On success, <paramref name="remainder"/>
+    /// is the request path with the token removed (for example "/api/status"); on failure the request
+    /// is rejected. The token is compared in constant time so a wrong guess reveals nothing via timing.
+    /// </summary>
+    private bool TryStripToken(string absolutePath, out string remainder)
+    {
+        remainder = "/";
+        var trimmed = absolutePath.StartsWith('/') ? absolutePath[1..] : absolutePath;
+        var slash = trimmed.IndexOf('/');
+        var segment = slash < 0 ? trimmed : trimmed[..slash];
+
+        if (!FixedTimeTokenEquals(segment, sessionToken))
+            return false;
+
+        remainder = slash < 0 ? "/" : trimmed[slash..];
+        return true;
+    }
+
+    private static bool FixedTimeTokenEquals(string provided, string expected)
+    {
+        var providedBytes = Encoding.ASCII.GetBytes(provided);
+        var expectedBytes = Encoding.ASCII.GetBytes(expected);
+        return CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 
     // ── JSON payloads ─────────────────────────────────────────────────────────
@@ -239,15 +289,18 @@ public sealed class MobileCompanionServer : IAsyncDisposable
         var bytes = Encoding.UTF8.GetBytes(json);
         resp.ContentType     = "application/json; charset=utf-8";
         resp.ContentLength64 = bytes.Length;
-        resp.Headers.Add("Access-Control-Allow-Origin", "*");
+        // No CORS header: the companion page is served from this same origin, so it needs none.
+        // A wildcard Access-Control-Allow-Origin would instead let any website the operator's phone
+        // visits read this data cross-origin, so it is deliberately omitted.
         resp.Headers.Add("Cache-Control", "no-cache");
         await resp.OutputStream.WriteAsync(bytes);
         resp.Close();
     }
 
-    private static async Task ServeHtmlAsync(HttpListenerResponse resp)
+    private static async Task ServeHtmlAsync(HttpListenerResponse resp, string token)
     {
-        var html = BuildHtml();
+        // Inject the token-scoped API base so the page's fetch() calls carry the token too.
+        var html = BuildHtml().Replace("__API_BASE__", "/" + token);
         var bytes = Encoding.UTF8.GetBytes(html);
         resp.ContentType     = "text/html; charset=utf-8";
         resp.ContentLength64 = bytes.Length;
@@ -341,6 +394,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 <script>
+const API_BASE = '__API_BASE__';
 const map = L.map('map', {zoomControl:true}).setView([39.5, -98.35], 8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   attribution:'© OpenStreetMap contributors', maxZoom:18
@@ -379,7 +433,7 @@ function aprsSymbolEmoji(sym) {
 
 async function fetchStatus() {
   try {
-    const r = await fetch('/api/status');
+    const r = await fetch(API_BASE + '/api/status');
     const d = await r.json();
     const dot = document.getElementById('status-dot');
     const txt = document.getElementById('status-text');
@@ -390,7 +444,7 @@ async function fetchStatus() {
 
 async function fetchStations() {
   try {
-    const r = await fetch('/api/stations');
+    const r = await fetch(API_BASE + '/api/stations');
     const stations = await r.json();
     stationsData = stations;
 
@@ -443,7 +497,7 @@ function focusStation(lat, lng) {
 
 async function fetchNet() {
   try {
-    const r = await fetch('/api/net');
+    const r = await fetch(API_BASE + '/api/net');
     const d = await r.json();
     const el = document.getElementById('net-list');
     if (!d.roster || !d.roster.length) {
@@ -463,7 +517,7 @@ async function fetchNet() {
 
 async function fetchMessages() {
   try {
-    const r = await fetch('/api/messages');
+    const r = await fetch(API_BASE + '/api/messages');
     const d = await r.json();
     const el = document.getElementById('messages-list');
     if (!d.messages || !d.messages.length) {
@@ -482,7 +536,7 @@ async function fetchMessages() {
 async function fetchStats() {
   if (currentTab !== 'stats') return;
   try {
-    const r = await fetch('/api/stats');
+    const r = await fetch(API_BASE + '/api/stats');
     const d = await r.json();
     const maxCount = d.topStations && d.topStations.length ? d.topStations[0].count : 1;
     document.getElementById('stats-content').innerHTML = `

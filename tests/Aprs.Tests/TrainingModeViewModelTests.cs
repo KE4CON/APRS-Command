@@ -7,7 +7,7 @@ namespace Aprs.Tests;
 public sealed class TrainingModeViewModelTests
 {
     [Fact]
-    public void TrainingViewModelExposesScenariosStateAndTaskProgress()
+    public async Task TrainingViewModelExposesScenariosStateAndTaskProgress()
     {
         var service = new TrainingModeService(TrainingModeConfiguration.Default with { TrainingModeEnabled = true });
         var viewModel = new TrainingModeViewModel(service);
@@ -17,7 +17,7 @@ public sealed class TrainingModeViewModelTests
         Assert.Contains("Training transmit disabled", viewModel.TransmitStatusText);
         Assert.Contains("0 /", viewModel.ProgressText);
 
-        viewModel.StartCommand.Execute(null);
+        await viewModel.StartAsync();
         Assert.Equal("Running", viewModel.State);
 
         viewModel.SelectedTask = viewModel.Tasks.First();
@@ -26,7 +26,7 @@ public sealed class TrainingModeViewModelTests
     }
 
     [Fact]
-    public void ViewModelCanSelectScenarioAndPauseResumeStopReset()
+    public async Task ViewModelCanSelectScenarioAndPauseResumeStopReset()
     {
         var service = new TrainingModeService(TrainingModeConfiguration.Default with { TrainingModeEnabled = true });
         var viewModel = new TrainingModeViewModel(service);
@@ -34,7 +34,7 @@ public sealed class TrainingModeViewModelTests
         viewModel.SelectedScenario = viewModel.Scenarios.Last();
         Assert.Equal(viewModel.Scenarios.Last().ScenarioName, viewModel.SelectedScenarioName);
 
-        viewModel.StartCommand.Execute(null);
+        await viewModel.StartAsync();
         viewModel.PauseCommand.Execute(null);
         Assert.Equal("Paused", viewModel.State);
 

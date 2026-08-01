@@ -44,7 +44,10 @@ public sealed class AgwpeFrameCodec
         var source = DecodeCallsign(raw, 8, 10);
         var destination = DecodeCallsign(raw, 18, 10);
         var payloadLength = BinaryPrimitives.ReadInt32LittleEndian(raw.AsSpan(28, 4));
-        if (payloadLength < 0)
+        // Reject a negative length and any length larger than the bytes we actually have. A single
+        // frame's payload can never exceed the received buffer, and clamping here also prevents the
+        // HeaderLength + payloadLength additions below from overflowing on a hostile length.
+        if (payloadLength < 0 || payloadLength > raw.Length)
         {
             errors.Add("AGWPE frame payload length is invalid.");
             payloadLength = 0;
@@ -93,7 +96,11 @@ public sealed class AgwpeFrameCodec
         while (offset + HeaderLength <= bytes.Count)
         {
             var length = BinaryPrimitives.ReadInt32LittleEndian(bytes.Skip(offset + 28).Take(4).ToArray());
-            if (length < 0)
+            // A negative length, or one larger than the whole buffer, is corrupt/hostile: emit a
+            // header-only frame carrying the validation error and stop. Bounding by bytes.Count also
+            // stops HeaderLength + length from overflowing to a negative frameLength, which would
+            // otherwise march the offset backwards and spin this loop forever.
+            if (length < 0 || length > bytes.Count)
             {
                 frames.Add(Decode(bytes.Skip(offset).Take(HeaderLength).ToArray(), timestampUtc, packetSource));
                 break;
@@ -136,7 +143,9 @@ public sealed class AgwpeFrameCodec
         while (offset + HeaderLength <= bytes.Count)
         {
             var length = BinaryPrimitives.ReadInt32LittleEndian(bytes.Skip(offset + 28).Take(4).ToArray());
-            if (length < 0)
+            // See DecodeMany: bound the length to prevent both a spin on overflow and treating a
+            // corrupt oversize length as a "complete" frame.
+            if (length < 0 || length > bytes.Count)
             {
                 return offset + HeaderLength - 1;
             }

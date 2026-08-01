@@ -11,8 +11,8 @@ public sealed class WeatherBeaconSettingsViewModel
     {
         this.scheduler = scheduler;
         PreviewCommand = new DesktopCommand(GeneratePreview);
-        TransmitAprsIsNowCommand = new DesktopCommand(() => TransmitNow(WeatherBeaconTransmitTransport.AprsIs));
-        TransmitRfNowCommand = new DesktopCommand(() => TransmitNow(WeatherBeaconTransmitTransport.Rf));
+        TransmitAprsIsNowCommand = new AsyncDesktopCommand(() => TransmitNowAsync(WeatherBeaconTransmitTransport.AprsIs));
+        TransmitRfNowCommand = new AsyncDesktopCommand(() => TransmitNowAsync(WeatherBeaconTransmitTransport.Rf));
         RefreshFromState();
     }
 
@@ -59,9 +59,9 @@ public sealed class WeatherBeaconSettingsViewModel
         LastBlockedReason = preview.ValidationErrors.FirstOrDefault() ?? "-";
     }
 
-    public void TransmitNow(WeatherBeaconTransmitTransport transport)
+    public async Task TransmitNowAsync(WeatherBeaconTransmitTransport transport)
     {
-        var result = scheduler.TransmitWeatherNowAsync(transport).GetAwaiter().GetResult();
+        var result = await scheduler.TransmitWeatherNowAsync(transport).ConfigureAwait(true);
         LastTransmitResult = result.IsSuccess
             ? $"{transport}: transmitted at {FormatTime(result.TimestampUtc)}"
             : $"{transport}: blocked - {result.FailureReason}";

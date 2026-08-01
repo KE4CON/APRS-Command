@@ -323,6 +323,42 @@ public sealed class AprsSpec101ConformanceTests
     }
 
     /// <summary>
+    /// §14: "ack"/"rej" are lowercase literals. An ordinary message whose text merely begins with
+    /// the letters "ACK" (for example "ACKNOWLEDGED") must NOT be treated as an acknowledgement.
+    /// </summary>
+    [Fact]
+    public void Spec_MessageBeginningWithUppercaseAck_IsNotAnAcknowledgement()
+    {
+        var raw = "KD8ABC-7>APRS::KE4CON-1 :ACKNOWLEDGED your traffic{045";
+        var p = Parse(raw);
+        Assert.True(p.IsValid);
+        Assert.IsType<MessageAprsPacket>(p);
+        var msg = (MessageAprsPacket)p;
+        Assert.Null(msg.AcknowledgedMessageId);
+        Assert.Null(msg.RejectedMessageId);
+        Assert.Equal("ACKNOWLEDGED your traffic", msg.MessageBody);
+        Assert.Equal("045", msg.MessageId);
+    }
+
+    /// <summary>
+    /// §8/§12: A weather report carried on a <em>timestamped</em> position report ('@' or '/') puts
+    /// the weather symbol code after the 7-char timestamp, so the parser must offset for it rather
+    /// than assuming the timestampless '!'/'=' layout — otherwise all weather data is lost.
+    /// </summary>
+    [Fact]
+    public void Spec_WeatherPacketWithTimestampedPosition_ParsesSymbolAndData()
+    {
+        var raw = "N0CALL>APRS:@092345z4903.50N/07201.75W_225/000g000t050r000p001h00b10138";
+        var p = Parse(raw);
+        Assert.True(p.IsValid);
+        Assert.IsType<WeatherAprsPacket>(p);
+        var wx = (WeatherAprsPacket)p;
+        Assert.Equal(225, wx.WindDirectionDegrees);
+        Assert.Equal(50, wx.TemperatureFahrenheit);
+        Assert.Equal("092345z", wx.Timestamp);
+    }
+
+    /// <summary>
     /// §14 General Bulletin (spec p.73): Bulletins are addressed to BLN
     /// followed by a bulletin ID character. No message ID is included.
     /// Example: KE4CON-1>APRS::BLN3     :Snow expected in the highlands

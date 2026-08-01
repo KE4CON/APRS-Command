@@ -29,13 +29,13 @@ public sealed class FileHooksViewModelTests : IDisposable
     }
 
     [Fact]
-    public void ManualExportCommandUpdatesStatus()
+    public async Task ManualExportCommandUpdatesStatus()
     {
         var provider = new InMemoryLocalRestApiDataProvider();
         provider.SeedStations(new StationUpdateDto { Callsign = "N0CALL" });
         var viewModel = new FileHooksViewModel(new FileHookService(Configuration(), provider));
 
-        viewModel.ManualExportCommand.Execute(null);
+        await viewModel.ManualExportAsync();
 
         Assert.Contains("Export", viewModel.LastAction, StringComparison.OrdinalIgnoreCase);
         Assert.NotEqual("-", viewModel.LastExportTime);
@@ -43,7 +43,7 @@ public sealed class FileHooksViewModelTests : IDisposable
     }
 
     [Fact]
-    public void ManualImportScanCommandUpdatesAcceptedCount()
+    public async Task ManualImportScanCommandUpdatesAcceptedCount()
     {
         var provider = new InMemoryLocalRestApiDataProvider();
         var configuration = Configuration();
@@ -54,7 +54,7 @@ public sealed class FileHooksViewModelTests : IDisposable
             "{\"schemaVersion\":\"1.0\",\"callsign\":\"N0CALL\"}");
         var viewModel = new FileHooksViewModel(service);
 
-        viewModel.ManualImportScanCommand.Execute(null);
+        await viewModel.ManualImportScanAsync();
 
         Assert.Equal(1, viewModel.AcceptedImportCount);
         Assert.Contains("Scanned", viewModel.LastAction);
@@ -62,7 +62,7 @@ public sealed class FileHooksViewModelTests : IDisposable
     }
 
     [Fact]
-    public void ClearStatusCommandClearsCounts()
+    public async Task ClearStatusCommandClearsCounts()
     {
         var provider = new InMemoryLocalRestApiDataProvider();
         var configuration = Configuration();
@@ -72,7 +72,7 @@ public sealed class FileHooksViewModelTests : IDisposable
             Path.Combine(configuration.ImportFolderPath, "stations", "station.json"),
             "{\"schemaVersion\":\"1.0\",\"callsign\":\"N0CALL\"}");
         var viewModel = new FileHooksViewModel(service);
-        viewModel.ManualImportScanCommand.Execute(null);
+        await viewModel.ManualImportScanAsync();
 
         viewModel.ClearStatusCommand.Execute(null);
 

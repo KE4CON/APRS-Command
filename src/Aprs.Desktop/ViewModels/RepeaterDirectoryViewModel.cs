@@ -16,8 +16,8 @@ public sealed class RepeaterDirectoryViewModel : INotifyPropertyChanged, IDispos
     public RepeaterDirectoryViewModel(IAppSettingsStore store)
     {
         this.store = store;
-        SearchCommand = new RelayCommand2(_ => _ = SearchAsync(), _ => !IsSearching);
-        CopyFrequencyCommand = new RelayCommand2(
+        SearchCommand = new RelayCommand(_ => _ = SearchAsync(), _ => !IsSearching);
+        CopyFrequencyCommand = new RelayCommand(
             o => { if (o is RepeaterEntry r) CopyToClipboard(r.Frequency); });
     }
 
@@ -211,13 +211,4 @@ public sealed class RepeaterDirectoryViewModel : INotifyPropertyChanged, IDispos
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-}
-
-// Relay command (reuse the file-scoped one from session templates in a shared location)
-file sealed class RelayCommand2(Action<object?> execute, Func<object?, bool>? canExecute = null)
-    : ICommand
-{
-    public bool CanExecute(object? p) => canExecute?.Invoke(p) ?? true;
-    public void Execute(object? p) => execute(p);
-    public event EventHandler? CanExecuteChanged { add { } remove { } }
 }

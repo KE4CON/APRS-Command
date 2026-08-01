@@ -1,3 +1,4 @@
+using System.Windows.Input;
 using AprsCommand.Api;
 
 namespace Aprs.Desktop.ViewModels;
@@ -9,8 +10,8 @@ public sealed class FileHooksViewModel
     public FileHooksViewModel(IFileHookService service)
     {
         this.service = service;
-        ManualExportCommand = new DesktopCommand(ManualExport);
-        ManualImportScanCommand = new DesktopCommand(ManualImportScan);
+        ManualExportCommand = new AsyncDesktopCommand(ManualExportAsync);
+        ManualImportScanCommand = new AsyncDesktopCommand(ManualImportScanAsync);
         ClearStatusCommand = new DesktopCommand(ClearStatus);
         Refresh();
     }
@@ -30,8 +31,8 @@ public sealed class FileHooksViewModel
     public string LastError { get; private set; } = "-";
     public string LastAction { get; private set; } = "Ready";
 
-    public DesktopCommand ManualExportCommand { get; }
-    public DesktopCommand ManualImportScanCommand { get; }
+    public ICommand ManualExportCommand { get; }
+    public ICommand ManualImportScanCommand { get; }
     public DesktopCommand ClearStatusCommand { get; }
 
     public static FileHooksViewModel CreateDesignTime()
@@ -45,9 +46,9 @@ public sealed class FileHooksViewModel
         return new FileHooksViewModel(new FileHookService(configuration));
     }
 
-    private void ManualExport()
+    public async Task ManualExportAsync()
     {
-        var results = service.ExportAllAsync().GetAwaiter().GetResult();
+        var results = await service.ExportAllAsync().ConfigureAwait(true);
         var successCount = results.Count(result => result.Success);
         LastAction = successCount == results.Count
             ? $"Exported {successCount} file set(s)."
@@ -55,9 +56,9 @@ public sealed class FileHooksViewModel
         Refresh();
     }
 
-    private void ManualImportScan()
+    public async Task ManualImportScanAsync()
     {
-        var result = service.ScanImportFolderAsync().GetAwaiter().GetResult();
+        var result = await service.ScanImportFolderAsync().ConfigureAwait(true);
         LastAction = result.Success
             ? $"Scanned imports: {result.FilesProcessed} file(s), {result.AcceptedCount} accepted, {result.RejectedCount} rejected."
             : $"Import scan failed: {result.Error}";

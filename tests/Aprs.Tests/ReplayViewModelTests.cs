@@ -17,7 +17,7 @@ public sealed class ReplayViewModelTests
     }
 
     [Fact]
-    public void ViewModelLoadsReplayFileAndShowsProgress()
+    public async Task ViewModelLoadsReplayFileAndShowsProgress()
     {
         var path = Path.Combine(Path.GetTempPath(), $"aprs-replay-vm-{Guid.NewGuid():N}.log");
         File.WriteAllLines(path, ["N0CALL>APRS:>Replay"]);
@@ -26,7 +26,7 @@ public sealed class ReplayViewModelTests
 
         try
         {
-            viewModel.LoadCommand.Execute(null);
+            await viewModel.LoadSelectedFileAsync();
 
             Assert.Equal("Ready", viewModel.State);
             Assert.Equal(1, viewModel.TotalPackets);
@@ -39,7 +39,7 @@ public sealed class ReplayViewModelTests
     }
 
     [Fact]
-    public void ViewModelPlayUpdatesPosition()
+    public async Task ViewModelPlayUpdatesPosition()
     {
         var service = new ReplayService(new NoOpReplayPacketSink());
         service.LoadEntries(
@@ -65,7 +65,7 @@ public sealed class ReplayViewModelTests
         ]);
         var viewModel = new ReplayViewModel(service);
 
-        viewModel.PlayCommand.Execute(null);
+        await viewModel.PlayAsync();
 
         Assert.Equal("Completed", viewModel.State);
         Assert.Equal("1 / 1", viewModel.CurrentPositionText);

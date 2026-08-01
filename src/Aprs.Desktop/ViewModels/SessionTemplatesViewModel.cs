@@ -274,12 +274,3 @@ public sealed class SessionTemplateRow(SessionTemplate template)
         $"Interval: {(Template.AprsIsBeaconMinutes.HasValue ? $"{Template.AprsIsBeaconMinutes} min" : "(unchanged)")}  ·  " +
         $"Filter: {(Template.FilterRadiusMiles.HasValue ? $"{Template.FilterRadiusMiles} mi" : "(unchanged)")}";
 }
-
-// Minimal relay command implementation
-file sealed class RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null) : ICommand
-{
-    public bool CanExecute(object? parameter) => canExecute?.Invoke(parameter) ?? true;
-    public void Execute(object? parameter) => execute(parameter);
-    public event EventHandler? CanExecuteChanged;
-    public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-}

@@ -77,7 +77,13 @@ public sealed class ConnectionHealthWatchdog : IAsyncDisposable
         if (watchLoop is not null)
         {
             try { await watchLoop.ConfigureAwait(false); }
-            catch { }
+            catch (OperationCanceledException) { /* expected: the loop is being cancelled */ }
+            catch (Exception ex)
+            {
+                // The watch loop faulted. Surface it rather than swallowing silently — a watchdog
+                // hiding its own failure defeats the purpose. (No structured logger exists yet.)
+                System.Diagnostics.Debug.WriteLine($"ConnectionHealthWatchdog watch loop faulted: {ex}");
+            }
         }
         cts.Dispose();
     }

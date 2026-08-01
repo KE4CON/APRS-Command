@@ -35,6 +35,28 @@ public sealed class AgwpeTests
     }
 
     [Fact]
+    public void AgwpeFrameCodec_HostilePayloadLength_DoesNotHangOrThrow()
+    {
+        // A crafted payload length near int.MaxValue would overflow HeaderLength + length to a
+        // negative frameLength, marching DecodeMany's offset backwards into an infinite loop.
+        var codec = new AgwpeFrameCodec();
+        var frame = new byte[AgwpeFrameCodec.HeaderLength];
+        frame[4] = (byte)'K';
+        // payload length field at offset 28 = 0x7FFFFFFF (int.MaxValue), little-endian.
+        frame[28] = 0xFF; frame[29] = 0xFF; frame[30] = 0xFF; frame[31] = 0x7F;
+
+        var decodeMany = Record.Exception(() =>
+        {
+            var frames = codec.DecodeMany(frame, DateTimeOffset.UtcNow, "test");
+            Assert.NotNull(frames); // completes rather than spinning
+        });
+        var findEnd = Record.Exception(() => codec.FindLastCompleteFrameEnd(frame));
+
+        Assert.Null(decodeMany);
+        Assert.Null(findEnd);
+    }
+
+    [Fact]
     public void AgwpeFrameCodec_IncompleteFrameHandlingIsSafe()
     {
         var codec = new AgwpeFrameCodec();

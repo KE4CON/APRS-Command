@@ -16,6 +16,7 @@ public sealed class BeaconService : IAsyncDisposable
 {
     private readonly LocalStationProfileService profileService;
     private readonly BeaconScheduler scheduler;
+    private readonly ITransmitInhibitGate? inhibitGate;
     private IAprsIsClient? aprsIsClient;
 
     /// <summary>The transmit-capable APRS-IS client, if one is configured. Used by the message ACK coordinator.</summary>
@@ -26,17 +27,20 @@ public sealed class BeaconService : IAsyncDisposable
     public BeaconService(
         LocalStationProfileService profileService,
         BeaconScheduler scheduler,
-        IAprsIsClient? aprsIsClient)
+        IAprsIsClient? aprsIsClient,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         this.profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
         this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         this.aprsIsClient = aprsIsClient;
+        this.inhibitGate = inhibitGate;
     }
 
     /// <summary>Creates a fully wired BeaconService from the persisted station settings.</summary>
     public static BeaconService CreateFromSettings(
         Configuration.AppSettings settings,
-        Aprs.Services.IRfBeaconTransmitClient? rfBeaconClient = null)
+        Aprs.Services.IRfBeaconTransmitClient? rfBeaconClient = null,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         var station = settings.Station;
         var profileService = new LocalStationProfileService();
@@ -46,7 +50,7 @@ public sealed class BeaconService : IAsyncDisposable
         profileService.UpdateProfile(profile, DateTimeOffset.UtcNow);
 
         // Build an APRS-IS client that can transmit when a real passcode is configured.
-        var aprsIsClient = BuildAprsIsClient(settings);
+        var aprsIsClient = BuildAprsIsClient(settings, inhibitGate);
 
         var schedulerConfig = new BeaconSchedulerConfiguration(
             SchedulerEnabled:        station.TransmitEnabled,
@@ -66,7 +70,7 @@ public sealed class BeaconService : IAsyncDisposable
             schedulerConfig,
             rfBeaconClient: rfBeaconClient);
 
-        return new BeaconService(profileService, scheduler, aprsIsClient);
+        return new BeaconService(profileService, scheduler, aprsIsClient, inhibitGate);
     }
 
     /// <summary>
@@ -85,7 +89,7 @@ public sealed class BeaconService : IAsyncDisposable
             _ = aprsIsClient.DisconnectAsync(CancellationToken.None);
         }
 
-        var newClient = BuildAprsIsClient(settings);
+        var newClient = BuildAprsIsClient(settings, inhibitGate);
         aprsIsClient  = newClient;
 
         // Re-wire the scheduler to use the new client.
@@ -163,7 +167,9 @@ public sealed class BeaconService : IAsyncDisposable
     /// Builds a transmit-capable APRS-IS client from settings, or returns null if no
     /// APRS-IS port with a real passcode is configured.
     /// </summary>
-    private static IAprsIsClient? BuildAprsIsClient(Configuration.AppSettings settings)
+    private static IAprsIsClient? BuildAprsIsClient(
+        Configuration.AppSettings settings,
+        ITransmitInhibitGate? inhibitGate)
     {
         var station = settings.Station;
         foreach (var port in settings.Connections.Ports)
@@ -185,7 +191,9 @@ public sealed class BeaconService : IAsyncDisposable
                 TransmitEnabled            = station.AprsIsTransmitEnabled && station.TransmitEnabled,
                 RequireTransmitConfirmation = false
             };
-            return new AprsIsClient(clientConfig);
+            // Every transmit-capable client shares the global inhibit gate so exercise mode
+            // blocks it even after a settings-triggered rebuild.
+            return new AprsIsClient(clientConfig) { InhibitGate = inhibitGate };
         }
         return null;
     }

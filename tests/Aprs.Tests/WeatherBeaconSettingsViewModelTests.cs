@@ -23,11 +23,11 @@ public sealed class WeatherBeaconSettingsViewModelTests
     }
 
     [Fact]
-    public void BlockedTransmit_UpdatesLastResultAndBlockedReason()
+    public async Task BlockedTransmit_UpdatesLastResultAndBlockedReason()
     {
         var viewModel = new WeatherBeaconSettingsViewModel(CreateScheduler(new FakeAprsIsClient()));
 
-        viewModel.TransmitNow(WeatherBeaconTransmitTransport.AprsIs);
+        await viewModel.TransmitNowAsync(WeatherBeaconTransmitTransport.AprsIs);
 
         Assert.Contains("blocked", viewModel.LastTransmitResult, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("disabled", viewModel.LastBlockedReason, StringComparison.OrdinalIgnoreCase);

@@ -104,6 +104,8 @@ public sealed class AprsMessageParser
 
     private static bool StartsWithCommand(string value, string command)
     {
-        return value.StartsWith(command, StringComparison.OrdinalIgnoreCase);
+        // The APRS spec defines "ack" and "rej" as lowercase literals. Matching case-insensitively
+        // would misclassify an ordinary message such as "ACKNOWLEDGED" as an acknowledgement.
+        return value.StartsWith(command, StringComparison.Ordinal);
     }
 }

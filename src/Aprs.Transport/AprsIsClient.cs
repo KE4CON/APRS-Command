@@ -31,6 +31,13 @@ public sealed class AprsIsClient : IAprsIsClient
 
     public event EventHandler<AprsIsRawPacketReceivedEventArgs>? RawPacketReceived;
 
+    /// <summary>
+    /// Optional global transmit-inhibit gate. When set and inhibited (for example exercise mode),
+    /// every <see cref="SendRawPacketAsync"/> call is blocked before any bytes reach the socket,
+    /// regardless of the higher-level path that requested the transmit.
+    /// </summary>
+    public ITransmitInhibitGate? InhibitGate { get; set; }
+
     public AprsIsConnectionState State { get; private set; } = AprsIsConnectionState.Disconnected;
 
     public Exception? LastError { get; private set; }
@@ -115,6 +122,17 @@ public sealed class AprsIsClient : IAprsIsClient
         var timestamp = DateTimeOffset.UtcNow;
         var stateAtRequest = State;
         var normalizedPacket = rawPacketLine?.Trim() ?? string.Empty;
+
+        // Global inhibit (exercise/training mode) wins over everything and is checked before any
+        // other validation so a drill can never key up APRS-IS by any path.
+        var gate = InhibitGate;
+        if (gate is not null && gate.IsTransmitInhibited)
+        {
+            return AprsIsTransmitResult.Failed(
+                timestamp, normalizedPacket, stateAtRequest,
+                gate.InhibitReason ?? "Transmit is globally inhibited (exercise mode).");
+        }
+
         var failureReason = ValidateTransmitRequest(normalizedPacket, transmitConfirmed, stateAtRequest);
         if (failureReason is not null)
         {
@@ -225,6 +243,16 @@ public sealed class AprsIsClient : IAprsIsClient
 
                 State = AprsIsConnectionState.Reconnecting;
                 await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
+
+                // Dispose the closed stream before replacing it — otherwise each reconnect leaks the
+                // previous NetworkStream/socket for the lifetime of the client.
+                var closedStream = stream;
+                if (closedStream is not null)
+                {
+                    try { await closedStream.DisposeAsync().ConfigureAwait(false); }
+                    catch { /* best-effort cleanup of the dead stream */ }
+                }
+
                 stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
                 await WriteLoginLineAsync(stream, cancellationToken).ConfigureAwait(false);
                 await WaitForLogrespAsync(stream, cancellationToken).ConfigureAwait(false);

@@ -74,12 +74,21 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
                         var (host, port)   = servers[currentServerIndex];
 
                         // Reconnect on the UI thread to avoid threading issues with the coordinator.
-                        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                        // Guard the switch so a single failed reconnect surfaces but does not fault
+                        // (and thereby silently stop) the whole failover loop.
+                        try
                         {
-                            coordinator.ConnectAprsIsReceiveOnly(callsign, host, port, filter);
-                        });
+                            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                            {
+                                coordinator.ConnectAprsIsReceiveOnly(callsign, host, port, filter);
+                            });
 
-                        ServerSwitched?.Invoke(this, host);
+                            ServerSwitched?.Invoke(this, host);
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"AprsIsFailoverCoordinator failed to switch to {host}:{port}: {ex}");
+                        }
                     }
                 }
             }
@@ -91,7 +100,12 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
         await cts.CancelAsync().ConfigureAwait(false);
         if (watchLoop is not null)
         {
-            try { await watchLoop.ConfigureAwait(false); } catch { }
+            try { await watchLoop.ConfigureAwait(false); }
+            catch (OperationCanceledException) { /* expected: the loop is being cancelled */ }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"AprsIsFailoverCoordinator watch loop faulted: {ex}");
+            }
         }
         cts.Dispose();
     }

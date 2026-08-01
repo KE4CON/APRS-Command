@@ -96,6 +96,25 @@ public class LocalRestApiServiceTests
     }
 
     [Fact]
+    public async Task RequireTokenWithNoConfiguredToken_RejectsEveryRequest()
+    {
+        // Fail closed: a server that requires a token but has none configured must not authenticate
+        // anyone — previously any non-empty token was accepted in this state.
+        var configuration = LocalRestApiConfiguration.Default with
+        {
+            ApiEnabled = true,
+            RequireToken = true,
+            ApiTokenReference = null
+        };
+        var service = CreateService(configuration);
+        await service.StartAsync();
+
+        var anyToken = await service.HandleAsync(Get("/api/health") with { Token = "anything" });
+
+        Assert.Equal(401, anyToken.StatusCode);
+    }
+
+    [Fact]
     public async Task ExternalSubmitRejectedWhenReadOnly()
     {
         var service = CreateService(configuration: EnabledConfiguration() with

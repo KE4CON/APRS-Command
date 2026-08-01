@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
@@ -15,9 +16,9 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     {
         this.replayService = replayService;
         Entries = new ObservableCollection<string>();
-        LoadCommand   = new DesktopCommand(LoadSelectedFile);
+        LoadCommand   = new AsyncDesktopCommand(LoadSelectedFileAsync);
         BrowseCommand = new DesktopCommand(async () => await BrowseForLogFileAsync());
-        PlayCommand = new DesktopCommand(Play);
+        PlayCommand = new AsyncDesktopCommand(PlayAsync);
         PauseCommand = new DesktopCommand(Pause);
         ResumeCommand = new DesktopCommand(Resume);
         StopCommand = new DesktopCommand(Stop);
@@ -28,10 +29,10 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
     public ObservableCollection<string> Entries { get; }
 
-    public DesktopCommand LoadCommand { get; }
+    public ICommand LoadCommand { get; }
     public DesktopCommand BrowseCommand { get; }
 
-    public DesktopCommand PlayCommand { get; }
+    public ICommand PlayCommand { get; }
 
     public DesktopCommand PauseCommand { get; }
 
@@ -105,11 +106,11 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
     public int TotalPackets => replayService.GetStatus().TotalEntries;
 
-    public void LoadSelectedFile()
+    public async Task LoadSelectedFileAsync()
     {
         try
         {
-            replayService.LoadFromFileAsync(selectedReplayFilePath).GetAwaiter().GetResult();
+            await replayService.LoadFromFileAsync(selectedReplayFilePath).ConfigureAwait(true);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
@@ -119,9 +120,9 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         Refresh();
     }
 
-    public void Play()
+    public async Task PlayAsync()
     {
-        replayService.PlayNextAsync().GetAwaiter().GetResult();
+        await replayService.PlayNextAsync().ConfigureAwait(true);
         Refresh();
     }
 
@@ -199,7 +200,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
             if (files.Count > 0)
             {
                 SelectedReplayFilePath = files[0].Path.LocalPath;
-                LoadSelectedFile();
+                await LoadSelectedFileAsync().ConfigureAwait(true);
             }
         }
         catch (Exception ex)

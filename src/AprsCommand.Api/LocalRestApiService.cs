@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Aprs.Services;
 using AprsCommand.Contracts;
 using ExtensionPermission = AprsCommand.Contracts.ExtensionPermission;
@@ -276,19 +278,35 @@ public sealed class LocalRestApiService : ILocalRestApiService
 
         if (configuration.RequireToken)
         {
+            // Fail closed: if a token is required but the server has none configured, there is
+            // nothing to authenticate against, so every request must be rejected. Previously the
+            // missing-reference case skipped the comparison and let *any* non-empty token through.
+            if (string.IsNullOrWhiteSpace(configuration.ApiTokenReference))
+            {
+                return LocalRestApiResponse.ErrorResponse(
+                    401, "API access requires a token, but no token is configured on the server.");
+            }
+
             if (string.IsNullOrWhiteSpace(request.Token))
             {
                 return LocalRestApiResponse.ErrorResponse(401, "API token is required.");
             }
 
-            if (!string.IsNullOrWhiteSpace(configuration.ApiTokenReference)
-                && !string.Equals(request.Token, configuration.ApiTokenReference, StringComparison.Ordinal))
+            if (!FixedTimeTokenEquals(request.Token, configuration.ApiTokenReference))
             {
                 return LocalRestApiResponse.ErrorResponse(401, "API token is invalid.");
             }
         }
 
         return LocalRestApiResponse.Ok();
+    }
+
+    /// <summary>Constant-time token comparison, so a wrong token reveals nothing through timing.</summary>
+    private static bool FixedTimeTokenEquals(string provided, string expected)
+    {
+        var providedBytes = Encoding.UTF8.GetBytes(provided);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        return CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 
     private static LocalRestApiResponse ValidateDto(IContractDto dto)

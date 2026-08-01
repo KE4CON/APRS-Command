@@ -7,7 +7,7 @@ namespace Aprs.Tests;
 public sealed class SimulationViewModelTests
 {
     [Fact]
-    public void SimulationViewModelExposesStateAndControls()
+    public async Task SimulationViewModelExposesStateAndControls()
     {
         var service = new SimulationService(
             new NoOpSimulatedAprsPacketSink(),
@@ -20,7 +20,7 @@ public sealed class SimulationViewModelTests
             });
         var viewModel = new SimulationViewModel(service);
 
-        viewModel.StartCommand.Execute(null);
+        await viewModel.StartAsync();
 
         Assert.Equal("Running", viewModel.State);
         Assert.Contains("Simulation transmit disabled", viewModel.TransmitStatusText);
@@ -37,16 +37,16 @@ public sealed class SimulationViewModelTests
     }
 
     [Fact]
-    public void StepCommandGeneratesAdditionalPacketsWhenRunning()
+    public async Task StepCommandGeneratesAdditionalPacketsWhenRunning()
     {
         var service = new SimulationService(
             new NoOpSimulatedAprsPacketSink(),
             SimulationConfiguration.Default with { SimulationEnabled = true, FixedStationCount = 1, MobileStationCount = 0, WeatherStationCount = 0, ObjectCount = 0, GenerateMessages = false, GenerateBulletins = false });
         var viewModel = new SimulationViewModel(service);
 
-        viewModel.StartCommand.Execute(null);
+        await viewModel.StartAsync();
         var count = viewModel.RecentPackets.Count;
-        viewModel.StepCommand.Execute(null);
+        await viewModel.StepAsync();
 
         Assert.True(viewModel.RecentPackets.Count > count);
     }
