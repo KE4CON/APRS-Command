@@ -279,6 +279,40 @@ public sealed class AprsIsClientTests
             stream.WrittenText);
     }
 
+    [Fact]
+    public async Task State_And_Send_AreSafeUnderConcurrentStateReads()
+    {
+        // Guards the transport thread-safety fix: State/LastError are read from other threads (the
+        // receive loop, coordinators) while sends run and mutate connection state. This must never
+        // throw, tear, or deadlock. Sends are sequential (as in the real app, one connection); the
+        // contention under test is concurrent State/LastError reads racing those mutations.
+        var stream = new WriteCapturingBlockingReadStream();
+        var client = CreateClient(stream, CreateTransmitConfiguration());
+        await client.ConnectAsync(CancellationToken.None);
+
+        using var cts = new CancellationTokenSource();
+        var readers = Enumerable.Range(0, 4).Select(readerIndex => Task.Run(() =>
+        {
+            while (!cts.Token.IsCancellationRequested)
+            {
+                _ = client.State;
+                _ = client.LastError;
+            }
+        })).ToArray();
+
+        for (var i = 0; i < 50; i++)
+        {
+            var result = await client.SendRawPacketAsync("N0CALL>APRS:>Online", transmitConfirmed: true, CancellationToken.None);
+            Assert.True(result.IsSuccess);
+        }
+
+        cts.Cancel();
+        await Task.WhenAll(readers);
+        await client.DisconnectAsync(CancellationToken.None);
+
+        Assert.Equal(AprsIsConnectionState.Disconnected, client.State);
+    }
+
     private static AprsIsClient CreateClient(Stream stream)
     {
         var configuration = AprsIsClientConfiguration.Default with

@@ -14,7 +14,14 @@ public sealed class TcpKissClient : ITcpKissClient
     private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<TcpKissRawPacketReceivedEventArgs>();
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
+
+    // Guards the mutable connection reference and the State/LastError fields, which are otherwise
+    // read by the send path while the receive loop reassigns them during a reconnect. Never held
+    // across an await: callers snapshot the stream under the lock, then do I/O on the snapshot.
+    private readonly object sync = new();
     private Stream? stream;
+    private TcpKissConnectionState state = TcpKissConnectionState.Disconnected;
+    private Exception? lastError;
 
     public TcpKissClient(TcpKissConfiguration configuration)
         : this(configuration, CreateTcpStreamAsync, Ax25AprsPayloadDecoder.Default)
@@ -42,15 +49,29 @@ public sealed class TcpKissClient : ITcpKissClient
 
     public event EventHandler<TcpKissRawPacketReceivedEventArgs>? RawPacketReceived;
 
-    public TcpKissConnectionState State { get; private set; } = TcpKissConnectionState.Disconnected;
+    public TcpKissConnectionState State { get { lock (sync) { return state; } } }
 
-    public Exception? LastError { get; private set; }
+    public Exception? LastError { get { lock (sync) { return lastError; } } }
+
+    private void SetState(TcpKissConnectionState value) { lock (sync) { state = value; } }
+
+    private void Fault(Exception exception)
+    {
+        lock (sync) { lastError = exception; state = TcpKissConnectionState.Faulted; }
+    }
+
+    private void SetStream(Stream? value) { lock (sync) { stream = value; } }
+
+    private (Stream? Stream, TcpKissConnectionState State) Snapshot()
+    {
+        lock (sync) { return (stream, state); }
+    }
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (!configuration.Enabled)
         {
-            State = TcpKissConnectionState.Disconnected;
+            SetState(TcpKissConnectionState.Disconnected);
             return;
         }
 
@@ -61,13 +82,13 @@ public sealed class TcpKissClient : ITcpKissClient
 
         ValidateConfiguration(configuration);
         connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        State = TcpKissConnectionState.Connecting;
-        LastError = null;
+        lock (sync) { state = TcpKissConnectionState.Connecting; lastError = null; }
 
         try
         {
-            stream = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
-            State = TcpKissConnectionState.Connected;
+            var opened = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
+            SetStream(opened);
+            SetState(TcpKissConnectionState.Connected);
             if (configuration.ReceiveEnabled)
             {
                 receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);
@@ -75,8 +96,7 @@ public sealed class TcpKissClient : ITcpKissClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = TcpKissConnectionState.Faulted;
+            Fault(exception);
             throw;
         }
     }
@@ -85,10 +105,11 @@ public sealed class TcpKissClient : ITcpKissClient
     {
         connectionCancellation?.Cancel();
 
-        if (stream is not null)
+        Stream? toDispose;
+        lock (sync) { toDispose = stream; stream = null; }
+        if (toDispose is not null)
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
-            stream = null;
+            await toDispose.DisposeAsync().ConfigureAwait(false);
         }
 
         if (receiveTask is not null)
@@ -105,7 +126,7 @@ public sealed class TcpKissClient : ITcpKissClient
             }
         }
 
-        State = TcpKissConnectionState.Disconnected;
+        SetState(TcpKissConnectionState.Disconnected);
     }
 
     public async IAsyncEnumerable<KissFrame> ReadFramesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -138,8 +159,10 @@ public sealed class TcpKissClient : ITcpKissClient
         CancellationToken cancellationToken)
     {
         var timestamp = DateTimeOffset.UtcNow;
-        var stateAtRequest = State;
-        var failureReason = ValidateTransmitRequest(portNumber, commandType, ax25Payload, transmitConfirmed, stateAtRequest);
+        // Take a consistent snapshot of the stream and state so a concurrent reconnect cannot swap
+        // the stream between the write and the flush, and so validation and I/O see the same stream.
+        var (active, stateAtRequest) = Snapshot();
+        var failureReason = ValidateTransmitRequest(portNumber, commandType, ax25Payload, transmitConfirmed, stateAtRequest, active);
         if (failureReason is not null)
         {
             return TcpKissTransmitResult.Failed(timestamp, stateAtRequest, failureReason);
@@ -150,14 +173,13 @@ public sealed class TcpKissClient : ITcpKissClient
 
         try
         {
-            await stream!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await active!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
+            await active.FlushAsync(cancellationToken).ConfigureAwait(false);
             return TcpKissTransmitResult.Succeeded(timestamp, stateAtRequest, frame);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = TcpKissConnectionState.Faulted;
+            Fault(exception);
             return TcpKissTransmitResult.Failed(timestamp, stateAtRequest, exception.Message, frame);
         }
     }
@@ -175,31 +197,32 @@ public sealed class TcpKissClient : ITcpKissClient
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && stream is not null)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var bytesRead = await stream.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
+                Stream? active;
+                lock (sync) { active = stream; }
+                if (active is null) break;
+
+                var bytesRead = await active.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     if (!configuration.ReconnectEnabled || cancellationToken.IsCancellationRequested)
                     {
-                        State = TcpKissConnectionState.Disconnected;
+                        SetState(TcpKissConnectionState.Disconnected);
                         break;
                     }
 
-                    State = TcpKissConnectionState.Reconnecting;
+                    SetState(TcpKissConnectionState.Reconnecting);
                     await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
 
-                    // Dispose the closed stream before replacing it — otherwise each reconnect leaks
-                    // the previous NetworkStream/socket for the lifetime of the client.
-                    var closedStream = stream;
-                    if (closedStream is not null)
-                    {
-                        try { await closedStream.DisposeAsync().ConfigureAwait(false); }
-                        catch { /* best-effort cleanup of the dead stream */ }
-                    }
+                    // Dispose the closed stream (the one we were reading from) before replacing it —
+                    // otherwise each reconnect leaks the previous NetworkStream/socket.
+                    try { await active.DisposeAsync().ConfigureAwait(false); }
+                    catch { /* best-effort cleanup of the dead stream */ }
 
-                    stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
-                    State = TcpKissConnectionState.Connected;
+                    var reopened = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
+                    SetStream(reopened);
+                    SetState(TcpKissConnectionState.Connected);
                     continue;
                 }
 
@@ -221,8 +244,7 @@ public sealed class TcpKissClient : ITcpKissClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ObjectDisposedException)
         {
-            LastError = exception;
-            State = TcpKissConnectionState.Faulted;
+            Fault(exception);
         }
     }
 
@@ -246,7 +268,8 @@ public sealed class TcpKissClient : ITcpKissClient
         KissCommandType commandType,
         IReadOnlyList<byte> ax25Payload,
         bool transmitConfirmed,
-        TcpKissConnectionState stateAtRequest)
+        TcpKissConnectionState stateAtRequest,
+        Stream? activeStream)
     {
         if (!configuration.TransmitEnabled)
         {
@@ -258,7 +281,7 @@ public sealed class TcpKissClient : ITcpKissClient
             return "TCP KISS transmit confirmation is required.";
         }
 
-        if (stateAtRequest != TcpKissConnectionState.Connected || stream is null)
+        if (stateAtRequest != TcpKissConnectionState.Connected || activeStream is null)
         {
             return "TCP KISS client is not connected.";
         }

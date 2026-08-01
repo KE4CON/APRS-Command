@@ -1,3 +1,4 @@
+using Aprs.Services;
 using Aprs.Transport;
 
 namespace Aprs.Desktop.Runtime;
@@ -10,6 +11,7 @@ namespace Aprs.Desktop.Runtime;
 public sealed class ConnectionHealthWatchdog : IAsyncDisposable
 {
     private readonly LiveDataCoordinator coordinator;
+    private readonly ILogService? log;
     private readonly CancellationTokenSource cts = new();
     private Task? watchLoop;
     private DateTimeOffset? disconnectedSince;
@@ -24,9 +26,10 @@ public sealed class ConnectionHealthWatchdog : IAsyncDisposable
     /// <summary>Fired when APRS-IS reconnects after a lost-connection alert was fired.</summary>
     public event EventHandler? ConnectionRestored;
 
-    public ConnectionHealthWatchdog(LiveDataCoordinator coordinator)
+    public ConnectionHealthWatchdog(LiveDataCoordinator coordinator, ILogService? log = null)
     {
         this.coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
+        this.log = log;
     }
 
     public void Start()
@@ -81,8 +84,8 @@ public sealed class ConnectionHealthWatchdog : IAsyncDisposable
             catch (Exception ex)
             {
                 // The watch loop faulted. Surface it rather than swallowing silently — a watchdog
-                // hiding its own failure defeats the purpose. (No structured logger exists yet.)
-                System.Diagnostics.Debug.WriteLine($"ConnectionHealthWatchdog watch loop faulted: {ex}");
+                // hiding its own failure defeats the purpose.
+                log?.Error(nameof(ConnectionHealthWatchdog), "Watch loop faulted.", ex);
             }
         }
         cts.Dispose();

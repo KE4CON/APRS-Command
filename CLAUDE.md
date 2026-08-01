@@ -35,7 +35,7 @@ Dependencies flow downward only. Each layer sees only the layers below it.
 - `async`/`await` for all I/O (sockets, serial, HTTP). **Never block the UI thread** — no `.Result` / `.Wait()` / `.GetAwaiter().GetResult()` in viewmodels; use `AsyncDesktopCommand` for async command handlers.
 - Pass `CancellationToken` through long-running loops; catch `OperationCanceledException` at loop/await boundaries only.
 - No `Thread.Sleep` — use `Task.Delay(..., cancellationToken)`.
-- **Do not swallow exceptions silently.** There is no structured logging service yet; until there is, surface unexpected exceptions via `System.Diagnostics.Debug.WriteLine` rather than an empty `catch {}`. (A real logging abstraction is a wanted improvement.)
+- **Do not swallow exceptions silently.** Surface unexpected exceptions through `ILogService` (`Aprs.Services/Logging/`) — the shared diagnostic log (bounded ring + `EntryLogged` event, mirrored to the debugger) — rather than an empty `catch {}`. Narrow a catch to the expected type (e.g. `OperationCanceledException`) and log the rest. (Not yet surfaced in the UI Logs area — a wanted follow-up.)
 - Immutable `record` types for parsed packets and value data.
 - **MVVM is hand-rolled** (manual `INotifyPropertyChanged`, `DesktopCommand`/`AsyncDesktopCommand`/`RelayCommand`). This project does **not** use CommunityToolkit.Mvvm or ReactiveUI — do not introduce them without discussion. Use the one shared `RelayCommand` (parameterized) / `DesktopCommand` (parameterless) / `AsyncDesktopCommand` (async) — do not add new per-file command classes.
 - Views/viewmodels talk to **services and abstractions**, never directly to transports or the parser.

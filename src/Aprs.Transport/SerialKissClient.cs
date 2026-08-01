@@ -13,7 +13,14 @@ public sealed class SerialKissClient : ISerialKissClient
     private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<TcpKissRawPacketReceivedEventArgs>();
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
+
+    // Guards the mutable connection reference and the State/LastError fields, which are otherwise
+    // read by the send path while the receive loop reassigns them during a reconnect. Never held
+    // across an await: callers snapshot the connection under the lock, then do I/O on the snapshot.
+    private readonly object sync = new();
     private ISerialPortConnection? connection;
+    private SerialKissConnectionState state = SerialKissConnectionState.Disconnected;
+    private Exception? lastError;
 
     public SerialKissClient(SerialKissConfiguration configuration, ISerialPortConnectionFactory connectionFactory)
         : this(configuration, connectionFactory, Ax25AprsPayloadDecoder.Default)
@@ -34,15 +41,29 @@ public sealed class SerialKissClient : ISerialKissClient
 
     public event EventHandler<TcpKissRawPacketReceivedEventArgs>? RawPacketReceived;
 
-    public SerialKissConnectionState State { get; private set; } = SerialKissConnectionState.Disconnected;
+    public SerialKissConnectionState State { get { lock (sync) { return state; } } }
 
-    public Exception? LastError { get; private set; }
+    public Exception? LastError { get { lock (sync) { return lastError; } } }
+
+    private void SetState(SerialKissConnectionState value) { lock (sync) { state = value; } }
+
+    private void Fault(Exception exception)
+    {
+        lock (sync) { lastError = exception; state = SerialKissConnectionState.Faulted; }
+    }
+
+    private void SetConnection(ISerialPortConnection? value) { lock (sync) { connection = value; } }
+
+    private (ISerialPortConnection? Connection, SerialKissConnectionState State) Snapshot()
+    {
+        lock (sync) { return (connection, state); }
+    }
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (!configuration.Enabled)
         {
-            State = SerialKissConnectionState.Disconnected;
+            SetState(SerialKissConnectionState.Disconnected);
             return;
         }
 
@@ -53,14 +74,14 @@ public sealed class SerialKissClient : ISerialKissClient
 
         ValidateConfiguration(configuration);
         connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        State = SerialKissConnectionState.Connecting;
-        LastError = null;
+        lock (sync) { state = SerialKissConnectionState.Connecting; lastError = null; }
 
         try
         {
-            connection = connectionFactory.Create(configuration);
-            await connection.OpenAsync(connectionCancellation.Token).ConfigureAwait(false);
-            State = SerialKissConnectionState.Connected;
+            var opened = connectionFactory.Create(configuration);
+            await opened.OpenAsync(connectionCancellation.Token).ConfigureAwait(false);
+            SetConnection(opened);
+            SetState(SerialKissConnectionState.Connected);
             if (configuration.ReceiveEnabled)
             {
                 receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);
@@ -68,8 +89,7 @@ public sealed class SerialKissClient : ISerialKissClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = SerialKissConnectionState.Faulted;
+            Fault(exception);
             throw;
         }
     }
@@ -78,9 +98,11 @@ public sealed class SerialKissClient : ISerialKissClient
     {
         connectionCancellation?.Cancel();
 
-        if (connection is not null)
+        ISerialPortConnection? toClose;
+        lock (sync) { toClose = connection; }
+        if (toClose is not null)
         {
-            await connection.CloseAsync(cancellationToken).ConfigureAwait(false);
+            await toClose.CloseAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (receiveTask is not null)
@@ -97,7 +119,7 @@ public sealed class SerialKissClient : ISerialKissClient
             }
         }
 
-        State = SerialKissConnectionState.Disconnected;
+        SetState(SerialKissConnectionState.Disconnected);
     }
 
     public async IAsyncEnumerable<KissFrame> ReadFramesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -131,8 +153,10 @@ public sealed class SerialKissClient : ISerialKissClient
         CancellationToken cancellationToken)
     {
         var timestamp = DateTimeOffset.UtcNow;
-        var stateAtRequest = State;
-        var failureReason = ValidateTransmitRequest(portNumber, commandType, ax25Payload, transmitConfirmed, rfSafetyEnabled, stateAtRequest);
+        // Consistent snapshot so a concurrent reconnect cannot swap the connection mid-write and so
+        // validation and I/O see the same connection object.
+        var (active, stateAtRequest) = Snapshot();
+        var failureReason = ValidateTransmitRequest(portNumber, commandType, ax25Payload, transmitConfirmed, rfSafetyEnabled, stateAtRequest, active);
         if (failureReason is not null)
         {
             return SerialKissTransmitResult.Failed(timestamp, stateAtRequest, failureReason);
@@ -143,13 +167,12 @@ public sealed class SerialKissClient : ISerialKissClient
 
         try
         {
-            await connection!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
+            await active!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
             return SerialKissTransmitResult.Succeeded(timestamp, stateAtRequest, frame);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = SerialKissConnectionState.Faulted;
+            Fault(exception);
             return SerialKissTransmitResult.Failed(timestamp, stateAtRequest, exception.Message, frame);
         }
     }
@@ -158,9 +181,12 @@ public sealed class SerialKissClient : ISerialKissClient
     {
         await DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
         connectionCancellation?.Dispose();
-        if (connection is not null)
+
+        ISerialPortConnection? toDispose;
+        lock (sync) { toDispose = connection; connection = null; }
+        if (toDispose is not null)
         {
-            await connection.DisposeAsync().ConfigureAwait(false);
+            await toDispose.DisposeAsync().ConfigureAwait(false);
         }
     }
 
@@ -171,23 +197,28 @@ public sealed class SerialKissClient : ISerialKissClient
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && connection is not null)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var bytesRead = await connection.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
+                ISerialPortConnection? active;
+                lock (sync) { active = connection; }
+                if (active is null) break;
+
+                var bytesRead = await active.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     if (!configuration.ReconnectEnabled || cancellationToken.IsCancellationRequested)
                     {
-                        State = SerialKissConnectionState.Disconnected;
+                        SetState(SerialKissConnectionState.Disconnected);
                         break;
                     }
 
-                    State = SerialKissConnectionState.Reconnecting;
-                    await connection.CloseAsync(cancellationToken).ConfigureAwait(false);
+                    SetState(SerialKissConnectionState.Reconnecting);
+                    await active.CloseAsync(cancellationToken).ConfigureAwait(false);
                     await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
-                    connection = connectionFactory.Create(configuration);
-                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                    State = SerialKissConnectionState.Connected;
+                    var reopened = connectionFactory.Create(configuration);
+                    await reopened.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    SetConnection(reopened);
+                    SetState(SerialKissConnectionState.Connected);
                     continue;
                 }
 
@@ -209,8 +240,7 @@ public sealed class SerialKissClient : ISerialKissClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ObjectDisposedException)
         {
-            LastError = exception;
-            State = SerialKissConnectionState.Faulted;
+            Fault(exception);
         }
     }
 
@@ -235,7 +265,8 @@ public sealed class SerialKissClient : ISerialKissClient
         IReadOnlyList<byte> ax25Payload,
         bool transmitConfirmed,
         bool rfSafetyEnabled,
-        SerialKissConnectionState stateAtRequest)
+        SerialKissConnectionState stateAtRequest,
+        ISerialPortConnection? activeConnection)
     {
         if (!configuration.TransmitEnabled)
         {
@@ -252,12 +283,12 @@ public sealed class SerialKissClient : ISerialKissClient
             return "Serial KISS transmit confirmation is required.";
         }
 
-        if (stateAtRequest != SerialKissConnectionState.Connected || connection is null)
+        if (stateAtRequest != SerialKissConnectionState.Connected || activeConnection is null)
         {
             return "Serial KISS client is not connected.";
         }
 
-        if (!connection.IsOpen)
+        if (!activeConnection.IsOpen)
         {
             return "Serial port is not open.";
         }

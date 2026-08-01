@@ -1,3 +1,4 @@
+using Aprs.Services;
 using Aprs.Transport;
 
 namespace Aprs.Desktop.Runtime;
@@ -14,6 +15,7 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
     private readonly IReadOnlyList<(string Host, int Port)> servers;
     private readonly string callsign;
     private readonly string? filter;
+    private readonly ILogService? log;
     private readonly CancellationTokenSource cts = new();
     private Task? watchLoop;
     private int currentServerIndex;
@@ -35,12 +37,14 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
         LiveDataCoordinator coordinator,
         IReadOnlyList<(string Host, int Port)> servers,
         string callsign,
-        string? filter)
+        string? filter,
+        ILogService? log = null)
     {
         this.coordinator = coordinator ?? throw new ArgumentNullException(nameof(coordinator));
         this.servers     = servers?.Count > 0 ? servers : [("rotate.aprs2.net", 14580)];
         this.callsign    = callsign;
         this.filter      = filter;
+        this.log         = log;
     }
 
     public void Start()
@@ -87,7 +91,7 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
                         }
                         catch (Exception ex)
                         {
-                            System.Diagnostics.Debug.WriteLine($"AprsIsFailoverCoordinator failed to switch to {host}:{port}: {ex}");
+                            log?.Error(nameof(AprsIsFailoverCoordinator), $"Failed to switch to {host}:{port}.", ex);
                         }
                     }
                 }
@@ -104,7 +108,7 @@ public sealed class AprsIsFailoverCoordinator : IAsyncDisposable
             catch (OperationCanceledException) { /* expected: the loop is being cancelled */ }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"AprsIsFailoverCoordinator watch loop faulted: {ex}");
+                log?.Error(nameof(AprsIsFailoverCoordinator), "Watch loop faulted.", ex);
             }
         }
         cts.Dispose();

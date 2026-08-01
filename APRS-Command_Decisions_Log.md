@@ -97,10 +97,9 @@ negative and could spin `DecodeMany`/`FindLastCompleteFrameEnd` forever on craft
 **Decision:** Dispose the closed stream before replacing it on reconnect. Bound AGWPE length by the
 received buffer size in all three read paths. **Test:**
 `AgwpeFrameCodec_HostilePayloadLength_DoesNotHangOrThrow`.
-**Known limitation (deferred):** the `stream`/`State` fields on the transport clients are still
-read/written across the receive and send tasks without synchronization. A send racing a reconnect can
-observe a disposed stream. Left as-is for now to avoid a broad locking change in otherwise-working
-reconnect logic; worth revisiting with a proper synchronized transport base class.
+**Known limitation (later resolved in D8):** the `stream`/`State` fields on the transport clients were
+still read/written across the receive and send tasks without synchronization. Deferred at the time to
+avoid a broad locking change in otherwise-working reconnect logic; addressed in D8.
 
 ### D6 — UI-thread blocking, silent catches, and duplicate command classes
 **Problem:** Several viewmodel command handlers called `…Async().GetAwaiter().GetResult()`, blocking
@@ -117,3 +116,38 @@ Consolidate to one shared parameterized `RelayCommand` and delete the duplicates
 started this log. **Why:** the project predates the author's practice of keeping these; capturing the
 architecture rules and the reasoning behind decisions makes future work (by humans or assistants)
 faster and safer, and prevents re-litigating settled choices.
+
+## 2026-07-31 — Follow-up: transport thread-safety and logging
+
+Completing the two items D5/D6 explicitly deferred.
+
+### D8 — Transport clients are now thread-safe (resolves D5's deferred limitation)
+**Problem:** The `stream`/`connection` reference and the `State`/`LastError` fields on all three
+transport clients (`AprsIsClient`, `TcpKissClient`, `SerialKissClient`) were read by the send path
+while the receive loop reassigned them during a reconnect — a send could observe a disposed or
+half-swapped stream, and the send even re-read the `stream` field between its write and flush (a torn
+read that could split a packet across two streams).
+**Decision:** Add a per-client `sync` lock guarding the connection reference and `State`/`LastError`
+(via `SetState`/`Fault`/`SetStream`/`Snapshot` helpers). The lock is **never held across an await**:
+sends take a consistent `(stream, state)` snapshot under the lock and do all I/O on that snapshot, and
+the receive loop snapshots the stream per iteration and disposes exactly the stream it was reading
+from on reconnect. `State`/`LastError` getters read under the lock so other threads (coordinators, UI)
+never see a torn value. Behavior is otherwise unchanged (all 71 existing transport tests still pass).
+**Test:** `AprsIsClientTests.State_And_Send_AreSafeUnderConcurrentStateReads` hammers `State`/
+`LastError` from four threads while sends run.
+**Residual note:** a send racing a reconnect can still fail (writing to a stream the reconnect is
+disposing) — but that now fails cleanly through the existing catch → `Faulted`, rather than via a data
+race on the field itself. That is the correct, expected behavior for lock-free I/O.
+
+### D9 — Added a diagnostic logging abstraction (`ILogService`)
+**Problem:** Error-surfacing added in D6 used `Debug.WriteLine`, which is invisible in a normal build.
+**Decision:** Add `ILogService` (`Aprs.Services/Logging/`) with a default `LogService` — a thread-safe
+bounded ring of recent entries plus an `EntryLogged` event (so a future UI log view / export can show
+them) that also mirrors to the debugger. It lives in `Aprs.Services` because its consumers
+(coordinators in `Aprs.Desktop`) sit above it; the transport layer is intentionally **not** wired to
+it (it already exposes faults via `LastError`, and wiring it would invert the layer dependency). The
+composition root registers one shared instance and injects it into `ConnectionHealthWatchdog` and
+`AprsIsFailoverCoordinator`, replacing their `Debug.WriteLine` calls; `DesktopRuntime.LogService`
+exposes it. **Tests:** `LogServiceTests` (records + raises event, ring-buffer bound, thread safety).
+**Next step (not done):** surface these logs in the existing Logs/Events UI area, and consider routing
+more services through `ILogService` over time.

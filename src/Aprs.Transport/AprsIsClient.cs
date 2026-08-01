@@ -14,7 +14,14 @@ public sealed class AprsIsClient : IAprsIsClient
     private readonly AprsParser parser = new();
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
+
+    // Guards the mutable stream reference and the State/LastError fields, which are otherwise read by
+    // the send path while the receive loop reassigns them during a reconnect. Never held across an
+    // await: callers snapshot the stream under the lock, then do I/O on the snapshot.
+    private readonly object sync = new();
     private Stream? stream;
+    private AprsIsConnectionState state = AprsIsConnectionState.Disconnected;
+    private Exception? lastError;
 
     public AprsIsClient(AprsIsClientConfiguration configuration)
         : this(configuration, CreateTcpStreamAsync)
@@ -38,9 +45,23 @@ public sealed class AprsIsClient : IAprsIsClient
     /// </summary>
     public ITransmitInhibitGate? InhibitGate { get; set; }
 
-    public AprsIsConnectionState State { get; private set; } = AprsIsConnectionState.Disconnected;
+    public AprsIsConnectionState State { get { lock (sync) { return state; } } }
 
-    public Exception? LastError { get; private set; }
+    public Exception? LastError { get { lock (sync) { return lastError; } } }
+
+    private void SetState(AprsIsConnectionState value) { lock (sync) { state = value; } }
+
+    private void Fault(Exception exception)
+    {
+        lock (sync) { lastError = exception; state = AprsIsConnectionState.Faulted; }
+    }
+
+    private void SetStream(Stream? value) { lock (sync) { stream = value; } }
+
+    private (Stream? Stream, AprsIsConnectionState State) Snapshot()
+    {
+        lock (sync) { return (stream, state); }
+    }
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
@@ -51,26 +72,25 @@ public sealed class AprsIsClient : IAprsIsClient
 
         AprsIsLoginLineBuilder.Validate(configuration);
         connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        LastError = null;
-        State = AprsIsConnectionState.Connecting;
+        lock (sync) { lastError = null; state = AprsIsConnectionState.Connecting; }
 
         try
         {
-            stream = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
-            await WriteLoginLineAsync(stream, connectionCancellation.Token).ConfigureAwait(false);
+            var opened = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
+            SetStream(opened);
+            await WriteLoginLineAsync(opened, connectionCancellation.Token).ConfigureAwait(false);
 
             // Wait for the server's logresp line before marking Connected.
             // APRS-IS sends "# logresp CALLSIGN verified, server ..." or "unverified".
             // Packets sent before this acknowledgment are silently discarded.
-            await WaitForLogrespAsync(stream, connectionCancellation.Token).ConfigureAwait(false);
+            await WaitForLogrespAsync(opened, connectionCancellation.Token).ConfigureAwait(false);
 
-            State = AprsIsConnectionState.Connected;
+            SetState(AprsIsConnectionState.Connected);
             receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = AprsIsConnectionState.Faulted;
+            Fault(exception);
             throw;
         }
     }
@@ -79,10 +99,11 @@ public sealed class AprsIsClient : IAprsIsClient
     {
         connectionCancellation?.Cancel();
 
-        if (stream is not null)
+        Stream? toDispose;
+        lock (sync) { toDispose = stream; stream = null; }
+        if (toDispose is not null)
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
-            stream = null;
+            await toDispose.DisposeAsync().ConfigureAwait(false);
         }
 
         if (receiveTask is not null)
@@ -99,7 +120,7 @@ public sealed class AprsIsClient : IAprsIsClient
             }
         }
 
-        State = AprsIsConnectionState.Disconnected;
+        SetState(AprsIsConnectionState.Disconnected);
     }
 
     public async IAsyncEnumerable<AprsIsRawPacketReceivedEventArgs> ReadPacketsAsync(
@@ -120,7 +141,9 @@ public sealed class AprsIsClient : IAprsIsClient
         CancellationToken cancellationToken)
     {
         var timestamp = DateTimeOffset.UtcNow;
-        var stateAtRequest = State;
+        // Consistent snapshot so a concurrent reconnect cannot swap the stream between the write and
+        // the flush, and so validation and I/O see the same stream.
+        var (active, stateAtRequest) = Snapshot();
         var normalizedPacket = rawPacketLine?.Trim() ?? string.Empty;
 
         // Global inhibit (exercise/training mode) wins over everything and is checked before any
@@ -133,7 +156,7 @@ public sealed class AprsIsClient : IAprsIsClient
                 gate.InhibitReason ?? "Transmit is globally inhibited (exercise mode).");
         }
 
-        var failureReason = ValidateTransmitRequest(normalizedPacket, transmitConfirmed, stateAtRequest);
+        var failureReason = ValidateTransmitRequest(normalizedPacket, transmitConfirmed, stateAtRequest, active);
         if (failureReason is not null)
         {
             return AprsIsTransmitResult.Failed(timestamp, normalizedPacket, stateAtRequest, failureReason);
@@ -142,15 +165,14 @@ public sealed class AprsIsClient : IAprsIsClient
         try
         {
             var bytes = Encoding.ASCII.GetBytes(normalizedPacket + "\r\n");
-            await stream!.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await active!.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+            await active.FlushAsync(cancellationToken).ConfigureAwait(false);
 
             return AprsIsTransmitResult.Succeeded(timestamp, normalizedPacket, stateAtRequest);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = AprsIsConnectionState.Faulted;
+            Fault(exception);
             return AprsIsTransmitResult.Failed(timestamp, normalizedPacket, stateAtRequest, exception.Message);
         }
     }
@@ -216,53 +238,55 @@ public sealed class AprsIsClient : IAprsIsClient
                 pendingData = string.Empty;
             }
 
-            while (!cancellationToken.IsCancellationRequested && stream is not null)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
-                while (!cancellationToken.IsCancellationRequested)
+                Stream? active;
+                lock (sync) { active = stream; }
+                if (active is null) break;
+
+                using (var reader = new StreamReader(active, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {
-                    var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                    if (line is null)
+                    while (!cancellationToken.IsCancellationRequested)
                     {
-                        break;
-                    }
+                        var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                        if (line is null)
+                        {
+                            break;
+                        }
 
-                    if (line.StartsWith('#'))
-                    {
-                        continue;
-                    }
+                        if (line.StartsWith('#'))
+                        {
+                            continue;
+                        }
 
-                    PublishPacket(line);
+                        PublishPacket(line);
+                    }
                 }
 
                 if (!configuration.ReconnectEnabled || cancellationToken.IsCancellationRequested)
                 {
-                    State = AprsIsConnectionState.Disconnected;
+                    SetState(AprsIsConnectionState.Disconnected);
                     break;
                 }
 
-                State = AprsIsConnectionState.Reconnecting;
+                SetState(AprsIsConnectionState.Reconnecting);
                 await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
 
-                // Dispose the closed stream before replacing it — otherwise each reconnect leaks the
-                // previous NetworkStream/socket for the lifetime of the client.
-                var closedStream = stream;
-                if (closedStream is not null)
-                {
-                    try { await closedStream.DisposeAsync().ConfigureAwait(false); }
-                    catch { /* best-effort cleanup of the dead stream */ }
-                }
+                // Dispose the closed stream (the one we were reading from) before replacing it —
+                // otherwise each reconnect leaks the previous NetworkStream/socket.
+                try { await active.DisposeAsync().ConfigureAwait(false); }
+                catch { /* best-effort cleanup of the dead stream */ }
 
-                stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
-                await WriteLoginLineAsync(stream, cancellationToken).ConfigureAwait(false);
-                await WaitForLogrespAsync(stream, cancellationToken).ConfigureAwait(false);
-                State = AprsIsConnectionState.Connected;
+                var reopened = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
+                await WriteLoginLineAsync(reopened, cancellationToken).ConfigureAwait(false);
+                await WaitForLogrespAsync(reopened, cancellationToken).ConfigureAwait(false);
+                SetStream(reopened);
+                SetState(AprsIsConnectionState.Connected);
             }
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ObjectDisposedException)
         {
-            LastError = exception;
-            State = AprsIsConnectionState.Faulted;
+            Fault(exception);
         }
     }
 
@@ -276,7 +300,8 @@ public sealed class AprsIsClient : IAprsIsClient
     private string? ValidateTransmitRequest(
         string rawPacketLine,
         bool transmitConfirmed,
-        AprsIsConnectionState stateAtRequest)
+        AprsIsConnectionState stateAtRequest,
+        Stream? activeStream)
     {
         if (!configuration.TransmitEnabled)
         {
@@ -303,7 +328,7 @@ public sealed class AprsIsClient : IAprsIsClient
             return "A valid APRS-IS passcode is required before transmit.";
         }
 
-        if (stateAtRequest != AprsIsConnectionState.Connected || stream is null)
+        if (stateAtRequest != AprsIsConnectionState.Connected || activeStream is null)
         {
             return "APRS-IS client is not connected.";
         }

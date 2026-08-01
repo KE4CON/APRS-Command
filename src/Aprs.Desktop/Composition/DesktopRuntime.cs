@@ -53,6 +53,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
     public AprsIsConnectionState ConnectionState => Coordinator.ConnectionState;
     public bool IsTransmitInhibited => TransmitAuthority.IsInhibited;
 
+    /// <summary>Shared diagnostic log sink (recent-entry ring + live events) for a log view/export.</summary>
+    public ILogService LogService => GetService<ILogService>();
+
     private DesktopRuntime(ServiceProvider provider, MainWindowViewModel mainViewModel, LiveDataCoordinator coordinator, BeaconService beaconService, ITransmitSafetyAuthority transmitAuthority, GpsCoordinator gpsCoordinator, MessageAckCoordinator messageAckCoordinator, KissTcpCoordinator kissTcpCoordinator, SerialKissCoordinator serialKissCoordinator, ManagedModemCoordinator? managedModemCoordinator, ConnectionHealthWatchdog connectionHealthWatchdog, StationTrailService stationTrailService, NwsAlertService nwsAlertService, AprsIsFailoverCoordinator? failoverCoordinator, Aprs.Desktop.Services.RadarAnimationService radarAnimationService, ILocalRestApiService localRestApiService, IWebSocketEventStreamService webSocketEventStreamService, AgwpeCoordinator agwpeCoordinator)
     {
         this.provider = provider;
@@ -102,6 +105,9 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IAprsPortManager, AprsPortManager>();
         services.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();
         services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
+        // Diagnostic logging — one shared sink so faults surfaced by coordinators land somewhere a
+        // UI log view or export can show them, instead of a debugger-only channel.
+        services.AddSingleton<ILogService>(_ => new LogService());
         services.AddSingleton<IAprsMessageStoreService, AprsMessageStoreService>();
         services.AddSingleton<IAlertRuleService, AlertRuleService>();
         // iGate — uses a deferred APRS-IS client; real client is wired after
@@ -324,7 +330,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var appSettings2 = provider.GetRequiredService<IAppSettingsStore>().Load();
         var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>());
 
-        var watchdog = new ConnectionHealthWatchdog(coordinator);
+        var logService = provider.GetRequiredService<ILogService>();
+        var watchdog = new ConnectionHealthWatchdog(coordinator, logService);
         var stationTrailService = new StationTrailService();
         var nwsAlertService = new NwsAlertService();
         var radarAnimationService = new Aprs.Desktop.Services.RadarAnimationService();
@@ -341,7 +348,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
                     coordinator,
                     allServers,
                     appSettings2.Station.Callsign,
-                    aprsIsPort.Configuration.AprsIs.Filter);
+                    aprsIsPort.Configuration.AprsIs.Filter,
+                    logService);
             }
         }
 
