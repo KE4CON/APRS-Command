@@ -3,7 +3,8 @@
         x:Class="Aprs.Desktop.Views.SetupWindow"
         Title="APRS Command — First-Run Setup"
         Width="460"
-        Height="470"
+        SizeToContent="Height"
+        MinHeight="470"
         CanResize="False"
         WindowStartupLocation="CenterScreen">
   <Border Background="{DynamicResource SurfaceBgBrush}"

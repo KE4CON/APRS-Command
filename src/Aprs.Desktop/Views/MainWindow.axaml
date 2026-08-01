@@ -119,7 +119,7 @@
                   Command="{Binding ToggleDarkModeCommand}" />
       </MenuItem>
       <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
-      <MenuItem Header="_Keyboard Shortcuts" Command="{Binding OpenShortcutsCommand}" InputGesture="Ctrl+/" />
+      <MenuItem Header="_Keyboard Shortcuts" Command="{Binding OpenShortcutsCommand}" InputGesture="Ctrl+OemQuestion" />
       <MenuItem Header="About APRS Command" Command="{Binding OpenAboutCommand}" />
     </Menu>
 
