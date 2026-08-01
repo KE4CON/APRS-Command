@@ -114,7 +114,7 @@
               <Border Padding="8,7"
                       BorderBrush="{DynamicResource TextOnDarkBrush}"
                       BorderThickness="0,0,0,1">
-                <Grid RowDefinitions="Auto,Auto,Auto"
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto"
                       RowSpacing="3">
                   <Grid ColumnDefinitions="1.2*,1.2*,1.4*,.9*,.9*"
                         ColumnSpacing="6">
@@ -169,6 +169,12 @@
                   <TextBlock Grid.Row="2"
                              Text="{Binding Comment}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
+                             FontSize="11"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Row="3"
+                             IsVisible="{Binding HasDevice}"
+                             Text="{Binding Device, StringFormat='Device: {0}'}"
+                             Foreground="{DynamicResource TextMutedBrush}"
                              FontSize="11"
                              TextTrimming="CharacterEllipsis" />
                 </Grid>
