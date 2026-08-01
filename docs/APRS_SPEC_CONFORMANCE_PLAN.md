@@ -36,7 +36,7 @@ test vectors to confirm exactness.
 | Telemetry | `T#` | ✅ | Sequence + analog + `BITS` + `PARM./UNIT./EQNS./BITS.` metadata handled. *(verify base-91 telemetry + telemetry-in-message)* |
 | Status | `>` | ⚠️ Partial | Stored as raw text; not decomposed (timestamp, Maidenhead locator, beam heading). Fine for display, incomplete for structured use. |
 | Station capabilities | `<` | ✅ (basic) | Raw capability text captured. |
-| Query | `?` | ⚠️ Partial | Stored raw; query type (`?APRS?`, `?WX?`, directed queries) not decomposed or answerable. |
+| Query | `?` | ✅ **Done (decode)** | Decomposed into `QueryType` + `QueryKeyword` + optional `QueryTarget` (`?APRS?`/`?APRSx`, `?IGATE?`, `?WX?`, `?PING?`). Tests: `AprsQueryParsingTests`. *(Auto-responding to queries remains out of scope.)* |
 | **Third-party** | `}` | ✅ **Done** | `AprsParser` unwraps `}` and re-parses the encapsulated packet (depth-guarded) so the originating station surfaces, not the gateway. Tests: `AprsThirdPartyParsingTests`. |
 | User-defined | `{` | ❌ Missing | Minor / experimental. |
 | Raw NMEA GPS | `$` | ❌ Missing | Legacy; rarely needed. |
@@ -57,7 +57,7 @@ the area-object encoder implement exactly this (this correction is a frequent im
 Each with spec vectors from aprsspec + Dire Wolf:
 1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). Follow-up: device-ID via the MIC-E comment suffix (Phase 4).
 2. ~~**Third-party `}`** unwrap~~ ✅ **done** (`AprsParser`, depth-guarded).
-3. **Query `?`** decomposition.
+3. ~~**Query `?`** decomposition~~ ✅ **done** (`QueryType`/keyword/target).
 4. **DAO `!w..!`** precision; plus any compressed-position / telemetry gaps Phase 0 verification surfaces.
 5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; the **primer §7.3 needs correcting** (killed object is `_`, not `/`).
 

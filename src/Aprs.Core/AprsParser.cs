@@ -144,6 +144,7 @@ public sealed class AprsParser : IAprsParser
 
         if (rawPacket.Information.StartsWith('?'))
         {
+            var (queryType, queryKeyword, queryTarget) = ClassifyQuery(rawPacket.Information);
             return new QueryAprsPacket(
                 rawPacket.RawLine,
                 rawPacket.SourceCallsign,
@@ -155,7 +156,10 @@ public sealed class AprsParser : IAprsParser
                 rawPacket.IsValid,
                 rawPacket.ValidationErrors,
                 rawPacket.QConstruct,
-                rawPacket.Information);
+                rawPacket.Information,
+                queryType,
+                queryKeyword,
+                queryTarget);
         }
 
         // Third-party traffic: '}' encapsulates a complete packet as originally heard on RF/another
@@ -280,5 +284,35 @@ public sealed class AprsParser : IAprsParser
     {
         return information.Length > 0
             && information[0] is '!' or '=' or '/' or '@';
+    }
+
+    /// <summary>
+    /// Classifies an APRS query (spec §15). The format is <c>?KEYWORD?</c> optionally followed by a
+    /// target callsign. Returns the query type, the raw keyword (e.g. "APRS", "WX", "IGATE"), and the
+    /// optional target. Recognizes the general position queries (<c>?APRS?</c> and the <c>?APRSx</c>
+    /// station-data variants), <c>?IGATE?</c>, <c>?WX?</c>, and <c>?PING?</c>.
+    /// </summary>
+    private static (AprsQueryType Type, string Keyword, string? Target) ClassifyQuery(string information)
+    {
+        // Strip the leading '?'; the keyword runs up to the next '?' (if any), then an optional target.
+        var body = information.Length > 1 ? information[1..] : string.Empty;
+        var secondMark = body.IndexOf('?');
+        var keyword = (secondMark >= 0 ? body[..secondMark] : body).Trim();
+        var target = secondMark >= 0 && secondMark + 1 < body.Length
+            ? body[(secondMark + 1)..].Trim()
+            : null;
+        if (string.IsNullOrEmpty(target)) target = null;
+
+        var type = keyword.ToUpperInvariant() switch
+        {
+            "APRS" or "APRSD" or "APRSH" or "APRSM" or "APRSO" or "APRSP" or "APRSS" or "APRST"
+                => AprsQueryType.General,
+            "IGATE" => AprsQueryType.IGate,
+            "WX" => AprsQueryType.Weather,
+            "PING" => AprsQueryType.Ping,
+            _ => AprsQueryType.Unknown
+        };
+
+        return (type, keyword, target);
     }
 }
