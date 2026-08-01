@@ -154,6 +154,36 @@ more services through `ILogService` over time.
 
 ---
 
+## 2026-08-01 — MIC-E radio identification (device-ID)
+
+### D10 — MIC-E mobiles are identified from the comment, gated on a real MIC-E flag
+**Problem:** Device identification (the "Device: …" line) matched only the destination **tocall**. MIC-E
+packets — among the most common RF formats, and precisely the mobile radios worth naming — encode their
+position *in the destination field*, so they never match a tocall and always showed nothing. The APRS
+Foundation database's `mice`/`micelegacy` sections identify these radios instead from a marker carried
+in the **comment**.
+**Decision:** Extend `DeviceIdentificationService` to parse both MIC-E sections and add
+`IdentifyMicE(comment)` plus a combined `Identify(dest, comment)`. Matching, per the database's two
+styles: modern radios end the comment with an unusual two-character code (`mice`, e.g. `_"` = Yaesu
+FTM-350); legacy Kenwoods start it with a prefix char and optionally end with a suffix char
+(`micelegacy`, e.g. `]` = TM-D700, `]=` = TM-D710). Order is **modern trailing code → legacy
+prefix+suffix → bare prefix**, and the decoder's `[status] ` comment prefix is stripped first so the
+legacy prefix is exposed.
+**Correctness gate:** because a legacy match keys on a single leading char (`]`/`>`), an ordinary
+station whose comment happened to start that way could be mislabelled a Kenwood — and mis-identifying a
+radio is worse than showing nothing. So the comment is consulted **only for genuine MIC-E packets**:
+`StationSnapshot.IsMicE` is set from the MIC-E data-type indicator (`0x60`/`0x27`/`0x1C`/`0x1D`) in
+`StationDatabase`, persisted across a station's later non-MIC-E packets, threaded through
+`StationMarker.IsMicE`, and gated on in `StationMarkerViewModel` (tocall-only unless `IsMicE`).
+**Tests:** MIC-E matching + status-prefix stripping + tocall-vs-comment precedence in
+`DeviceIdentificationServiceTests`; the non-MIC-E false-positive guard in
+`StationDeviceIdentificationTests`; and the full raw-packet → parser → database → marker → viewmodel
+spine in `MicEDeviceEndToEndTests`. Full suite green (1275).
+**Next step (not done):** device-ID slice 3 — weekly refresh + manual "update now", consolidating the
+marker VM's shared default into a single DI singleton the refresher updates.
+
+---
+
 ## Future / planned (not yet done)
 
 Decisions made about work intended for later, so the reasoning is captured before it is scheduled.

@@ -12,14 +12,27 @@ delivery, full dataset, shown in both list + detail, auto weekly refresh + manua
 **Done (slice 2 — surfacing):** the tocall now flows `StationSnapshot.Destination` → `StationMarker`
 → `StationMarkerViewModel` (which resolves `DeviceIdentity`/`Device` via the bundled service), into
 `StationListRowViewModel` + `StationDetailsViewModel`. The station list shows a "Device: …" line,
-hidden when unidentified (so MIC-E radios don't show a noisy "Unknown" until the MIC-E follow-up).
-Tests: `StationDeviceIdentificationTests`. The marker VM uses a shared lazy `DeviceIdentificationService`
-by default (overridable) to avoid threading the lookup through the whole VM spine.
+hidden when unidentified (so a station whose device we can't name shows nothing rather than a noisy
+"Unknown"). Tests: `StationDeviceIdentificationTests`. The marker VM uses a shared lazy
+`DeviceIdentificationService` by default (overridable) to avoid threading the lookup through the whole
+VM spine.
+
+**Done (MIC-E radios):** `DeviceIdentificationService` now also parses the `mice`/`micelegacy` sections
+and identifies MIC-E mobiles from the **comment** (MIC-E puts the position in the destination, so the
+model marker rides in the comment): modern radios end the comment with a two-character code (`mice`,
+e.g. `_"` = Yaesu FTM-350); legacy Kenwoods use a prefix char with an optional suffix (`micelegacy`,
+e.g. `]` = TM-D700, `]=` = TM-D710). Matching tries the modern trailing code first, then the legacy
+prefix+suffix, then the bare prefix, and strips the decoder's `[status] ` comment prefix first.
+`IDeviceIdentificationService` gained `IdentifyMicE(comment)` and a combined `Identify(dest, comment)`.
+To avoid mislabelling an ordinary station whose comment happens to start with `]`/`>`, the comment is
+consulted **only for genuine MIC-E packets**: `StationSnapshot.IsMicE` is set from the MIC-E DTI
+(`0x60`/`0x27`/`0x1C`/`0x1D`) in `StationDatabase`, threaded through `StationMarker.IsMicE`, and gated
+on in the marker VM. Tests: MIC-E cases in `DeviceIdentificationServiceTests` +
+`StationDeviceIdentificationTests`, and the raw-packet spine in `MicEDeviceEndToEndTests`.
 
 **Remaining:** slice 3 (weekly refresh + manual "update now" — at which point consolidate the marker
-VM's shared default into a single DI singleton the refresher updates); the MIC-E radio-model follow-up
-(the `mice`/`micelegacy` sections, needing suffix extraction tied to the MIC-E decoder); and optionally
-surfacing device on the map marker popup.
+VM's shared default into a single DI singleton the refresher updates); and optionally surfacing device
+on the map marker popup.
 
 ## What & why
 APRS packets carry a **destination "tocall"** (e.g. `APDW17`, `APK003`, `APWW11`) that identifies the

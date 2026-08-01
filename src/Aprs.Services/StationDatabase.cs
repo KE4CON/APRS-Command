@@ -258,8 +258,15 @@ public sealed class StationDatabase : IStationDatabase
             packetSource,
             existing?.HasMessagingCapability,
             existing?.Weather,
-            packet.Destination);
+            packet.Destination,
+            existing?.IsMicE ?? false);
     }
+
+    // The four MIC-E data type indicators (0x60 / 0x27 / 0x1C / 0x1D). MIC-E encodes the position in the
+    // destination field, so the sending radio's model lives in the comment instead — device
+    // identification treats these packets specially.
+    private static bool IsMicEDti(char? positionType)
+        => positionType is (char)0x60 or (char)0x27 or (char)0x1C or (char)0x1D;
 
     private static StationSnapshot ApplyPacketSpecificFields(StationSnapshot station, AprsPacket packet)
     {
@@ -274,7 +281,8 @@ public sealed class StationDatabase : IStationDatabase
                 Comment = string.IsNullOrEmpty(position.Comment) ? station.Comment : position.Comment,
                 CourseDegrees = position.CourseDegrees ?? station.CourseDegrees,
                 SpeedKnots = position.SpeedKnots ?? station.SpeedKnots,
-                AltitudeFeet = position.AltitudeFeet ?? station.AltitudeFeet
+                AltitudeFeet = position.AltitudeFeet ?? station.AltitudeFeet,
+                IsMicE = IsMicEDti(position.PositionType)
             },
             StatusAprsPacket status => station with
             {

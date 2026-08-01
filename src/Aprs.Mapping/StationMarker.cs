@@ -30,6 +30,12 @@ public sealed record StationMarker(
     /// <summary>The AX.25 destination "tocall", used to identify the sending device/software.</summary>
     public string? Destination { get; init; }
 
+    /// <summary>
+    /// True when the last packet was MIC-E. MIC-E carries the sending radio's model in the comment (not
+    /// the destination, which holds the position), so device identification reads the comment only here.
+    /// </summary>
+    public bool IsMicE { get; init; }
+
     public static StationMarker Create(
         string callsign,
         string displayName,
@@ -104,7 +110,7 @@ public sealed record StationMarker(
             station.LastRawPacket,
             station.PacketCount,
             station.DuplicatePacketCount,
-            station.IsLoRa) with { Destination = station.Destination };
+            station.IsLoRa) with { Destination = station.Destination, IsMicE = station.IsMicE };
 
         return true;
     }
