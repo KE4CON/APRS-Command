@@ -95,7 +95,8 @@ public sealed class AprsParser : IAprsParser
 
         if (rawPacket.Information.StartsWith('>'))
         {
-            var statusText = rawPacket.Information[1..];
+            var rawStatusText = rawPacket.Information[1..];
+            var status = AprsStatusReport.Parse(rawStatusText);
             return new StatusAprsPacket(
                 rawPacket.RawLine,
                 rawPacket.SourceCallsign,
@@ -107,8 +108,14 @@ public sealed class AprsParser : IAprsParser
                 rawPacket.IsValid,
                 rawPacket.ValidationErrors,
                 rawPacket.QConstruct,
-                statusText,
-                statusText);
+                rawStatusText,
+                status.Message,
+                status.Timestamp,
+                status.MaidenheadLocator,
+                status.SymbolTableIdentifier,
+                status.SymbolCode,
+                status.BeamHeadingDegrees,
+                status.EffectiveRadiatedPowerWatts);
         }
 
         if (rawPacket.Information.StartsWith('<'))

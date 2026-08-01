@@ -34,7 +34,7 @@ test vectors to confirm exactness.
 | **Object** | `;` | ✅ | Live `*` / killed `_` — **verified correct** against Dire Wolf (objects: `*`/`_`; items: `!`/`_`). The primer §7.3 is the one in error (says kill uses `/`); the code is right. **Action: correct the primer.** *(still verify compressed object + timestamp forms)* |
 | Item | `)` | ✅ | *(verify live/kill char `!`/`_` per spec, same discrepancy class as objects)* |
 | Telemetry | `T#` | ✅ | Sequence + analog + `BITS` + `PARM./UNIT./EQNS./BITS.` metadata handled. *(verify base-91 telemetry + telemetry-in-message)* |
-| Status | `>` | ⚠️ Partial | Stored as raw text; not decomposed (timestamp, Maidenhead locator, beam heading). Fine for display, incomplete for structured use. |
+| Status | `>` | ✅ **Done** | `AprsStatusReport` decomposes the body into optional leading DHM-zulu timestamp **or** Maidenhead locator+symbol, and trailing beam-heading/ERP (`^`) — remainder is the display message (`StatusText`); `RawStatusText` keeps the verbatim body. Built against Dire Wolf's decoder. Tests: `AprsStatusReportTests`. |
 | Station capabilities | `<` | ✅ (basic) | Raw capability text captured. |
 | Query | `?` | ✅ **Done (decode)** | Decomposed into `QueryType` + `QueryKeyword` + optional `QueryTarget` (`?APRS?`/`?APRSx`, `?IGATE?`, `?WX?`, `?PING?`). Tests: `AprsQueryParsingTests`. *(Auto-responding to queries remains out of scope.)* |
 | **Third-party** | `}` | ✅ **Done** | `AprsParser` unwraps `}` and re-parses the encapsulated packet (depth-guarded) so the originating station surfaces, not the gateway. Tests: `AprsThirdPartyParsingTests`. |
@@ -63,7 +63,7 @@ Formatters exist for position beacons (tested, `>APCMD0` ✅), weather, objects,
 
 ## Phase 1 — Close receive-side gaps (priority order)
 Each with spec vectors from aprsspec + Dire Wolf:
-1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). Follow-up: device-ID via the MIC-E comment suffix (Phase 4).
+1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). ~~Follow-up: device-ID via the MIC-E comment suffix (Phase 4).~~ ✅ **done** — `DeviceIdentificationService` identifies MIC-E radios from the comment (`mice`/`micelegacy`), gated on `StationSnapshot.IsMicE` (D10).
 2. ~~**Third-party `}`** unwrap~~ ✅ **done** (`AprsParser`, depth-guarded).
 3. ~~**Query `?`** decomposition~~ ✅ **done** (`QueryType`/keyword/target).
 4. ~~**DAO `!Dxx!`** precision~~ ✅ **done** (`AprsDaoExtension`, applied to all position-bearing types). Remaining: any compressed-position / telemetry gaps Phase 0 verification surfaces.
@@ -72,21 +72,29 @@ Each with spec vectors from aprsspec + Dire Wolf:
 ## Phase 2 — Generate-side exactness
 - Verify every emitted packet is spec-exact (tocall ✅ done; area-object `Tyy/Cxx` ✅ fixed; position,
   object kill, message ack/format, weather, status still to verify).
-- **Round-trip tests**: generate → parse → assert equality. Position beacon + status beacon
-  (`AprsRoundTripTests`) and **weather** (`AprsWeatherRoundTripTests` — wind/gust/temp/humidity/
-  pressure all survive) round-trip cleanly. Remaining (lower priority — simpler formats, and their
-  formatters sit behind the object-editor service / message-retry engine): object + message
-  round-trips; and diffing our output vs. Dire Wolf.
+- **Round-trip tests**: generate → parse → assert equality. Position beacon + status beacon + **object**
+  (live + killed) (`AprsRoundTripTests`), **message** (`AprsMessageRetryEngineTests`), and **weather**
+  (`AprsWeatherRoundTripTests`) all round-trip cleanly. ✅ **Object timestamp bug fixed (was broken):**
+  the object emitter wrote time-of-day (`HHMMSS`) under the DHM `z` suffix, so any object beaconed at
+  minute ≥ 24 encoded an invalid "hour" (e.g. 14:25:30 → `142530z` = day 14, hour 25). Now DHM-zulu UTC
+  (`ddHHmmz`). Remaining (lower priority): diffing our output vs. Dire Wolf.
 
-## Phase 3 — Network-behavior conformance
-- Audit `DigipeaterService` against **APRS-Digipeater-Algorithm.pdf** (New-N WIDEn-N, fill-in vs
-  wide-area, dupe-suppression window, used-flag / callsign insertion).
-- iGate gating rules incl. RF↔IS loop prevention (primer §5.4); `GATE`/`NOGATE`/`RFONLY`.
+## Phase 3 — Network-behavior conformance ✅ **audited (D13)**
+- `DigipeaterService` (New-N WIDEn-N): callsign insertion + decrement verified correct. **Fixed:** the
+  duplicate fingerprint included the mutating path (so the same packet via a different neighbour / the
+  digi's own echo evaded suppression) → now source+dest+payload; added a used-flag loop guard (never
+  repeat a packet already carrying our used callsign); trap malformed `WIDEn-N` with N>n.
+- iGate: **fixed** mandatory, config-independent RF→IS rules — never gate `NOGATE`/`RFONLY` (sender
+  directive) or `TCPIP`/`TCPXX`/q-construct (already on APRS-IS → loop). Previously only TCPIP/q were
+  covered, and only as editable default config gated behind the dupe-suppression toggle. Monitor
+  advisory made consistent. Tests: `DigipeaterServiceTests`, `IGateServiceTests`.
+- *Remaining refinements (not blocking):* preemptive/`TRACEn-N` handling; per-hop trap policy config.
 
 ## Phase 4 — Symbols & device-ID
 - Reconcile the symbol table against aprsspec `APRS-Symbols`.
-- Integrate the device-ID (tocall) database — bundled snapshot + weekly refresh — to show each
-  station's radio/software. CC BY-SA 2.0 → handle attribution via the third-party-notices flow.
+- Integrate the device-ID (tocall) database — bundled snapshot ✅ (+ weekly refresh, slice 3, still to
+  do) — to show each station's radio/software. Tocall matching ✅ and MIC-E radio matching ✅ (D10) both
+  done. CC BY-SA 2.0 → attribution handled via the third-party-notices flow.
 
 ## Phase 5 — Standing conformance suite
 - A dedicated spec-conformance test section fed by aprsspec + Dire Wolf vectors, guarding conformance

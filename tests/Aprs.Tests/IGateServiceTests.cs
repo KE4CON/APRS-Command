@@ -87,6 +87,27 @@ public sealed class IGateServiceTests
         Assert.Equal(0, client.SendCallCount);
     }
 
+    [Theory]
+    [InlineData("MOBILE1>APRS,WIDE1-1,RFONLY:!3903.50N/08430.50W>Mobile")]  // RFONLY directive
+    [InlineData("MOBILE1>APRS,WIDE1-1,NOGATE:!3903.50N/08430.50W>Mobile")]  // NOGATE directive
+    [InlineData("MOBILE1>APRS,TCPIP*,qAC,SERVER:!3903.50N/08430.50W>Mobile")] // already on APRS-IS
+    public async Task MandatoryNoGatePaths_AreNeverGated_EvenWithNoBlockedPatterns(string raw)
+    {
+        // These rules are mandatory regardless of BlockedPathPatterns (empty here) and dupe suppression.
+        var client = new FakeAprsIsClient { State = AprsIsConnectionState.Connected };
+        var service = CreateService(client, EnabledConfiguration() with
+        {
+            BlockedPathPatterns = [],
+            DuplicateSuppressionEnabled = false
+        });
+
+        var decision = await service.EvaluateAndGateAsync(CreateCandidate(raw));
+
+        Assert.Equal(IGateDecision.Blocked, decision.Decision);
+        Assert.False(decision.TransmitAttempted);
+        Assert.Equal(0, client.SendCallCount);
+    }
+
     [Fact]
     public async Task DisconnectedAprsIsClient_BlocksGating()
     {

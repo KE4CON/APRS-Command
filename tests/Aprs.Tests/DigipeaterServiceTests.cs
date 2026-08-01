@@ -120,6 +120,56 @@ public sealed class DigipeaterServiceTests
     }
 
     [Fact]
+    public async Task SamePacket_ViaDifferentPath_IsDuplicate()
+    {
+        // The same original packet reaches us twice — once direct, once relayed by another digi (so the
+        // path differs). Dupe detection keys on source + payload, not path, so the second is suppressed.
+        var transmitter = new FakeRfBeaconTransmitClient();
+        var service = CreateService(transmitter, EnabledConfiguration() with { FullDigipeaterMode = true });
+
+        var direct = await service.EvaluateAndDigipeatAsync(
+            Parse("MOBILE1>APRS,WIDE2-2:!3903.50N/08430.50W>Mobile", Now), AprsPacketSource.Rf, "RF");
+        var relayed = await service.EvaluateAndDigipeatAsync(
+            Parse("MOBILE1>APRS,OTHER*,WIDE2-1:!3903.50N/08430.50W>Mobile", Now.AddSeconds(3)), AprsPacketSource.Rf, "RF");
+
+        Assert.Equal(DigipeaterDecision.Allowed, direct.Decision);
+        Assert.Equal(DigipeaterDecision.Duplicate, relayed.Decision);
+        Assert.Equal(1, transmitter.SendCallCount);
+    }
+
+    [Fact]
+    public async Task PacketAlreadyCarryingOurCallsign_IsNotRepeatedAgain()
+    {
+        // Loop prevention: after we digipeat WIDE2-2 → "MYDIGI*,WIDE2-1", hearing that back must NOT be
+        // repeated again even though a trailing WIDE hop is still unused.
+        var transmitter = new FakeRfBeaconTransmitClient();
+        var service = CreateService(transmitter);
+
+        var echo = await service.EvaluateAndDigipeatAsync(
+            Parse("MOBILE1>APRS,MYDIGI*,WIDE2-1:!3903.50N/08430.50W>Mobile", Now), AprsPacketSource.Rf, "RF");
+
+        Assert.Equal(DigipeaterDecision.Duplicate, echo.Decision);
+        Assert.False(echo.TransmitAttempted);
+        Assert.Equal(0, transmitter.SendCallCount);
+        Assert.Contains("already", echo.Reason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task MalformedWideWithHopCountAboveTotal_IsNotDigipeated()
+    {
+        // WIDE2-3 (remaining > total) can't arise in valid traffic and is a known QRM pattern — trap it.
+        var transmitter = new FakeRfBeaconTransmitClient();
+        var service = CreateService(transmitter, EnabledConfiguration() with { FullDigipeaterMode = true });
+
+        var decision = await service.EvaluateAndDigipeatAsync(
+            Parse("MOBILE1>APRS,WIDE2-3:!3903.50N/08430.50W>Mobile"), AprsPacketSource.Rf, "RF");
+
+        Assert.Equal(DigipeaterDecision.NoMatchingAlias, decision.Decision);
+        Assert.False(decision.TransmitAttempted);
+        Assert.Equal(0, transmitter.SendCallCount);
+    }
+
+    [Fact]
     public async Task DisconnectedRfTransmitPort_BlocksDigipeating()
     {
         var transmitter = new FakeRfBeaconTransmitClient();

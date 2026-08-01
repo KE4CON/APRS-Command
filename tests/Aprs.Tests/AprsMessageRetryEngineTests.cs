@@ -26,6 +26,27 @@ public sealed class AprsMessageRetryEngineTests
     }
 
     [Fact]
+    public async Task SentMessage_RoundTrips_ThroughTheParser()
+    {
+        // Generate → parse → equal: what the engine transmits must decode back to the same addressee,
+        // body, and message id with our own parser.
+        var (store, transmitter, engine) = CreateEngine();
+        var draft = store.CreateDraft(
+            new AprsMessageComposeRequest("N0CALL", "K8ABC-7", "Meet at the EOC", "42"), TestNow);
+
+        await engine.SendMessageAsync(draft.Id, TestNow, CancellationToken.None);
+
+        var parsed = ParseMessage(transmitter.LastPacket!);
+        Assert.True(parsed.IsValid);
+        Assert.Equal("N0CALL", parsed.SourceCallsign);
+        Assert.Equal("K8ABC-7", parsed.Addressee.TrimEnd());
+        Assert.Equal("Meet at the EOC", parsed.MessageBody);
+        Assert.Equal("42", parsed.MessageId);
+        Assert.Null(parsed.AcknowledgedMessageId);
+        Assert.False(parsed.IsBulletin);
+    }
+
+    [Fact]
     public async Task ProcessAckOrRej_AckMarksMatchingMessageAcknowledged()
     {
         var (store, _, engine) = CreateEngine();

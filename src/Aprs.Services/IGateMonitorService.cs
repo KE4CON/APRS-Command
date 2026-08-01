@@ -84,6 +84,14 @@ public sealed partial class IGateMonitorService : IIGateMonitorService
             candidateState = IGateCandidateState.Rejected;
             reason = "Packet type is not enabled for iGate candidate monitoring.";
         }
+        else if (CarriesNoGateDirective(packet.Path))
+        {
+            // The sender's explicit "keep off the Internet" directive — reflected here so the advisory
+            // matches what the gate will actually do (block it), rather than showing it as a candidate.
+            candidateState = IGateCandidateState.Rejected;
+            reason = "Path contains NOGATE/RFONLY — the sender opted this packet out of Internet gating.";
+            warnings.Add(reason);
+        }
         else if (appearsFromAprsIs)
         {
             candidateState = IGateCandidateState.AlreadySeenOnAprsIs;
@@ -273,6 +281,16 @@ public sealed partial class IGateMonitorService : IIGateMonitorService
                 component.StartsWith("TCPIP", StringComparison.OrdinalIgnoreCase)
                 || component.StartsWith("TCPXX", StringComparison.OrdinalIgnoreCase)
                 || component.StartsWith("q", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool CarriesNoGateDirective(IReadOnlyList<string> path)
+    {
+        return path.Any(component =>
+        {
+            var element = component.Trim().TrimEnd('*');
+            return element.Equals("NOGATE", StringComparison.OrdinalIgnoreCase)
+                || element.Equals("RFONLY", StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     private static bool IsSupportedCandidatePacketType(AprsPacket packet)
