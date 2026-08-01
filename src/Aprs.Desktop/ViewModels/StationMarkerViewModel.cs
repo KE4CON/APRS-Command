@@ -43,7 +43,14 @@ public sealed class StationMarkerViewModel
         IsLoRa = marker.IsLoRa;
 
         Destination = marker.Destination;
-        DeviceIdentity = (deviceIdentification ?? DefaultDeviceIdentification.Value).Identify(marker.Destination);
+        // Tocall first. Only fall back to the comment for genuine MIC-E packets, where the device code is
+        // how Kenwood/Yaesu mobiles identify themselves (their destination carries the position, not a
+        // tocall). Gating on IsMicE avoids mislabelling an ordinary station whose comment happens to
+        // start with ']'/'>' or end in a two-character code.
+        var deviceService = deviceIdentification ?? DefaultDeviceIdentification.Value;
+        DeviceIdentity = marker.IsMicE
+            ? deviceService.Identify(marker.Destination, marker.Comment)
+            : deviceService.Identify(marker.Destination);
         Device = DeviceIdentity?.Display ?? "Unknown";
     }
 

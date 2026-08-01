@@ -49,7 +49,8 @@ public sealed record StationSnapshot(
     AprsPacketSource PacketSource,
     bool? HasMessagingCapability,
     StationWeatherSnapshot? Weather,
-    string? Destination = null)
+    string? Destination = null,
+    bool IsMicE = false)
 {
     /// <summary>
     /// True when packets appear to originate from a LoRa APRS device.

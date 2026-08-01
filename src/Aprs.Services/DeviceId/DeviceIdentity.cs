@@ -33,4 +33,19 @@ public interface IDeviceIdentificationService
     /// pattern matches. Matching uses the database's <c>?</c> wildcards, most-specific pattern winning.
     /// </summary>
     DeviceIdentity? Identify(string? destinationTocall);
+
+    /// <summary>
+    /// Resolves the radio behind a MIC-E packet from its decoded comment, or null if it carries no
+    /// recognised device code. MIC-E encodes the position in the destination field, so the model marker
+    /// lives in the comment instead: modern radios end the comment with a two-character code (the
+    /// <c>mice</c> table, e.g. <c>_"</c> = Yaesu FTM-350); legacy Kenwoods bracket it with a prefix and an
+    /// optional suffix (the <c>micelegacy</c> table, e.g. <c>]</c> = TM-D700, <c>]=</c> = TM-D710).
+    /// </summary>
+    DeviceIdentity? IdentifyMicE(string? micEComment);
+
+    /// <summary>
+    /// Convenience resolver that tries the destination tocall first and falls back to MIC-E comment
+    /// matching, so a caller can identify any station without knowing which encoding produced it.
+    /// </summary>
+    DeviceIdentity? Identify(string? destinationTocall, string? micEComment);
 }
