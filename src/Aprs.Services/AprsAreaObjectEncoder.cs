@@ -1,26 +1,33 @@
-using System.Globalization;
-
 namespace Aprs.Services;
 
 /// <summary>
-/// Encodes APRS area objects per APRS Protocol Reference §11.
-/// Area objects use the \l symbol and encode shape data in the comment field.
-/// Format: /A{shape-color}{corridor-offset}/{lat}/{lon} or via comment encoding.
-/// This encoder generates the comment-field encoding used with the \l symbol.
+/// Encodes APRS area objects (BOX / CIRCLE / TRIANGLE / LINE) per the WB4APR spec (aprs.org
+/// PROTOCOL.TXT §Area Objects). An area object uses the alternate-table <c>l</c> symbol; the 7 bytes
+/// that normally hold the CSE/SPD field instead carry <c>Tyy/Cxx</c>:
+/// <list type="bullet">
+/// <item><b>T</b> — shape type: 0=circle, 1=line, 3=triangle, 4=box; add 5 for the color-filled forms
+/// (5=filled circle, 6=line other-quadrant, 8=filled triangle, 9=filled box).</item>
+/// <item><b>yy</b> — latitude half-extent, <b>xx</b> — longitude half-extent, each a two-digit value
+/// where the offset in degrees = value² ÷ 100 (i.e. value = 10·√degrees). This √-scaling lets two
+/// digits span from well under a mile up to hundreds of miles.</item>
+/// <item><b>C</b> — colour digit (0–9).</item>
+/// </list>
+/// This string is placed as the first bytes of the object's comment (which immediately follow the
+/// symbol code), so the receiver reads it from the CSE/SPD position.
 /// </summary>
 public static class AprsAreaObjectEncoder
 {
+    private const double KmPerDegree = 111.32; // mean km per degree of latitude
+
     /// <summary>
-    /// Generates the APRS area object comment string that encodes shape, color, and dimensions.
-    /// Place this string as the comment field of an APRS object using the \l symbol.
+    /// Generates the <c>Tyy/Cxx</c> area descriptor (optionally followed by a description). Place it as
+    /// the comment of an APRS object using the <see cref="AreaSymbol"/> (alternate table, <c>l</c>).
     /// </summary>
     /// <param name="shape">The shape type.</param>
-    /// <param name="colorCode">
-    /// Color code 0-7: 0=black, 1=blue, 2=green, 3=cyan, 4=red, 5=violet, 6=amber, 7=white.
-    /// </param>
-    /// <param name="widthKm">Width/radius of the shape in kilometres (0–99).</param>
-    /// <param name="heightKm">Height of the shape in kilometres (0–99). Use same as width for circles.</param>
-    /// <param name="description">Optional human-readable description appended after the area encoding.</param>
+    /// <param name="colorCode">Colour digit 0–9.</param>
+    /// <param name="widthKm">Longitude half-extent (radius for a circle) in kilometres.</param>
+    /// <param name="heightKm">Latitude half-extent in kilometres. Use the same as width for circles.</param>
+    /// <param name="description">Optional human-readable text appended after the 7-byte descriptor.</param>
     public static string Encode(
         AprsAreaObjectShape shape,
         int colorCode,
@@ -28,22 +35,42 @@ public static class AprsAreaObjectEncoder
         double heightKm,
         string? description = null)
     {
-        colorCode = Math.Clamp(colorCode, 0, 7);
-        var widthInt  = (int)Math.Clamp(widthKm  * 10, 0, 999);
-        var heightInt = (int)Math.Clamp(heightKm * 10, 0, 999);
-        var shapeCode = (int)shape;
+        var typeCode = ShapeTypeCode(shape);
+        var color = System.Math.Clamp(colorCode, 0, 9);
+        var yy = OffsetCode(heightKm); // latitude extent
+        var xx = OffsetCode(widthKm);  // longitude extent
 
-        // Area encoding: /A{S}{C}{WWW}/{HHH}
-        // S = shape digit, C = color digit, WWW = width * 10 (3 digits), HHH = height * 10
-        var encoded = $"/A{shapeCode}{colorCode}{widthInt:D3}/{heightInt:D3}";
+        // Tyy/Cxx — exactly 7 bytes, occupying the CSE/SPD position at the start of the comment.
+        var descriptor = $"{typeCode}{yy:D2}/{color}{xx:D2}";
 
         return string.IsNullOrWhiteSpace(description)
-            ? encoded
-            : $"{encoded} {description}";
+            ? descriptor
+            : $"{descriptor}{description}";
     }
 
-    /// <summary>
-    /// Returns the recommended APRS symbol for area objects: alternate table '\', code 'l'.
-    /// </summary>
+    /// <summary>The APRS symbol for area objects: alternate table '\', code 'l'.</summary>
     public static (char Table, char Code) AreaSymbol => ('\\', 'l');
+
+    /// <summary>Maps a shape to its APRS area Type code (non-sequential: 0,1,3,4,5,6,8,9).</summary>
+    private static int ShapeTypeCode(AprsAreaObjectShape shape) => shape switch
+    {
+        AprsAreaObjectShape.OpenBlackCircle     => 0,
+        AprsAreaObjectShape.OpenRedLine         => 1,
+        AprsAreaObjectShape.OpenBlueTriangle    => 3,
+        AprsAreaObjectShape.OpenBlueRectangle   => 4,
+        AprsAreaObjectShape.FilledBlackCircle   => 5,
+        AprsAreaObjectShape.FilledRedLine       => 6,
+        AprsAreaObjectShape.FilledBlueTriangle  => 8,
+        AprsAreaObjectShape.FilledBlueRectangle => 9,
+        _ => 0
+    };
+
+    // offset_degrees = code² / 100  →  code = 10 · √degrees, clamped to the two-digit 0–99 range.
+    private static int OffsetCode(double km)
+    {
+        if (km <= 0) return 0;
+        var degrees = km / KmPerDegree;
+        var code = (int)System.Math.Round(10.0 * System.Math.Sqrt(degrees));
+        return System.Math.Clamp(code, 0, 99);
+    }
 }
