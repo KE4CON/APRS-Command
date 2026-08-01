@@ -221,6 +221,21 @@ public sealed record MessageAprsPacket(
         IsValid,
         ValidationErrors);
 
+/// <summary>The kind of APRS query (spec §15), derived from the query keyword.</summary>
+public enum AprsQueryType
+{
+    /// <summary>General position query — <c>?APRS?</c> and the <c>?APRSx</c> station-data variants.</summary>
+    General,
+    /// <summary>iGate query — <c>?IGATE?</c>.</summary>
+    IGate,
+    /// <summary>Weather query — <c>?WX?</c>.</summary>
+    Weather,
+    /// <summary>Ping — <c>?PING?</c>.</summary>
+    Ping,
+    /// <summary>An unrecognized query keyword (still captured in <c>QueryKeyword</c>).</summary>
+    Unknown
+}
+
 public sealed record QueryAprsPacket(
     string RawLine,
     string SourceCallsign,
@@ -232,7 +247,10 @@ public sealed record QueryAprsPacket(
     bool IsValid,
     IReadOnlyList<string> ValidationErrors,
     string? QConstruct,
-    string QueryText)
+    string QueryText,
+    AprsQueryType QueryType,
+    string QueryKeyword,
+    string? QueryTarget)
     : AprsPacket(
         RawLine,
         SourceCallsign,
