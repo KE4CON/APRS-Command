@@ -72,7 +72,9 @@ Each with spec vectors from aprsspec + Dire Wolf:
 ## Phase 2 — Generate-side exactness
 - Verify every emitted packet is spec-exact (tocall ✅ done; area-object `Tyy/Cxx` ✅ fixed; position,
   object kill, message ack/format, weather, status still to verify).
-- **Round-trip tests**: generate → parse → assert equality; diff our output vs. Dire Wolf's decode.
+- **Round-trip tests**: generate → parse → assert equality. Started (`AprsRoundTripTests`): fixed
+  position beacon + status beacon round-trip cleanly (identity, lat/lon, symbol, comment, path, tocall
+  all survive). Remaining: weather, object, message round-trips; and diff our output vs. Dire Wolf.
 
 ## Phase 3 — Network-behavior conformance
 - Audit `DigipeaterService` against **APRS-Digipeater-Algorithm.pdf** (New-N WIDEn-N, fill-in vs
