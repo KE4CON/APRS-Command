@@ -18,6 +18,7 @@ public sealed class StationDetailsViewModel
         LastHeardUtc = station.LastHeardUtc;
         AgeState = station.AgeState.ToString();
         PacketSource = station.SourceLabel;
+        Device = station.Device;
         LastPath = station.LastPath.Count == 0 ? "None" : string.Join(",", station.LastPath);
         Comment = FormatOptional(station.Comment);
         LastRawPacket = FormatOptional(station.LastRawPacket);
@@ -154,6 +155,9 @@ public sealed class StationDetailsViewModel
     public bool HasDeadReckoning { get; }
 
     public string PacketSource { get; }
+
+    /// <summary>The sending device/software, e.g. "APRS Command (Desktop software)" or "Unknown".</summary>
+    public string Device { get; }
 
     public string LastPath { get; }
 

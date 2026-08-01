@@ -22,7 +22,15 @@ public sealed class StationListRowViewModel
         PacketSource = marker.PacketSource;
         PacketSourceLabel = marker.PacketSource.ToString();
         IsLoRa = marker.IsLoRa;
+        Device = marker.Device;
+        HasDevice = marker.DeviceIdentity is not null;
     }
+
+    /// <summary>The sending device/software, e.g. "APRS Command (Desktop software)" or "Unknown".</summary>
+    public string Device { get; }
+
+    /// <summary>True when the device was identified (so the UI can hide an "Unknown" line).</summary>
+    public bool HasDevice { get; }
 
     public StationMarkerViewModel Marker { get; }
 

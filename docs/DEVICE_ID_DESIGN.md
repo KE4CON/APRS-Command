@@ -9,9 +9,17 @@ delivery, full dataset, shown in both list + detail, auto weekly refresh + manua
 `?` wildcards (most-specific wins), and `DeviceIdentificationServiceTests` (incl. our own `APCMD0` →
 "APRS Command"). Fully offline, no UI yet.
 
-**Remaining:** slice 2 (surface in station list + detail), slice 3 (weekly refresh + manual "update
-now"), and the MIC-E radio-model follow-up (the `mice`/`micelegacy` sections, needing suffix
-extraction tied to the MIC-E decoder).
+**Done (slice 2 — surfacing):** the tocall now flows `StationSnapshot.Destination` → `StationMarker`
+→ `StationMarkerViewModel` (which resolves `DeviceIdentity`/`Device` via the bundled service), into
+`StationListRowViewModel` + `StationDetailsViewModel`. The station list shows a "Device: …" line,
+hidden when unidentified (so MIC-E radios don't show a noisy "Unknown" until the MIC-E follow-up).
+Tests: `StationDeviceIdentificationTests`. The marker VM uses a shared lazy `DeviceIdentificationService`
+by default (overridable) to avoid threading the lookup through the whole VM spine.
+
+**Remaining:** slice 3 (weekly refresh + manual "update now" — at which point consolidate the marker
+VM's shared default into a single DI singleton the refresher updates); the MIC-E radio-model follow-up
+(the `mice`/`micelegacy` sections, needing suffix extraction tied to the MIC-E decoder); and optionally
+surfacing device on the map marker popup.
 
 ## What & why
 APRS packets carry a **destination "tocall"** (e.g. `APDW17`, `APK003`, `APWW11`) that identifies the

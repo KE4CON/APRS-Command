@@ -10,7 +10,13 @@ public sealed class StationMarkerViewModel
     private const double LatitudeMin = -90;
     private const double LatitudeMax = 90;
 
-    public StationMarkerViewModel(StationMarker marker)
+    // Shared, immutable device-ID lookup backed by the bundled snapshot. Used by default so markers can
+    // resolve their device without threading the service through the whole viewmodel spine; tests (and,
+    // later, a refreshable instance) can inject their own.
+    private static readonly Lazy<IDeviceIdentificationService> DefaultDeviceIdentification =
+        new(() => new DeviceIdentificationService());
+
+    public StationMarkerViewModel(StationMarker marker, IDeviceIdentificationService? deviceIdentification = null)
     {
         Callsign = marker.Callsign;
         DisplayName = marker.DisplayName;
@@ -35,7 +41,20 @@ public sealed class StationMarkerViewModel
         LastRawPacket = marker.LastRawPacket;
         PacketCount = marker.PacketCount;
         IsLoRa = marker.IsLoRa;
+
+        Destination = marker.Destination;
+        DeviceIdentity = (deviceIdentification ?? DefaultDeviceIdentification.Value).Identify(marker.Destination);
+        Device = DeviceIdentity?.Display ?? "Unknown";
     }
+
+    /// <summary>The AX.25 destination tocall (e.g. "APCMD0"), or null if unknown.</summary>
+    public string? Destination { get; }
+
+    /// <summary>The identified sending device/software, or null if the tocall didn't match.</summary>
+    public DeviceIdentity? DeviceIdentity { get; }
+
+    /// <summary>Display string for the device, e.g. "APRS Command (Desktop software)" or "Unknown".</summary>
+    public string Device { get; }
 
     public string Callsign { get; }
 

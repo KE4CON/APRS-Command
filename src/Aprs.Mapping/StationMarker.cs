@@ -27,6 +27,9 @@ public sealed record StationMarker(
     int DuplicatePacketCount,
     bool IsLoRa = false)
 {
+    /// <summary>The AX.25 destination "tocall", used to identify the sending device/software.</summary>
+    public string? Destination { get; init; }
+
     public static StationMarker Create(
         string callsign,
         string displayName,
@@ -101,7 +104,7 @@ public sealed record StationMarker(
             station.LastRawPacket,
             station.PacketCount,
             station.DuplicatePacketCount,
-            station.IsLoRa);
+            station.IsLoRa) with { Destination = station.Destination };
 
         return true;
     }
