@@ -19,6 +19,9 @@ public sealed class AprsParser : IAprsParser
     }
 
     public AprsPacket Parse(string? rawLine, DateTimeOffset receivedAtUtc)
+        => Parse(rawLine, receivedAtUtc, thirdPartyDepth: 0);
+
+    private AprsPacket Parse(string? rawLine, DateTimeOffset receivedAtUtc, int thirdPartyDepth)
     {
         var originalLine = rawLine ?? string.Empty;
         var validationErrors = new List<string>();
@@ -153,6 +156,16 @@ public sealed class AprsParser : IAprsParser
                 rawPacket.ValidationErrors,
                 rawPacket.QConstruct,
                 rawPacket.Information);
+        }
+
+        // Third-party traffic: '}' encapsulates a complete packet as originally heard on RF/another
+        // network (common on APRS-IS: "IGATE>APRS,TCPIP*:}SRC>DEST,path:info"). Unwrap and parse the
+        // inner packet so the originating station — not the gateway — is what surfaces. The depth guard
+        // stops a malicious/looping chain of nested '}' from recursing without bound.
+        if (rawPacket.Information.StartsWith('}') && thirdPartyDepth < 3)
+        {
+            var inner = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;
+            return Parse(inner, receivedAtUtc, thirdPartyDepth + 1);
         }
 
         if (!rawPacket.IsValid || string.IsNullOrEmpty(rawPacket.Information))

@@ -31,13 +31,13 @@ test vectors to confirm exactness.
 | **MIC-E** | `` ` `` `'` `0x1C` `0x1D` | ✅ **Done** | `AprsMicEParser` (built against Dire Wolf's decoder): destination-field lat + N/S/offset/W-E, longitude/speed/course, symbol, MIC-E altitude, and the message code (Emergency/En Route/… surfaced in the comment). Decodes to `PositionAprsPacket`. Tests: `AprsMicEParserTests`. |
 | Weather (positionless + position) | `_` / position+`_` | ✅ | Timestamped `@`/`/` offset fixed (D2). *(verify compressed-weather, all wx fields)* |
 | Message + ACK/REJ | `:` | ✅ | ack/rej now case-sensitive (D2). *(verify bulletins `BLNx`, announcements, group bulletins, 67-char limit, telemetry-in-message)* |
-| **Object** | `;` | ⚠️ **Partial** | Live `*` handled. **Kill indicator discrepancy:** code treats `_` as killed (`AprsObjectItemParser.cs:31`, cites WB4APR PROTOCOL.TXT), but our primer §7.3 says a kill uses `/`. Resolve against aprsspec §11 — likely accept **both**. *(verify compressed object, timestamp forms)* |
+| **Object** | `;` | ✅ | Live `*` / killed `_` — **verified correct** against Dire Wolf (objects: `*`/`_`; items: `!`/`_`). The primer §7.3 is the one in error (says kill uses `/`); the code is right. **Action: correct the primer.** *(still verify compressed object + timestamp forms)* |
 | Item | `)` | ✅ | *(verify live/kill char `!`/`_` per spec, same discrepancy class as objects)* |
 | Telemetry | `T#` | ✅ | Sequence + analog + `BITS` + `PARM./UNIT./EQNS./BITS.` metadata handled. *(verify base-91 telemetry + telemetry-in-message)* |
 | Status | `>` | ⚠️ Partial | Stored as raw text; not decomposed (timestamp, Maidenhead locator, beam heading). Fine for display, incomplete for structured use. |
 | Station capabilities | `<` | ✅ (basic) | Raw capability text captured. |
 | Query | `?` | ⚠️ Partial | Stored raw; query type (`?APRS?`, `?WX?`, directed queries) not decomposed or answerable. |
-| **Third-party** | `}` | ❌ **Missing** | Encapsulated packets (`SRC>DEST:}INNER…`, very common on APRS-IS) are not unwrapped → the inner packet is lost as `Unknown`. Important for iGate/APRS-IS fidelity. |
+| **Third-party** | `}` | ✅ **Done** | `AprsParser` unwraps `}` and re-parses the encapsulated packet (depth-guarded) so the originating station surfaces, not the gateway. Tests: `AprsThirdPartyParsingTests`. |
 | User-defined | `{` | ❌ Missing | Minor / experimental. |
 | Raw NMEA GPS | `$` | ❌ Missing | Legacy; rarely needed. |
 | DAO datum/precision ext. | `!w..!` in comment | ❌ Missing | aprs12 precision enhancement; refines position accuracy. |
@@ -56,10 +56,10 @@ the area-object encoder implement exactly this (this correction is a frequent im
 ## Phase 1 — Close receive-side gaps (priority order)
 Each with spec vectors from aprsspec + Dire Wolf:
 1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). Follow-up: device-ID via the MIC-E comment suffix (Phase 4).
-2. **Third-party `}`** unwrap (recurse into the encapsulated packet).
+2. ~~**Third-party `}`** unwrap~~ ✅ **done** (`AprsParser`, depth-guarded).
 3. **Query `?`** decomposition.
 4. **DAO `!w..!`** precision; plus any compressed-position / telemetry gaps Phase 0 verification surfaces.
-5. Resolve the **object/item kill-char** discrepancy (accept spec-correct set).
+5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; the **primer §7.3 needs correcting** (killed object is `_`, not `/`).
 
 ## Phase 2 — Generate-side exactness
 - Verify every emitted packet is spec-exact (tocall ✅ done; position, area-object √/1500, object kill,
