@@ -32,7 +32,7 @@ public sealed record WeatherBeaconConfiguration(
         StaleDataThreshold: TimeSpan.FromMinutes(15),
         IncludePosition: true,
         UseLocalStationProfilePositionWhenMissing: true,
-        AprsDestination: "APRS",
+        AprsDestination: Aprs.Core.AprsConstants.ToCall,
         RfPath: [],
         CommentText: null,
         LastTransmitTimestampUtc: null,

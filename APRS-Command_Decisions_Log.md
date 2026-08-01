@@ -151,3 +151,74 @@ composition root registers one shared instance and injects it into `ConnectionHe
 exposes it. **Tests:** `LogServiceTests` (records + raises event, ring-buffer bound, thread safety).
 **Next step (not done):** surface these logs in the existing Logs/Events UI area, and consider routing
 more services through `ILogService` over time.
+
+---
+
+## Future / planned (not yet done)
+
+Decisions made about work intended for later, so the reasoning is captured before it is scheduled.
+
+### P1 — Upgrade Avalonia 11.3.7 → Avalonia 12
+**Decision:** Plan a deliberate upgrade to Avalonia 12, done on its own branch and merged only after a
+manual UI pass — **not** urgent, and not bundled with feature work.
+**Why it is now feasible:** the blocking dependency was Mapsui (the live map is a core feature).
+Mapsui ships a dedicated `Mapsui.Avalonia12` package (identical XAML/C#, only the package name
+differs), so the map is no longer a blocker. Avalonia 12 is GA (12.1.x as of mid-2026) with a
+published breaking-changes list. No other dependency is Avalonia-coupled (BruTile, SQLite,
+System.IO.Ports, Velopack, MS.DI are all independent).
+**Why do it at all:** the sister project **Activation Planner is already on Avalonia 12** — aligning
+both projects on the same major reduces context-switching and lets patterns transfer between them, and
+keeps us on the current supported line.
+**Why not yet:** 11.3.x is stable and supported; 12 has breaking changes to work through; nothing is
+currently blocked on 12. Schedule it deliberately rather than rushing.
+**Scope when done:** bump Avalonia packages 11.3.7 → 12.x; swap `Mapsui.Avalonia` →
+`Mapsui.Avalonia12`; work through the Avalonia-12 breaking-changes list until it builds clean; run the
+full test suite (note: the ~1208 tests cover Core/Services/Transport, **not** the Avalonia views, so a
+manual UI smoke test is required); verify on Raspberry Pi ARM64; update the Avalonia version in
+`CLAUDE.md`.
+
+### P2 — Candidate improvements identified during the 2026-07-31 review (not yet scheduled)
+Captured so they are not lost; ranked by value. None is a defect — the critical tier was already
+fixed (D1–D9).
+- **MIC-E decoding** (functional gap, high impact): the parser handles only `! = / @` position
+  formats and treats MIC-E as Unknown, yet MIC-E is one of the most common RF formats (mobile
+  trackers, Kenwood/Yaesu radios). Decoding it would parse a large slice of currently-Unknown traffic.
+- **Receive-loop allocation churn** (efficiency, most visible on Raspberry Pi): the KISS receive loops
+  (`pending.AddRange(readBuffer.Take(...))`, `List<byte>.RemoveRange(0,n)`) and `AgwpeFrameCodec`
+  (`Skip/Take/ToArray`) allocate on every read; move to spans / a sliding buffer / `ArrayPool<byte>`.
+- **Shared transport base class**: `AprsIsClient`/`TcpKissClient`/`SerialKissClient` are ~90% identical
+  after the thread-safety pass; extracting a base fixes-once the plumbing that previously diverged and
+  caused per-client bugs.
+- **Decompose `MapView.axaml.cs`** (~1451-line code-behind doing tile/radar/file-IO/drawing logic that
+  belongs in services/VM).
+- **Fire-and-forget connects** in `BeaconService`/`LiveDataCoordinator` pass `CancellationToken.None`
+  and drop faults; thread real tokens and log via `ILogService`.
+- **Shared `HttpClient`** for the weather clients (currently one `new HttpClient()` each, some
+  undisposed).
+- **Surface `ILogService` in the Logs UI** (the D9 next-step).
+- **Enable analyzers** (`EnableNETAnalyzers` + `AnalysisMode=Recommended` in `Directory.Build.props`;
+  consider `TreatWarningsAsErrors` after triaging).
+- Minor parser completeness: course/speed edge cases, preserving the AX.25 digipeater via-path,
+  compressed-weather.
+
+### P3 — Match the APRS specification exactly (plan started)
+**Decision:** Pursue exact conformance to the current APRS spec (APRS 1.2 / `wb2osz/aprsspec`), tracked
+in `docs/APRS_SPEC_CONFORMANCE_PLAN.md`. Canonical references (aprsspec, Dire Wolf, how.aprs.works,
+aprs-deviceid) are now recorded in `CLAUDE.md`; build all parser/encoder work against them, not the
+obsolete APRS101.pdf.
+**Phase 0 audit — key findings (see the plan for the full matrix):** the parser is more complete than
+first thought (position both formats, weather, message, object/item, telemetry PARM/UNIT/EQNS/BITS,
+status, capability, query all dispatched). Real gaps: **MIC-E** (missing → Unknown), **third-party `}`**
+(encapsulated packets not unwrapped — matters on APRS-IS), and depth items (query/status decomposition,
+DAO, verify compressed/telemetry variants). **One concrete discrepancy to resolve:** the object
+kill-indicator — code treats `_` as killed (`AprsObjectItemParser.cs:31`), our primer §7.3 says `/`;
+reconcile against aprsspec §11 (probably accept both). Generate-side: verify the **area-object
+`√(offset/1500)`** encoding matches the aprs11 errata.
+**Sequencing:** Phase 0 vector-verification → MIC-E → third-party `}` → area-object generate check.
+
+### P4 — RepeaterBook API approval is outstanding (awareness)
+**Status (2026-08-01):** the Field Repeater Lookup feature (`RepeaterBookService`) needs an app-level
+approval from RepeaterBook (distributed-app category); the token was **not approved**, and a reply to
+RepeaterBook is awaiting a response. The feature degrades cleanly without a token. **Do not** treat it
+as shippable or assume the API works until approval lands. Captured here so the status lives with the
+project rather than only in external chat history.

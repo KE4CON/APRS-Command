@@ -30,7 +30,7 @@ public sealed class WeatherBeaconSchedulerTests
         var preview = scheduler.GeneratePreview();
 
         Assert.True(preview.IsSuccess);
-        Assert.Equal("N0CALL>APRS:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", preview.Packet);
+        Assert.Equal("N0CALL>APCMD0:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", preview.Packet);
         Assert.Equal(0, client.SendCallCount);
         Assert.False(preview.AprsIsEligible);
         Assert.False(preview.RfEligible);
@@ -177,7 +177,7 @@ public sealed class WeatherBeaconSchedulerTests
         Assert.True(result.IsSuccess);
         Assert.Equal(1, client.SendCallCount);
         Assert.True(client.LastTransmitConfirmed);
-        Assert.Equal("N0CALL>APRS:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", client.LastPacket);
+        Assert.Equal("N0CALL>APCMD0:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", client.LastPacket);
         Assert.Equal(1, scheduler.GetState().TransmitCount);
     }
 
@@ -198,7 +198,7 @@ public sealed class WeatherBeaconSchedulerTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, rfClient.SendCallCount);
-        Assert.Equal("N0CALL>APRS,WIDE1-1:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", rfClient.LastPacket);
+        Assert.Equal("N0CALL>APCMD0,WIDE1-1:!3903.50N/08430.50W_180/005g010t072r000p000P000h50b10132", rfClient.LastPacket);
         Assert.Equal(1, scheduler.GetState().TransmitCount);
     }
 

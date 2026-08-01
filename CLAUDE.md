@@ -98,6 +98,19 @@ dotnet run --project src/Aprs.Desktop
 dotnet test tests/Aprs.Tests/Aprs.Tests.csproj
 ```
 
+## Canonical APRS Specification References
+Build **all** parser/encoder work against the current specification — **not** the obsolete APRS101.pdf (2000).
+- **APRS Protocol Reference 1.2** — `github.com/wb2osz/aprsspec` (APRS101 + the aprs11 errata + the aprs12 proposals that were actually implemented). This is the authoritative spec, maintained by John Langner WB2OSZ, who technically reviewed our own primer.
+- **how.aprs.works** — the current, actively maintained APRS knowledge hub (supersedes aprs.org).
+- **Dire Wolf** — `github.com/wb2osz/direwolf` — the reference software TNC/decoder; use it as the source of conformance test vectors (especially MIC-E).
+- **Device-ID (tocall) database** — `github.com/aprsorg/aprs-deviceid`, machine-readable at `https://aprs-deviceid.aprsfoundation.org/tocalls.dense.json` (CC BY-SA 2.0, attribution required). Maps the AX.25 destination to the sending device/software. **APRS Command's own registered tocall is `APCMD0`** (`AprsConstants.ToCall`; bump to `APCMD1` at v1.0). Every outbound packet must carry it.
+- **APRS symbols** — aprsspec `APRS-Symbols` / `how.aprs.works/aprs-symbols/`.
+- Conformance roadmap: `docs/APRS_SPEC_CONFORMANCE_PLAN.md`.
+
+## External dependencies / pending approvals
+- **RepeaterBook API** (`RepeaterBookService`): the Field Repeater Lookup feature needs an app-level approval from RepeaterBook (distributed-app category); operators then use their own `rbuapp_` token. **Approval is not granted as of 2026-08-01** (a reply to RepeaterBook is outstanding). The feature is built to degrade cleanly (no token → "no token configured"); do **not** assume the API works or treat the feature as shippable until approval lands.
+  - The User-Agent contact email (`jrospopo@sbcglobal.net`, `RepeaterBookService.cs:33`) is the developer's **RepeaterBook account login** and is intentionally different from the primary gmail address. It is correct — do **not** "fix" it to match other contact addresses.
+
 ## Reference
 - Full user/dev docs: `docs/` (User Manual, Developer Guide, Safety and Transmit Guide, APRS-IS/RF setup, etc.)
 - Decisions log: `APRS-Command_Decisions_Log.md`

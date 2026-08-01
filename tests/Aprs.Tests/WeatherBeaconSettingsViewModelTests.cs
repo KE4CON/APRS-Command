@@ -17,7 +17,7 @@ public sealed class WeatherBeaconSettingsViewModelTests
 
         viewModel.GeneratePreview();
 
-        Assert.Contains("N0CALL>APRS:!3903.50N/08430.50W_", viewModel.PacketPreview, StringComparison.Ordinal);
+        Assert.Contains("N0CALL>APCMD0:!3903.50N/08430.50W_", viewModel.PacketPreview, StringComparison.Ordinal);
         Assert.Equal(0, client.SendCallCount);
         Assert.Contains("Preview", viewModel.SourceStatus, StringComparison.OrdinalIgnoreCase);
     }

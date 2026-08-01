@@ -20,5 +20,5 @@ public interface IAprsBeaconFormatter
     /// <summary>
     /// Builds beacon input from the local station profile.
     /// </summary>
-    AprsBeaconInput CreateInputFromProfile(LocalStationProfile profile, string destination = "APRS", bool rfPathRequired = false);
+    AprsBeaconInput CreateInputFromProfile(LocalStationProfile profile, string destination = Aprs.Core.AprsConstants.ToCall, bool rfPathRequired = false);
 }
