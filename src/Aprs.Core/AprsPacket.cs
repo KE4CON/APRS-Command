@@ -78,7 +78,13 @@ public sealed record StatusAprsPacket(
     IReadOnlyList<string> ValidationErrors,
     string? QConstruct,
     string RawStatusText,
-    string StatusText)
+    string StatusText,
+    string? Timestamp = null,
+    string? MaidenheadLocator = null,
+    char? SymbolTableIdentifier = null,
+    char? SymbolCode = null,
+    int? BeamHeadingDegrees = null,
+    int? EffectiveRadiatedPowerWatts = null)
     : AprsPacket(
         RawLine,
         SourceCallsign,

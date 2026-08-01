@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aprs.Core;
 
@@ -246,7 +247,10 @@ public sealed partial class AprsObjectEditorService : IAprsObjectEditorService
     {
         var name = NormalizeObjectName(model.ObjectName).PadRight(MaximumObjectNameLength)[..MaximumObjectNameLength];
         var indicator = model.IsKilled ? '_' : '*';
-        var timestamp = now.ToString("HHmmss' z'").Replace(" ", string.Empty);
+        // Day/Hours/Minutes in UTC with the 'z' suffix (APRS §11). The previous form emitted time-of-day
+        // (HHMMSS) under the 'z' DHM suffix, so any object beaconed at minute ≥ 24 encoded an invalid
+        // "hour" (e.g. 14:25:30 → "142530z" reads as day 14, hour 25). DHM-zulu is the widely-parsed form.
+        var timestamp = now.UtcDateTime.ToString("ddHHmm", CultureInfo.InvariantCulture) + "z";
         var packetBody = $";{name}{indicator}{timestamp}{AprsCoordinateFormatter.FormatLatitude(model.Latitude!.Value)}{model.SymbolTableIdentifier!.Value}{AprsCoordinateFormatter.FormatLongitude(model.Longitude!.Value)}{model.SymbolCode!.Value}{model.Comment.Trim()}";
         return $"{model.OwnerCallsign.Trim().ToUpperInvariant()}>APRS:{packetBody}";
     }

@@ -182,6 +182,58 @@ spine in `MicEDeviceEndToEndTests`. Full suite green (1275).
 **Next step (not done):** device-ID slice 3 — weekly refresh + manual "update now", consolidating the
 marker VM's shared default into a single DI singleton the refresher updates.
 
+### D11 — Status reports (`>`) are decomposed into structured fields
+**Problem:** Status reports were stored as one raw text blob. Per APRS Protocol Reference §16 the body
+can carry a leading DHM-zulu **timestamp** *or* a **Maidenhead grid locator + symbol**, and a trailing
+**beam-heading + ERP** (`^`) extension — none of which we surfaced, and the timestamp/beam codes leaked
+into the display text.
+**Decision:** New `AprsStatusReport.Parse` (Aprs.Core) decomposes the body, validated against Dire
+Wolf's decoder (exact rules fetched from `decode_aprs.c`): timestamp = 6 digits + `z`; Maidenhead = a
+4- or 6-char grid then a symbol table id + code, requiring end-of-string or a space before any comment
+(so ordinary text starting with grid-like chars isn't misread); beam heading `0`–`9` → 0–90°, `A`–`Z` →
+100–350°; ERP `(c-'0')²·10` W for `1`–`K`; the `^` extension is only honoured when **both** chars
+decode. `StatusAprsPacket` gained `Timestamp`, `MaidenheadLocator`, `SymbolTableIdentifier`,
+`SymbolCode`, `BeamHeadingDegrees`, `EffectiveRadiatedPowerWatts` (all optional). `RawStatusText` stays
+verbatim; `StatusText` is now the cleaned display message (a plain status is unchanged, so existing
+consumers/tests are unaffected). **Tests:** `AprsStatusReportTests` (each form + combinations + the
+grid-like-but-not-a-locator guard + the full-parser path). Full suite green (1292). Closes the last
+⚠️-partial receive-side item in the conformance plan.
+
+### D12 — Object emit timestamp fixed; object + message round-trips added *(conformance)*
+**Problem:** Phase 2 round-trip testing (generate → parse → assert equal) surfaced a generate-side bug:
+`AprsObjectEditorService.BuildObjectPacket` emitted the timestamp as `HHmmss` + a `z` suffix. But per
+APRS §11 the `z` suffix means **DDHHMM** (day/hour/minute), so time-of-day data was mis-framed — any
+object beaconed at minute ≥ 24 produced an invalid "hour" field (e.g. 14:25:30 → `142530z`, read as day
+14, **hour 25**). The parser stores the 7-char timestamp verbatim without semantic validation, so a raw
+string round-trip hid it — only asserting a valid in-range hour/minute caught it.
+**Decision:** Emit DHM-zulu in UTC (`now.UtcDateTime.ToString("ddHHmm") + "z"`) — the widely-parsed
+form, and now internally consistent with the `z` suffix. Added round-trips: object live + killed
+(`AprsRoundTripTests`, asserting the kill indicator is `_` on the wire and the timestamp hour/minute are
+in range) and message (`AprsMessageRetryEngineTests`, addressee/body/id survive). **Tests:** +3, full
+suite green (1295). No existing test locked the old format (the `092345z`/`111111z` in parser tests are
+valid DHM *inputs*, not emitter output).
+
+### D13 — Network-behavior conformance: digipeater dupe/loop + iGate mandatory gating rules *(safety-critical)*
+**Digipeater (`DigipeaterService`):** the New-N WIDEn-N mechanics (callsign insertion + decrement) were
+verified correct against the algorithm, but two gaps were found and fixed:
+- **Duplicate fingerprint included the path.** The same original packet reaches a digi via multiple
+  neighbours (and echoes back with our own callsign inserted) — each with a *different* path — so a
+  path-inclusive fingerprint failed to recognise them as one packet. Now source + destination + payload
+  (the standard APRS dupe basis).
+- **No used-flag loop guard.** A digi that heard its own retransmission would process the still-unused
+  trailing WIDE and repeat the packet again. Added `AlreadyRepeatedByUs`: never repeat a packet already
+  carrying our callsign as a used hop.
+- Also trap malformed `WIDEn-N` where N>total (a QRM pattern that can't occur in valid traffic).
+
+**iGate (`IGateService`):** RF→IS loop-prevention/routing directives were only *default, user-editable*
+`BlockedPathPatterns` (`TCPIP*`/`TCPXX*`/`q*`) plus a monitor candidate-state check gated behind the
+duplicate-suppression toggle — and **`NOGATE`/`RFONLY` were not enforced at all**. Added
+`MandatoryNoGateReason`, checked unconditionally: never gate `NOGATE`/`RFONLY` (the sender's explicit
+"keep off the Internet" directive) or `TCPIP`/`TCPXX`/a q-construct (already traversed APRS-IS → gating
+back loops). `IGateMonitorService` advisory made consistent (NOGATE/RFONLY shown as rejected, not a
+candidate). **Tests:** `DigipeaterServiceTests` (same-packet-different-path dupe, self-echo loop, N>total
+trap), `IGateServiceTests` (mandatory-no-gate theory, config-independent). Full suite green (1301).
+
 ---
 
 ## Future / planned (not yet done)

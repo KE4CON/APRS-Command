@@ -116,6 +116,16 @@ public sealed partial class IGateService : IIGateService
             return (IGateDecision.Blocked, "Packet did not come from an RF source.", ["Packet did not come from an RF source."]);
         }
 
+        // Mandatory APRS-IS gating rules — enforced unconditionally, independent of the (user-editable)
+        // BlockedPathPatterns and the duplicate-suppression toggle: never gate a packet that carries
+        // NOGATE/RFONLY (the sender's explicit "keep off the Internet" directive) or that already shows
+        // TCPIP/TCPXX/a q-construct (it originated on or already traversed APRS-IS — gating it back loops).
+        var mandatoryBlock = MandatoryNoGateReason(candidate);
+        if (mandatoryBlock is not null)
+        {
+            return (IGateDecision.Blocked, mandatoryBlock, [mandatoryBlock]);
+        }
+
         if (configuration.AllowedRfSourcePorts.Count > 0
             && !configuration.AllowedRfSourcePorts.Contains(candidate.ReceivedSourcePort, StringComparer.OrdinalIgnoreCase))
         {
@@ -168,6 +178,37 @@ public sealed partial class IGateService : IIGateService
         if (IsRateLimited(candidate))
         {
             return (IGateDecision.RateLimited, "iGate rate limit would be exceeded.", ["iGate rate limit would be exceeded."]);
+        }
+
+        return null;
+    }
+
+    // The always-on "do not gate to APRS-IS" rules. Returns the blocking reason, or null if none apply.
+    private static string? MandatoryNoGateReason(IGateCandidatePacket candidate)
+    {
+        if (!string.IsNullOrEmpty(candidate.QConstruct))
+        {
+            return "Packet carries a q-construct, so it originated on APRS-IS (loop prevention).";
+        }
+
+        foreach (var component in candidate.Path)
+        {
+            var element = component.Trim().TrimEnd('*');
+            if (element.Equals("NOGATE", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Path contains NOGATE — the sender opted this packet out of Internet gating.";
+            }
+
+            if (element.Equals("RFONLY", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Path contains RFONLY — the sender restricted this packet to RF.";
+            }
+
+            if (element.StartsWith("TCPIP", StringComparison.OrdinalIgnoreCase)
+                || element.StartsWith("TCPXX", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Path shows the packet already traversed APRS-IS (loop prevention).";
+            }
         }
 
         return null;

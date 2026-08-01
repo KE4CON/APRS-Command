@@ -189,6 +189,15 @@ public sealed partial class DigipeaterService : IDigipeaterService
             return (DigipeaterDecision.NoMatchingAlias, pathResult.Reason, pathResult.ValidationErrors);
         }
 
+        // Loop prevention: never repeat a packet that already carries our own callsign as a used hop. A
+        // digi that hears its own retransmission (or a copy relayed back) would otherwise process the
+        // still-unused trailing WIDEn-N and repeat the packet a second time. This holds independently of
+        // the duplicate window.
+        if (AlreadyRepeatedByUs(packet))
+        {
+            return (DigipeaterDecision.Duplicate, "Packet already carries this digipeater's callsign (already repeated).", ["Packet already repeated by this digipeater."]);
+        }
+
         if (configuration.DuplicateSuppressionEnabled && IsDuplicate(packet))
         {
             return (DigipeaterDecision.Duplicate, "Packet was already digipeated within the duplicate window.", ["Packet was already digipeated within the duplicate window."]);
@@ -238,6 +247,14 @@ public sealed partial class DigipeaterService : IDigipeaterService
             var total = int.Parse(wide.Groups["total"].Value);
             var remaining = int.Parse(wide.Groups["remaining"].Value);
             if (remaining <= 0)
+            {
+                continue;
+            }
+
+            // Trap malformed New-N aliases: a hop count greater than the total (e.g. WIDE2-3) never occurs
+            // in valid traffic (remaining only counts down from total) and is a known abuse/QRM pattern —
+            // don't propagate it.
+            if (remaining > total)
             {
                 continue;
             }
@@ -307,7 +324,20 @@ public sealed partial class DigipeaterService : IDigipeaterService
         return decisions.Any(decision =>
             decision.Decision == DigipeaterDecision.Allowed
             && decision.ReceivedTimestampUtc >= cutoff
-            && string.Equals(BuildFingerprint(decision.SourceCallsign, decision.Destination, decision.OriginalPath, ExtractInformation(decision.RawPacket)), fingerprint, StringComparison.Ordinal));
+            && string.Equals(BuildFingerprint(decision.SourceCallsign, decision.Destination, ExtractInformation(decision.RawPacket)), fingerprint, StringComparison.Ordinal));
+    }
+
+    private bool AlreadyRepeatedByUs(AprsPacket packet)
+    {
+        var mine = NormalizeCallsign(configuration.DigipeaterCallsign);
+        if (string.IsNullOrEmpty(mine))
+        {
+            return false;
+        }
+
+        return packet.Path.Any(component =>
+            IsUsed(component)
+            && string.Equals(StripUsedMarker(component), mine, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool IsRateLimited(AprsPacket packet)
@@ -365,14 +395,18 @@ public sealed partial class DigipeaterService : IDigipeaterService
         return $"{source}>{packet.Destination}{pathText}:{packet.Information}";
     }
 
+    // The duplicate fingerprint deliberately excludes the path: the same original packet is relayed to us
+    // by different neighbours (and echoes back with our own callsign inserted), so the path differs every
+    // time while source + destination + payload identify the one packet. This matches the standard APRS
+    // dupe-detection basis (source + information), destination included for a touch more strictness.
     private static string BuildFingerprint(AprsPacket packet)
     {
-        return BuildFingerprint(packet.SourceCallsign, packet.Destination, packet.Path, packet.Information);
+        return BuildFingerprint(packet.SourceCallsign, packet.Destination, packet.Information);
     }
 
-    private static string BuildFingerprint(string source, string destination, IReadOnlyList<string> path, string information)
+    private static string BuildFingerprint(string source, string destination, string information)
     {
-        return string.Join("|", source.ToUpperInvariant(), destination.ToUpperInvariant(), string.Join(",", path).ToUpperInvariant(), information);
+        return string.Join("|", source.ToUpperInvariant(), destination.ToUpperInvariant(), information);
     }
 
     private static string ExtractInformation(string rawPacket)
