@@ -7,6 +7,7 @@ public sealed class AprsParser : IAprsParser
     private readonly AprsMessageParser messageParser = new();
     private readonly AprsObjectItemParser objectItemParser = new();
     private readonly AprsWeatherParser weatherParser = new();
+    private readonly AprsMicEParser micEParser = new();
 
     public bool TryParse(string rawLine, DateTimeOffset receivedAtUtc, out AprsPacket? packet, out string? error)
     {
@@ -80,6 +81,13 @@ public sealed class AprsParser : IAprsParser
         if (IsPositionInformation(rawPacket.Information))
         {
             return positionParser.Parse(rawPacket);
+        }
+
+        // MIC-E encodes position in the destination field; its DTIs (0x60 / 0x27 / 0x1C / 0x1D) do not
+        // collide with any other packet type, so it is safe to dispatch here.
+        if (micEParser.CanParse(rawPacket.Information))
+        {
+            return micEParser.Parse(rawPacket);
         }
 
         if (rawPacket.Information.StartsWith('>'))
