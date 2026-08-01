@@ -45,11 +45,19 @@ test vectors to confirm exactness.
 **Robustness:** parsers guard indexing and use `TryParse`; the fuzz harness covers malformed input.
 Good — keep it.
 
-### Phase 0 — GENERATE / transmit side (audit pending, key item flagged now)
-Formatters exist for position beacons (tested, `>APCMD0` ✅), weather, objects, messages. The one to
-verify first: **area-object encoding** — the primer §7.4 specifies the aprs11-corrected
-`offset_degrees = value² × 1500` √-scaling for the `Tyy/Cxx` extension. Confirm `ObjectEditorViewModel` /
-the area-object encoder implement exactly this (this correction is a frequent implementation error).
+### Phase 0 — GENERATE / transmit side (audit)
+Formatters exist for position beacons (tested, `>APCMD0` ✅), weather, objects, messages.
+- **Area-object encoding — FIXED (was broken).** `AprsAreaObjectEncoder` previously emitted a made-up
+  `/A{S}{C}{WWW}/{HHH}` string — **not** the APRS format — so no client rendered it as an area. It also
+  mapped shape codes via the enum's raw value (triangle/box were wrong). Rewritten per WB4APR
+  PROTOCOL.TXT: `Tyy/Cxx` with `offset_degrees = value² / 100` (`value = 10·√degrees`) and the correct
+  non-sequential shape codes (0,1,3,4,5,6,8,9). Tests: `AprsAreaObjectEncoderTests`.
+  **Caveat:** area objects are obscure — even Dire Wolf doesn't decode them — so there is no
+  independent decoder oracle; this is validated against the spec formula + hand-computed math.
+  **Primer §7.4 is wrong too** (a second doc error, like §7.3): it states `offset = value² × 1500`; the
+  correct scaling is `value² / 100`. **Action: correct the primer §7.4 formula.**
+- Remaining generate-side verification: round-trip (generate → parse → equal) for position/object/
+  message/weather; object-kill char on emit.
 
 ---
 
@@ -62,8 +70,8 @@ Each with spec vectors from aprsspec + Dire Wolf:
 5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; the **primer §7.3 needs correcting** (killed object is `_`, not `/`).
 
 ## Phase 2 — Generate-side exactness
-- Verify every emitted packet is spec-exact (tocall ✅ done; position, area-object √/1500, object kill,
-  message ack/format, weather, status).
+- Verify every emitted packet is spec-exact (tocall ✅ done; area-object `Tyy/Cxx` ✅ fixed; position,
+  object kill, message ack/format, weather, status still to verify).
 - **Round-trip tests**: generate → parse → assert equality; diff our output vs. Dire Wolf's decode.
 
 ## Phase 3 — Network-behavior conformance
