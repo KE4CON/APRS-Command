@@ -28,7 +28,7 @@ test vectors to confirm exactness.
 |---|---|---|---|
 | Position, uncompressed | `!` `=` `/` `@` | ✅ | weather-offset + ack/rej case already fixed (D2). Verify all 4 timestamp/messaging variants. |
 | Position, compressed (base-91) | (in body) | ✅ | `AprsCompressedPositionDecoder` wired in `AprsPositionParser`. *(verify altitude / range / course-speed cs bytes)* |
-| **MIC-E** | `` ` `` `'` `0x1C` `0x1D` | ❌ **Missing** | Falls through to `Unknown`. Position is encoded in the AX.25 **destination** field. Highest-value gap — very common (Kenwood/Yaesu mobiles). |
+| **MIC-E** | `` ` `` `'` `0x1C` `0x1D` | ✅ **Done** | `AprsMicEParser` (built against Dire Wolf's decoder): destination-field lat + N/S/offset/W-E, longitude/speed/course, symbol, MIC-E altitude, and the message code (Emergency/En Route/… surfaced in the comment). Decodes to `PositionAprsPacket`. Tests: `AprsMicEParserTests`. |
 | Weather (positionless + position) | `_` / position+`_` | ✅ | Timestamped `@`/`/` offset fixed (D2). *(verify compressed-weather, all wx fields)* |
 | Message + ACK/REJ | `:` | ✅ | ack/rej now case-sensitive (D2). *(verify bulletins `BLNx`, announcements, group bulletins, 67-char limit, telemetry-in-message)* |
 | **Object** | `;` | ⚠️ **Partial** | Live `*` handled. **Kill indicator discrepancy:** code treats `_` as killed (`AprsObjectItemParser.cs:31`, cites WB4APR PROTOCOL.TXT), but our primer §7.3 says a kill uses `/`. Resolve against aprsspec §11 — likely accept **both**. *(verify compressed object, timestamp forms)* |
@@ -55,7 +55,7 @@ the area-object encoder implement exactly this (this correction is a frequent im
 
 ## Phase 1 — Close receive-side gaps (priority order)
 Each with spec vectors from aprsspec + Dire Wolf:
-1. **MIC-E decode** (+ device-ID via the MIC-E comment suffix). Flagship.
+1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). Follow-up: device-ID via the MIC-E comment suffix (Phase 4).
 2. **Third-party `}`** unwrap (recurse into the encapsulated packet).
 3. **Query `?`** decomposition.
 4. **DAO `!w..!`** precision; plus any compressed-position / telemetry gaps Phase 0 verification surfaces.
