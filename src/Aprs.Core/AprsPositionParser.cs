@@ -65,6 +65,10 @@ public sealed class AprsPositionParser
         var compressed = AprsCompressedPositionDecoder.Decode(
             rawPacket.Information, latitudeStart, "Position packet", validationErrors);
 
+        // Apply the !DAO! precision extension if the comment carries one.
+        var (daoLatitude, daoLongitude, daoComment) =
+            AprsDaoExtension.Apply(compressed.Latitude, compressed.Longitude, compressed.Comment);
+
         return new PositionAprsPacket(
             rawPacket.RawLine,
             rawPacket.SourceCallsign,
@@ -78,11 +82,11 @@ public sealed class AprsPositionParser
             rawPacket.QConstruct,
             positionType,
             timestamp,
-            compressed.Latitude,
-            compressed.Longitude,
+            daoLatitude,
+            daoLongitude,
             compressed.SymbolTableIdentifier,
             compressed.SymbolCode,
-            compressed.Comment,
+            daoComment,
             compressed.CourseDegrees,
             compressed.SpeedKnots,
             compressed.AltitudeFeet,

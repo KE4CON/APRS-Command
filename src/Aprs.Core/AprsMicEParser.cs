@@ -100,6 +100,11 @@ public sealed class AprsMicEParser
         var comment = info.Length > 9 ? info[9..] : string.Empty;
         var altitudeFeet = ExtractMicEAltitude(ref comment);
 
+        // Apply the !DAO! precision extension (if present) before the status is prefixed below.
+        (var daoLat, var daoLon, comment) = AprsDaoExtension.Apply(latitude, longitude, comment);
+        latitude = daoLat ?? latitude;
+        longitude = daoLon ?? longitude;
+
         // Message status: both-zero maps to Emergency; else custom table if any custom bit set, else standard.
         string status;
         if (stdMsg == 0 && custMsg == 0) status = "Emergency";
