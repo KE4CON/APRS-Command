@@ -24,7 +24,17 @@ public sealed class StationListRowViewModel
         IsLoRa = marker.IsLoRa;
         Device = marker.Device;
         HasDevice = marker.DeviceIdentity is not null;
+
+        // A compact metadata line that shows only what's actually known — so a stationary station reads
+        // "3 min ago" instead of "Unknown / Unknown / Unknown".
+        var meta = new List<string> { LastHeard };
+        if (marker.SpeedKnots is { } speedKnots) meta.Add($"{speedKnots} kt");
+        if (marker.CourseDegrees is { } course) meta.Add($"{course}°");
+        MetaLine = string.Join(" · ", meta);
     }
+
+    /// <summary>Compact "age · speed · course" line, omitting fields that aren't known.</summary>
+    public string MetaLine { get; }
 
     /// <summary>The sending device/software, e.g. "APRS Command (Desktop software)" or "Unknown".</summary>
     public string Device { get; }

@@ -147,25 +147,11 @@
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                   </Grid>
-                  <Grid Grid.Row="1"
-                        ColumnDefinitions="*,*,*,*"
-                        ColumnSpacing="6">
-                    <TextBlock Text="{Binding LastHeard}"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11" />
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding Speed}"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11" />
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Course}"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11" />
-                    <TextBlock Grid.Column="3"
-                               Text="{Binding Distance}"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               FontSize="11" />
-                  </Grid>
+                  <TextBlock Grid.Row="1"
+                             Text="{Binding MetaLine}"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             FontSize="11"
+                             TextTrimming="CharacterEllipsis" />
                   <TextBlock Grid.Row="2"
                              Text="{Binding Comment}"
                              Foreground="{DynamicResource TextSecondaryBrush}"
