@@ -52,6 +52,9 @@ internal static class AprsPositionComponents
         var longitude = TryParseLongitude(longitudeText, errorPrefix, validationErrors);
         var positionAmbiguity = CountPositionAmbiguity(latitudeText, longitudeText);
 
+        // Refine with the !DAO! precision extension (if present in the comment) and strip its token.
+        (latitude, longitude, comment) = AprsDaoExtension.Apply(latitude, longitude, comment);
+
         return new AprsParsedPosition(
             latitude,
             longitude,

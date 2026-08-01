@@ -40,7 +40,7 @@ test vectors to confirm exactness.
 | **Third-party** | `}` | ✅ **Done** | `AprsParser` unwraps `}` and re-parses the encapsulated packet (depth-guarded) so the originating station surfaces, not the gateway. Tests: `AprsThirdPartyParsingTests`. |
 | User-defined | `{` | ❌ Missing | Minor / experimental. |
 | Raw NMEA GPS | `$` | ❌ Missing | Legacy; rarely needed. |
-| DAO datum/precision ext. | `!w..!` in comment | ❌ Missing | aprs12 precision enhancement; refines position accuracy. |
+| DAO datum/precision ext. | `!Dxx!` in comment | ✅ **Done** | `AprsDaoExtension` refines lat/lon (human-readable + base-91 forms) and strips the token, applied to uncompressed/compressed positions, objects, items, and MIC-E. Trailing-token-only detection avoids false positives. Tests: `AprsDaoExtensionTests`. |
 
 **Robustness:** parsers guard indexing and use `TryParse`; the fuzz harness covers malformed input.
 Good — keep it.
@@ -58,7 +58,7 @@ Each with spec vectors from aprsspec + Dire Wolf:
 1. ~~**MIC-E decode**~~ ✅ **done** (`AprsMicEParser`). Follow-up: device-ID via the MIC-E comment suffix (Phase 4).
 2. ~~**Third-party `}`** unwrap~~ ✅ **done** (`AprsParser`, depth-guarded).
 3. ~~**Query `?`** decomposition~~ ✅ **done** (`QueryType`/keyword/target).
-4. **DAO `!w..!`** precision; plus any compressed-position / telemetry gaps Phase 0 verification surfaces.
+4. ~~**DAO `!Dxx!`** precision~~ ✅ **done** (`AprsDaoExtension`, applied to all position-bearing types). Remaining: any compressed-position / telemetry gaps Phase 0 verification surfaces.
 5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; the **primer §7.3 needs correcting** (killed object is `_`, not `/`).
 
 ## Phase 2 — Generate-side exactness
