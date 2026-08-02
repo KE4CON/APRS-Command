@@ -148,8 +148,7 @@ public sealed partial class MapView : UserControl
         OpenStreetMap,
         UsgsTopo,
         UsgsImagery,
-        UsgsImageryTopo,
-        CartoDBDark
+        UsgsImageryTopo
     }
 
     // Swaps the base map while keeping the APRS markers layer on top. Each base map caches
@@ -189,7 +188,6 @@ public sealed partial class MapView : UserControl
             1 => BaseMapKind.UsgsTopo,
             2 => BaseMapKind.UsgsImagery,
             3 => BaseMapKind.UsgsImageryTopo,
-            4 => BaseMapKind.CartoDBDark,
             _ => BaseMapKind.OpenStreetMap
         };
         SetBaseMap(kind);
@@ -216,10 +214,6 @@ public sealed partial class MapView : UserControl
                 "USGS Imagery + Topo",
                 "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
                 16, "usgs-imagerytopo", "USGS The National Map", "https://www.usgs.gov/"),
-            BaseMapKind.CartoDBDark => (
-                "CartoDB Dark",
-                "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
-                19, "carto-dark", "© OpenStreetMap contributors, © CARTO", "https://carto.com/"),
             _ => (
                 "OpenStreetMap",
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",

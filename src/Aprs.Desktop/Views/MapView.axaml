@@ -50,7 +50,6 @@
             <ComboBoxItem>USGS Topo</ComboBoxItem>
             <ComboBoxItem>USGS Imagery</ComboBoxItem>
             <ComboBoxItem>USGS Imagery + Topo</ComboBoxItem>
-            <ComboBoxItem>CartoDB Dark</ComboBoxItem>
           </ComboBox>
         </StackPanel>
       </Border>
