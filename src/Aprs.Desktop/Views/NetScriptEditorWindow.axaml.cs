@@ -1,6 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class NetScriptEditorWindow : Window
+
+public sealed partial class NetScriptEditorWindow : FloatingPanelWindow
 {
-    public NetScriptEditorWindow() { InitializeComponent(); CloseButton.Click += (_, _) => Close(); }
+    public NetScriptEditorWindow() { InitializeComponent(); }
 }
