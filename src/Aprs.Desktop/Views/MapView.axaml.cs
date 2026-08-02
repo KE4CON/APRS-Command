@@ -48,7 +48,7 @@ public sealed partial class MapView : UserControl
     // shoreline transition is soft rather than a hard bright-blue seam. Captured/restored so the
     // fill only applies while an imagery base map is active.
     private Mapsui.Styles.Color defaultBackColor = Mapsui.Styles.Color.White;
-    private static readonly Mapsui.Styles.Color ImageryWaterFill = new(62, 92, 107); // #3E5C6B
+    private static readonly Mapsui.Styles.Color ImageryWaterFill = new(52, 91, 115); // #345B73
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private StationTrailService? trailService; // set by WireTrailService()
     private bool mapInitialized;
