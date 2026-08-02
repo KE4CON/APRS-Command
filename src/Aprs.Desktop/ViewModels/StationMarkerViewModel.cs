@@ -10,12 +10,6 @@ public sealed class StationMarkerViewModel
     private const double LatitudeMin = -90;
     private const double LatitudeMax = 90;
 
-    // Shared, immutable device-ID lookup backed by the bundled snapshot. Used by default so markers can
-    // resolve their device without threading the service through the whole viewmodel spine; tests (and,
-    // later, a refreshable instance) can inject their own.
-    private static readonly Lazy<IDeviceIdentificationService> DefaultDeviceIdentification =
-        new(() => new DeviceIdentificationService());
-
     public StationMarkerViewModel(StationMarker marker, IDeviceIdentificationService? deviceIdentification = null)
     {
         Callsign = marker.Callsign;
@@ -47,7 +41,7 @@ public sealed class StationMarkerViewModel
         // how Kenwood/Yaesu mobiles identify themselves (their destination carries the position, not a
         // tocall). Gating on IsMicE avoids mislabelling an ordinary station whose comment happens to
         // start with ']'/'>' or end in a two-character code.
-        var deviceService = deviceIdentification ?? DefaultDeviceIdentification.Value;
+        var deviceService = deviceIdentification ?? DeviceIdentificationProvider.Current;
         DeviceIdentity = marker.IsMicE
             ? deviceService.Identify(marker.Destination, marker.Comment)
             : deviceService.Identify(marker.Destination);

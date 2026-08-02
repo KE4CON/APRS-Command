@@ -195,7 +195,27 @@ public sealed class DesktopRuntime : IAsyncDisposable
                 FileHookConfiguration.Default,
                 eventBus: provider.GetRequiredService<IAprsEventBus>()));
 
+        // Device-ID database: one hot-swappable service (bundled snapshot to start) shared app-wide via
+        // DeviceIdentificationProvider — the station marker viewmodels read it without an injected
+        // dependency. A weekly / on-demand refresh downloads the current database into the config folder.
+        var deviceIdentification = new RefreshableDeviceIdentificationService();
+        DeviceIdentificationProvider.Current = deviceIdentification;
+        services.AddSingleton<IDeviceIdentificationService>(deviceIdentification);
+        var deviceIdFolder = System.IO.Path.Combine(
+            ApplicationFolderLayout.FromRoot(ApplicationFolderLayout.GetDefaultApplicationDataFolder()).ConfigFolderPath,
+            "device-id");
+        services.AddSingleton<IDeviceIdDatabaseUpdateService>(_ => new DeviceIdDatabaseUpdateService(
+            deviceIdentification,
+            new HttpDeviceIdDatabaseDownloader(),
+            new FileDeviceIdDatabaseStore(deviceIdFolder)));
+
         var provider = services.BuildServiceProvider();
+
+        // Load the freshest cached device-ID database (if any) and kick off a weekly-gated background
+        // refresh. Both are non-blocking and non-fatal — identification falls back to the bundled snapshot.
+        var deviceIdUpdater = provider.GetRequiredService<IDeviceIdDatabaseUpdateService>();
+        deviceIdUpdater.LoadCachedIfAvailable();
+        _ = System.Threading.Tasks.Task.Run(() => deviceIdUpdater.UpdateAsync(force: false));
 
         // --- Live spine view models ---
         var map = new MapViewModel(Array.Empty<StationMarker>());

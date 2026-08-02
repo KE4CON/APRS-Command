@@ -30,9 +30,19 @@ consulted **only for genuine MIC-E packets**: `StationSnapshot.IsMicE` is set fr
 on in the marker VM. Tests: MIC-E cases in `DeviceIdentificationServiceTests` +
 `StationDeviceIdentificationTests`, and the raw-packet spine in `MicEDeviceEndToEndTests`.
 
-**Remaining:** slice 3 (weekly refresh + manual "update now" — at which point consolidate the marker
-VM's shared default into a single DI singleton the refresher updates); and optionally surfacing device
-on the map marker popup.
+**Done (slice 3 — refresh engine):** `RefreshableDeviceIdentificationService` (hot-swaps its inner
+immutable service atomically, starts on the bundled snapshot), `FileDeviceIdDatabaseStore` (caches the
+downloaded JSON + timestamp under `{config}/device-id/`), `HttpDeviceIdDatabaseDownloader`, and
+`DeviceIdDatabaseUpdateService` (weekly-gated; downloads → validates → swaps → caches; every failure is
+non-fatal, keeping the last good/bundled DB). The marker VM's per-class lazy default was consolidated
+into a single app-wide `DeviceIdentificationProvider.Current`, which the composition root points at the
+one refreshable instance. At startup the runtime loads the cached DB and fires a weekly-gated background
+refresh. Tests: `DeviceIdDatabaseUpdateServiceTests`.
+
+**Remaining:** the visible surface — a "Device database: updated <date> · Update now" control (status +
+manual refresh, calling `IDeviceIdDatabaseUpdateService.UpdateAsync(force: true)` off the runtime) and an
+in-session periodic re-check — folded into the UI polish pass; and optionally surfacing device on the map
+marker popup.
 
 ## What & why
 APRS packets carry a **destination "tocall"** (e.g. `APDW17`, `APK003`, `APWW11`) that identifies the
