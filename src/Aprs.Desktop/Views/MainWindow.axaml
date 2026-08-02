@@ -36,28 +36,28 @@
         </StackPanel>
         <Border Grid.Column="1"
                 x:Name="AprsIsBadgeBorder"
-                Background="{DynamicResource AppBgAltBrush}"
-                BorderBrush="{DynamicResource TextMutedBrush}"
+                Background="#1E293B"
+                BorderBrush="#64748B"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
           <TextBlock x:Name="AprsIsBadgeText"
                      Text="APRS-IS Offline"
-                     Foreground="{DynamicResource TextOnDarkBrush}"
+                     Foreground="#CBD5E1"
                      FontWeight="SemiBold" />
         </Border>
         <Border Grid.Column="2"
                 x:Name="TxBadgeBorder"
-                Background="{DynamicResource AccentTealBgBrush}"
-                BorderBrush="{DynamicResource AccentTealBorderBrush}"
+                Background="#123B32"
+                BorderBrush="#2DD4BF"
                 BorderThickness="1"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
           <TextBlock x:Name="TxBadgeText"
                      Text="TX Disabled"
-                     Foreground="{DynamicResource AccentTealTextBrush}"
+                     Foreground="#99F6E4"
                      FontWeight="SemiBold" />
         </Border>
       </Grid>
