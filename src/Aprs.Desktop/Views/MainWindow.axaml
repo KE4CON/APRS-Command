@@ -21,7 +21,7 @@
 
     <!-- Title bar -->
     <Border Grid.Row="0"
-            Background="{DynamicResource TitleBarBgBrush}"
+            Background="{DynamicResource MapChromeBgBrush}"
             Padding="16,12">
       <Grid ColumnDefinitions="*,Auto,Auto"
             ColumnSpacing="10">
@@ -29,10 +29,10 @@
           <TextBlock Text="APRS Command"
                      FontSize="19"
                      FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextTitleBarBrush}" />
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="APRS station map"
                      FontSize="12"
-                     Foreground="{DynamicResource TextSidebarBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
         </StackPanel>
         <Border Grid.Column="1"
                 x:Name="AprsIsBadgeBorder"
@@ -65,7 +65,7 @@
 
     <!-- Menu bar -->
     <Menu Grid.Row="1"
-          Background="{DynamicResource AppBgAltBrush}">
+          Background="{DynamicResource PanelAccentBgBrush}">
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
 
       <MenuItem Header="_View">
@@ -145,8 +145,8 @@
 
       <!-- Left icon sidebar -->
       <Border Grid.Column="0"
-              Background="{DynamicResource SidebarBgBrush}"
-              BorderBrush="{DynamicResource TitleBarBorderBrush}"
+              Background="{DynamicResource PanelAccentBgBrush}"
+              BorderBrush="{DynamicResource AppBorderBrush}"
               BorderThickness="0,0,1,0">
         <Border.Styles>
           <!-- Sidebar icon buttons. The default Fluent Button swapped in a dark pointer-over
@@ -178,14 +178,14 @@
           </Style>
           <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#26808080" />
-            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextSidebarBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextPrimaryBrush}" />
           </Style>
           <Style Selector="Button:pressed">
             <Setter Property="RenderTransform" Value="scale(1.06)" />
           </Style>
           <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="#44808080" />
-            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextSidebarBrush}" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextPrimaryBrush}" />
           </Style>
         </Border.Styles>
         <Grid RowDefinitions="*,Auto">
@@ -199,7 +199,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30"
                   Command="{Binding Map.HomeCommand}">
             <TextBlock Text="⌂" />
@@ -209,7 +209,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30"
                   Command="{Binding Map.CentreOnStationCommand}">
             <TextBlock Text="◎" />
@@ -220,7 +220,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30">
             <TextBlock Text="🔍" />
           </Button>
@@ -230,7 +230,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30">
             <TextBlock Text="📏" />
           </Button>
@@ -240,14 +240,14 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30">
             <TextBlock Text="🗺" />
           </Button>
 
           <!-- Divider -->
           <Border Height="1"
-                  Background="{DynamicResource TitleBarBorderBrush}"
+                  Background="{DynamicResource AppBorderBrush}"
                   Margin="4,8" />
 
           <!-- Operator tools -->
@@ -256,7 +256,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30"
                   Command="{Binding BeaconNowCommand}">
             <TextBlock Text="📡" />
@@ -267,7 +267,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
                   Background="Transparent"
-                  Foreground="{DynamicResource TextSidebarBrush}"
+                  Foreground="{DynamicResource TextPrimaryBrush}"
                   FontSize="30">
             <TextBlock Text="🔔" />
           </Button>
@@ -280,7 +280,7 @@
                   Background="Transparent"
                   BorderThickness="0"
                   FontSize="30"
-                  Foreground="{DynamicResource TextSidebarBrush}">
+                  Foreground="{DynamicResource TextPrimaryBrush}">
             <TextBlock Text="⊙" />
           </Button>
 
@@ -292,7 +292,7 @@
                   Background="Transparent"
                   BorderThickness="0"
                   FontSize="30"
-                  Foreground="{DynamicResource TextSidebarBrush}">
+                  Foreground="{DynamicResource TextPrimaryBrush}">
             <TextBlock Text="🛤" />
           </Button>
 
@@ -305,7 +305,7 @@
                   BorderThickness="0"
                   CornerRadius="6"
                   FontSize="30"
-                  Foreground="{DynamicResource TextSidebarBrush}">
+                  Foreground="{DynamicResource TextPrimaryBrush}">
             <TextBlock Text="🌧" />
           </Button>
         </StackPanel>
@@ -326,14 +326,14 @@
 
     <!-- Draw mode indicator banner — visible when a draw tool is active -->
     <Border Grid.Row="3" IsVisible="{Binding Map.IsDrawModeActive}"
-            Background="#1d4ed8" Padding="10,5">
+            Background="{DynamicResource PanelAccentBgBrush}" Padding="10,5">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock Text="{Binding Map.DrawModeTooltip}" FontSize="11" FontWeight="SemiBold"
-                   Foreground="White" VerticalAlignment="Center" />
+                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
         <Button Grid.Column="1" Content="✕ Exit" Padding="8,3" FontSize="10"
                 Command="{Binding Map.ClearDrawingsCommand}"
-                Background="Transparent" Foreground="White"
-                BorderThickness="1" BorderBrush="White" />
+                Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}"
+                BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}" />
       </Grid>
     </Border>
 

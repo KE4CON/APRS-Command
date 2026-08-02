@@ -50,6 +50,8 @@
           <SolidColorBrush x:Key="AccentTealTextBrush">#D9FFF7</SolidColorBrush>
           <SolidColorBrush x:Key="PanelAccentBgBrush">#E4EEFB</SolidColorBrush>
           <SolidColorBrush x:Key="PanelAccentHeaderBrush">#CFE0FA</SolidColorBrush>
+          <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
+          <SolidColorBrush x:Key="MapChromeBgBrush">#B9D0F0</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#FEF3C7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#F59E0B</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#B45309</SolidColorBrush>
@@ -87,6 +89,8 @@
           <SolidColorBrush x:Key="AccentTealTextBrush">#99F6E4</SolidColorBrush>
           <SolidColorBrush x:Key="PanelAccentBgBrush">#1C3252</SolidColorBrush>
           <SolidColorBrush x:Key="PanelAccentHeaderBrush">#26476F</SolidColorBrush>
+          <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
+          <SolidColorBrush x:Key="MapChromeBgBrush">#14243C</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#2D1F02</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#D97706</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#FCD34D</SolidColorBrush>

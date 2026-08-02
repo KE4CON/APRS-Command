@@ -35,8 +35,8 @@
       <Border HorizontalAlignment="Left"
               VerticalAlignment="Top"
               Margin="12"
-              Background="{DynamicResource TextTitleBarBrush}"
-              BorderBrush="{DynamicResource TextSidebarBrush}"
+              Background="{DynamicResource PanelAccentBgBrush}"
+              BorderBrush="{DynamicResource AppBorderBrush}"
               BorderThickness="1"
               CornerRadius="5"
               Padding="8,6">
