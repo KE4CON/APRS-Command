@@ -3,9 +3,10 @@
         x:Class="Aprs.Desktop.Views.AboutWindow"
         Title="About APRS Command"
         Width="440"
-        Height="380"
+        SizeToContent="Height"
         MinWidth="440"
         MaxWidth="440"
+        MinHeight="380"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
   <Grid RowDefinitions="*,Auto" Background="{DynamicResource SurfaceBgBrush}">
@@ -53,7 +54,7 @@
                    PointerPressed="RepoLink_PointerPressed" />
 
         <TextBlock Grid.Row="4" Text="License:" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
-        <TextBlock Grid.Row="4" Grid.Column="1" Text="MIT" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" />
+        <TextBlock Grid.Row="4" Grid.Column="1" Text="GPL v3" FontSize="11" Foreground="{DynamicResource AppBgAltBrush}" />
       </Grid>
 
       <Border Height="1" Background="{DynamicResource TextOnDarkBrush}" Margin="0,20,0,16" />
@@ -81,6 +82,21 @@
         <TextBlock x:Name="UpdateDetailText" FontSize="10"
                    Foreground="{DynamicResource TextSubtleBrush}"
                    TextWrapping="Wrap" IsVisible="False" />
+      </StackPanel>
+
+      <Border Height="1" Background="{DynamicResource AppBorderBrush}" Margin="0,16,0,12" />
+
+      <!-- Device-ID database -->
+      <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button x:Name="UpdateDeviceDbButton" Content="Update device database" Padding="12,6" />
+          <TextBlock x:Name="DeviceDbStatusText" VerticalAlignment="Center"
+                     FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
+        </StackPanel>
+        <TextBlock FontSize="10"
+                   Foreground="{DynamicResource TextSubtleBrush}"
+                   TextWrapping="Wrap"
+                   Text="Identifies each station's radio or software from its APRS ID. Refreshes automatically about once a week; the built-in copy always works offline." />
       </StackPanel>
     </StackPanel>
 

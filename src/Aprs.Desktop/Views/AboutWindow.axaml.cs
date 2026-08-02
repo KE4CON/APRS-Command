@@ -1,17 +1,20 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Aprs.Desktop.Configuration;
 using Aprs.Desktop.Services;
+using Aprs.Services;
 
 namespace Aprs.Desktop.Views;
 
 public sealed partial class AboutWindow : Window
 {
     private readonly UpdateCheckerService updateChecker = new();
+    private readonly IDeviceIdDatabaseUpdateService? deviceDbUpdater;
 
     public AboutWindow()
     {
@@ -33,6 +36,45 @@ public sealed partial class AboutWindow : Window
         CallsignText.Text = string.IsNullOrWhiteSpace(callsign) ? "Not configured" : callsign.ToUpperInvariant();
 
         CheckUpdateButton.Click += async (_, _) => await CheckForUpdatesAsync();
+
+        // Device-ID database status + manual refresh (the auto-refresh engine lives in the runtime).
+        deviceDbUpdater = (Application.Current as App)?.Runtime?.GetService<IDeviceIdDatabaseUpdateService>();
+        RefreshDeviceDbStatus();
+        UpdateDeviceDbButton.IsEnabled = deviceDbUpdater is not null;
+        UpdateDeviceDbButton.Click += async (_, _) => await UpdateDeviceDbAsync();
+    }
+
+    private void RefreshDeviceDbStatus()
+    {
+        DeviceDbStatusText.Text = deviceDbUpdater?.LastUpdatedUtc is { } stamp
+            ? $"Updated {stamp.ToLocalTime():d}"
+            : "Using the built-in copy";
+    }
+
+    private async System.Threading.Tasks.Task UpdateDeviceDbAsync()
+    {
+        if (deviceDbUpdater is null) return;
+
+        UpdateDeviceDbButton.IsEnabled = false;
+        DeviceDbStatusText.Text = "Updating…";
+        try
+        {
+            var result = await deviceDbUpdater.UpdateAsync(force: true);
+            DeviceDbStatusText.Text = result.Outcome == DeviceIdUpdateOutcome.Updated
+                ? $"Updated just now ({result.PatternCount} device types)"
+                : "Update failed — check your internet connection.";
+            DeviceDbStatusText.Foreground = Avalonia.Media.Brush.Parse(
+                result.Outcome == DeviceIdUpdateOutcome.Updated ? "#15803d" : "#b91c1b");
+        }
+        catch
+        {
+            DeviceDbStatusText.Text = "Update failed — check your internet connection.";
+            DeviceDbStatusText.Foreground = Avalonia.Media.Brush.Parse("#b91c1b");
+        }
+        finally
+        {
+            UpdateDeviceDbButton.IsEnabled = true;
+        }
     }
 
     private async System.Threading.Tasks.Task CheckForUpdatesAsync()
