@@ -38,7 +38,7 @@
                 x:Name="AprsIsBadgeBorder"
                 Background="#1E293B"
                 BorderBrush="#64748B"
-                BorderThickness="1"
+                BorderThickness="2"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
@@ -51,7 +51,7 @@
                 x:Name="TxBadgeBorder"
                 Background="#123B32"
                 BorderBrush="#2DD4BF"
-                BorderThickness="1"
+                BorderThickness="2"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
