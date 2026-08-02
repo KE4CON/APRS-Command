@@ -1,23 +1,17 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="using:Aprs.Desktop.Views"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.HelpWindow"
         Title="APRS Command Help"
-        Width="980"
-        Height="720"
-        MinWidth="760"
-        MinHeight="540">
-  <Grid RowDefinitions="*,Auto">
-    <views:HelpView />
-    <Border Grid.Row="1"
-            Background="{DynamicResource AppBgAltBrush}"
-            BorderBrush="{DynamicResource TextSidebarBrush}"
-            BorderThickness="0,1,0,0"
-            Padding="12">
-      <Button Content="Close"
-              HorizontalAlignment="Right"
-              Padding="14,6"
-              Click="Close_Click" />
+        PanelTitle="Help"
+        Width="980" Height="720" MinWidth="760" MinHeight="540">
+  <Border Margin="16" Padding="16" Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="12"
+          BoxShadow="0 6 18 -10 #33101828">
+    <Border Background="{DynamicResource SurfaceBgBrush}" BorderBrush="{DynamicResource AppBorderBrush}"
+            BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+      <views:HelpView />
     </Border>
-  </Grid>
-</Window>
+  </Border>
+</ctrls:FloatingPanelWindow>

@@ -1,17 +1,8 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Aprs.Desktop.Controls;
 
 namespace Aprs.Desktop.Views;
 
-public sealed partial class HelpWindow : Window
+public sealed partial class HelpWindow : FloatingPanelWindow
 {
-    public HelpWindow()
-    {
-        InitializeComponent();
-    }
-
-    private void Close_Click(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
+    public HelpWindow() { InitializeComponent(); }
 }
