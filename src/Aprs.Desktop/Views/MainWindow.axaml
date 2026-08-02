@@ -67,60 +67,76 @@
     <Menu Grid.Row="1"
           Background="{DynamicResource AppBgAltBrush}">
       <MenuItem Header="_Settings" Command="{Binding OpenSettingsCommand}" />
-      <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
-      <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
-      <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
-      <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
-      <MenuItem Header="_Draw">
-        <MenuItem Header="✏ Draw Line"    Command="{Binding Map.DrawLineCommand}"    ToolTip.Tip="Click to add points, double-click to finish" />
-        <MenuItem Header="⬟ Draw Polygon" Command="{Binding Map.DrawPolygonCommand}" ToolTip.Tip="Click to add points, double-click to close" />
-        <MenuItem Header="◯ Draw Circle"  Command="{Binding Map.DrawCircleCommand}"  ToolTip.Tip="Click centre, click again to set radius" />
-        <MenuItem Header="✕ Erase Shape"  Command="{Binding Map.DrawEraseCommand}"   ToolTip.Tip="Click a shape to delete it" />
+
+      <MenuItem Header="_View">
+        <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
+        <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
+        <MenuItem Header="_Telemetry Monitor" Command="{Binding OpenTelemetryCommand}" />
+        <MenuItem Header="_Events" Command="{Binding OpenEventsCommand}" />
+        <MenuItem Header="Packet _Statistics Dashboard" Click="OpenPacketStatistics_Click" />
         <Separator />
-        <MenuItem Header="Clear All Drawings" Command="{Binding Map.ClearDrawingsCommand}" />
+        <MenuItem Header="Toggle _Dark Mode" Command="{Binding ToggleDarkModeCommand}" />
       </MenuItem>
-      <MenuItem Header="_Weather">
-        <MenuItem Header="Weather Stations" Command="{Binding OpenWeatherCommand}" />
-        <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
+
+      <MenuItem Header="_Map">
+        <MenuItem Header="_Draw">
+          <MenuItem Header="✏ Draw Line"    Command="{Binding Map.DrawLineCommand}"    ToolTip.Tip="Click to add points, double-click to finish" />
+          <MenuItem Header="⬟ Draw Polygon" Command="{Binding Map.DrawPolygonCommand}" ToolTip.Tip="Click to add points, double-click to close" />
+          <MenuItem Header="◯ Draw Circle"  Command="{Binding Map.DrawCircleCommand}"  ToolTip.Tip="Click centre, click again to set radius" />
+          <MenuItem Header="✕ Erase Shape"  Command="{Binding Map.DrawEraseCommand}"   ToolTip.Tip="Click a shape to delete it" />
+          <Separator />
+          <MenuItem Header="Clear All Drawings" Command="{Binding Map.ClearDrawingsCommand}" />
+        </MenuItem>
+        <MenuItem Header="_Weather">
+          <MenuItem Header="Weather Stations" Command="{Binding OpenWeatherCommand}" />
+          <MenuItem Header="Weather Alerts" Command="{Binding OpenNwsAlertsCommand}" />
+          <Separator />
+          <MenuItem x:Name="ToggleRadarMenuItem"
+                    Header="{Binding Map.RadarMenuHeaderText}"
+                    Click="ToggleRadarMenuItem_Click" />
+        </MenuItem>
         <Separator />
-        <MenuItem x:Name="ToggleRadarMenuItem"
-                  Header="{Binding Map.RadarMenuHeaderText}"
-                  Click="ToggleRadarMenuItem_Click" />
+        <MenuItem Header="Offline Map _Download" Command="{Binding OpenOfflineMapCommand}" />
+        <MenuItem Header="_Coverage Prediction" Command="{Binding OpenCoverageCommand}" />
+        <MenuItem Header="_Elevation Profile" Command="{Binding OpenElevationCommand}" />
+        <MenuItem Header="_Frequency Reference" Command="{Binding OpenFrequencyRefCommand}" />
       </MenuItem>
-      <MenuItem Header="Station _List" Command="{Binding OpenStationListCommand}" />
-      <MenuItem Header="Raw _Packets" Command="{Binding OpenRawPacketsCommand}" />
-      <MenuItem Header="_Telemetry Monitor" Command="{Binding OpenTelemetryCommand}" />
-      <MenuItem Header="After-Action _Report" Command="{Binding OpenAfterActionCommand}" />
-      <MenuItem Header="Offline _Map Download" Command="{Binding OpenOfflineMapCommand}" />
-      <MenuItem Header="_Frequency Reference" Command="{Binding OpenFrequencyRefCommand}" />
-      <MenuItem Header="_Elevation Profile" Command="{Binding OpenElevationCommand}" />
-      <MenuItem Header="_Shadow Beacon" Command="{Binding OpenShadowBeaconCommand}" />
-      <MenuItem Header="_Coverage Prediction" Command="{Binding OpenCoverageCommand}" />
-      <MenuItem Header="_Net Script Editor" Command="{Binding OpenNetScriptCommand}" />
-      <MenuItem Header="_Message Broadcast" Command="{Binding OpenBroadcastCommand}" />
-      <MenuItem Header="_Scheduled Messages" Command="{Binding OpenScheduledCommand}" />
-      <MenuItem Header="_Scheduled Beacons" Command="{Binding OpenScheduledBeaconsCommand}" />
-      <MenuItem Header="_Message Receipts Dashboard" Command="{Binding OpenReceiptsCommand}" />
-      <MenuItem Header="_Packet Statistics Dashboard" Click="OpenPacketStatistics_Click" />
-      <MenuItem Header="_Session Templates" Click="OpenSessionTemplates_Click" />
-      <MenuItem Header="Field _Repeater Lookup" Click="OpenRepeaterDirectory_Click" />
-      <MenuItem Header="_Mobile Companion Web View" Click="OpenMobileCompanion_Click" />
-      <MenuItem Header="_Winlink RMS Gateways" Command="{Binding OpenWinlinkCommand}" />
-      <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
+
+      <MenuItem Header="Messa_ges">
+        <MenuItem Header="_Messages" Command="{Binding OpenMessagesCommand}" />
+        <MenuItem Header="Message _Broadcast" Command="{Binding OpenBroadcastCommand}" />
+        <MenuItem Header="_Scheduled Messages" Command="{Binding OpenScheduledCommand}" />
+        <MenuItem Header="Message _Receipts Dashboard" Command="{Binding OpenReceiptsCommand}" />
+      </MenuItem>
+
+      <MenuItem Header="_Operate">
+        <MenuItem Header="_Net Control" Command="{Binding OpenNetControlCommand}" />
+        <MenuItem Header="Net _Script Editor" Command="{Binding OpenNetScriptCommand}" />
+        <MenuItem Header="_Objects" Command="{Binding OpenObjectsCommand}" />
+        <MenuItem Header="Session _Templates" Click="OpenSessionTemplates_Click" />
+        <Separator />
+        <MenuItem Header="Scheduled _Beacons" Command="{Binding OpenScheduledBeaconsCommand}" />
+        <MenuItem Header="S_hadow Beacon" Command="{Binding OpenShadowBeaconCommand}" />
+        <MenuItem Header="_Alerts" Command="{Binding OpenAlertsCommand}" />
+      </MenuItem>
+
       <MenuItem Header="_Tools">
         <MenuItem Header="Event Bus" Command="{Binding OpenEventBusCommand}" />
         <MenuItem Header="Replay" Command="{Binding OpenReplayCommand}" />
         <MenuItem Header="RF Diagnostics" Command="{Binding OpenRfDiagnosticsCommand}" />
+        <MenuItem Header="After-Action Report" Command="{Binding OpenAfterActionCommand}" />
+        <MenuItem Header="Mobile Companion Web View" Click="OpenMobileCompanion_Click" />
         <Separator />
         <MenuItem Header="Toggle Exercise Mode (inhibit all transmit)"
                   Command="{Binding ToggleExerciseModeCommand}" />
-        <Separator />
-        <MenuItem Header="Toggle Dark Mode"
-                  Command="{Binding ToggleDarkModeCommand}" />
       </MenuItem>
-      <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
-      <MenuItem Header="_Keyboard Shortcuts" Command="{Binding OpenShortcutsCommand}" InputGesture="Ctrl+OemQuestion" />
-      <MenuItem Header="About APRS Command" Command="{Binding OpenAboutCommand}" />
+
+      <MenuItem Header="_Help">
+        <MenuItem Header="_Help" Command="{Binding OpenHelpCommand}" />
+        <MenuItem Header="_Keyboard Shortcuts" Command="{Binding OpenShortcutsCommand}" InputGesture="Ctrl+OemQuestion" />
+        <Separator />
+        <MenuItem Header="_About APRS Command" Command="{Binding OpenAboutCommand}" />
+      </MenuItem>
     </Menu>
 
     <!-- Main content: icon sidebar + map -->
@@ -132,6 +148,46 @@
               Background="{DynamicResource SidebarBgBrush}"
               BorderBrush="{DynamicResource TitleBarBorderBrush}"
               BorderThickness="0,0,1,0">
+        <Border.Styles>
+          <!-- Sidebar icon buttons. The default Fluent Button swapped in a dark pointer-over
+               background/foreground on hover (blacking the glyphs out). Instead, every icon behaves the
+               same: at rest it sits on the sidebar text colour; on hover it grows and fades in a subtle
+               highlight, presses in slightly on click, and springs smoothly back when the pointer leaves.
+               (Recolour is intentionally omitted — the OS renders the emoji icons in fixed colours it
+               won't let us tint, so tinting only some icons would look inconsistent.) -->
+          <Style Selector="Button">
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+            <Setter Property="RenderTransform" Value="scale(1)" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.14" Easing="CubicEaseOut" />
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Transitions">
+              <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.14" />
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Button:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.18)" />
+          </Style>
+          <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#26808080" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextSidebarBrush}" />
+          </Style>
+          <Style Selector="Button:pressed">
+            <Setter Property="RenderTransform" Value="scale(1.06)" />
+          </Style>
+          <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#44808080" />
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource TextSidebarBrush}" />
+          </Style>
+        </Border.Styles>
         <Grid RowDefinitions="*,Auto">
           <StackPanel VerticalAlignment="Top"
                     Spacing="4"
