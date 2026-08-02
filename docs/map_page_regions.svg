@@ -12,7 +12,7 @@
   </defs>
 
   <rect x="0" y="0" width="1320" height="812" fill="#eef2f7"/>
-  <text x="40" y="36" fill="#12233a" font-size="22" font-weight="700">APRS Command — Home Page Regions</text>
+  <text x="40" y="36" fill="#12233a" font-size="22" font-weight="700">APRS Command — Map Page Regions</text>
   <text x="40" y="56" fill="#5a687c" font-size="13">Names taken directly from the app layout (MainWindow.axaml). Use these terms in the manual.</text>
 
   <!-- ===================== MOCK WINDOW ===================== -->

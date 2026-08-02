@@ -8,7 +8,8 @@ The names below are taken directly from the application layout (`MainWindow.axam
 `MapView.axaml`, `MainStatusBarView.axaml`), so the words in the docs match the words in the
 code.
 
-See the labeled diagram: [`home_page_regions.svg`](home_page_regions.svg).
+See the labeled diagrams: [`map_page_regions.svg`](map_page_regions.svg) (whole map page) and
+[`icon_sidebar_reference.svg`](icon_sidebar_reference.svg) (the icon sidebar, zoomed).
 
 ---
 
@@ -30,13 +31,13 @@ or a **column header** (top of a list)?
 
 ## Page name
 
-The main map screen is the **home page**. (Informally "the map page" is acceptable in prose,
-but **home page** is the preferred term and should be used in headings and step-by-step
-instructions.)
+The main map screen is the **map page**. Use this one term everywhere — headings, step-by-step
+instructions, tooltips, and code comments. Do **not** call it the "home page," "main screen,"
+or anything else; one thing, one name.
 
 ---
 
-## Home page regions
+## Map page regions
 
 | # | Canonical name | What it is | Visibility |
 |---|----------------|-----------|------------|
@@ -104,4 +105,4 @@ a **floating panel**. Its parts:
 | floating panel | window, dialog, box |
 | panel title bar | header, caption bar |
 | column header | header row, sort bar |
-| home page | map page (ok informally), main screen |
+| map page | home page, main screen, dashboard |

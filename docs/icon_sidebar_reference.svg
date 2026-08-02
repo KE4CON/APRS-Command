@@ -1,0 +1,128 @@
+<svg viewBox="0 0 940 748" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <style>
+      .numtxt { fill:#ffffff; font-weight:700; font-size:13px; text-anchor:middle; }
+      .name  { fill:#12233a; font-weight:700; font-size:15px; }
+      .tip   { fill:#8a5a12; font-size:11.5px; font-style:italic; }
+      .desc  { fill:#48566a; font-size:12.5px; }
+      .lead  { stroke:#c62828; stroke-width:1.5; stroke-dasharray:4 3; fill:none; }
+      .grp   { fill:#7a8698; font-size:12px; font-weight:700; letter-spacing:1px; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="940" height="748" fill="#eef2f7"/>
+  <text x="36" y="40" fill="#12233a" font-size="22" font-weight="700">Icon Sidebar — Button Reference</text>
+  <text x="36" y="62" fill="#5a687c" font-size="13">Region 6 of the map page. Buttons show tooltips only (no printed labels). Names are canonical.</text>
+
+  <!-- ===================== SIDEBAR MOCK ===================== -->
+  <rect x="44" y="86" width="76" height="612" rx="8" fill="#e7ecf3" stroke="#d4dbe6" stroke-width="1.5"/>
+
+  <!-- group label: map tools -->
+  <text x="16" y="112" class="grp" transform="rotate(-90 16 112)" text-anchor="end">MAP TOOLS</text>
+
+  <!-- icons group 1 -->
+  <g font-size="26" text-anchor="middle" fill="#2f3d4f">
+    <text x="82" y="128">⌂</text>
+    <text x="82" y="182">◎</text>
+    <text x="82" y="236">🔍</text>
+    <text x="82" y="290">📏</text>
+    <text x="82" y="344">🗺</text>
+  </g>
+
+  <!-- divider -->
+  <line x1="56" y1="378" x2="108" y2="378" stroke="#b9c3d1" stroke-width="1.5"/>
+
+  <!-- group label: operator tools -->
+  <text x="16" y="510" class="grp" transform="rotate(-90 16 510)" text-anchor="end">OPERATOR TOOLS</text>
+
+  <!-- icons group 2 -->
+  <g font-size="26" text-anchor="middle" fill="#2f3d4f">
+    <text x="82" y="418">📡</text>
+    <text x="82" y="472">🔔</text>
+    <text x="82" y="526">⊙</text>
+    <text x="82" y="580">🛤</text>
+    <text x="82" y="634">🌧</text>
+  </g>
+
+  <!-- ===================== CALLOUTS + LEGEND ===================== -->
+  <!-- each row: number badge at x=210, name/tip/desc to the right; lead line from icon -->
+  <g>
+    <!-- 1 Home -->
+    <line x1="118" y1="120" x2="210" y2="126" class="lead"/>
+    <circle cx="210" cy="126" r="12" fill="#c62828"/><text x="210" y="131" class="numtxt">1</text>
+    <text x="232" y="120" class="name">Home</text>
+    <text x="300" y="120" class="tip">“Home / Reset view”</text>
+    <text x="232" y="139" class="desc">Resets the map to its default zoom and position.</text>
+
+    <!-- 2 Center -->
+    <line x1="118" y1="176" x2="210" y2="184" class="lead"/>
+    <circle cx="210" cy="184" r="12" fill="#c62828"/><text x="210" y="189" class="numtxt">2</text>
+    <text x="232" y="178" class="name">Center on my station</text>
+    <text x="420" y="178" class="tip">“Centre on my station”</text>
+    <text x="232" y="197" class="desc">Recenters the map on your own station's position.</text>
+
+    <!-- 3 Find -->
+    <line x1="118" y1="230" x2="210" y2="242" class="lead"/>
+    <circle cx="210" cy="242" r="12" fill="#c62828"/><text x="210" y="247" class="numtxt">3</text>
+    <text x="232" y="236" class="name">Find station</text>
+    <text x="345" y="236" class="tip">“Find station”</text>
+    <text x="232" y="255" class="desc">Search for a callsign and jump the map to it.</text>
+
+    <!-- 4 Measure -->
+    <line x1="118" y1="284" x2="210" y2="300" class="lead"/>
+    <circle cx="210" cy="300" r="12" fill="#c62828"/><text x="210" y="305" class="numtxt">4</text>
+    <text x="232" y="294" class="name">Measure distance</text>
+    <text x="398" y="294" class="tip">“Measure distance”</text>
+    <text x="232" y="313" class="desc">Click two points to measure the distance between them.</text>
+
+    <!-- 5 Map layer -->
+    <line x1="118" y1="338" x2="210" y2="358" class="lead"/>
+    <circle cx="210" cy="358" r="12" fill="#c62828"/><text x="210" y="363" class="numtxt">5</text>
+    <text x="232" y="352" class="name">Map layer</text>
+    <text x="332" y="352" class="tip">“Map layer toggle”</text>
+    <text x="232" y="371" class="desc">Cycles the base map (OpenStreetMap, USGS Topo, USGS Imagery…).</text>
+
+    <!-- group divider line in legend -->
+    <line x1="210" y1="388" x2="900" y2="388" stroke="#d4dbe6" stroke-width="1"/>
+    <text x="210" y="405" class="grp" fill="#9aa5b4">↑ MAP TOOLS   ·   OPERATOR TOOLS ↓</text>
+
+    <!-- 6 Beacon Now -->
+    <line x1="118" y1="412" x2="210" y2="430" class="lead"/>
+    <circle cx="210" cy="430" r="12" fill="#0f766e"/><text x="210" y="435" class="numtxt">6</text>
+    <text x="232" y="424" class="name">Beacon Now</text>
+    <text x="352" y="424" class="tip">“Beacon Now — transmit your position”</text>
+    <text x="232" y="443" class="desc">Immediately transmits your position. <tspan fill="#0f766e" font-weight="700">Transmits on the air.</tspan></text>
+
+    <!-- 7 Alerts -->
+    <line x1="118" y1="466" x2="210" y2="488" class="lead"/>
+    <circle cx="210" cy="488" r="12" fill="#c62828"/><text x="210" y="493" class="numtxt">7</text>
+    <text x="232" y="482" class="name">Alerts</text>
+    <text x="310" y="482" class="tip">“Alert status”</text>
+    <text x="232" y="501" class="desc">Shows alert status and geofence / proximity alerts.</text>
+
+    <!-- 8 Range rings -->
+    <line x1="118" y1="520" x2="210" y2="546" class="lead"/>
+    <circle cx="210" cy="546" r="12" fill="#c62828"/><text x="210" y="551" class="numtxt">8</text>
+    <text x="232" y="540" class="name">Range rings</text>
+    <text x="352" y="540" class="tip">(distance rings)</text>
+    <text x="232" y="559" class="desc">Toggles distance range rings around a center point.</text>
+
+    <!-- 9 Trails -->
+    <line x1="118" y1="574" x2="210" y2="604" class="lead"/>
+    <circle cx="210" cy="604" r="12" fill="#c62828"/><text x="210" y="609" class="numtxt">9</text>
+    <text x="232" y="598" class="name">Trails</text>
+    <text x="310" y="598" class="tip">(movement trails)</text>
+    <text x="232" y="617" class="desc">Toggles movement trails behind moving stations.</text>
+
+    <!-- 10 Radar -->
+    <line x1="118" y1="628" x2="210" y2="662" class="lead"/>
+    <circle cx="210" cy="662" r="12" fill="#c62828"/><text x="210" y="667" class="numtxt">10</text>
+    <text x="232" y="656" class="name">Radar</text>
+    <text x="310" y="656" class="tip">(weather radar)</text>
+    <text x="232" y="675" class="desc">Toggles the weather-radar overlay (and its bottom scrubber).</text>
+  </g>
+
+  <!-- teal note -->
+  <rect x="210" y="694" width="690" height="34" rx="7" fill="#eafaf7" stroke="#9fd8cf"/>
+  <text x="226" y="716" fill="#0f766e" font-size="12.5"><tspan font-weight="700">Note:</tspan> Only <tspan font-weight="700">Beacon Now</tspan> (6) puts a signal on the air. The other buttons only change what you see.</text>
+</svg>
