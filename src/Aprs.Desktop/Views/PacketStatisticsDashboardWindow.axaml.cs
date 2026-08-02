@@ -1,9 +1,10 @@
-using Avalonia.Controls;
+using System;
+using Aprs.Desktop.Controls;
 using Avalonia.Interactivity;
 
 namespace Aprs.Desktop.Views;
 
-public partial class PacketStatisticsDashboardWindow : Window
+public partial class PacketStatisticsDashboardWindow : FloatingPanelWindow
 {
     public PacketStatisticsDashboardWindow()
     {

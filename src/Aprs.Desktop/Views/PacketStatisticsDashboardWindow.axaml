@@ -1,22 +1,25 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.PacketStatisticsDashboardWindow"
         x:DataType="vm:PacketStatisticsDashboardViewModel"
         Title="Packet Statistics Dashboard"
+        PanelTitle="Packet Statistics"
         Width="820" Height="660"
         MinWidth="700" MinHeight="500"
         WindowStartupLocation="CenterOwner">
 
+  <Border Margin="16"
+          Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+          CornerRadius="12" BoxShadow="0 6 18 -10 #33101828">
   <ScrollViewer>
     <StackPanel Margin="20" Spacing="16">
 
       <!-- Header -->
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Spacing="2">
-          <TextBlock Text="Packet Statistics Dashboard"
-                     FontSize="20" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock FontSize="11" Foreground="{DynamicResource TextMutedBrush}">
             <Run Text="Session started: " />
             <Run Text="{Binding SessionStart}" />
@@ -35,7 +38,7 @@
       <!-- Top stats row -->
       <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
 
-        <Border Background="{DynamicResource AccentBlueBgBrush}"
+        <Border Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12"
                 ToolTip.Tip="Total Packets — Every APRS transmission received during this session counts as one packet, regardless of what type it is or which station sent it. This includes position beacons, messages, weather reports, objects, and everything else. A single station beaconing every 10 minutes will contribute 6 packets per hour to this total.">
@@ -48,7 +51,7 @@
         </Border>
 
         <Border Grid.Column="1"
-                Background="{DynamicResource AccentBlueBgBrush}"
+                Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12"
                 ToolTip.Tip="Unique Stations — The number of distinct callsigns heard this session. KE4CON and KE4CON-1 are counted separately since they are technically different stations (different SSIDs). A station is counted here the first time it is heard, regardless of how many packets it sends. This gives you a sense of how many different operators are active in your area.">
@@ -61,7 +64,7 @@
         </Border>
 
         <Border Grid.Column="2"
-                Background="{DynamicResource AccentBlueBgBrush}"
+                Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12"
                 ToolTip.Tip="Packets Per Hour — The average rate of packet reception over your entire session, expressed as packets per hour. This is a running average, not the current rate. A quiet rural area might see 20-50 packets/hour. A busy urban area during a net might see 500+. The hourly bar chart below shows how this rate varied throughout the day.">
@@ -74,7 +77,7 @@
         </Border>
 
         <Border Grid.Column="3"
-                Background="{DynamicResource AccentBlueBgBrush}"
+                Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource AccentBlueBorderBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16,12"
                 ToolTip.Tip="Packets Per Minute — The average rate of packet reception expressed per minute instead of per hour. Useful for short sessions or busy events where activity is measured in minutes rather than hours. Divide this number by 60 to get an approximate packets-per-second rate.">
@@ -92,7 +95,7 @@
       <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
 
         <!-- Packet types -->
-        <Border Background="{DynamicResource AppBgAltBrush}"
+        <Border Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16"
                 ToolTip.Tip="Packet Types — APRS packets carry different kinds of information. The bars show what proportion of received traffic each type represents. Position is almost always the largest category since most stations beacon their location periodically.">
@@ -173,7 +176,7 @@
 
         <!-- Top stations -->
         <Border Grid.Column="1"
-                Background="{DynamicResource AppBgAltBrush}"
+                Background="{DynamicResource SurfaceBgBrush}"
                 BorderBrush="{DynamicResource BorderSubtleBrush}"
                 BorderThickness="1" CornerRadius="8" Padding="16"
                 ToolTip.Tip="Most Active Stations — The top 15 callsigns ranked by total packets received this session. The bar behind each callsign shows its activity relative to the most active station (the top station always has a full-width bar). High packet counts typically indicate a digipeater or iGate that is relaying many other stations' traffic, or a very active mobile station. The number on the right is the raw packet count.">
@@ -202,7 +205,7 @@
       </Grid>
 
       <!-- Hourly chart -->
-      <Border Background="{DynamicResource AppBgAltBrush}"
+      <Border Background="{DynamicResource SurfaceBgBrush}"
               BorderBrush="{DynamicResource BorderSubtleBrush}"
               BorderThickness="1" CornerRadius="8" Padding="16"
               ToolTip.Tip="Hourly Activity Chart — Shows how many APRS packets were received in each of the last 24 hours. The tallest bar represents the busiest hour (shown in the Peak label). This lets you see patterns: morning commuter traffic, lunchtime activity, net times, and overnight quiet periods. Each bar is labeled with the hour in 12-hour format (a = AM, p = PM). Bars reset to zero as each new hour begins.">
@@ -240,7 +243,7 @@
       </Border>
 
       <!-- Aloha Circle -->
-      <Border Background="{DynamicResource AppBgAltBrush}"
+      <Border Background="{DynamicResource SurfaceBgBrush}"
               BorderBrush="{DynamicResource TextSidebarBrush}"
               BorderThickness="1" CornerRadius="6" Padding="14">
         <StackPanel Spacing="8">
@@ -265,4 +268,5 @@
 
     </StackPanel>
   </ScrollViewer>
-</Window>
+  </Border>
+</ctrls:FloatingPanelWindow>
