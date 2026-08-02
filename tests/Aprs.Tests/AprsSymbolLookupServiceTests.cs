@@ -1,5 +1,6 @@
 using System.Linq;
 using Aprs.Mapping;
+using Aprs.Services;
 using Xunit;
 
 namespace Aprs.Tests;
