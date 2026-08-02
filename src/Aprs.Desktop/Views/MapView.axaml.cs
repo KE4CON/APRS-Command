@@ -42,10 +42,13 @@ public sealed partial class MapView : UserControl
     private Avalonia.Threading.DispatcherTimer? radarAnimTimer;
     private int currentFrameIndex;
     private ILayer? currentBaseLayer;
-    // Optional base drawn *beneath* the current base map. The USGS aerial-imagery layers have no
-    // tiles over large open water (e.g. the Great Lakes), which would otherwise render as blank
-    // white when zoomed in; an OpenStreetMap underlay shows water/land through those gaps.
-    private ILayer? currentUnderlayLayer;
+    // The USGS aerial-imagery layers have no tiles over large open water (e.g. the Great Lakes),
+    // which would otherwise render as blank white when zoomed in. We fill those gaps with a solid,
+    // muted water color set as the map background — close to the natural aerial-water tone so the
+    // shoreline transition is soft rather than a hard bright-blue seam. Captured/restored so the
+    // fill only applies while an imagery base map is active.
+    private Mapsui.Styles.Color defaultBackColor = Mapsui.Styles.Color.White;
+    private static readonly Mapsui.Styles.Color ImageryWaterFill = new(62, 92, 107); // #3E5C6B
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private StationTrailService? trailService; // set by WireTrailService()
     private bool mapInitialized;
@@ -71,6 +74,7 @@ public sealed partial class MapView : UserControl
         mapInitialized = true;
 
         var map = MapControl.Map;
+        defaultBackColor = map.BackColor;
         currentBaseLayer = CreateBaseLayer(BaseMapKind.OpenStreetMap);
         map.Layers.Add(currentBaseLayer);
 
@@ -170,31 +174,21 @@ public sealed partial class MapView : UserControl
         {
             map.Layers.Remove(currentBaseLayer);
         }
-        if (currentUnderlayLayer is not null)
-        {
-            map.Layers.Remove(currentUnderlayLayer);
-            currentUnderlayLayer = null;
-        }
 
         currentBaseLayer = CreateBaseLayer(kind);
         map.Layers.Add(currentBaseLayer);
         map.Layers.MoveToBottom(currentBaseLayer);
 
-        // The USGS aerial-imagery layers have no tiles over large open water; underlay an
-        // OpenStreetMap base so lakes/oceans show through instead of blank white. Added AFTER
-        // the base and pushed to the very bottom so the imagery still draws on top over land.
-        if (NeedsWaterUnderlay(kind))
-        {
-            currentUnderlayLayer = CreateBaseLayer(BaseMapKind.OpenStreetMap);
-            map.Layers.Add(currentUnderlayLayer);
-            map.Layers.MoveToBottom(currentUnderlayLayer);
-        }
+        // The USGS aerial-imagery layers leave open water blank (no tiles); fill those gaps with a
+        // solid muted water color so lakes/oceans read as water instead of white. The vector maps
+        // (OSM, USGS Topo) draw water themselves, so restore the normal background for them.
+        map.BackColor = NeedsWaterFill(kind) ? ImageryWaterFill : defaultBackColor;
     }
 
     // The aerial-imagery basemaps (imagery, imagery+topo) are land-only and leave open water
-    // blank at high zoom; they get an OpenStreetMap underlay. The vector maps (OSM, USGS Topo)
-    // draw water themselves and need none.
-    private static bool NeedsWaterUnderlay(BaseMapKind kind) =>
+    // blank at high zoom, so the map gets a water-colored background. The vector maps (OSM,
+    // USGS Topo) draw water themselves and need none.
+    private static bool NeedsWaterFill(BaseMapKind kind) =>
         kind is BaseMapKind.UsgsImagery or BaseMapKind.UsgsImageryTopo;
 
     private void BaseMapSelector_SelectionChanged(object? sender, Avalonia.Controls.SelectionChangedEventArgs e)

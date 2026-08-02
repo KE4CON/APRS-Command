@@ -70,11 +70,12 @@ zoomed out, USGS shows a coarse worldwide picture that includes water, so the la
 When you zoom in, USGS switches to the detailed land-only photos — and over open water there is
 simply nothing to show.
 
-To keep those areas from appearing as blank white, APRS Command automatically draws an
-**OpenStreetMap layer underneath** the two imagery maps. Where the aerial photos have no
-coverage (open water), the map beneath shows through, so you still see the lake or ocean. Over
-land, the aerial photography draws on top exactly as before. This happens automatically — there
-is nothing to turn on.
+To keep those areas from appearing as blank white, APRS Command automatically fills them with a
+**solid, muted water color** while an imagery map is showing. The color is chosen to sit close to
+the natural tone of the water in the aerial photos, so the line where the photo meets the fill —
+along a shoreline, for example — stays soft instead of a hard bright-blue edge. Over land, the
+aerial photography draws on top exactly as before. This happens automatically — there is nothing
+to turn on.
 
 If you specifically want map detail over water (depth areas, shorelines, place names), switch to
 **USGS Topo** or **OpenStreetMap**, which are drawn maps rather than photographs and show water
