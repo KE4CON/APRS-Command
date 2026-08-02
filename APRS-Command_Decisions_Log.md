@@ -234,6 +234,24 @@ back loops). `IGateMonitorService` advisory made consistent (NOGATE/RFONLY shown
 candidate). **Tests:** `DigipeaterServiceTests` (same-packet-different-path dupe, self-echo loop, N>total
 trap), `IGateServiceTests` (mandatory-no-gate theory, config-independent). Full suite green (1301).
 
+### D14 — Device-ID database auto-refresh (slice 3 engine)
+**Problem:** The device-ID database was a bundled, build-frozen snapshot. New radios/software get tocalls
+assigned continually, so a way to refresh it (without a new app release) was the last device-ID slice.
+**Decision:** A hot-swappable `RefreshableDeviceIdentificationService` wraps the immutable
+`DeviceIdentificationService` and swaps its inner instance atomically (a single volatile reference
+assignment, so concurrent lookups never see a half-built DB). `DeviceIdDatabaseUpdateService` orchestrates
+a **weekly-gated** refresh: download (`HttpDeviceIdDatabaseDownloader`) → validate (a candidate that
+parses to zero patterns is rejected) → swap → cache (`FileDeviceIdDatabaseStore`, under
+`{config}/device-id/`). Every failure mode is **non-fatal** — offline, HTTP error, or corrupt payload all
+keep the last good (or bundled) database, because identification is a nicety, not a critical path. The
+marker VM's per-class lazy default was consolidated into one app-wide `DeviceIdentificationProvider.Current`
+that the composition root points at the single refreshable instance (`DesktopRuntime`), which also loads
+the cached DB and fires a background refresh at startup. **Tests:** `DeviceIdDatabaseUpdateServiceTests`
+(hot-swap, skip-when-fresh, refresh-when-stale, force, download/validation failure keeps current, cached
+load tolerates corruption). Full suite green (1311). **Deferred to the UI polish pass:** the visible
+"updated <date> · Update now" status/button and an in-session periodic re-check (the engine and the
+runtime hook are in place; only the view surface remains).
+
 ---
 
 ## Future / planned (not yet done)
