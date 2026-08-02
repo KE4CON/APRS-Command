@@ -1,14 +1,20 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.SessionTemplatesWindow"
         x:DataType="vm:SessionTemplatesViewModel"
         Title="Session Templates"
-        Width="860" Height="600"
+        PanelTitle="Session Templates"
+        Width="860" Height="620"
         MinWidth="700" MinHeight="480"
         WindowStartupLocation="CenterOwner">
 
-  <Grid RowDefinitions="*,Auto" Margin="0">
+  <Border Margin="16" Padding="0" Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="12"
+          BoxShadow="0 6 18 -10 #33101828">
+    <Border Background="{DynamicResource SurfaceBgBrush}" CornerRadius="11" ClipToBounds="True">
+      <Grid RowDefinitions="*,Auto" Margin="0">
 
     <Grid ColumnDefinitions="300,*" ColumnSpacing="0">
 
@@ -207,5 +213,7 @@
                  Foreground="{DynamicResource TextSecondaryBrush}" />
     </Border>
 
-  </Grid>
-</Window>
+      </Grid>
+    </Border>
+  </Border>
+</ctrls:FloatingPanelWindow>

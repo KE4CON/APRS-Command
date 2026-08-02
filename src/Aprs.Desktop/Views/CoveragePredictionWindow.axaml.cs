@@ -1,11 +1,10 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
 namespace Aprs.Desktop.Views;
-public sealed partial class CoveragePredictionWindow : Window
+public sealed partial class CoveragePredictionWindow : FloatingPanelWindow
 {
     public CoveragePredictionWindow()
     {
         InitializeComponent();
-        CloseButton.Click += (_, _) => Close();
     }
 
     private void CopyPhgButton_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

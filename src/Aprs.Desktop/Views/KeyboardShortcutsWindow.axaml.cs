@@ -1,14 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
 
 namespace Aprs.Desktop.Views;
 
-public partial class KeyboardShortcutsWindow : Window
+public sealed partial class KeyboardShortcutsWindow : FloatingPanelWindow
 {
-    public KeyboardShortcutsWindow()
-    {
-        InitializeComponent();
-    }
-
-    private void Close_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        => Close();
+    public KeyboardShortcutsWindow() { InitializeComponent(); }
 }

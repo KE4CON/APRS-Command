@@ -1,8 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
 
 namespace Aprs.Desktop.Views;
 
-public partial class SessionTemplatesWindow : Window
+public partial class SessionTemplatesWindow : FloatingPanelWindow
 {
     public SessionTemplatesWindow()
     {
