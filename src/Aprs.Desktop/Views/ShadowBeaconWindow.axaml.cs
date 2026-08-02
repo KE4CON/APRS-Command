@@ -1,6 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class ShadowBeaconWindow : Window
+
+public sealed partial class ShadowBeaconWindow : FloatingPanelWindow
 {
-    public ShadowBeaconWindow() { InitializeComponent(); CloseButton.Click += (_, _) => Close(); }
+    public ShadowBeaconWindow() { InitializeComponent(); }
 }

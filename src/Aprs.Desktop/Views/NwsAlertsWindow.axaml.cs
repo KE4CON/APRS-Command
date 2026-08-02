@@ -1,6 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class NwsAlertsWindow : Window
+
+public sealed partial class NwsAlertsWindow : FloatingPanelWindow
 {
-    public NwsAlertsWindow() { InitializeComponent(); CloseButton.Click += (_, _) => Close(); }
+    public NwsAlertsWindow() { InitializeComponent(); }
 }
