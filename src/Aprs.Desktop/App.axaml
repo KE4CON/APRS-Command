@@ -52,6 +52,9 @@
           <SolidColorBrush x:Key="PanelAccentHeaderBrush">#CFE0FA</SolidColorBrush>
           <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
           <SolidColorBrush x:Key="MapChromeBgBrush">#A6C2E8</SolidColorBrush>
+          <!-- Status-badge outline: fixed violet frame, deliberately far from every
+               connection-status color so it never reads as a status. Same in both themes. -->
+          <SolidColorBrush x:Key="BadgeOutlineBrush">#A855F7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#FEF3C7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#F59E0B</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#B45309</SolidColorBrush>
@@ -91,6 +94,9 @@
           <SolidColorBrush x:Key="PanelAccentHeaderBrush">#26476F</SolidColorBrush>
           <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
           <SolidColorBrush x:Key="MapChromeBgBrush">#101D30</SolidColorBrush>
+          <!-- Status-badge outline: fixed violet frame, deliberately far from every
+               connection-status color so it never reads as a status. Same in both themes. -->
+          <SolidColorBrush x:Key="BadgeOutlineBrush">#A855F7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#2D1F02</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#D97706</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#FCD34D</SolidColorBrush>

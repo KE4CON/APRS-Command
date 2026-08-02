@@ -37,8 +37,8 @@
         <Border Grid.Column="1"
                 x:Name="AprsIsBadgeBorder"
                 Background="#1E293B"
-                BorderBrush="#64748B"
-                BorderThickness="2"
+                BorderBrush="{DynamicResource BadgeOutlineBrush}"
+                BorderThickness="4"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
@@ -50,8 +50,8 @@
         <Border Grid.Column="2"
                 x:Name="TxBadgeBorder"
                 Background="#123B32"
-                BorderBrush="#2DD4BF"
-                BorderThickness="2"
+                BorderBrush="{DynamicResource BadgeOutlineBrush}"
+                BorderThickness="4"
                 CornerRadius="4"
                 Padding="10,6"
                 VerticalAlignment="Center">
