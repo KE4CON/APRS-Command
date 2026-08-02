@@ -23,7 +23,7 @@ public sealed class MapViewModelTests
         Assert.Equal("Tactical 7", marker.DisplayName);
         Assert.Equal(39.1, marker.Latitude);
         Assert.Equal(-84.5, marker.Longitude);
-        Assert.Equal("Car / mobile station", marker.SymbolDescription);
+        Assert.Equal("Car", marker.SymbolDescription);
         Assert.Equal("car", marker.MarkerIconKey);
         Assert.Equal("C", marker.FallbackMarkerText);
     }
@@ -181,7 +181,7 @@ public sealed class MapViewModelTests
         Assert.Equal(AprsManagedObjectType.Object, marker.ObjectType);
         Assert.Equal(39.058333, marker.Latitude, 6);
         Assert.Equal(-84.508333, marker.Longitude, 6);
-        Assert.Equal("House / home station", marker.SymbolDescription);
+        Assert.Equal("House", marker.SymbolDescription);
         Assert.Equal("home", marker.MarkerIconKey);
     }
 

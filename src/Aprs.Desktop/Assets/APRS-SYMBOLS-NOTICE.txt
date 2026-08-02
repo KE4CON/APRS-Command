@@ -4,3 +4,9 @@ Source: http://github.com/hessu/aprs-symbols/
 Reused per that project's terms, which ask that applications point back
 to the source above. See that repository's COPYRIGHT.md for per-symbol
 licensing details.
+
+APRS symbol descriptions (the primary and alternate table names used by
+the object symbol picker and station tooltips) are from the aprs.fi APRS
+symbol index by Heikki Hannikainen, OH7LZB.
+Source: https://github.com/hessu/aprs-symbol-index/
+Licensed under Creative Commons Attribution-ShareAlike 4.0 (CC BY-SA 4.0).

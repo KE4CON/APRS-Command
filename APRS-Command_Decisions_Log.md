@@ -254,6 +254,23 @@ runtime hook are in place; only the view surface remains).
 
 ---
 
+### D15 — Complete APRS symbol tables adopted from the authoritative aprs.fi index *(conformance)*
+**Problem:** The symbol lookup service (`AprsSymbolLookupService`) shipped a hand-curated shortlist of
+~61 symbols, so the object symbol picker was missing most of the spec's symbols and a few hand-written
+descriptions were wrong (e.g. `/C` was labelled "Coast Guard" — it is **Canoe**; `\C` is Coast Guard).
+**Decision:** Replace the shortlist with the **complete** APRS primary (`/`) and alternate (`\`) tables —
+**159 defined symbols** (reserved/undefined code positions omitted) — with descriptions taken verbatim
+from the authoritative aprs.fi symbol index (`hessu/aprs-symbol-index`, CC BY-SA 4.0), which is also the
+source of the bundled icon sheets. `Category`, the marker-dot key, and the short letter designation are
+**derived** from the description so the table stays a single source of truth. The object symbol picker
+now offers **both** tables (primary listed first), scrolls, and shows each symbol's real icon (cropped
+from the embedded sheets via `AprsSymbolIconConverter`) beside its letter. Attribution added to
+`APRS-SYMBOLS-NOTICE.txt`. **Tests:** `AprsSymbolLookupServiceTests` updated to the authoritative
+descriptions and locks the full set (86 primary + 73 alternate = 159); `MapViewModelTests` /
+`StationListViewModelTests` description assertions updated to match.
+
+---
+
 ## Future / planned (not yet done)
 
 Decisions made about work intended for later, so the reasoning is captured before it is scheduled.
