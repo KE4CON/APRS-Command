@@ -52,6 +52,34 @@ Offline maps can become large quickly. Use a folder with enough free space, espe
 
 Provider-specific map types may be added later. Use only providers that permit the intended access, caching, and attribution.
 
+### Base maps available
+
+The base-map selector (top-left of the map) offers four choices:
+
+- **OpenStreetMap** — a worldwide street map (streets, water, place names).
+- **USGS Topo** — the USGS topographic map (contours, roads, water); United States only.
+- **USGS Imagery** — aerial/satellite photography; United States only.
+- **USGS Imagery + Topo** — the aerial photography with topographic lines and labels drawn on top; United States only.
+
+### Why aerial imagery goes white over lakes and oceans when you zoom in
+
+The two imagery basemaps (**USGS Imagery** and **USGS Imagery + Topo**) are built from
+aerial photographs, and those photographs **only cover land**. There is no aerial photo of the
+open water in the middle of a large lake (for example Lake Michigan) or the ocean. When you are
+zoomed out, USGS shows a coarse worldwide picture that includes water, so the lake looks normal.
+When you zoom in, USGS switches to the detailed land-only photos — and over open water there is
+simply nothing to show.
+
+To keep those areas from appearing as blank white, APRS Command automatically draws an
+**OpenStreetMap layer underneath** the two imagery maps. Where the aerial photos have no
+coverage (open water), the map beneath shows through, so you still see the lake or ocean. Over
+land, the aerial photography draws on top exactly as before. This happens automatically — there
+is nothing to turn on.
+
+If you specifically want map detail over water (depth areas, shorelines, place names), switch to
+**USGS Topo** or **OpenStreetMap**, which are drawn maps rather than photographs and show water
+everywhere at every zoom level.
+
 ## Troubleshooting Blank Maps
 
 1. Check internet access for online tiles.
