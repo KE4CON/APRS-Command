@@ -21,7 +21,7 @@ namespace Aprs.Desktop.Services;
 /// </summary>
 public sealed class MobileCompanionServer : IAsyncDisposable
 {
-    private readonly HttpListener listener = new();
+    private HttpListener listener = new();
     private readonly CancellationTokenSource cts = new();
     private readonly IServiceProvider services;
     private readonly Func<string> getCallsign;
@@ -92,7 +92,10 @@ public sealed class MobileCompanionServer : IAsyncDisposable
         }
         catch (HttpListenerException)
         {
-            listener.Prefixes.Clear();
+            // A failed wildcard Start() disposes the HttpListener, so the same object can't be reused —
+            // touching listener.Prefixes here threw ObjectDisposedException and took the app down. Bind
+            // the localhost fallback on a fresh listener instead.
+            listener = new HttpListener();
             listener.Prefixes.Add($"http://localhost:{Port}/");
             listener.Prefixes.Add($"http://127.0.0.1:{Port}/");
             listener.Start();
