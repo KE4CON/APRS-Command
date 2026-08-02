@@ -135,6 +135,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.ShadowBeaconViewModel>();
         services.AddSingleton<ViewModels.NetScriptEditorViewModel>();
 
+        // Message center — one shared instance for both the main window and the scheduled-message
+        // service. It was previously only hand-constructed for the main window and never registered, so
+        // the scheduled-message factory below crashed with "No service for type MessageCenterViewModel"
+        // the moment a user opened Scheduled Messages.
+        services.AddSingleton<ViewModels.MessageCenterViewModel>(provider =>
+            new ViewModels.MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()));
+
         // Scheduled message service — created after MessageCenterViewModel is available
         services.AddSingleton<Runtime.ScheduledMessageService>(provider =>
         {
@@ -229,7 +236,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             rawPacketLog,                                   // LIVE
             new DecodedEventLogViewModel(provider.GetRequiredService<IDecodedEventLogService>()),  // LIVE
             new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>()),               // LIVE
-            new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
+            provider.GetRequiredService<MessageCenterViewModel>(),                                // LIVE (shared with ScheduledMessageService)
             new ObjectManagerViewModel(
                 provider.GetRequiredService<IAprsObjectManager>(),
                 provider.GetRequiredService<IAprsObjectEditorService>()),  // LIVE — transmit service wired in Create()
