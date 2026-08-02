@@ -6,12 +6,13 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Aprs.Desktop.Configuration;
+using Aprs.Desktop.Controls;
 using Aprs.Desktop.Services;
 using Aprs.Services;
 
 namespace Aprs.Desktop.Views;
 
-public sealed partial class AboutWindow : Window
+public sealed partial class AboutWindow : FloatingPanelWindow
 {
     private readonly UpdateCheckerService updateChecker = new();
     private readonly IDeviceIdDatabaseUpdateService? deviceDbUpdater;
@@ -117,7 +118,6 @@ public sealed partial class AboutWindow : Window
         }
     }
 
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 
     private void RepoLink_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
