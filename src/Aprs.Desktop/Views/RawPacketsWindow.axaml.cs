@@ -1,11 +1,13 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class RawPacketsWindow : Window
+
+public sealed partial class RawPacketsWindow : FloatingPanelWindow
 {
     public RawPacketsWindow() { InitializeComponent(); }
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
+
     private async void SaveLog_Click(object? sender, RoutedEventArgs e)
     {
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions

@@ -1,35 +1,32 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="using:Aprs.Desktop.Views"
         xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.RawPacketsWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="APRS Command — Raw Packet Monitor"
+        PanelTitle="Raw Packet Monitor"
         Width="900" Height="600" MinWidth="600" MinHeight="440">
-  <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,0,0,1" Padding="22,10">
-      <StackPanel Spacing="2">
-        <TextBlock Text="Raw Packet Monitor" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-        <TextBlock Text="Every packet received on all active ports, in arrival order. Use this to confirm your connection is working — if packets appear here, the port is receiving. Use the Clear button to reset the log. To save the log for Replay, click Save Log and choose a location; that file can then be loaded in the Replay window." Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Row="1" Padding="16">
-    <views:PacketMonitorView Grid.Row="1" DataContext="{Binding RawPacketLog}" />
-    </Border>
-    <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,1,0,0" Padding="12">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <Button Content="Save Log"
-                Padding="14,6"
+  <Border Margin="16" Padding="16"
+          Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+          CornerRadius="12" BoxShadow="0 6 18 -10 #33101828">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top"
+                 Text="Every packet received on all active ports, in arrival order. If packets appear here, the port is receiving. Save Log writes the log to a file you can load in the Replay window."
+                 Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                 TextWrapping="Wrap" Margin="0,0,0,12" />
+      <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*" Margin="0,12,0,0">
+        <Button Content="Save Log" Padding="14,6"
                 ToolTip.Tip="Save all received packets to a file that can be loaded in the Replay window"
                 Click="SaveLog_Click" />
         <TextBlock Grid.Column="1"
                    Text="Tip: save the log here, then open Replay to play it back without transmitting."
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   FontSize="11"
-                   VerticalAlignment="Center"
-                   Margin="12,0" />
-        <Button Grid.Column="2" Content="Close" Padding="14,6" Click="Close_Click" />
+                   Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
+                   VerticalAlignment="Center" Margin="12,0" />
       </Grid>
-    </Border>
-  </Grid>
-</Window>
+      <views:PacketMonitorView DataContext="{Binding RawPacketLog}" />
+    </DockPanel>
+  </Border>
+</ctrls:FloatingPanelWindow>
