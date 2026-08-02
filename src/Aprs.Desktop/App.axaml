@@ -4,6 +4,18 @@
              RequestedThemeVariant="Light">
   <Application.Styles>
     <FluentTheme />
+    <!-- Buttons: a subtle press-in for tactile feedback, on top of Fluent's hover colours. -->
+    <Style Selector="Button">
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.11" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
   </Application.Styles>
   <Application.Resources>
     <ResourceDictionary>
@@ -80,6 +92,12 @@
         </ResourceDictionary>
 
       </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Shared design tokens (theme-independent): softer corners app-wide via Fluent's own
+           ControlCornerRadius, plus a card radius for panels/cards to consume. -->
+      <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <CornerRadius x:Key="CardCornerRadius">12</CornerRadius>
     </ResourceDictionary>
   </Application.Resources>
 </Application>
