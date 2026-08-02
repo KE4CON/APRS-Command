@@ -1,10 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class FrequencyReferenceWindow : Window
+
+public sealed partial class FrequencyReferenceWindow : FloatingPanelWindow
 {
-    public FrequencyReferenceWindow()
-    {
-        InitializeComponent();
-        CloseButton.Click += (_, _) => Close();
-    }
+    public FrequencyReferenceWindow() { InitializeComponent(); }
 }
