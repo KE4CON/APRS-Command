@@ -8,9 +8,16 @@ namespace Aprs.Desktop.ViewModels;
 
 public sealed class ReplayViewModel : INotifyPropertyChanged
 {
+    // Cap the wait between packets so a long idle gap in the recording (minutes of silence)
+    // doesn't stall playback; and how often the loop re-checks while paused.
+    private static readonly TimeSpan MaxInterPacketDelay = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan PausePollInterval = TimeSpan.FromMilliseconds(150);
+
     private readonly IReplayService replayService;
     private string selectedReplayFilePath = string.Empty;
     private string lastError = string.Empty;
+    private ReplaySessionState currentState = ReplaySessionState.Stopped;
+    private CancellationTokenSource? playbackCts;
 
     public ReplayViewModel(IReplayService replayService)
     {
@@ -79,6 +86,10 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
     public string State { get; private set; } = ReplaySessionState.Stopped.ToString();
 
+    /// <summary>True only while playback is paused. Drives the mutually-exclusive
+    /// Pause/Resume buttons so exactly one is shown (they share a layout cell).</summary>
+    public bool IsPaused => currentState == ReplaySessionState.Paused;
+
     public string CurrentPositionText { get; private set; } = "0 / 0";
 
     public string CurrentTimestampText { get; private set; } = "Unknown";
@@ -120,10 +131,90 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         Refresh();
     }
 
+    /// <summary>
+    /// Streams the loaded log continuously: dispatches each packet, then waits the recorded
+    /// gap to the next packet divided by the Speed multiplier (capped, so long silent stretches
+    /// don't stall). Pause suspends the stream in place; Stop cancels it; Loop repeats from the top.
+    /// </summary>
     public async Task PlayAsync()
     {
-        await replayService.PlayNextAsync().ConfigureAwait(true);
-        Refresh();
+        // If the previous run finished, rewind so Play starts fresh instead of no-opping.
+        if (currentState == ReplaySessionState.Completed)
+        {
+            replayService.Stop();
+        }
+
+        var timeline = replayService.GetEntries();
+        if (timeline.Count == 0)
+        {
+            Refresh();
+            return;
+        }
+
+        using var cts = new CancellationTokenSource();
+        playbackCts = cts;
+        var token = cts.Token;
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                if (currentState == ReplaySessionState.Paused)
+                {
+                    await Task.Delay(PausePollInterval, token).ConfigureAwait(true);
+                    continue;
+                }
+
+                var playedIndex = replayService.GetStatus().CurrentIndex;
+                var advanced = await replayService.PlayNextAsync(token).ConfigureAwait(true);
+                Refresh();
+
+                if (!advanced)
+                {
+                    // Either paused mid-call (keep waiting) or reached the end with no loop (done).
+                    if (currentState == ReplaySessionState.Paused)
+                    {
+                        continue;
+                    }
+
+                    break;
+                }
+
+                var delay = ComputeInterPacketDelay(timeline, playedIndex);
+                if (delay > TimeSpan.Zero)
+                {
+                    await Task.Delay(delay, token).ConfigureAwait(true);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Stop() cancelled the stream — expected, not an error.
+        }
+        finally
+        {
+            playbackCts = null;
+            Refresh();
+        }
+    }
+
+    private TimeSpan ComputeInterPacketDelay(IReadOnlyList<ReplayLogEntry> timeline, int playedIndex)
+    {
+        var nextIndex = playedIndex + 1;
+        if (nextIndex < 0 || nextIndex >= timeline.Count)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var gap = timeline[nextIndex].OriginalTimestampUtc - timeline[playedIndex].OriginalTimestampUtc;
+        if (gap <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var speed = SpeedMultiplier <= 0 ? 1.0 : SpeedMultiplier;
+        var scaled = TimeSpan.FromSeconds(gap.TotalSeconds / speed);
+        return scaled > MaxInterPacketDelay ? MaxInterPacketDelay : scaled;
     }
 
     public void Pause()
@@ -140,6 +231,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
     public void Stop()
     {
+        playbackCts?.Cancel();
         replayService.Stop();
         Refresh();
     }
@@ -147,6 +239,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     public void Refresh()
     {
         var status = replayService.GetStatus();
+        currentState = status.State;
         State = status.State.ToString();
         CurrentPositionText = $"{Math.Min(status.CurrentIndex, status.TotalEntries)} / {status.TotalEntries}";
         CurrentTimestampText = status.CurrentOriginalTimestampUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss") ?? "Unknown";
@@ -160,6 +253,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         }
 
         OnPropertyChanged(nameof(State));
+        OnPropertyChanged(nameof(IsPaused));
         OnPropertyChanged(nameof(CurrentPositionText));
         OnPropertyChanged(nameof(CurrentTimestampText));
         OnPropertyChanged(nameof(ProgressText));
@@ -188,7 +282,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
                     [
                         new Avalonia.Platform.Storage.FilePickerFileType("APRS log files")
                         {
-                            Patterns = ["*.txt", "*.log", "*.csv", "*.aprs"]
+                            Patterns = ["*.aprslog", "*.txt", "*.log", "*.csv", "*.aprs"]
                         },
                         new Avalonia.Platform.Storage.FilePickerFileType("All files")
                         {

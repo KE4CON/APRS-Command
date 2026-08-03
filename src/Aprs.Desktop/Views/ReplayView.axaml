@@ -47,11 +47,13 @@
       <Button Grid.Column="4"
               Command="{Binding PauseCommand}"
               Content="Pause"
-              Padding="10,6" />
+              Padding="10,6"
+              IsVisible="{Binding !IsPaused}" />
       <Button Grid.Column="4"
               Command="{Binding ResumeCommand}"
               Content="Resume"
-              Padding="10,6" />
+              Padding="10,6"
+              IsVisible="{Binding IsPaused}" />
       <Button Grid.Column="5"
               Command="{Binding StopCommand}"
               Content="Stop"

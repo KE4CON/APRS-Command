@@ -22,8 +22,10 @@
                 ToolTip.Tip="Save all received packets to a file that can be loaded in the Replay window"
                 Click="SaveLog_Click" />
         <TextBlock Grid.Column="1"
+                   Name="SaveStatusText"
                    Text="Tip: save the log here, then open Replay to play it back without transmitting."
                    Foreground="{DynamicResource TextMutedBrush}" FontSize="11"
+                   TextWrapping="Wrap"
                    VerticalAlignment="Center" Margin="12,0" />
       </Grid>
       <views:PacketMonitorView DataContext="{Binding RawPacketLog}" />
