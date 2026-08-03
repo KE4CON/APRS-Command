@@ -93,9 +93,16 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // letting the DI container pick a constructor it cannot fully satisfy.
         services.AddSingleton<IAprsParser, AprsParser>();
         services.AddSingleton<IStationDatabase>(_ => new Persistence.SqliteStationDatabase());
+        // Ephemeral in-memory station database that holds ONLY replayed packets, so a replay
+        // session can be shown on the map in isolation without touching live station state.
+        services.AddSingleton<StationDatabase>(_ => new StationDatabase());
         services.AddSingleton<IRawPacketLogService>(
             sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>()));
-        services.AddSingleton<AprsIngestionService>();
+        services.AddSingleton<AprsIngestionService>(sp => new AprsIngestionService(
+            sp.GetRequiredService<IAprsParser>(),
+            sp.GetRequiredService<IStationDatabase>(),
+            sp.GetRequiredService<IRawPacketLogService>(),
+            sp.GetRequiredService<StationDatabase>()));
 
         // Persisted settings: single source of truth for configuration that survives restarts.
         services.AddSingleton<IAppSettingsStore>(_ => JsonAppSettingsStore.Default);
@@ -272,7 +279,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<AprsIngestionService>(),
             provider.GetRequiredService<IStationDatabase>(),
             map,
-            rawPacketLog);
+            rawPacketLog,
+            provider.GetRequiredService<StationDatabase>());
 
         // Simulation service — routes generated packets through the live ingestion pipeline.
         var simulationSink    = new LiveSimulatedPacketSink(provider.GetRequiredService<AprsIngestionService>());

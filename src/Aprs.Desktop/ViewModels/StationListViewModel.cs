@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Aprs.Services;
+using Avalonia.Threading;
 
 namespace Aprs.Desktop.ViewModels;
 
@@ -16,6 +17,7 @@ public sealed class StationListViewModel : INotifyPropertyChanged
     private AprsPacketSource? packetSourceFilter;
     private bool loraFilter;
     private StationListSortField sortField = StationListSortField.Callsign;
+    private bool rebuildQueued;
 
     public StationListViewModel(MapViewModel map)
     {
@@ -23,10 +25,29 @@ public sealed class StationListViewModel : INotifyPropertyChanged
         allRows = map.Markers.Select(marker => new StationListRowViewModel(marker)).ToList();
         Rows = new ObservableCollection<StationListRowViewModel>();
 
-        // Keep the list in sync with live marker updates pushed onto the map.
-        map.Markers.CollectionChanged += (_, _) => RebuildFromMap();
+        // Keep the list in sync with marker updates pushed onto the map. A single UpdateStations
+        // clears and re-adds every marker (N events); coalesce them into one rebuild per UI cycle
+        // so a burst (e.g. a replay loading 175 stations) doesn't rebuild the whole list N times.
+        map.Markers.CollectionChanged += (_, _) => QueueRebuild();
 
         ApplyFiltersAndSort();
+    }
+
+    private void QueueRebuild()
+    {
+        if (rebuildQueued)
+        {
+            return;
+        }
+
+        rebuildQueued = true;
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                rebuildQueued = false;
+                RebuildFromMap();
+            },
+            DispatcherPriority.Background);
     }
 
     private void RebuildFromMap()

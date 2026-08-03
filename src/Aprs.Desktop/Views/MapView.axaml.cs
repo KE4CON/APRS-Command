@@ -291,9 +291,26 @@ public sealed partial class MapView : UserControl
         RefreshFeatures();
     }
 
+    private bool featuresRefreshQueued;
+
     private void Markers_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        RefreshFeatures();
+        // UpdateStations clears and re-adds every marker (N events per refresh). Coalesce them into
+        // one feature rebuild per UI cycle so a burst (e.g. a 175-station replay load) doesn't
+        // rebuild the whole Mapsui feature set N times and starve the rest of the UI.
+        if (featuresRefreshQueued)
+        {
+            return;
+        }
+
+        featuresRefreshQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(
+            () =>
+            {
+                featuresRefreshQueued = false;
+                RefreshFeatures();
+            },
+            Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

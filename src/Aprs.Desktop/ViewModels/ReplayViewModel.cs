@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Aprs.Services;
@@ -12,12 +13,20 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     // doesn't stall playback; and how often the loop re-checks while paused.
     private static readonly TimeSpan MaxInterPacketDelay = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan PausePollInterval = TimeSpan.FromMilliseconds(150);
+    // During a same-timestamp burst (no gap to wait) the loop would run synchronously and freeze
+    // the UI. Yield to the renderer at least this often, and throttle the (expensive) list/progress
+    // refresh so a fast burst drains quickly while the window and controls keep painting.
+    private static readonly TimeSpan BurstYieldInterval = TimeSpan.FromMilliseconds(30);
+    private static readonly TimeSpan RefreshThrottle = TimeSpan.FromMilliseconds(150);
 
     private readonly IReplayService replayService;
+    private IReplayMapController? mapController;
     private string selectedReplayFilePath = string.Empty;
     private string lastError = string.Empty;
     private ReplaySessionState currentState = ReplaySessionState.Stopped;
     private CancellationTokenSource? playbackCts;
+    private bool isStreaming;
+    private bool isReplayMode;
 
     public ReplayViewModel(IReplayService replayService)
     {
@@ -29,7 +38,71 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         PauseCommand = new DesktopCommand(Pause);
         ResumeCommand = new DesktopCommand(Resume);
         StopCommand = new DesktopCommand(Stop);
+        ReturnToLiveCommand = new DesktopCommand(ReturnToLive);
         Refresh();
+    }
+
+    /// <summary>
+    /// Supplies the map controller once the runtime is wired up (avoids a construction-time cycle
+    /// between this view model and the live coordinator). Called from application startup.
+    /// </summary>
+    public void SetMapController(IReplayMapController controller) => mapController = controller;
+
+    /// <summary>True while a replay is actively streaming packets (vs. paused/finished).</summary>
+    public bool IsStreaming
+    {
+        get => isStreaming;
+        private set
+        {
+            if (isStreaming == value)
+            {
+                return;
+            }
+
+            isStreaming = value;
+            OnPropertyChanged();
+            NotifyStripControls();
+        }
+    }
+
+    /// <summary>
+    /// True from Play until Return to Live — the whole review session, including after playback
+    /// finishes. Drives the collapsed control strip and the replay-only map. The full setup UI
+    /// shows when this is false.
+    /// </summary>
+    public bool IsReplayMode
+    {
+        get => isReplayMode;
+        private set
+        {
+            if (isReplayMode == value)
+            {
+                return;
+            }
+
+            isReplayMode = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsNotReplayMode));
+            NotifyStripControls();
+        }
+    }
+
+    /// <summary>Inverse of <see cref="IsReplayMode"/>, for showing the full setup UI.</summary>
+    public bool IsNotReplayMode => !isReplayMode;
+
+    // Strip button visibility: Pause/Resume/Stop only while streaming; "Replay again" once a
+    // review has stopped or finished but we're still in replay mode (map still showing the log).
+    public bool CanPause => isStreaming && !IsPaused;
+    public bool CanResume => isStreaming && IsPaused;
+    public bool ShowStop => isStreaming;
+    public bool ShowReplayAgain => isReplayMode && !isStreaming;
+
+    private void NotifyStripControls()
+    {
+        OnPropertyChanged(nameof(CanPause));
+        OnPropertyChanged(nameof(CanResume));
+        OnPropertyChanged(nameof(ShowStop));
+        OnPropertyChanged(nameof(ShowReplayAgain));
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -46,6 +119,8 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
     public DesktopCommand ResumeCommand { get; }
 
     public DesktopCommand StopCommand { get; }
+
+    public DesktopCommand ReturnToLiveCommand { get; }
 
     public string SelectedReplayFilePath
     {
@@ -151,10 +226,20 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
             return;
         }
 
+        // Switch the map to a clean, replay-only view. Live keeps ingesting underneath (cached).
+        mapController?.EnterReplayMode();
+        IsReplayMode = mapController?.IsReplayMode ?? false;
+
         using var cts = new CancellationTokenSource();
         playbackCts = cts;
         var token = cts.Token;
 
+        IsStreaming = true;
+        // Let the strip paint before diving into the (potentially bursty) loop.
+        await Task.Delay(1, token).ConfigureAwait(true);
+
+        var lastRefreshStamp = Stopwatch.GetTimestamp();
+        var lastYieldStamp = Stopwatch.GetTimestamp();
         try
         {
             while (!token.IsCancellationRequested)
@@ -167,7 +252,14 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
                 var playedIndex = replayService.GetStatus().CurrentIndex;
                 var advanced = await replayService.PlayNextAsync(token).ConfigureAwait(true);
-                Refresh();
+
+                // Throttle the list/progress refresh — rebuilding it every packet during a fast
+                // burst is what made the UI crawl. The map updates on its own coalesced timer.
+                if (Stopwatch.GetElapsedTime(lastRefreshStamp) >= RefreshThrottle)
+                {
+                    Refresh();
+                    lastRefreshStamp = Stopwatch.GetTimestamp();
+                }
 
                 if (!advanced)
                 {
@@ -184,6 +276,14 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
                 if (delay > TimeSpan.Zero)
                 {
                     await Task.Delay(delay, token).ConfigureAwait(true);
+                    lastYieldStamp = Stopwatch.GetTimestamp();
+                }
+                else if (Stopwatch.GetElapsedTime(lastYieldStamp) >= BurstYieldInterval)
+                {
+                    // No gap to wait, but hand the renderer a real slice periodically so the window
+                    // and controls keep painting during a long same-timestamp burst.
+                    await Task.Delay(1, token).ConfigureAwait(true);
+                    lastYieldStamp = Stopwatch.GetTimestamp();
                 }
             }
         }
@@ -194,6 +294,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         finally
         {
             playbackCts = null;
+            IsStreaming = false;
             Refresh();
         }
     }
@@ -236,6 +337,21 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
         Refresh();
     }
 
+    /// <summary>
+    /// Ends the replay review and returns the map to live. Stops any playback, then switches the
+    /// map back to the live station set (which shows everything that arrived while replaying).
+    /// </summary>
+    public void ReturnToLive()
+    {
+        playbackCts?.Cancel();
+        replayService.Stop();
+        mapController?.ExitReplayMode();
+        IsReplayMode = mapController?.IsReplayMode ?? false;
+        // Each new review starts at real time; a speed bumped up mid-review doesn't carry over.
+        SpeedMultiplier = 1.0;
+        Refresh();
+    }
+
     public void Refresh()
     {
         var status = replayService.GetStatus();
@@ -254,6 +370,7 @@ public sealed class ReplayViewModel : INotifyPropertyChanged
 
         OnPropertyChanged(nameof(State));
         OnPropertyChanged(nameof(IsPaused));
+        NotifyStripControls();
         OnPropertyChanged(nameof(CurrentPositionText));
         OnPropertyChanged(nameof(CurrentTimestampText));
         OnPropertyChanged(nameof(ProgressText));

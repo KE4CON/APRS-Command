@@ -13,16 +13,23 @@ public sealed class AprsIngestionService
 {
     private readonly IAprsParser parser;
     private readonly IStationDatabase stationDatabase;
+    private readonly IStationDatabase? replayStationDatabase;
     private readonly IRawPacketLogService rawPacketLog;
 
     public AprsIngestionService(
         IAprsParser parser,
         IStationDatabase stationDatabase,
-        IRawPacketLogService rawPacketLog)
+        IRawPacketLogService rawPacketLog,
+        IStationDatabase? replayStationDatabase = null)
     {
         this.parser = parser ?? throw new ArgumentNullException(nameof(parser));
         this.stationDatabase = stationDatabase ?? throw new ArgumentNullException(nameof(stationDatabase));
         this.rawPacketLog = rawPacketLog ?? throw new ArgumentNullException(nameof(rawPacketLog));
+
+        // Replayed packets are applied to a dedicated station database so a replay session can be
+        // shown on the map in isolation without polluting — or clearing — the live station state.
+        // Everything else (raw log, parse events, alerts/geofences) still runs for replay packets.
+        this.replayStationDatabase = replayStationDatabase;
     }
 
     /// <summary>Raised after a line has been recorded, parsed, and applied.</summary>
@@ -47,7 +54,10 @@ public sealed class AprsIngestionService
         AprsPacket? packet = null;
         if (parser.TryParse(rawLine, receivedAtUtc, out packet, out _) && packet is not null)
         {
-            stationDatabase.ProcessPacket(packet, source);
+            var target = source == AprsPacketSource.Replay && replayStationDatabase is not null
+                ? replayStationDatabase
+                : stationDatabase;
+            target.ProcessPacket(packet, source);
         }
 
         PacketParsed?.Invoke(this, new ParsedPacketEventArgs(packet, source));

@@ -7,6 +7,7 @@
         x:DataType="vm:MainWindowViewModel"
         Title="APRS Command — Replay"
         PanelTitle="Replay"
+        WindowStartupLocation="CenterScreen"
         Width="800" Height="580" MinWidth="600" MinHeight="440">
   <Border Margin="16" Padding="16"
           Background="{DynamicResource PanelAccentBgBrush}"

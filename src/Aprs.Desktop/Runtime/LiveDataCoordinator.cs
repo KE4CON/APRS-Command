@@ -12,30 +12,63 @@ namespace Aprs.Desktop.Runtime;
 /// Subscribes to ingestion, coalesces refreshes on a timer to avoid UI thrash under a
 /// busy feed, and can open a receive-only APRS-IS connection.
 /// </summary>
-public sealed class LiveDataCoordinator : IAsyncDisposable
+public sealed class LiveDataCoordinator : IAsyncDisposable, IReplayMapController
 {
     private readonly AprsIngestionService ingestion;
     private readonly IStationDatabase stationDatabase;
+    private readonly IStationDatabase replayStationDatabase;
     private readonly MapViewModel map;
     private readonly RawPacketLogViewModel rawPacketLog;
 
     private DispatcherTimer? refreshTimer;
     private AprsIsClient? aprsIsClient;
     private bool dirty = true;
+    private bool replayMode;
 
     public LiveDataCoordinator(
         AprsIngestionService ingestion,
         IStationDatabase stationDatabase,
         MapViewModel map,
-        RawPacketLogViewModel rawPacketLog)
+        RawPacketLogViewModel rawPacketLog,
+        IStationDatabase replayStationDatabase)
     {
         this.ingestion = ingestion ?? throw new ArgumentNullException(nameof(ingestion));
         this.stationDatabase = stationDatabase ?? throw new ArgumentNullException(nameof(stationDatabase));
+        this.replayStationDatabase = replayStationDatabase ?? throw new ArgumentNullException(nameof(replayStationDatabase));
         this.map = map ?? throw new ArgumentNullException(nameof(map));
         this.rawPacketLog = rawPacketLog ?? throw new ArgumentNullException(nameof(rawPacketLog));
 
         // Ingestion runs on the UI thread (see ConnectAprsIsReceiveOnly), so this is single-threaded.
         this.ingestion.PacketIngested += (_, _) => dirty = true;
+    }
+
+    /// <summary>The station database currently feeding the map: replay set in replay mode, else live.</summary>
+    private IStationDatabase ActiveStationDatabase => replayMode ? replayStationDatabase : stationDatabase;
+
+    /// <inheritdoc />
+    public bool IsReplayMode => replayMode;
+
+    /// <inheritdoc />
+    public void EnterReplayMode()
+    {
+        // Start from a clean replay map. Live keeps ingesting into its own database underneath.
+        replayStationDatabase.Clear();
+        replayStationDatabase.ClearAllTrails();
+        replayMode = true;
+        dirty = true;
+        RefreshIfDirty();
+    }
+
+    /// <inheritdoc />
+    public void ExitReplayMode()
+    {
+        replayMode = false;
+        // Drop the replay set now that we're back to live; the live database already holds
+        // everything that arrived while the replay was playing.
+        replayStationDatabase.Clear();
+        replayStationDatabase.ClearAllTrails();
+        dirty = true;
+        RefreshIfDirty();
     }
 
     public AprsIsConnectionState ConnectionState => aprsIsClient?.State ?? AprsIsConnectionState.Disconnected;
@@ -72,8 +105,9 @@ public sealed class LiveDataCoordinator : IAsyncDisposable
         }
 
         dirty = false;
-        stationDatabase.UpdateAgeStates(DateTimeOffset.UtcNow);
-        map.UpdateStations(stationDatabase.GetVisibleStations());
+        var source = ActiveStationDatabase;
+        source.UpdateAgeStates(DateTimeOffset.UtcNow);
+        map.UpdateStations(source.GetVisibleStations());
         rawPacketLog.Refresh();
     }
 

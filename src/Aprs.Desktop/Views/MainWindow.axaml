@@ -316,6 +316,41 @@
       <views:MapView Grid.Column="1"
                      x:Name="TheMapView"
                      DataContext="{Binding Map}" />
+
+      <!-- Replay control bar — overlaid on the map during a replay review. Lives in the map
+           window's own visual tree (paints with the map), so there's no separate-window paint
+           delay. Shown only while reviewing a recording; the Replay window hides during that time. -->
+      <Border Grid.Column="1"
+              DataContext="{Binding Replay}"
+              IsVisible="{Binding IsReplayMode}"
+              VerticalAlignment="Top" HorizontalAlignment="Center"
+              Margin="0,14,0,0"
+              Background="{DynamicResource MapChromeBgBrush}"
+              BorderBrush="{DynamicResource AccentTealBrush}" BorderThickness="1"
+              CornerRadius="9" Padding="14,9"
+              BoxShadow="0 8 22 -12 #55101828">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Ellipse Width="9" Height="9" Fill="{DynamicResource AccentTealBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="Replay" FontWeight="SemiBold" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Button Content="Pause" Command="{Binding PauseCommand}" IsVisible="{Binding CanPause}" Padding="14,6" />
+          <Button Content="Resume" Command="{Binding ResumeCommand}" IsVisible="{Binding CanResume}" Padding="14,6" />
+          <Button Content="Stop" Command="{Binding StopCommand}" IsVisible="{Binding ShowStop}" Padding="14,6" />
+          <Button Content="Replay again" Command="{Binding PlayCommand}" IsVisible="{Binding ShowReplayAgain}" Padding="14,6"
+                  ToolTip.Tip="Clear and play the loaded log again from the start" />
+          <Button Content="Return to Live" Command="{Binding ReturnToLiveCommand}" Padding="14,6"
+                  ToolTip.Tip="Switch the map back to live traffic (shows anything received while replaying)" />
+          <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="4,2" />
+          <TextBlock Text="Speed" VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" />
+          <NumericUpDown Value="{Binding SpeedMultiplier}" Minimum="0.1" Maximum="20" Increment="0.5"
+                         FormatString="0.#" Width="118" MinWidth="118" VerticalAlignment="Center"
+                         ToolTip.Tip="Playback speed multiplier — raise it to fast-forward the replay" />
+          <TextBlock Text="{Binding CurrentPositionText}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+          <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+        </StackPanel>
+      </Border>
     </Grid>
 
     <!-- NWS weather alert banner — visible only when alerts are active -->
