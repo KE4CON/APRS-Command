@@ -1,6 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class ElevationProfileWindow : Window
+
+public sealed partial class ElevationProfileWindow : FloatingPanelWindow
 {
-    public ElevationProfileWindow() { InitializeComponent(); CloseButton.Click += (_, _) => Close(); }
+    public ElevationProfileWindow() { InitializeComponent(); }
 }

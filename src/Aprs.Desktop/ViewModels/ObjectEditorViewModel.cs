@@ -16,8 +16,11 @@ public sealed class ObjectEditorViewModel : INotifyPropertyChanged
     public ObjectEditorViewModel(IAprsObjectEditorService editorService, AprsObjectEditModel model)
     {
         this.editorService = editorService;
+        // The full spec symbol set — both the primary ('/') and alternate ('\') tables — with the
+        // primary (common) symbols listed first. GetKnownSymbols() is already ordered by category
+        // and description; a stable OrderByDescending keeps that order within each table.
         AvailableSymbols = new ObservableCollection<AprsSymbol>(
-            symbolService.GetKnownSymbols().Where(s => s.IsPrimaryTable));
+            symbolService.GetKnownSymbols().OrderByDescending(s => s.IsPrimaryTable));
         Load(model);
     }
 

@@ -80,6 +80,10 @@ public sealed partial class App : Application
         // SendMessageAsync uses the real retry engine.
         rt.MainViewModel.MessageCenter.SetAckCoordinator(rt.MessageAckCoordinator);
 
+        // Let Replay drive the map between live and replay-review modes (wired here to avoid a
+        // construction-time cycle between the replay viewmodel and the live coordinator).
+        rt.MainViewModel.Replay.SetMapController(rt.Coordinator);
+
         // Wire the templates viewmodel so the compose area can apply templates.
         rt.MainViewModel.MessageCenter.Templates = rt.MainViewModel.MessageTemplates;
 

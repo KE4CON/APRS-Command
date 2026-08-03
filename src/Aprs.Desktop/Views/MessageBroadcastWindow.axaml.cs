@@ -1,6 +1,8 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class MessageBroadcastWindow : Window
+
+public sealed partial class MessageBroadcastWindow : FloatingPanelWindow
 {
-    public MessageBroadcastWindow() { InitializeComponent(); CloseButton.Click += (_, _) => Close(); }
+    public MessageBroadcastWindow() { InitializeComponent(); }
 }

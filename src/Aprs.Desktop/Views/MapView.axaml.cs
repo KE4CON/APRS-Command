@@ -42,6 +42,13 @@ public sealed partial class MapView : UserControl
     private Avalonia.Threading.DispatcherTimer? radarAnimTimer;
     private int currentFrameIndex;
     private ILayer? currentBaseLayer;
+    // The USGS aerial-imagery layers have no tiles over large open water (e.g. the Great Lakes),
+    // which would otherwise render as blank white when zoomed in. We fill those gaps with a solid,
+    // muted water color set as the map background — close to the natural aerial-water tone so the
+    // shoreline transition is soft rather than a hard bright-blue seam. Captured/restored so the
+    // fill only applies while an imagery base map is active.
+    private Mapsui.Styles.Color defaultBackColor = Mapsui.Styles.Color.White;
+    private static readonly Mapsui.Styles.Color ImageryWaterFill = new(52, 91, 115); // #345B73
     private int baseMapIndex; // cycles through BaseMapKind values on toggle
     private StationTrailService? trailService; // set by WireTrailService()
     private bool mapInitialized;
@@ -67,6 +74,7 @@ public sealed partial class MapView : UserControl
         mapInitialized = true;
 
         var map = MapControl.Map;
+        defaultBackColor = map.BackColor;
         currentBaseLayer = CreateBaseLayer(BaseMapKind.OpenStreetMap);
         map.Layers.Add(currentBaseLayer);
 
@@ -148,8 +156,7 @@ public sealed partial class MapView : UserControl
         OpenStreetMap,
         UsgsTopo,
         UsgsImagery,
-        UsgsImageryTopo,
-        CartoDBDark
+        UsgsImageryTopo
     }
 
     // Swaps the base map while keeping the APRS markers layer on top. Each base map caches
@@ -171,7 +178,18 @@ public sealed partial class MapView : UserControl
         currentBaseLayer = CreateBaseLayer(kind);
         map.Layers.Add(currentBaseLayer);
         map.Layers.MoveToBottom(currentBaseLayer);
+
+        // The USGS aerial-imagery layers leave open water blank (no tiles); fill those gaps with a
+        // solid muted water color so lakes/oceans read as water instead of white. The vector maps
+        // (OSM, USGS Topo) draw water themselves, so restore the normal background for them.
+        map.BackColor = NeedsWaterFill(kind) ? ImageryWaterFill : defaultBackColor;
     }
+
+    // The aerial-imagery basemaps (imagery, imagery+topo) are land-only and leave open water
+    // blank at high zoom, so the map gets a water-colored background. The vector maps (OSM,
+    // USGS Topo) draw water themselves and need none.
+    private static bool NeedsWaterFill(BaseMapKind kind) =>
+        kind is BaseMapKind.UsgsImagery or BaseMapKind.UsgsImageryTopo;
 
     private void BaseMapSelector_SelectionChanged(object? sender, Avalonia.Controls.SelectionChangedEventArgs e)
     {
@@ -189,7 +207,6 @@ public sealed partial class MapView : UserControl
             1 => BaseMapKind.UsgsTopo,
             2 => BaseMapKind.UsgsImagery,
             3 => BaseMapKind.UsgsImageryTopo,
-            4 => BaseMapKind.CartoDBDark,
             _ => BaseMapKind.OpenStreetMap
         };
         SetBaseMap(kind);
@@ -216,10 +233,6 @@ public sealed partial class MapView : UserControl
                 "USGS Imagery + Topo",
                 "https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}",
                 16, "usgs-imagerytopo", "USGS The National Map", "https://www.usgs.gov/"),
-            BaseMapKind.CartoDBDark => (
-                "CartoDB Dark",
-                "https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png",
-                19, "carto-dark", "© OpenStreetMap contributors, © CARTO", "https://carto.com/"),
             _ => (
                 "OpenStreetMap",
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -278,9 +291,26 @@ public sealed partial class MapView : UserControl
         RefreshFeatures();
     }
 
+    private bool featuresRefreshQueued;
+
     private void Markers_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        RefreshFeatures();
+        // UpdateStations clears and re-adds every marker (N events per refresh). Coalesce them into
+        // one feature rebuild per UI cycle so a burst (e.g. a 175-station replay load) doesn't
+        // rebuild the whole Mapsui feature set N times and starve the rest of the UI.
+        if (featuresRefreshQueued)
+        {
+            return;
+        }
+
+        featuresRefreshQueued = true;
+        Avalonia.Threading.Dispatcher.UIThread.Post(
+            () =>
+            {
+                featuresRefreshQueued = false;
+                RefreshFeatures();
+            },
+            Avalonia.Threading.DispatcherPriority.Background);
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)

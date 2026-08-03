@@ -1,27 +1,24 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.OfflineMapDownloadWindow"
         x:DataType="vm:OfflineMapDownloadViewModel"
         Title="Offline Map Download"
-        Width="520" Height="560"
+        PanelTitle="Offline Map Download"
+        Width="520" Height="580"
         MinWidth="460" MinHeight="500"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
-  <Grid RowDefinitions="Auto,*,Auto" Background="{DynamicResource AppBgBrush}">
+  <Border Margin="16" Padding="16" Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="12"
+          BoxShadow="0 6 18 -10 #33101828">
+    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
 
-    <!-- Header -->
-    <Border Grid.Row="0" Background="{DynamicResource TitleBarBgBrush}" Padding="16,12">
-      <StackPanel Spacing="2">
-        <TextBlock Text="Offline Map Download" FontSize="16" FontWeight="Bold"
-                   Foreground="{DynamicResource TextTitleBarBrush}" />
-        <TextBlock FontSize="11" Foreground="{DynamicResource TextSidebarBrush}" TextWrapping="Wrap"
-                   Text="Pre-download map tiles for use without an internet connection. Define a geographic area, estimate the download size, then download." />
-      </StackPanel>
-    </Border>
+      <TextBlock Grid.Row="0" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"
+                 Text="Pre-download map tiles for use without an internet connection. Define a geographic area, estimate the download size, then download." />
 
-    <!-- Content -->
-    <ScrollViewer Grid.Row="1" Padding="18,14">
+      <ScrollViewer Grid.Row="1" Padding="4,0">
       <StackPanel Spacing="14">
 
         <!-- Area name -->
@@ -119,18 +116,14 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Buttons -->
-    <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource AppBgAltBrush}"
-            BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="8">
+      <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
         <Button Command="{Binding EstimateCommand}" Content="Estimate"
                 IsEnabled="{Binding IsNotDownloading}" Padding="12,6" />
         <Button Grid.Column="1" Command="{Binding DownloadCommand}" Content="Download"
                 IsEnabled="{Binding HasEstimate}" Padding="14,6" />
         <Button Grid.Column="2" Command="{Binding CancelCommand}" Content="Cancel Download"
-                IsVisible="{Binding IsDownloading}" Padding="12,6" />
-        <Button Grid.Column="3" x:Name="CloseButton" Content="Close" Padding="12,6" />
+                IsVisible="{Binding IsDownloading}" HorizontalAlignment="Left" Padding="12,6" />
       </Grid>
-    </Border>
-  </Grid>
-</Window>
+    </Grid>
+  </Border>
+</ctrls:FloatingPanelWindow>

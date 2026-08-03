@@ -1,9 +1,9 @@
-using Avalonia.Controls;
+using Aprs.Desktop.Controls;
 using Avalonia.Interactivity;
 
 namespace Aprs.Desktop.Views;
 
-public partial class MobileCompanionUrlWindow : Window
+public partial class MobileCompanionUrlWindow : FloatingPanelWindow
 {
     private readonly string url;
 
@@ -23,10 +23,8 @@ public partial class MobileCompanionUrlWindow : Window
         {
             await clipboard.SetTextAsync(url);
             CopyButton.Content = "Copied!";
-            await Task.Delay(1500);
+            await System.Threading.Tasks.Task.Delay(1500);
             CopyButton.Content = "Copy URL";
         }
     }
-
-    private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
 }

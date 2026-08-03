@@ -1,9 +1,22 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctrls="using:Aprs.Desktop.Controls"
              x:Class="Aprs.Desktop.App"
              RequestedThemeVariant="Light">
   <Application.Styles>
     <FluentTheme />
+    <!-- Buttons: a subtle press-in for tactile feedback, on top of Fluent's hover colours. -->
+    <Style Selector="Button">
+      <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.11" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
   </Application.Styles>
   <Application.Resources>
     <ResourceDictionary>
@@ -35,6 +48,13 @@
           <SolidColorBrush x:Key="AccentTealBorderBrush">#2DD4BF</SolidColorBrush>
           <SolidColorBrush x:Key="AccentTealBgBrush">#123B32</SolidColorBrush>
           <SolidColorBrush x:Key="AccentTealTextBrush">#D9FFF7</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelAccentBgBrush">#E4EEFB</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelAccentHeaderBrush">#CFE0FA</SolidColorBrush>
+          <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
+          <SolidColorBrush x:Key="MapChromeBgBrush">#A6C2E8</SolidColorBrush>
+          <!-- Status-badge outline: fixed violet frame, deliberately far from every
+               connection-status color so it never reads as a status. Same in both themes. -->
+          <SolidColorBrush x:Key="BadgeOutlineBrush">#A855F7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#FEF3C7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#F59E0B</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#B45309</SolidColorBrush>
@@ -70,6 +90,13 @@
           <SolidColorBrush x:Key="AccentTealBorderBrush">#0F766E</SolidColorBrush>
           <SolidColorBrush x:Key="AccentTealBgBrush">#042F2E</SolidColorBrush>
           <SolidColorBrush x:Key="AccentTealTextBrush">#99F6E4</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelAccentBgBrush">#1C3252</SolidColorBrush>
+          <SolidColorBrush x:Key="PanelAccentHeaderBrush">#26476F</SolidColorBrush>
+          <!-- Map-page chrome (title bar + status bar): a step darker than the box blue. -->
+          <SolidColorBrush x:Key="MapChromeBgBrush">#101D30</SolidColorBrush>
+          <!-- Status-badge outline: fixed violet frame, deliberately far from every
+               connection-status color so it never reads as a status. Same in both themes. -->
+          <SolidColorBrush x:Key="BadgeOutlineBrush">#A855F7</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBgBrush">#2D1F02</SolidColorBrush>
           <SolidColorBrush x:Key="WarnBorderBrush">#D97706</SolidColorBrush>
           <SolidColorBrush x:Key="WarnTextBrush">#FCD34D</SolidColorBrush>
@@ -80,6 +107,51 @@
         </ResourceDictionary>
 
       </ResourceDictionary.ThemeDictionaries>
+
+      <!-- Shared design tokens (theme-independent): softer corners app-wide via Fluent's own
+           ControlCornerRadius, plus a card radius for panels/cards to consume. -->
+      <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+      <CornerRadius x:Key="OverlayCornerRadius">10</CornerRadius>
+      <CornerRadius x:Key="CardCornerRadius">12</CornerRadius>
+
+      <!-- Shared "floating panel" window chrome: rounded surface, custom grip title bar with an
+           accent hairline, and a close button. Applied to every FloatingPanelWindow-derived window. -->
+      <ControlTheme x:Key="{x:Type ctrls:FloatingPanelWindow}" TargetType="ctrls:FloatingPanelWindow">
+        <Setter Property="Template">
+          <ControlTemplate>
+            <Border Background="{DynamicResource SurfaceBgBrush}"
+                    BorderBrush="{DynamicResource AppBorderBrush}"
+                    BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+              <Grid RowDefinitions="Auto,Auto,*">
+                <Grid Name="PART_TitleBar" Height="44"
+                      Background="{DynamicResource PanelAccentHeaderBrush}"
+                      ColumnDefinitions="Auto,*,Auto">
+                  <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="11" Margin="15,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                      <Ellipse Width="4" Height="4" Fill="{DynamicResource AccentTealBrush}" />
+                      <Ellipse Width="4" Height="4" Fill="{DynamicResource AccentTealBrush}" />
+                      <Ellipse Width="4" Height="4" Fill="{DynamicResource AccentTealBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="{TemplateBinding PanelTitle}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                  <Button Name="PART_Close" Grid.Column="2"
+                          Width="30" Height="30" Margin="0,0,8,0" Padding="0" CornerRadius="8"
+                          Background="Transparent" BorderThickness="0"
+                          HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                          ToolTip.Tip="Close">
+                    <TextBlock Text="✕" FontSize="13" Foreground="{DynamicResource TextMutedBrush}" />
+                  </Button>
+                </Grid>
+                <Border Grid.Row="1" Height="2" Background="{DynamicResource AccentTealBrush}" />
+                <ContentPresenter Grid.Row="2" Content="{TemplateBinding Content}" />
+              </Grid>
+            </Border>
+          </ControlTemplate>
+        </Setter>
+      </ControlTheme>
     </ResourceDictionary>
   </Application.Resources>
 </Application>

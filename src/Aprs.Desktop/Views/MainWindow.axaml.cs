@@ -547,24 +547,25 @@ public sealed partial class MainWindow : Window
 
         // APRS-IS badge
         var state = runtime.ConnectionState;
-        var (aprsText, aprsBg, aprsBorder) = state switch
+        // Note: the badge OUTLINE is a fixed violet frame (BadgeOutlineBrush) set in XAML and is
+        // deliberately NOT touched here — connection state shows through the badge text and the
+        // fill tint below, never the border color.
+        var (aprsText, aprsBg) = state switch
         {
-            AprsIsConnectionState.Connected    => ("APRS-IS Connected",    "#0F3D2E", "#22C55E"),
-            AprsIsConnectionState.Connecting   => ("APRS-IS Connecting…",  "#1E293B", "#F59E0B"),
-            AprsIsConnectionState.Reconnecting => ("APRS-IS Reconnecting…","#1E293B", "#F59E0B"),
-            AprsIsConnectionState.Faulted      => ("APRS-IS Error",        "#3D0F0F", "#F87171"),
-            _                                  => ("APRS-IS Offline",      "#1E293B", "#64748B")
+            AprsIsConnectionState.Connected    => ("APRS-IS Connected",    "#0F3D2E"),
+            AprsIsConnectionState.Connecting   => ("APRS-IS Connecting…",  "#1E293B"),
+            AprsIsConnectionState.Reconnecting => ("APRS-IS Reconnecting…","#1E293B"),
+            AprsIsConnectionState.Faulted      => ("APRS-IS Error",        "#3D0F0F"),
+            _                                  => ("APRS-IS Offline",      "#1E293B")
         };
         AprsIsBadgeText.Text = aprsText;
-        AprsIsBadgeBorder.Background     = new SolidColorBrush(Color.Parse(aprsBg));
-        AprsIsBadgeBorder.BorderBrush    = new SolidColorBrush(Color.Parse(aprsBorder));
+        AprsIsBadgeBorder.Background = new SolidColorBrush(Color.Parse(aprsBg));
 
         // TX badge — only update when NOT in exercise mode (exercise mode sets its own text)
         if (!runtime.IsTransmitInhibited)
         {
             TxBadgeText.Text = "TX Disabled";
-            TxBadgeBorder.Background  = new SolidColorBrush(Color.Parse("#123B32"));
-            TxBadgeBorder.BorderBrush = new SolidColorBrush(Color.Parse("#2DD4BF"));
+            TxBadgeBorder.Background = new SolidColorBrush(Color.Parse("#123B32"));
         }
     }
 
@@ -573,14 +574,13 @@ public sealed partial class MainWindow : Window
         var authority = (Application.Current as App)?.Runtime?.TransmitAuthority;
         if (authority is null) return;
 
+        // The badge outline stays the fixed violet frame; only the fill + text change here.
         if (authority.IsInhibited)
         {
             authority.Release();
             TxBadgeText.Text = "TX Enabled";
             TxBadgeBorder.Background = new Avalonia.Media.SolidColorBrush(
                 Avalonia.Media.Color.Parse("#123B32"));
-            TxBadgeBorder.BorderBrush = new Avalonia.Media.SolidColorBrush(
-                Avalonia.Media.Color.Parse("#2DD4BF"));
         }
         else
         {
@@ -588,8 +588,6 @@ public sealed partial class MainWindow : Window
             TxBadgeText.Text = "EXERCISE — TX INHIBITED";
             TxBadgeBorder.Background = new Avalonia.Media.SolidColorBrush(
                 Avalonia.Media.Color.Parse("#7F1D1D"));
-            TxBadgeBorder.BorderBrush = new Avalonia.Media.SolidColorBrush(
-                Avalonia.Media.Color.Parse("#F87171"));
         }
     }
 

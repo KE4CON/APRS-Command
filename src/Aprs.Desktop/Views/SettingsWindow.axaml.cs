@@ -1,17 +1,8 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Aprs.Desktop.Controls;
 
 namespace Aprs.Desktop.Views;
 
-public sealed partial class SettingsWindow : Window
+public sealed partial class SettingsWindow : FloatingPanelWindow
 {
-    public SettingsWindow()
-    {
-        InitializeComponent();
-    }
-
-    private void Close_Click(object? sender, RoutedEventArgs e)
-    {
-        Close();
-    }
+    public SettingsWindow() { InitializeComponent(); }
 }

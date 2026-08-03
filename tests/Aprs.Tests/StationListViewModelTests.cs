@@ -27,7 +27,7 @@ public sealed class StationListViewModelTests
 
         Assert.Equal("KD8ABC-7", row.Callsign);
         Assert.Equal("Tactical 7", row.DisplayName);
-        Assert.Equal("Car / mobile station", row.SymbolDescription);
+        Assert.Equal("Car", row.SymbolDescription);
     }
 
     [Fact]

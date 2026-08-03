@@ -1,23 +1,23 @@
-<Window xmlns="https://github.com/avaloniaui"
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="using:Aprs.Desktop.Views"
         xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
         x:Class="Aprs.Desktop.Views.ObjectsWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="APRS Command — APRS Objects"
+        PanelTitle="APRS Objects"
         Width="900" Height="680" MinWidth="600" MinHeight="440">
-  <Grid RowDefinitions="Auto,*,Auto">
-    <Border Grid.Row="0" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,0,0,1" Padding="22,10">
-      <StackPanel Spacing="2">
-        <TextBlock Text="APRS Objects" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}" />
-        <TextBlock Text="APRS objects and items on the network. Create a new object to mark a location (shelter, EOC, staging area, water point). Your callsign is filled in as owner automatically. Table/Symbol/Overlay select the map icon — use the same symbol picker as Station Setup. 'Adopted' means you have taken ownership of an object originally created by another station." Foreground="{DynamicResource TextSubtleBrush}" FontSize="12" TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-    <Border Grid.Row="1" Padding="16">
-    <views:ObjectManagerView Grid.Row="1" DataContext="{Binding ObjectManager}" />
-    </Border>
-    <Border Grid.Row="2" Background="{DynamicResource AppBgAltBrush}" BorderBrush="{DynamicResource TextSidebarBrush}" BorderThickness="0,1,0,0" Padding="12">
-      <Button Content="Close" HorizontalAlignment="Right" Padding="14,6" Click="Close_Click" />
-    </Border>
-  </Grid>
-</Window>
+  <Border Margin="16" Padding="16"
+          Background="{DynamicResource PanelAccentBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+          CornerRadius="12" BoxShadow="0 6 18 -10 #33101828">
+    <DockPanel>
+      <TextBlock DockPanel.Dock="Top"
+                 Text="APRS objects and items on the network. Create a new object to mark a location (shelter, EOC, staging area, water point). Your callsign is filled in as owner automatically. Table/Symbol/Overlay select the map icon. 'Adopted' means you have taken ownership of an object originally created by another station."
+                 Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12"
+                 TextWrapping="Wrap" Margin="0,0,0,12" />
+      <views:ObjectManagerView DataContext="{Binding ObjectManager}" />
+    </DockPanel>
+  </Border>
+</ctrls:FloatingPanelWindow>

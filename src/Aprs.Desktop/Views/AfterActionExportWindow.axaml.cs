@@ -1,16 +1,14 @@
 using System.IO;
-using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Aprs.Desktop.Controls;
 using Aprs.Desktop.ViewModels;
 
 namespace Aprs.Desktop.Views;
 
-public sealed partial class AfterActionExportWindow : Window
+public sealed partial class AfterActionExportWindow : FloatingPanelWindow
 {
     public AfterActionExportWindow()
     {
         InitializeComponent();
-        CloseButton.Click += (_, _) => Close();
     }
 
     protected override void OnDataContextChanged(EventArgs e)

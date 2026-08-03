@@ -254,6 +254,23 @@ runtime hook are in place; only the view surface remains).
 
 ---
 
+### D15 — Complete APRS symbol tables adopted from the authoritative aprs.fi index *(conformance)*
+**Problem:** The symbol lookup service (`AprsSymbolLookupService`) shipped a hand-curated shortlist of
+~61 symbols, so the object symbol picker was missing most of the spec's symbols and a few hand-written
+descriptions were wrong (e.g. `/C` was labelled "Coast Guard" — it is **Canoe**; `\C` is Coast Guard).
+**Decision:** Replace the shortlist with the **complete** APRS primary (`/`) and alternate (`\`) tables —
+**159 defined symbols** (reserved/undefined code positions omitted) — with descriptions taken verbatim
+from the authoritative aprs.fi symbol index (`hessu/aprs-symbol-index`, CC BY-SA 4.0), which is also the
+source of the bundled icon sheets. `Category`, the marker-dot key, and the short letter designation are
+**derived** from the description so the table stays a single source of truth. The object symbol picker
+now offers **both** tables (primary listed first), scrolls, and shows each symbol's real icon (cropped
+from the embedded sheets via `AprsSymbolIconConverter`) beside its letter. Attribution added to
+`APRS-SYMBOLS-NOTICE.txt`. **Tests:** `AprsSymbolLookupServiceTests` updated to the authoritative
+descriptions and locks the full set (86 primary + 73 alternate = 159); `MapViewModelTests` /
+`StationListViewModelTests` description assertions updated to match.
+
+---
+
 ## Future / planned (not yet done)
 
 Decisions made about work intended for later, so the reasoning is captured before it is scheduled.
@@ -316,9 +333,41 @@ reconcile against aprsspec §11 (probably accept both). Generate-side: verify th
 `√(offset/1500)`** encoding matches the aprs11 errata.
 **Sequencing:** Phase 0 vector-verification → MIC-E → third-party `}` → area-object generate check.
 
-### P4 — RepeaterBook API approval is outstanding (awareness)
+### P4 — RepeaterBook: feature removed from UI; deferred to v2.0 pending written permission
 **Status (2026-08-01):** the Field Repeater Lookup feature (`RepeaterBookService`) needs an app-level
 approval from RepeaterBook (distributed-app category); the token was **not approved**, and a reply to
 RepeaterBook is awaiting a response. The feature degrades cleanly without a token. **Do not** treat it
 as shippable or assume the API works until approval lands. Captured here so the status lives with the
 project rather than only in external chat history.
+
+**Update (2026-08-01):** removed **Field Repeater Lookup** from the Map menu until this is settled (the
+`RepeaterBookService`/`RepeaterDirectoryWindow`/viewmodel stay in the code, dormant — no menu entry).
+
+**Considered and deferred — a "download-your-own-export, show-as-a-map-layer" design.** Idea: the
+operator downloads their **own** RepeaterBook member CSV and the app imports it into a **toggleable,
+offline, never-transmitted** map layer (sidesteps the API-token approval entirely). **But** RepeaterBook's
+published API/data terms appear to restrict exactly this: the prohibited-use list names **"public
+directories, maps, nearby-finder tools"** and "alternative … repeater finder experiences," and
+**"offline bundling / redistribution / mirroring"** of their data requires **written permission**; public
+access "does not grant … export rights." Attribution ("Data courtesy of RepeaterBook.com") is required
+where permitted. **Decision:** move the repeater map layer to a **v2.0** item, gated on **explicit written
+permission from RepeaterBook** for the member-import / personal-offline-display use case. Do **not** build
+it before that permission is in hand. (Reading of their terms, not legal advice — their written OK is the
+gate.) A permission-request email draft is to be prepared when Jim is ready to send it from his account.
+
+### P5 — Winlink RMS gateways: feature removed from UI; deferred to v2.0 pending the API key
+**Status (2026-08-01):** the Winlink RMS Gateways feature (`WinlinkRmsGatewayService`) queries
+`api.winlink.org/gateway/query`, which requires a **per-application API key issued by a Winlink
+administrator** (not self-service). Jim has requested one and is **awaiting a response**. Removed the
+**Winlink RMS Gateways** entry from the Messages menu until then (service/window/viewmodel stay in the
+code, dormant — no menu entry).
+
+**Planned design (identical to the deferred repeater layer):** plot each RMS gateway's location as a
+**toggleable, never-transmitted** map overlay — a pure Mapsui layer with no path to any transmit client.
+
+**Key difference from RepeaterBook (P4):** Winlink's authorization mechanism **is** the per-app key
+issued by an admin, so the key itself is the permission — once granted for APRS Command, that authorizes
+querying and on-map display; no separate terms carve-out is needed the way RepeaterBook required. When the
+key lands, verify the live request/response shape against `ParseResponse()` (never tested against a real
+key) and confirm Winlink's data-use/attribution expectations before shipping. **Do not** assume the API
+works until the key is in hand.

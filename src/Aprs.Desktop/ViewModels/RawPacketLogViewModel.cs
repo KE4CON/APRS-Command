@@ -106,6 +106,10 @@ public sealed class RawPacketLogViewModel : INotifyPropertyChanged
 
     public int RowCount => Rows.Count;
 
+    /// <summary>All retained captured packets, for exporting a replayable log file.
+    /// Returns the full log (not the filtered view) so Save Log writes everything captured.</summary>
+    public IReadOnlyList<RawPacketLogEntry> GetEntriesForExport() => logService.GetRecentEntries();
+
     public void Refresh()
     {
         var entries = logService.GetRecentEntries();

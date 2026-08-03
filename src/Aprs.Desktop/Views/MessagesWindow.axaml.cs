@@ -1,8 +1,8 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class MessagesWindow : Window
+
+public sealed partial class MessagesWindow : FloatingPanelWindow
 {
     public MessagesWindow() { InitializeComponent(); }
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }

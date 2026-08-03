@@ -93,9 +93,16 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // letting the DI container pick a constructor it cannot fully satisfy.
         services.AddSingleton<IAprsParser, AprsParser>();
         services.AddSingleton<IStationDatabase>(_ => new Persistence.SqliteStationDatabase());
+        // Ephemeral in-memory station database that holds ONLY replayed packets, so a replay
+        // session can be shown on the map in isolation without touching live station state.
+        services.AddSingleton<StationDatabase>(_ => new StationDatabase());
         services.AddSingleton<IRawPacketLogService>(
             sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>()));
-        services.AddSingleton<AprsIngestionService>();
+        services.AddSingleton<AprsIngestionService>(sp => new AprsIngestionService(
+            sp.GetRequiredService<IAprsParser>(),
+            sp.GetRequiredService<IStationDatabase>(),
+            sp.GetRequiredService<IRawPacketLogService>(),
+            sp.GetRequiredService<StationDatabase>()));
 
         // Persisted settings: single source of truth for configuration that survives restarts.
         services.AddSingleton<IAppSettingsStore>(_ => JsonAppSettingsStore.Default);
@@ -134,6 +141,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<ViewModels.FrequencyReferenceViewModel>();
         services.AddSingleton<ViewModels.ShadowBeaconViewModel>();
         services.AddSingleton<ViewModels.NetScriptEditorViewModel>();
+
+        // Message center — one shared instance for both the main window and the scheduled-message
+        // service. It was previously only hand-constructed for the main window and never registered, so
+        // the scheduled-message factory below crashed with "No service for type MessageCenterViewModel"
+        // the moment a user opened Scheduled Messages.
+        services.AddSingleton<ViewModels.MessageCenterViewModel>(provider =>
+            new ViewModels.MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()));
 
         // Scheduled message service — created after MessageCenterViewModel is available
         services.AddSingleton<Runtime.ScheduledMessageService>(provider =>
@@ -229,7 +243,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
             rawPacketLog,                                   // LIVE
             new DecodedEventLogViewModel(provider.GetRequiredService<IDecodedEventLogService>()),  // LIVE
             new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>()),               // LIVE
-            new MessageCenterViewModel(provider.GetRequiredService<IAprsMessageStoreService>()),  // LIVE
+            provider.GetRequiredService<MessageCenterViewModel>(),                                // LIVE (shared with ScheduledMessageService)
             new ObjectManagerViewModel(
                 provider.GetRequiredService<IAprsObjectManager>(),
                 provider.GetRequiredService<IAprsObjectEditorService>()),  // LIVE — transmit service wired in Create()
@@ -265,7 +279,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<AprsIngestionService>(),
             provider.GetRequiredService<IStationDatabase>(),
             map,
-            rawPacketLog);
+            rawPacketLog,
+            provider.GetRequiredService<StationDatabase>());
 
         // Simulation service — routes generated packets through the live ingestion pipeline.
         var simulationSink    = new LiveSimulatedPacketSink(provider.GetRequiredService<AprsIngestionService>());

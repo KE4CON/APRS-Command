@@ -26,7 +26,7 @@
 
     <Grid Grid.Row="1"
           RowDefinitions="Auto,Auto"
-          ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto"
+          ColumnDefinitions="*,Auto,Auto,Auto"
           ColumnSpacing="6"
           RowSpacing="6">
       <TextBox Watermark="Replay file path — or click Browse to select a log file"
@@ -43,39 +43,28 @@
       <Button Grid.Column="3"
               Command="{Binding PlayCommand}"
               Content="Play"
-              Padding="10,6" />
-      <Button Grid.Column="4"
-              Command="{Binding PauseCommand}"
-              Content="Pause"
-              Padding="10,6" />
-      <Button Grid.Column="4"
-              Command="{Binding ResumeCommand}"
-              Content="Resume"
-              Padding="10,6" />
-      <Button Grid.Column="5"
-              Command="{Binding StopCommand}"
-              Content="Stop"
-              Padding="10,6" />
+              Padding="14,6"
+              ToolTip.Tip="Clear the map and replay the loaded log; playback controls appear on the map. Live traffic is cached until you return to live" />
 
       <StackPanel Grid.Row="1"
                   Orientation="Horizontal"
                   Spacing="8"
                   VerticalAlignment="Center">
-        <TextBlock Text="Speed" />
+        <TextBlock Text="Speed" VerticalAlignment="Center" />
         <NumericUpDown Value="{Binding SpeedMultiplier}"
                        Minimum="0.1"
                        Maximum="20"
                        Increment="0.5"
-                       Width="80" />
+                       FormatString="0.#"
+                       Width="118" />
         <CheckBox Content="Loop"
                   IsChecked="{Binding LoopReplay}" />
-        <TextBlock Text="{Binding CurrentPositionText}" />
-        <TextBlock Text="{Binding CurrentTimestampText}" />
-        <TextBlock Text="{Binding ProgressText}" />
+        <TextBlock Text="{Binding CurrentPositionText}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center" />
       </StackPanel>
       <TextBlock Grid.Row="1"
                  Grid.Column="1"
-                 Grid.ColumnSpan="5"
+                 Grid.ColumnSpan="3"
                  Text="{Binding LastError}"
                  Foreground="{DynamicResource ErrorBorderBrush}"
                  VerticalAlignment="Center"

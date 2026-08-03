@@ -1,14 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Aprs.Desktop.Views.MainStatusBarView">
-  <Border Background="{DynamicResource AppBorderStrongBrush}"
-          BorderBrush="{DynamicResource TextSidebarBrush}"
+  <Border Background="{DynamicResource MapChromeBgBrush}"
+          BorderBrush="{DynamicResource AppBorderBrush}"
           BorderThickness="0,1,0,0"
           Padding="12,7">
     <Grid ColumnDefinitions="*,Auto,Auto"
           ColumnSpacing="18">
       <TextBlock Text="Ready"
-                 Foreground="{DynamicResource TitleBarBorderBrush}"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
                  VerticalAlignment="Center" />
       <TextBlock Grid.Column="1"
                  Text="APRS-IS Disconnected"

@@ -1,8 +1,8 @@
-using Avalonia.Controls;
-using Avalonia.Interactivity;
+using Aprs.Desktop.Controls;
+
 namespace Aprs.Desktop.Views;
-public sealed partial class AlertsWindow : Window
+
+public sealed partial class AlertsWindow : FloatingPanelWindow
 {
     public AlertsWindow() { InitializeComponent(); }
-    private void Close_Click(object? sender, RoutedEventArgs e) => Close();
 }
