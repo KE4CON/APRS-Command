@@ -118,13 +118,17 @@ Each with spec vectors from aprsspec + Dire Wolf:
   - **Compressed objects / items** didn't decode their base-91 position (invalid, no coordinates).
     Fixed: the shared object/item position parser now detects and decodes the compressed form.
   - Message length is intentionally lenient on receive (accepts >67 chars) — documented, not a bug.
-- **Remaining flagged residuals (pinned by tests, deferred — rare/newer forms):**
-  - **Compressed weather** decodes its position but does not yet extract the weather fields (surfaces
-    as a position, wx left in the comment).
-  - **Base-91 / compressed telemetry** (the `|` DTI, an aprs12 addition) is not decoded — falls to
-    Unknown.
-- **Ongoing (not a fixed deliverable):** deeper byte-exactness against a *live* Dire Wolf oracle (vs.
-  the spec's worked examples used here).
+- **Both former residuals closed against Dire Wolf 1.8.1 `decode_aprs` (installed as the oracle):**
+  - **Compressed weather — FIXED.** A compressed position whose symbol code is `_` is now decoded as
+    a weather report, with wind direction/speed taken from the compressed course/speed bytes and the
+    trailing gust/temp/rain/humidity/baro fields parsed. Values verified field-by-field against
+    Dire Wolf (`Spec_CompressedWeather_DecodedWithWindFromCompressedCourseSpeed`).
+  - **Base-91 telemetry (`|` DTI) — confirmed correct as-is.** Dire Wolf also reports "Unknown APRS
+    Data Type Indicator |" for a standalone `|` packet, so our Unknown classification matches the
+    reference decoder. (Base-91 telemetry rides inside other packets' comments, out of scope.)
+- **Ongoing (optional):** continuous byte-exactness diffing of a large live-traffic corpus against
+  Dire Wolf. The oracle is now available (`C:\Dev\direwolf\…\decode_aprs.exe`) whenever wanted; the
+  specific tricky forms have been spot-verified against it.
 - Keep the primer updated in lockstep as any of these close.
 
 ---
