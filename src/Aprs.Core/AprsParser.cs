@@ -8,6 +8,7 @@ public sealed class AprsParser : IAprsParser
     private readonly AprsObjectItemParser objectItemParser = new();
     private readonly AprsWeatherParser weatherParser = new();
     private readonly AprsMicEParser micEParser = new();
+    private readonly AprsNmeaParser nmeaParser = new();
 
     public bool TryParse(string rawLine, DateTimeOffset receivedAtUtc, out AprsPacket? packet, out string? error)
     {
@@ -177,6 +178,34 @@ public sealed class AprsParser : IAprsParser
         {
             var inner = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;
             return Parse(inner, receivedAtUtc, thirdPartyDepth + 1);
+        }
+
+        // Raw NMEA GPS ('$') — legacy; decode GxRMC/GxGGA into a position so the station plots.
+        if (nmeaParser.CanParse(rawPacket.Information))
+        {
+            return nmeaParser.Parse(rawPacket);
+        }
+
+        // User-defined format ('{') — developer-defined data; recognize it (ID byte + payload)
+        // rather than misclassify it as Unknown.
+        if (rawPacket.Information.StartsWith('{'))
+        {
+            var body = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;
+            char? userId = body.Length > 0 ? body[0] : null;
+            var content = body.Length > 1 ? body[1..] : string.Empty;
+            return new UserDefinedAprsPacket(
+                rawPacket.RawLine,
+                rawPacket.SourceCallsign,
+                rawPacket.SourceSsid,
+                rawPacket.Destination,
+                rawPacket.Path,
+                rawPacket.Information,
+                rawPacket.ReceivedAtUtc,
+                rawPacket.IsValid,
+                rawPacket.ValidationErrors,
+                rawPacket.QConstruct,
+                userId,
+                content);
         }
 
         if (!rawPacket.IsValid || string.IsNullOrEmpty(rawPacket.Information))

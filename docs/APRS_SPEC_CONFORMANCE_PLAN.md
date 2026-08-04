@@ -38,8 +38,8 @@ test vectors to confirm exactness.
 | Station capabilities | `<` | ✅ (basic) | Raw capability text captured. |
 | Query | `?` | ✅ **Done (decode)** | Decomposed into `QueryType` + `QueryKeyword` + optional `QueryTarget` (`?APRS?`/`?APRSx`, `?IGATE?`, `?WX?`, `?PING?`). Tests: `AprsQueryParsingTests`. *(Auto-responding to queries remains out of scope.)* |
 | **Third-party** | `}` | ✅ **Done** | `AprsParser` unwraps `}` and re-parses the encapsulated packet (depth-guarded) so the originating station surfaces, not the gateway. Tests: `AprsThirdPartyParsingTests`. |
-| User-defined | `{` | ❌ Missing | Minor / experimental. |
-| Raw NMEA GPS | `$` | ❌ Missing | Legacy; rarely needed. |
+| User-defined | `{` | ✅ **Done** | `UserDefinedAprsPacket` captures the user/developer ID byte + raw payload — recognized, not Unknown. Tests: `AprsNmeaAndUserDefinedTests`. |
+| Raw NMEA GPS | `$` | ✅ **Done** | `AprsNmeaParser` decodes position sentences (GxRMC/GxGGA) → `PositionAprsPacket` (type `$`) with lat/lon + course/speed/altitude; non-position sentences left as Unknown. Tests: `AprsNmeaAndUserDefinedTests`. |
 | DAO datum/precision ext. | `!Dxx!` in comment | ✅ **Done** | `AprsDaoExtension` refines lat/lon (human-readable + base-91 forms) and strips the token, applied to uncompressed/compressed positions, objects, items, and MIC-E. Trailing-token-only detection avoids false positives. Tests: `AprsDaoExtensionTests`. |
 
 **Robustness:** parsers guard indexing and use `TryParse`; the fuzz harness covers malformed input.
