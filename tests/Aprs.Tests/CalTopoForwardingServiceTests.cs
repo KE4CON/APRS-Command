@@ -119,7 +119,7 @@ public sealed class CalTopoForwardingServiceTests
             "N0CALL", null, "APRS", [], ":KE4CON   :Hello{001",
             TestTime, true, [],
             null, "KE4CON", "Hello{001", "Hello", "001",
-            null, null, false, null, false, false, null);
+            null, null, false, null, null, false, false, null);
         svc.OnPacketParsed(null, MakeArgs(msg));
         Assert.Equal(0, svc.ForwardedStationCount);
     }
