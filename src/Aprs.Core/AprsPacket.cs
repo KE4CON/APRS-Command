@@ -172,6 +172,35 @@ public sealed record CapabilityAprsPacket(
         IsValid,
         ValidationErrors);
 
+/// <summary>
+/// User-defined format packet (DTI <c>{</c>). The byte after <c>{</c> is a user/developer ID and the
+/// rest is developer-defined data with no standard meaning — recognized so it is not misclassified as
+/// Unknown, but not otherwise interpreted.
+/// </summary>
+public sealed record UserDefinedAprsPacket(
+    string RawLine,
+    string SourceCallsign,
+    int? SourceSsid,
+    string Destination,
+    IReadOnlyList<string> Path,
+    string Information,
+    DateTimeOffset ReceivedAtUtc,
+    bool IsValid,
+    IReadOnlyList<string> ValidationErrors,
+    string? QConstruct,
+    char? UserId,
+    string Content)
+    : AprsPacket(
+        RawLine,
+        SourceCallsign,
+        SourceSsid,
+        Destination,
+        Path,
+        Information,
+        ReceivedAtUtc,
+        IsValid,
+        ValidationErrors);
+
 public sealed record UnknownAprsPacket(
     string RawLine,
     string SourceCallsign,
