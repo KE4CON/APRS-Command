@@ -111,26 +111,34 @@ public sealed class AprsSpecSubVariantConformanceTests
     // ── Flagged residuals (current behavior pinned; tracked in the plan) ──
 
     /// <summary>
-    /// KNOWN LIMITATION (tracked in APRS_SPEC_CONFORMANCE_PLAN.md): a compressed <em>weather</em>
-    /// report decodes its base-91 position correctly but does NOT yet extract the weather fields —
-    /// it surfaces as a position, with the wx data left in the comment. Full compressed-weather
-    /// decode is deferred (rare form). This test pins the current behavior.
+    /// §12 Compressed weather (verified against Dire Wolf 1.8.1 <c>decode_aprs</c>): a compressed
+    /// position whose symbol code is '_' is a weather station. The wind direction/speed ride in the
+    /// compressed course/speed bytes; the remaining fields (gust/temp/rain/humidity/baro) follow.
+    /// REGRESSION FIX: this previously surfaced as a plain position with the wx data dropped.
     /// </summary>
     [Fact]
-    public void CompressedWeather_PositionDecoded_WeatherNotYetExtracted()
+    public void Spec_CompressedWeather_DecodedWithWindFromCompressedCourseSpeed()
     {
-        var packet = Parse("N0CALL>APRS:!/5L!!<*e7_225/000g000t050r000p001");
+        var wx = Assert.IsType<WeatherAprsPacket>(
+            Parse("N0CALL>APRS:!/5L!!<*e7_7P[g010t072r000p000P000h50b10132"));
 
-        var position = Assert.IsType<PositionAprsPacket>(packet); // not (yet) a WeatherAprsPacket
-        Assert.Equal(49.5, position.Latitude!.Value, 1);
+        Assert.Equal(49.5, wx.Latitude!.Value, 1);
+        Assert.Equal(-72.75, wx.Longitude!.Value, 2);
+        Assert.Equal(88, wx.WindDirectionDegrees);        // Dire Wolf: direction 88
+        Assert.InRange(wx.WindSpeedMph!.Value, 40, 43);    // Dire Wolf: 41.7 mph (from the cs bytes)
+        Assert.Equal(10, wx.WindGustMph);
+        Assert.Equal(72, wx.TemperatureFahrenheit);
+        Assert.Equal(50, wx.HumidityPercent);
     }
 
     /// <summary>
-    /// KNOWN LIMITATION (tracked in the plan): base-91 / compressed telemetry (the '|' DTI, an
-    /// aprs12 addition) is not decoded and falls through to Unknown. Deferred (rare, newer form).
+    /// Base-91 / compressed telemetry: a packet whose info field starts with the '|' DTI is NOT a
+    /// standalone type — Dire Wolf 1.8.1 also reports "Unknown APRS Data Type Indicator |". So our
+    /// Unknown classification is correct and matches the reference decoder (base-91 telemetry rides
+    /// inside other packets' comments, out of scope here).
     /// </summary>
     [Fact]
-    public void Base91Telemetry_PipeDti_CurrentlyUnknown()
+    public void Base91Telemetry_PipeDti_UnknownMatchesDireWolf()
     {
         Assert.IsType<UnknownAprsPacket>(Parse("N0CALL>APRS:|ss11223344|"));
     }

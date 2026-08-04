@@ -12,6 +12,8 @@ public sealed class AprsWeatherParser
     // position data starts 7 chars later than for the timestampless '!' and '=' reports.
     private const int TimestampLength = 7;
 
+    private const double MphPerKnot = 1.15077945;
+
     public bool CanParse(string information)
     {
         return information.StartsWith('_')
@@ -26,6 +28,8 @@ public sealed class AprsWeatherParser
         char? symbolTableIdentifier = null;
         char? symbolCode = null;
         string? timestamp = null;
+        int? compressedWindDirection = null;
+        int? compressedWindSpeedMph = null;
         string weatherBody;
 
         if (IsPositionWeather(rawPacket.Information))
@@ -36,16 +40,37 @@ public sealed class AprsWeatherParser
             if (positionStart > 1 && rawPacket.Information.Length >= 1 + TimestampLength)
                 timestamp = rawPacket.Information.Substring(1, TimestampLength);
 
-            var parsedPosition = AprsPositionComponents.Parse(
-                rawPacket.Information,
-                positionStart,
-                "Weather position",
-                validationErrors);
-            latitude = parsedPosition.Latitude;
-            longitude = parsedPosition.Longitude;
-            symbolTableIdentifier = parsedPosition.SymbolTableIdentifier;
-            symbolCode = parsedPosition.SymbolCode;
-            weatherBody = parsedPosition.Comment;
+            if (AprsCompressedPositionDecoder.IsCompressed(rawPacket.Information, positionStart))
+            {
+                var compressed = AprsCompressedPositionDecoder.Decode(
+                    rawPacket.Information, positionStart, "Weather position", validationErrors);
+                latitude = compressed.Latitude;
+                longitude = compressed.Longitude;
+                symbolTableIdentifier = compressed.SymbolTableIdentifier;
+                symbolCode = compressed.SymbolCode;
+                weatherBody = compressed.Comment;
+
+                // In compressed weather the wind direction/speed ride in the compressed course/speed
+                // bytes rather than the c.../s... fields (spec §12); speed is knots -> mph.
+                compressedWindDirection = compressed.CourseDegrees;
+                if (compressed.SpeedKnots is { } knots)
+                {
+                    compressedWindSpeedMph = (int)Math.Round(knots * MphPerKnot);
+                }
+            }
+            else
+            {
+                var parsedPosition = AprsPositionComponents.Parse(
+                    rawPacket.Information,
+                    positionStart,
+                    "Weather position",
+                    validationErrors);
+                latitude = parsedPosition.Latitude;
+                longitude = parsedPosition.Longitude;
+                symbolTableIdentifier = parsedPosition.SymbolTableIdentifier;
+                symbolCode = parsedPosition.SymbolCode;
+                weatherBody = parsedPosition.Comment;
+            }
         }
         else
         {
@@ -83,8 +108,8 @@ public sealed class AprsWeatherParser
             symbolCode,
             timestamp,
             weatherBody,
-            parsedWeather.WindDirectionDegrees,
-            parsedWeather.WindSpeedMph,
+            parsedWeather.WindDirectionDegrees ?? compressedWindDirection,
+            parsedWeather.WindSpeedMph ?? compressedWindSpeedMph,
             parsedWeather.WindGustMph,
             parsedWeather.TemperatureFahrenheit,
             parsedWeather.RainLastHourHundredthsInch,
@@ -105,6 +130,9 @@ public sealed class AprsWeatherParser
     private static int PositionDataStart(char typeChar)
         => typeChar is '@' or '/' ? 1 + TimestampLength : 1;
 
+    // In a compressed position the symbol code sits after the symbol-table char + 4 lat + 4 lon bytes.
+    private const int CompressedSymbolCodeOffset = 9;
+
     private static bool IsPositionWeather(string information)
     {
         if (information.Length == 0 || information[0] is not ('!' or '=' or '/' or '@'))
@@ -112,10 +140,15 @@ public sealed class AprsWeatherParser
             return false;
         }
 
-        // The weather symbol code ('_') sits right after the position data. Its index depends on
-        // whether the report carries a timestamp, so compute it from the type char rather than
-        // assuming the timestampless layout.
-        var symbolCodeIndex = PositionDataStart(information[0]) + UncompressedSymbolCodeOffset;
+        var positionStart = PositionDataStart(information[0]);
+
+        // The weather symbol code ('_') sits right after the position data — at a different offset
+        // for compressed vs uncompressed positions. A compressed position with a '_' symbol is a
+        // compressed weather report (wind comes from its course/speed bytes).
+        var symbolCodeIndex = AprsCompressedPositionDecoder.IsCompressed(information, positionStart)
+            ? positionStart + CompressedSymbolCodeOffset
+            : positionStart + UncompressedSymbolCodeOffset;
+
         return information.Length > symbolCodeIndex && information[symbolCodeIndex] == '_';
     }
 
