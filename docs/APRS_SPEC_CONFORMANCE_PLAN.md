@@ -105,14 +105,13 @@ Each with spec vectors from aprsspec + Dire Wolf:
   timestamped), messages/bulletins/ack, telemetry (`T#` + bare metadata), status, capabilities,
   queries, MIC-E, third-party, DAO, raw NMEA, and user-defined —
   `AprsSpec101ConformanceTests` + `AprsSpecConformanceCompletionTests` + the type-specific suites.
-- **Residual gaps surfaced by the suite (tracked, not blocking):**
-  - **Message-embedded telemetry metadata** — the spec-standard `:CALL :PARM./UNIT./EQNS./BITS.`
-    form is currently classified as a plain message; only the bare info-field form is extracted as
-    `TelemetryMetadataAprsPacket`. Reclassifying the message-embedded form is a parser change with
-    message-handling blast radius (Phase 1), deliberately deferred. Pinned by
-    `AprsSpecConformanceCompletionTests.MessageEmbeddedTelemetryMetadata_CurrentlyParsesAsMessage`.
-  - Deeper byte-exactness against a live Dire Wolf oracle (vs. the spec's worked examples used here)
-    remains an ongoing aspiration rather than a fixed deliverable.
+- **Message-embedded telemetry metadata — FIXED.** The spec-standard `:CALL :PARM./UNIT./EQNS./BITS.`
+  form (metadata sent as a message addressed to the station) is now extracted as
+  `TelemetryMetadataAprsPacket`, alongside the bare info-field form — so it is no longer routed into
+  conversational message/ACK handling. `AprsTelemetryParser` recognizes both wire forms. Tests:
+  `AprsSpecConformanceCompletionTests.Spec_MessageEmbeddedTelemetryMetadata_ExtractedAsMetadata`.
+- **Residual (ongoing, not blocking):** deeper byte-exactness against a live Dire Wolf oracle (vs.
+  the spec's worked examples used here) remains an aspiration rather than a fixed deliverable.
 - Keep the primer updated in lockstep as any of these close.
 
 ---

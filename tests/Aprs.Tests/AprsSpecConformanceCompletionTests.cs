@@ -49,17 +49,19 @@ public sealed class AprsSpecConformanceCompletionTests
     }
 
     /// <summary>
-    /// KNOWN LIMITATION (residual, tracked in APRS_SPEC_CONFORMANCE_PLAN.md): the spec-standard
-    /// telemetry metadata form is message-embedded — sent as a message addressed to the station,
-    /// e.g. ":N0CALL   :PARM.…". That form is currently classified as a plain message rather than
-    /// extracted as TelemetryMetadataAprsPacket. This test pins the current behavior so a future
-    /// change is noticed.
+    /// §13 (spec p.69): the spec-standard telemetry metadata form is message-embedded — a message
+    /// addressed to the station, e.g. ":N0CALL   :PARM.…". It is extracted as
+    /// TelemetryMetadataAprsPacket (not routed to conversational message/ACK handling).
     /// </summary>
     [Fact]
-    public void MessageEmbeddedTelemetryMetadata_CurrentlyParsesAsMessage()
+    public void Spec_MessageEmbeddedTelemetryMetadata_ExtractedAsMetadata()
     {
-        Assert.IsType<MessageAprsPacket>(
+        var metadata = Assert.IsType<TelemetryMetadataAprsPacket>(
             Parse("N0CALL>APRS::N0CALL   :PARM.Battery,Temp,Load,Alt,Count,B1,B2,B3"));
+
+        Assert.Equal("PARM", metadata.MetadataKind);
+        Assert.Contains("Battery", metadata.Values);
+        Assert.Contains("B3", metadata.Values);
     }
 
     // ── §11 — Item Reports ───────────────────────────────────────────────
