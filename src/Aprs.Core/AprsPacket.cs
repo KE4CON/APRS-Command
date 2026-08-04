@@ -242,6 +242,7 @@ public sealed record MessageAprsPacket(
     string? RejectedMessageId,
     bool IsBulletin,
     string? BulletinId,
+    string? BulletinGroup,
     bool IsAnnouncement,
     bool IsQuery,
     string? QueryText)

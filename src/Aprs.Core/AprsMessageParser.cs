@@ -71,11 +71,26 @@ public sealed class AprsMessageParser
             rejectedMessageId = null;
         }
 
+        // Bulletin addressing (spec §14): "BLN" + one identifier char, then either 5 spaces or, for
+        // group bulletins, a group name. A DIGIT identifier is a general/group bulletin; a LETTER
+        // identifier is an announcement. Only the char right after "BLN" decides — a group name that
+        // happens to contain letters (e.g. "BLN1WX") must NOT be read as an announcement.
         var isBulletin = addressee.StartsWith("BLN", StringComparison.OrdinalIgnoreCase);
-        var bulletinId = isBulletin && addressee.Length > 3 ? addressee[3..] : null;
-        var isAnnouncement = isBulletin
-            && bulletinId is not null
-            && bulletinId.Any(char.IsLetter);
+        string? bulletinId = null;
+        string? bulletinGroup = null;
+        var isAnnouncement = false;
+        if (isBulletin && addressee.Length > 3)
+        {
+            var identifier = addressee[3];
+            bulletinId = identifier.ToString();
+            isAnnouncement = char.IsLetter(identifier);
+            if (!isAnnouncement && addressee.Length > 4)
+            {
+                var group = addressee[4..].TrimEnd();
+                bulletinGroup = group.Length > 0 ? group : null;
+            }
+        }
+
         var isQuery = rawMessageBody.StartsWith('?');
 
         return new MessageAprsPacket(
@@ -97,6 +112,7 @@ public sealed class AprsMessageParser
             rejectedMessageId,
             isBulletin,
             bulletinId,
+            bulletinGroup,
             isAnnouncement,
             isQuery,
             isQuery ? rawMessageBody : null);

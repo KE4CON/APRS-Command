@@ -18,6 +18,17 @@ internal static class AprsPositionComponents
         string errorPrefix,
         List<string> validationErrors)
     {
+        // Objects and items may carry a base-91 compressed position just like position reports.
+        if (AprsCompressedPositionDecoder.IsCompressed(information, latitudeStart))
+        {
+            var compressed = AprsCompressedPositionDecoder.Decode(
+                information, latitudeStart, errorPrefix, validationErrors);
+            var (cLat, cLon, cComment) =
+                AprsDaoExtension.Apply(compressed.Latitude, compressed.Longitude, compressed.Comment);
+            return new AprsParsedPosition(
+                cLat, cLon, compressed.SymbolTableIdentifier, compressed.SymbolCode, cComment, 0);
+        }
+
         var latitudeText = SliceOrEmpty(information, latitudeStart, 8);
         var symbolTableIndex = latitudeStart + 8;
         var symbolTableIdentifier = TryGetChar(information, symbolTableIndex);

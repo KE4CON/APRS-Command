@@ -3,7 +3,9 @@
 **Goal:** APRS Command parses and generates **every** APRS packet type exactly per the current
 specification, verified against a reference decoder and real traffic.
 
-**Status:** Phase 0 (audit) — first pass complete, below. Phases 1–5 not started.
+**Status:** Phase 0 audit complete; Phases 1–4 done (every data type parsed/generated, network
+behavior audited); Phase 5 standing conformance suite established (all types have spec-cited vector
+coverage). Remaining is residual polish only — see Phase 5.
 
 ---
 
@@ -96,9 +98,34 @@ Each with spec vectors from aprsspec + Dire Wolf:
   do) — to show each station's radio/software. Tocall matching ✅ and MIC-E radio matching ✅ (D10) both
   done. CC BY-SA 2.0 → attribution handled via the third-party-notices flow.
 
-## Phase 5 — Standing conformance suite
-- A dedicated spec-conformance test section fed by aprsspec + Dire Wolf vectors, guarding conformance
-  continuously. Keep the primer updated in lockstep as gaps close.
+## Phase 5 — Standing conformance suite ✅ **established**
+- A dedicated spec-conformance test section now covers **every** APRS data type with spec-cited
+  vectors: positions (all 4 timestamp/messaging DTIs), compressed positions (lat/lon/course-speed/
+  range/altitude), objects (live/killed), items (live/killed), weather (position + positionless +
+  timestamped), messages/bulletins/ack, telemetry (`T#` + bare metadata), status, capabilities,
+  queries, MIC-E, third-party, DAO, raw NMEA, and user-defined —
+  `AprsSpec101ConformanceTests` + `AprsSpecConformanceCompletionTests` + the type-specific suites.
+- **Message-embedded telemetry metadata — FIXED.** The spec-standard `:CALL :PARM./UNIT./EQNS./BITS.`
+  form (metadata sent as a message addressed to the station) is now extracted as
+  `TelemetryMetadataAprsPacket`, alongside the bare info-field form — so it is no longer routed into
+  conversational message/ACK handling. `AprsTelemetryParser` recognizes both wire forms. Tests:
+  `AprsSpecConformanceCompletionTests.Spec_MessageEmbeddedTelemetryMetadata_ExtractedAsMetadata`.
+- **Sub-variant pass (Phase-0 "(verify)" items) — done** (`AprsSpecSubVariantConformanceTests`). It
+  caught and fixed two real bugs:
+  - **Group bulletins** (`BLN1WX`) were mis-flagged as announcements and had the number+group lumped
+    into the id. Fixed: a digit-after-`BLN` is a bulletin (id = digit) with an optional separated
+    `BulletinGroup`; only a letter-after-`BLN` is an announcement.
+  - **Compressed objects / items** didn't decode their base-91 position (invalid, no coordinates).
+    Fixed: the shared object/item position parser now detects and decodes the compressed form.
+  - Message length is intentionally lenient on receive (accepts >67 chars) — documented, not a bug.
+- **Remaining flagged residuals (pinned by tests, deferred — rare/newer forms):**
+  - **Compressed weather** decodes its position but does not yet extract the weather fields (surfaces
+    as a position, wx left in the comment).
+  - **Base-91 / compressed telemetry** (the `|` DTI, an aprs12 addition) is not decoded — falls to
+    Unknown.
+- **Ongoing (not a fixed deliverable):** deeper byte-exactness against a *live* Dire Wolf oracle (vs.
+  the spec's worked examples used here).
+- Keep the primer updated in lockstep as any of these close.
 
 ---
 

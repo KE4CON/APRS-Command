@@ -22,7 +22,7 @@ public sealed class PacketStatisticsServiceTests
         new(callsign + ">APRS::W9ABC    :Hello{001}",
             callsign, null, "APRS", [], ":W9ABC    :Hello{001}",
             Now, true, [], null, "W9ABC", "Hello{001}", "Hello", "001",
-            null, null, false, null, false, false, null);
+            null, null, false, null, null, false, false, null);
 
     private static StatusAprsPacket Status(string callsign = "KE4CON") =>
         new(callsign + ">APRS:>Net control",
