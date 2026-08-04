@@ -71,6 +71,10 @@ This software can key a real transmitter (RF via KISS/AGWPE) and post to the APR
 - xUnit. Inject clocks/time — **no `DateTime.Now`/`UtcNow` in tests**. Prefer fakes over real network/sockets; bound any fake-server waits.
 - Required coverage: parser (with sample packets), message ACK/retry, object handling, station expiration, beacon scheduling, **transmit-safety gating** (including the global-inhibit chokepoint), REST API auth.
 - Run: `dotnet test tests/Aprs.Tests/Aprs.Tests.csproj -c Debug`.
+- **Debugging / hardening sessions: read and follow `docs/BUG_HUNTING_PLAYBOOK.md`.** It defines the
+  method pipeline (static analysis → oracle/fuzz → safety-critical/concurrency → human), the pillars,
+  and the one rule — **every bug found gets a regression test before moving on.** Parser spec
+  compliance is only one pillar; most bugs live in UI, concurrency, integrations, and feature logic.
 
 ## Approved NuGet Packages (list here before adding)
 - **Avalonia** 11.3.7 (`Avalonia.Desktop`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`)
