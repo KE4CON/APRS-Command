@@ -7,6 +7,9 @@ Out of scope for now:
 - Public-service resource map
 - T-card resource tracking
 - Non-amateur-radio fleet tracking
+- Native mobile (phone/tablet) app — deliberately a **separate future project**, not part of this
+  desktop codebase. See `docs/FUTURE_PROJECTS.md`. (The in-app Mobile Companion Web View already serves
+  a phone/tablet browser on the same network.)
 
 In scope:
 - APRS station tracking

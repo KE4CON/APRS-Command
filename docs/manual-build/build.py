@@ -42,8 +42,10 @@ def philosophy(doc):
     hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(24); hr.font.color.rgb = S.ACCENT
     rule = doc.add_paragraph(); S.par_border(rule, 'bottom', sz=12, color=S.ACCENT_HEX, space=8)
     S.body(doc, "APRS Command exists because of two people and one promise.")
-    S.body(doc, [("Bob Bruninga WB4APR", 'b'), " invented APRS in the early 1990s. He spent decades building and "
-        "refining it, and he was always clear about what it was for. APRS is not a tracking system. It is a ",
+    S.body(doc, [("Bob Bruninga WB4APR", 'b'), " began building what became APRS in the early 1980s — his first "
+        "position-mapping software ran on an Apple II in 1982, and a 1984 version tracked riders in a 100-mile endurance "
+        "run — and he spent the following decades refining it into the system we use today. He was always clear about "
+        "what it was for. APRS is not a tracking system. It is a ",
         ("situational awareness tool", 'bi'), " — a way for amateur radio operators to share real-time tactical "
         "information about what is happening in an area: weather, resources, objects, messages, coverage — a common "
         "operating picture. Bob wanted operators — whether at an emergency scene, a public service event, or a Field "
@@ -251,6 +253,211 @@ def ch_welcome(doc, n):
         ("tour of the map page", 'i'), "."])
 
 
+def ch_installing(doc, n):
+    S.chapter_open(doc, n, "Installing APRS Command",
+        "Getting the program onto your computer — Windows, macOS, Linux, or a Raspberry Pi.",
+        ["Two ways to install", "Windows", "macOS", "Linux", "Raspberry Pi",
+         "Why you may see a security warning", "Running from source"])
+
+    S.callout(doc, "note", "Provisional chapter — installer details are being finalized.",
+        "The steps below are accurate for the current builds. The macOS and Windows steps are expected to get simpler soon, "
+        "once the app ships digitally signed (see “Why You May See a Security Warning”). This chapter will be updated when "
+        "that happens.")
+
+    S.h1(doc, "Before You Start")
+    S.body(doc, ["Make sure your computer meets the ", ("System Requirements", 'i'), " in the previous chapter — in short, "
+        "a 64-bit Windows, macOS 14+, modern Linux, or a 64-bit Raspberry Pi. You do ", ("not", 'i'), " need an "
+        "administrator account to run APRS Command; only the installer needs one, to copy the program into place."])
+    S.callout(doc, "note", "Two ways to install.",
+        "Every platform offers an installer (the simplest choice — double-click and go) and a portable archive (a .zip or "
+        ".tar.gz you unpack and run in place, with no installation). Pick whichever you prefer; both give you the same program.")
+
+    S.h1(doc, "Windows")
+    S.h2(doc, "Installer (recommended)")
+    S.steps(doc, [
+        ["Download the Windows installer — ", ("APRSCommand-…-windows-x64-Setup.exe", 'c'), "."],
+        ["Double-click it to run."],
+        ["The first time, Windows may show ", ("“Windows protected your PC.”", 'b'), " Click ", ("More info", 'b'),
+         ", then ", ("Run anyway", 'b'), " (this is expected — see “Why you may see a security warning” below)."],
+        ["APRS Command installs to ", ("C:\\Program Files\\APRS Command", 'c'), " with Start-menu and desktop shortcuts."],
+    ])
+    S.body(doc, ["To remove it later: ", ("Settings → Apps → APRS Command → Uninstall", 'b'), "."])
+    S.h2(doc, "Portable (no installation)")
+    S.steps(doc, [
+        ["Download ", ("APRSCommand-…-windows-x64.zip", 'c'), " and extract it to any folder."],
+        ["Run ", ("Aprs.Desktop.exe", 'c'), ". If the security prompt appears, click ", ("More info → Run anyway", 'b'), "."],
+    ])
+    S.screenshot(doc, "The Windows SmartScreen prompt with the More info / Run anyway choice highlighted")
+
+    S.h1(doc, "macOS")
+    S.h2(doc, "Installer (.dmg, recommended)")
+    S.steps(doc, [
+        ["Download the disk image for your Mac — ", ("…-macos-arm64.dmg", 'c'), " for Apple Silicon (M1–M4) or ",
+         ("…-macos-x64.dmg", 'c'), " for an Intel Mac."],
+        ["Double-click the ", (".dmg", 'c'), " to open it, then drag ", ("APRS Command", 'b'), " into your ",
+         ("Applications", 'b'), " folder."],
+        ["The first time only: in Applications, ", ("right-click", 'b'), " (or Control-click) APRS Command, choose ",
+         ("Open", 'b'), ", then click ", ("Open", 'b'), " again. macOS remembers the exception, and it launches normally afterward."],
+    ])
+    S.callout(doc, "note", "Why the right-click-Open dance?",
+        "APRS Command is not code-signed (see below), so a normal double-click on first launch is blocked by macOS "
+        "Gatekeeper. Right-click → Open is the standard one-time approval for unsigned open-source apps.")
+    S.h2(doc, "Portable (.zip)")
+    S.body(doc, ["Unzip the archive, then in Terminal run ", ("xattr -cr .", 'c'), " inside the extracted folder (to clear "
+        "the download-quarantine flag) and launch ", ("./Aprs.Desktop", 'c'), "."])
+
+    S.h1(doc, "Linux")
+    S.body(doc, "Choose the package that matches your distribution:")
+    S.bullets(doc, [
+        [("Debian / Ubuntu / Mint / Raspberry Pi OS", 'b'), " — the ", (".deb", 'c'), " package: ",
+         ("sudo dpkg -i aprs-command_…_amd64.deb", 'c'), " (or ", ("…_arm64.deb", 'c'), " on ARM)."],
+        [("Fedora / RHEL / openSUSE", 'b'), " — the ", (".rpm", 'c'), " package: ",
+         ("sudo rpm -i aprs-command-…-1.x86_64.rpm", 'c'), " (or ", ("…aarch64.rpm", 'c'), " on ARM)."],
+        [("Any distribution", 'b'), " — the portable ", (".tar.gz", 'c'), ": extract it, ", ("chmod +x Aprs.Desktop", 'c'),
+         ", then run ", ("./Aprs.Desktop", 'c'), "."],
+    ])
+    S.body(doc, ["Installed packages place the program at ", ("/opt/aprs-command/", 'c'), ", add a launcher command ",
+        ("aprs-command", 'c'), ", and create an entry in your application menu."])
+    S.callout(doc, "tip", "Using a hardware TNC over serial?",
+        "On Linux and macOS your user must belong to the “dialout” group to open serial ports: run "
+        "“sudo usermod -aG dialout $USER”, then log out and back in. On Windows no extra step is needed. "
+        "This is covered fully in the RF / TNC Connections chapter.")
+
+    S.h1(doc, "Raspberry Pi")
+    S.steps(doc, [
+        ["Install the ", ("64-bit", 'b'), " Raspberry Pi OS (the tested version is “Bookworm”). The 32-bit OS will not run APRS Command."],
+        ["Use the ARM64 package: ", ("sudo dpkg -i aprs-command_…_arm64.deb", 'c'), "."],
+        ["Launch it from the application menu, or by running ", ("aprs-command", 'c'), "."],
+    ])
+    S.callout(doc, "note", "NOTE", "Keep your logs and the offline map cache on storage with room to spare — on a Pi, "
+        "avoid filling the boot SD card with downloaded map tiles. A Pi 4 or Pi 5 gives the smoothest map.")
+
+    S.h1(doc, "Why You May See a Security Warning")
+    S.body(doc, "On Windows and macOS you may see a warning the first time you launch APRS Command — SmartScreen on "
+        "Windows, or Gatekeeper on macOS. This is normal and expected.")
+    S.body(doc, ["Today's builds are ", ("not code-signed", 'b'), ". Code-signing certificates cost money, and this is a "
+        "free, open-source amateur-radio project maintained by volunteers. The one-time bypass described above is safe and "
+        "is standard practice for unsigned open-source software."])
+    S.callout(doc, "note", "This is changing.",
+        "The project now has an Apple Developer account, so a signed and notarized macOS build is planned — once it ships, "
+        "the macOS right-click → Open step goes away and it becomes a normal double-click. Windows code-signing is also "
+        "being arranged; if it comes through, the SmartScreen warning will no longer appear. This chapter will be updated "
+        "at that point.")
+
+    S.h1(doc, "Running from Source (Optional)")
+    S.body(doc, "If you would rather build it yourself — for example to try the very latest changes — install the "
+        ".NET 10 SDK and run:")
+    S.body(doc, [("git clone https://github.com/KE4CON/APRS-Command.git", 'c')])
+    S.body(doc, [("cd APRS-Command", 'c')])
+    S.body(doc, [("dotnet run --project src/Aprs.Desktop/Aprs.Desktop.csproj", 'c')])
+    S.body(doc, ["With APRS Command installed, the next chapter walks through your ", ("first launch and first-run setup", 'i'), "."])
+
+
+def ch_maptour(doc, n):
+    S.chapter_open(doc, n, "A Tour of the Map Page",
+        "Every part of the main screen, named — so the rest of this manual always makes sense.",
+        ["The map page at a glance", "Title bar & status badges", "The menu bar",
+         "The icon sidebar", "The map area", "Panels that appear when needed",
+         "The status bar", "How other features open"])
+
+    S.h1(doc, "The Map Page at a Glance")
+    S.body(doc, ["When APRS Command opens, you land on the ", ("map page", 'b'), " — the main screen you will spend most of "
+        "your time on. It has a small number of fixed parts, and this chapter names every one. These names are used "
+        "consistently throughout the manual, so a few minutes here pays off in every later chapter."])
+    S.screenshot(doc, "The whole map page with each region labeled: title bar, menu bar, icon sidebar, map area, status bar")
+
+    S.h1(doc, "The Title Bar & Status Badges")
+    S.body(doc, ["The ", ("title bar", 'b'), " is the dark strip across the very top. It shows the app name, ",
+        ("APRS Command", 'b'), ", and the subtitle “APRS station map.” At its right end sit two ",
+        ("status badges", 'b'), " that are always visible:"])
+    S.bullets(doc, [
+        [("The APRS-IS badge", 'b'), " — your connection to the APRS internet network: ", ("APRS-IS Offline", 'c'),
+         " or connected."],
+        [("The TX badge", 'b'), " — your on-the-air transmit state. ", ("TX Disabled", 'c'), " means the program cannot "
+         "key a radio, no matter what else is happening."],
+    ])
+    S.callout(doc, "important", "Glance here whenever you are unsure.",
+        "These two badges are your at-a-glance truth about whether APRS Command can transmit. They are always in the same "
+        "place, and they never lie. A whole later chapter is devoted to transmit safety and the TX badge.")
+
+    S.h1(doc, "The Menu Bar")
+    S.body(doc, ["Just below the title bar is the ", ("menu bar", 'b'), ". Almost every window and feature in APRS Command "
+        "opens from one of its seven menus:"])
+    S.table(doc,
+        ["Menu", "What you'll find there"],
+        [
+            ["Settings", "Opens the settings window (station identity, connections, first-run setup, safety, and more)."],
+            ["View", "Station List, Raw Packets, Telemetry, Events, the Packet Statistics dashboard, and the dark-mode toggle."],
+            ["Map", "The drawing tools, weather (stations, alerts, radar), offline map download, coverage prediction, elevation profile, and the frequency reference."],
+            ["Messages", "The Message Center, message broadcast, scheduled messages, and the receipts dashboard."],
+            ["Operate", "Net Control, the net script editor, objects, session templates, scheduled and shadow beacons, and alerts."],
+            ["Tools", "Event Bus, Replay, RF Diagnostics, the After-Action report, the Mobile Companion web view, and Exercise Mode."],
+            ["Help", "The in-app Help viewer, the keyboard-shortcut list, and the About window."],
+        ],
+        [Inches(1.0), Inches(5.5)])
+    S.body(doc, "Each of those features has its own chapter later in this manual; here we are only naming where they live.")
+
+    S.h1(doc, "The Icon Sidebar")
+    S.body(doc, ["Down the left edge is the ", ("icon sidebar", 'b'), " — a vertical strip of icon buttons for the tools "
+        "you reach for most. The buttons have no printed labels; ", ("hover over any icon to see its name in a tooltip", 'b'),
+        ". A divider separates the map tools (top) from the operator tools (below)."])
+    S.table(doc,
+        ["Icon", "Name", "What it does"],
+        [
+            ["⌂", "Home", "Reset the map to the default overview."],
+            ["◎", "Centre on my station", "Recenter the map on your own station."],
+            ["🔍", "Find station", "Search for a callsign and jump to it."],
+            ["📏", "Measure distance", "Measure the distance between points on the map."],
+            ["🗺", "Map layer", "Switch the base-map layer (see below)."],
+            ["📡", "Beacon Now", [("Transmit your position immediately. ", ""), ("(Only works once you have set up and enabled transmit.)", 'i')]],
+            ["🔔", "Alerts", "Show your alert status."],
+            ["⊙", "Range rings", "Toggle distance range rings around a point."],
+            ["🛤", "Trails", "Toggle station movement trails."],
+            ["🌧", "Radar", "Toggle the weather-radar overlay."],
+        ],
+        [Inches(0.5), Inches(1.9), Inches(4.1)])
+    S.callout(doc, "warning", "WARNING — Beacon Now transmits.",
+        "The Beacon Now button (📡) puts your position on the air the moment transmit is enabled. While you are learning "
+        "receive-first, it does nothing — but treat it with respect once your station is configured.")
+
+    S.h1(doc, "The Map Area")
+    S.body(doc, ["The rest of the window is the ", ("map area", 'b'), " — the live map where stations, objects, and weather "
+        "appear. In its top-left corner is the ", ("base-map selector", 'b'), ", a dropdown that switches the background map:"])
+    S.bullets(doc, [
+        [("OpenStreetMap", 'b'), " — a clear street map (the default)."],
+        [("USGS Topo", 'b'), " — topographic contour maps."],
+        [("USGS Imagery", 'b'), " — aerial/satellite photography."],
+        [("USGS Imagery + Topo", 'b'), " — aerial imagery with topographic labels on top."],
+    ])
+    S.body(doc, "Click a station, object, or weather marker to select it. Moving around the map (panning and zooming) and "
+        "each base map are covered in the next chapter.")
+
+    S.h1(doc, "Panels That Appear Only When Needed")
+    S.body(doc, "Several small panels appear on the map only when they are relevant, then disappear again:")
+    S.bullets(doc, [
+        [("Station-details panel", 'b'), " (bottom-left) — the selected station's details, shown when you click a marker."],
+        [("Radar scrubber", 'b'), " (bottom-center) — step or play through radar frames, shown when weather radar is on."],
+        [("Object-placement overlay", 'b'), " (top-right) — guides you while placing or moving an object."],
+        [("Draw-mode banner", 'b'), " (across the top) — shown while a drawing tool is active (see the Drawing chapter)."],
+        [("Weather-alert banner", 'b'), " (full width) — announces an active National Weather Service alert; click it for details."],
+    ])
+
+    S.h1(doc, "The Status Bar")
+    S.body(doc, ["Along the very bottom is the ", ("status bar", 'b'), ", a quiet summary of the program's state — for "
+        "example ", ("Ready", 'c'), ", ", ("APRS-IS Disconnected", 'c'), " or ", ("Connected", 'c'), ", and ",
+        ("RF TX Disabled", 'c'), " or ", ("Enabled", 'c'), ". It is a second, always-present confirmation of your transmit and connection state."])
+
+    S.h1(doc, "How the Other Features Open")
+    S.body(doc, ["Everything beyond the map itself — the Station List, Messages, Objects, Weather, Replay, and the rest — "
+        "opens from the menus as its own ", ("floating panel", 'b'), ": a movable window you can drag by its ",
+        ("panel title bar", 'b'), " (the coloured strip with the grip dots) and close with its ", ("✕", 'b'),
+        ". You can have several open at once and arrange them around the map however suits you."])
+    S.callout(doc, "tip", "Prefer a dark screen?",
+        "Choose View → Toggle Dark Mode to switch between light and dark themes at any time — handy for night operating.")
+    S.body(doc, ["Now that the map page has names for all its parts, the next chapters put them to work — starting with ",
+        ("moving around the map and choosing base maps", 'i'), "."])
+
+
 def ch_drawing(doc, n):
     S.chapter_open(doc, n, "Drawing on the Map",
         "Mark up the map with lines, shapes, and circles for planning and situational awareness.",
@@ -429,7 +636,7 @@ def ch_replay(doc, n):
 
     S.h1(doc, "Opening the Replay Window")
     S.steps(doc, [
-        ["In the feature buttons area at the lower-right of the map page, click ", ("Replay", 'b'), "."],
+        ["From the ", ("menu bar", 'b'), ", choose ", ("Tools → Replay", 'b'), "."],
         ["The Replay window opens, titled ", ("“Replay Mode”", 'b'), ", and shows “Replay transmit "
          "disabled” as a reminder that nothing will be transmitted."],
     ])
@@ -517,6 +724,8 @@ def ch_replay(doc, n):
 # Registry — order here sets provisional chapter numbers.
 CHAPTERS = [
     ch_welcome,
+    ch_installing,
+    ch_maptour,
     ch_drawing,
     ch_replay,
 ]
