@@ -43,22 +43,26 @@ public class ShapeMeasurementsTests
     }
 
     [Theory]
-    [InlineData(100, true, "328 ft")]
-    [InlineData(1609.344, true, "1.00 mi")]
-    [InlineData(500, false, "500 m")]
-    [InlineData(1500, false, "1.50 km")]
-    public void FormatLength_PicksSensibleUnits(double metres, bool imperial, string expected)
+    [InlineData(100, true, false, "328 ft")]
+    [InlineData(1609.344, true, false, "1.00 mi")]
+    [InlineData(1609.344, true, true, "5,280 ft")]     // small: stays in feet
+    [InlineData(500, false, false, "500 m")]
+    [InlineData(1500, false, false, "1.50 km")]
+    [InlineData(1500, false, true, "1,500 m")]         // small: stays in meters
+    public void FormatLength_PicksSensibleUnits(double metres, bool imperial, bool small, string expected)
     {
-        Assert.Equal(expected, ShapeMeasurements.FormatLength(metres, imperial));
+        Assert.Equal(expected, ShapeMeasurements.FormatLength(metres, imperial, small));
     }
 
     [Theory]
-    [InlineData(4046.8564224, true, "1.00 acres")]
-    [InlineData(2_589_988.110336, true, "1.00 sq mi")]
-    [InlineData(20000, false, "2.00 ha")]
-    [InlineData(2_000_000, false, "2.00 km²")]
-    public void FormatArea_PicksSensibleUnits(double squareMetres, bool imperial, string expected)
+    [InlineData(4046.8564224, true, false, "1.00 acres")]
+    [InlineData(2_589_988.110336, true, false, "1.00 sq mi")]
+    [InlineData(2_589_988.110336, true, true, "640.00 acres")]   // small: stays in acres
+    [InlineData(20000, false, false, "2.00 ha")]
+    [InlineData(2_000_000, false, false, "2.00 km²")]
+    [InlineData(2_000_000, false, true, "200.00 ha")]            // small: stays in hectares
+    public void FormatArea_PicksSensibleUnits(double squareMetres, bool imperial, bool small, string expected)
     {
-        Assert.Equal(expected, ShapeMeasurements.FormatArea(squareMetres, imperial));
+        Assert.Equal(expected, ShapeMeasurements.FormatArea(squareMetres, imperial, small));
     }
 }

@@ -376,7 +376,9 @@ public sealed partial class MapView : UserControl
         }
 
         // Measurement toggle / unit change — redraw the drawing layer to add/remove/reformat labels.
-        if (e.PropertyName is nameof(MapViewModel.ShowMeasurements) or nameof(MapViewModel.MeasurementsImperial))
+        if (e.PropertyName is nameof(MapViewModel.ShowMeasurements)
+            or nameof(MapViewModel.MeasurementsImperial)
+            or nameof(MapViewModel.PreferSmallUnits))
         {
             RedrawAllShapes();
         }
@@ -1770,24 +1772,50 @@ public sealed partial class MapView : UserControl
     // Retained public name (kept for potential Enter-key wiring); finishes the current shape.
     public void FinaliseCurrentShape() => CommitInProgressShape();
 
+    // NTS geometry for a shape — used for rendering and for erase hit-testing. Null until it's a real shape.
+    private static NetTopologySuite.Geometries.Geometry? ShapeGeometry(DrawingShape shape)
+    {
+        var factory = new NetTopologySuite.Geometries.GeometryFactory();
+        if (shape.ShapeType == DrawShapeType.Text)
+            return shape.Points.Count >= 1
+                ? factory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(shape.Points[0].X, shape.Points[0].Y))
+                : null;
+        if (shape.ShapeType == DrawShapeType.Circle && shape.RadiusMetres > 0)
+            return factory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(shape.Centre.X, shape.Centre.Y))
+                          .Buffer(shape.RadiusMetres, 48);
+        if (shape.Points.Count >= 2)
+        {
+            var coords = shape.Points.Select(p => new NetTopologySuite.Geometries.Coordinate(p.X, p.Y)).ToArray();
+            if (shape.ShapeType == DrawShapeType.Polygon && coords.Length >= 3)
+                return factory.CreatePolygon(factory.CreateLinearRing(coords.Append(coords[0]).ToArray()));
+            return factory.CreateLineString(coords);
+        }
+        return null;
+    }
+
+    // Erase the shape actually under the click (nearest; topmost on overlap), not the first one drawn.
     private void EraseShapeAt(MPoint pt)
     {
-        const double hitRadius = 20000;
-        var toRemove = completedShapes.FirstOrDefault(s =>
+        var tol = 10 * CurrentResolution();   // ~10 px hit tolerance, in world units
+        var click = new NetTopologySuite.Geometries.GeometryFactory()
+            .CreatePoint(new NetTopologySuite.Geometries.Coordinate(pt.X, pt.Y));
+
+        DrawingShape? best = null;
+        double bestDist = double.MaxValue;
+        foreach (var s in completedShapes)   // forward order → a later-drawn (topmost) shape wins ties
         {
-            if (s.ShapeType == DrawShapeType.Circle)
-            {
-                var dx = pt.X - s.Centre.X;
-                var dy = pt.Y - s.Centre.Y;
-                return Math.Abs(Math.Sqrt(dx * dx + dy * dy) - s.RadiusMetres) < hitRadius;
-            }
-            return s.Points.Any(p =>
-            {
-                var dx = pt.X - p.X; var dy = pt.Y - p.Y;
-                return Math.Sqrt(dx * dx + dy * dy) < hitRadius;
-            });
-        });
-        if (toRemove is not null) { completedShapes.Remove(toRemove); RedrawAllShapes(); }
+            var g = ShapeGeometry(s);
+            if (g is null) continue;
+            var localTol = s.ShapeType == DrawShapeType.Text ? Math.Max(tol, s.GroundHeightMetres) : tol;
+            var d = g.Distance(click);
+            if (d <= localTol && d <= bestDist) { bestDist = d; best = s; }
+        }
+        if (best is not null)
+        {
+            completedShapes.Remove(best);
+            if (ReferenceEquals(selectedText, best)) selectedText = null;
+            RedrawAllShapes();
+        }
     }
 
     private void FinaliseShape(DrawingShape shape)
@@ -1806,20 +1834,21 @@ public sealed partial class MapView : UserControl
         var vm = DataContext as MapViewModel;
         bool showMeas = vm?.ShowMeasurements ?? false;
         bool imperial = vm?.MeasurementsImperial ?? true;
+        bool small    = vm?.PreferSmallUnits ?? false;
 
         drawingLayer.Clear();
         foreach (var shape in completedShapes)
         {
             var f = BuildShapeFeature(shape, resolution);
             if (f is not null) drawingLayer.Add(f);
-            if (showMeas) AddMeasurementLabel(shape, imperial);
+            if (showMeas) AddMeasurementLabel(shape, imperial, small);
         }
         if (shapeInProgress is not null)
         {
             var preview = RenderableInProgress();
             var pf = BuildShapeFeature(preview, resolution);
             if (pf is not null) drawingLayer.Add(pf);
-            if (showMeas) AddMeasurementLabel(preview, imperial);
+            if (showMeas) AddMeasurementLabel(preview, imperial, small);
         }
         // Resize handle for the selected text (SelectText mode).
         if (currentDrawMode == DrawMode.SelectText && selectedText is { Points.Count: > 0 })
@@ -1835,12 +1864,14 @@ public sealed partial class MapView : UserControl
     // Shapes are stored in Web Mercator (EPSG:3857), which stretches distance and area away from the
     // equator; multiply by cos(latitude) (and cos² for area) to recover true ground values.
 
-    private void AddMeasurementLabel(DrawingShape shape, bool imperial)
+    private void AddMeasurementLabel(DrawingShape shape, bool imperial, bool small)
     {
-        var m = MeasureShape(shape, imperial);
+        var m = MeasureShape(shape, imperial, small);
         if (m is not { } info) return;
         var factory = new NetTopologySuite.Geometries.GeometryFactory();
         var pt = factory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(info.X, info.Y));
+        // Anchor sits at the bottom of the shape; push the label below it, clearing the line thickness.
+        var offsetY = shape.StrokeWidth / 2.0 + 12.0;
         var label = new LabelStyle
         {
             Text      = info.Text,
@@ -1848,11 +1879,13 @@ public sealed partial class MapView : UserControl
             BackColor = new Brush(new Color(255, 255, 255, 220)),
             Halo      = new Pen(new Color(255, 255, 255, 160), 1),
             Font      = new Font { Size = 12 },
+            Offset    = new Offset(0, offsetY),
         };
         drawingLayer?.Add(new GeometryFeature { Geometry = pt, Styles = [label] });
     }
 
-    private static (string Text, double X, double Y)? MeasureShape(DrawingShape s, bool imperial)
+    // Returns the label text and a bottom-center anchor for the shape (the label is offset below it).
+    private static (string Text, double X, double Y)? MeasureShape(DrawingShape s, bool imperial, bool small)
     {
         switch (s.ShapeType)
         {
@@ -1860,18 +1893,19 @@ public sealed partial class MapView : UserControl
             {
                 var len = ShapeMeasurements.GroundLengthMetres(s.Points);
                 var mid = s.Points[s.Points.Count / 2];
-                return (ShapeMeasurements.FormatLength(len, imperial), mid.X, mid.Y);
+                return (ShapeMeasurements.FormatLength(len, imperial, small), mid.X, mid.Y);
             }
             case DrawShapeType.Polygon when s.Points.Count >= 3:
             {
-                var (area, cx, cy) = ShapeMeasurements.GroundAreaAndCentroid(s.Points);
-                return (ShapeMeasurements.FormatArea(area, imperial), cx, cy);
+                var (area, cx, _) = ShapeMeasurements.GroundAreaAndCentroid(s.Points);
+                var bottomY = s.Points.Min(p => p.Y);   // southernmost vertex = bottom on screen
+                return (ShapeMeasurements.FormatArea(area, imperial, small), cx, bottomY);
             }
             case DrawShapeType.Circle when s.RadiusMetres > 0:
             {
                 var r = ShapeMeasurements.GroundRadiusMetres(s.RadiusMetres, s.Centre.X, s.Centre.Y);
-                var text = $"Ø {ShapeMeasurements.FormatLength(r * 2, imperial)}  ·  {ShapeMeasurements.FormatArea(Math.PI * r * r, imperial)}";
-                return (text, s.Centre.X, s.Centre.Y);
+                var text = $"Ø {ShapeMeasurements.FormatLength(r * 2, imperial, small)}  ·  {ShapeMeasurements.FormatArea(Math.PI * r * r, imperial, small)}";
+                return (text, s.Centre.X, s.Centre.Y - s.RadiusMetres);   // bottom of the circle
             }
             default:
                 return null;
@@ -1957,37 +1991,28 @@ public sealed partial class MapView : UserControl
                 return new GeometryFeature { Geometry = anchor, Styles = [labelStyle] };
             }
 
-            // A thin dark casing drawn under the colored stroke, so any color — even white or
-            // yellow — reads clearly on any base map. Styles render in order: casing first, color on top.
-            var casing = new VectorStyle
-            {
-                Line = new Pen(new Color(20, 20, 20), shape.StrokeWidth + 2.0),
-                Fill = null,
-            };
-            var main = new VectorStyle
-            {
-                Line = new Pen(color, shape.StrokeWidth),
-                // Polygons and circles both take a fill; lines never do.
-                Fill = shape.ShapeType is DrawShapeType.Polygon or DrawShapeType.Circle
-                       ? ShapeFillBrush(shape.FillStyle, color) : null
-            };
-
-            NetTopologySuite.Geometries.Geometry? geom = null;
-            if (shape.ShapeType == DrawShapeType.Circle && shape.RadiusMetres > 0)
-            {
-                var centre = new NetTopologySuite.Geometries.Coordinate(shape.Centre.X, shape.Centre.Y);
-                geom = factory.CreatePoint(centre).Buffer(shape.RadiusMetres, 32);
-            }
-            else if (shape.Points.Count >= 2)
-            {
-                var coords = shape.Points.Select(p => new NetTopologySuite.Geometries.Coordinate(p.X, p.Y)).ToArray();
-                if (shape.ShapeType == DrawShapeType.Polygon && coords.Length >= 3)
-                    geom = factory.CreatePolygon(factory.CreateLinearRing(coords.Append(coords[0]).ToArray()));
-                else
-                    geom = factory.CreateLineString(coords);
-            }
+            var geom = ShapeGeometry(shape);
             if (geom is null) return null;
-            return new GeometryFeature { Geometry = geom, Styles = [casing, main] };
+
+            var pen = new Pen(color, shape.StrokeWidth);
+
+            // IMPORTANT (Mapsui): line-strings use VectorStyle.Line; polygon geometries (polygons AND
+            // circles here) draw their border from VectorStyle.Outline. Setting Line on a polygon does
+            // nothing — the border falls back to Mapsui's default thin gray pen.
+            if (shape.ShapeType == DrawShapeType.Line)
+            {
+                // A thin dark casing under the colored line so bright colors pop on any base map.
+                var casing = new VectorStyle { Line = new Pen(new Color(20, 20, 20), shape.StrokeWidth + 2.0) };
+                var line   = new VectorStyle { Line = pen };
+                return new GeometryFeature { Geometry = geom, Styles = [casing, line] };
+            }
+
+            var poly = new VectorStyle
+            {
+                Outline = pen,
+                Fill    = ShapeFillBrush(shape.FillStyle, color),
+            };
+            return new GeometryFeature { Geometry = geom, Styles = [poly] };
         }
         catch { return null; }
     }

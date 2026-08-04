@@ -63,27 +63,28 @@ public static class ShapeMeasurements
         return mercatorRadius * Math.Cos(lat * Math.PI / 180.0);
     }
 
-    public static string FormatLength(double metres, bool imperial)
+    // small = keep the smaller unit (ft / acres, m / ha) even for large shapes, instead of auto-scaling up.
+    public static string FormatLength(double metres, bool imperial, bool small)
     {
         if (imperial)
         {
             var ft = metres / MetresPerFoot;
-            return ft < FeetPerMile ? Invariant($"{ft:N0} ft") : Invariant($"{ft / FeetPerMile:N2} mi");
+            return (small || ft < FeetPerMile) ? Invariant($"{ft:N0} ft") : Invariant($"{ft / FeetPerMile:N2} mi");
         }
-        return metres < 1000 ? Invariant($"{metres:N0} m") : Invariant($"{metres / 1000.0:N2} km");
+        return (small || metres < 1000) ? Invariant($"{metres:N0} m") : Invariant($"{metres / 1000.0:N2} km");
     }
 
-    public static string FormatArea(double squareMetres, bool imperial)
+    public static string FormatArea(double squareMetres, bool imperial, bool small)
     {
         if (imperial)
         {
             var sqft = squareMetres / (MetresPerFoot * MetresPerFoot);
             if (sqft < 43560) return Invariant($"{sqft:N0} sq ft");
             var acres = squareMetres / SqMetresPerAcre;
-            return acres < 640 ? Invariant($"{acres:N2} acres") : Invariant($"{squareMetres / SqMetresPerSqMile:N2} sq mi");
+            return (small || acres < 640) ? Invariant($"{acres:N2} acres") : Invariant($"{squareMetres / SqMetresPerSqMile:N2} sq mi");
         }
         if (squareMetres < 10000) return Invariant($"{squareMetres:N0} m²");
         var ha = squareMetres / 10000.0;
-        return ha < 100 ? Invariant($"{ha:N2} ha") : Invariant($"{squareMetres / 1_000_000.0:N2} km²");
+        return (small || ha < 100) ? Invariant($"{ha:N2} ha") : Invariant($"{squareMetres / 1_000_000.0:N2} km²");
     }
 }

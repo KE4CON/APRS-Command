@@ -405,7 +405,7 @@
 
             <!-- Line / outline width -->
             <TextBlock Text="W" VerticalAlignment="Center" Margin="4,0,0,0" Foreground="{DynamicResource TextMutedBrush}" />
-            <NumericUpDown Value="{Binding Map.CurrentToolWidth, Mode=TwoWay}" Minimum="1" Maximum="12" Increment="1"
+            <NumericUpDown Value="{Binding Map.CurrentToolWidthValue, Mode=TwoWay}" Minimum="1" Maximum="12" Increment="1"
                            FormatString="0" Width="124" MinWidth="124" VerticalAlignment="Center" ToolTip.Tip="Line / outline width" />
 
             <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="5,2" />
@@ -418,6 +418,9 @@
                 <MenuFlyout>
                   <MenuItem Header="Imperial (ft · mi · acres)" Command="{Binding Map.UseImperialUnitsCommand}" />
                   <MenuItem Header="Metric (m · km · ha)"       Command="{Binding Map.UseMetricUnitsCommand}" />
+                  <Separator />
+                  <MenuItem Header="{Binding Map.SmallUnitsMenuHeader}" Command="{Binding Map.ToggleSmallUnitsCommand}"
+                            ToolTip.Tip="Keep feet/acres (or meters/hectares) even for large shapes, instead of auto-scaling up" />
                 </MenuFlyout>
               </Button.Flyout>
             </Button>

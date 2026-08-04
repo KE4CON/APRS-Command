@@ -66,6 +66,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         ToggleMeasurementsCommand      = new DesktopCommand(() => ShowMeasurements = !ShowMeasurements);
         UseImperialUnitsCommand        = new DesktopCommand(() => MeasurementsImperial = true);
         UseMetricUnitsCommand          = new DesktopCommand(() => MeasurementsImperial = false);
+        ToggleSmallUnitsCommand        = new DesktopCommand(() => PreferSmallUnits = !PreferSmallUnits);
         SetDrawColorCommand            = new DesktopCommand(p => { if (p is string hex) SetActiveToolColorHex(hex); });
         SetCustomColorCommand          = new DesktopCommand(() => CustomColorRequested?.Invoke(this, EventArgs.Empty));
         SetFillStyleCommand            = new DesktopCommand(p => { if (p is string s && Enum.TryParse<DrawFillStyle>(s, out var fs)) CurrentToolFill = fs; });
@@ -226,7 +227,14 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public double CurrentToolWidth
     {
         get => ActiveStyle.Width;
-        set { if (Math.Abs(ActiveStyle.Width - value) > 1e-9) { ActiveStyle.Width = value; OnPropertyChanged(); } }
+        set { if (Math.Abs(ActiveStyle.Width - value) > 1e-9) { ActiveStyle.Width = value; OnPropertyChanged(); OnPropertyChanged(nameof(CurrentToolWidthValue)); } }
+    }
+
+    // NumericUpDown.Value is decimal?; expose a decimal wrapper so the two-way binding reliably writes back.
+    public decimal? CurrentToolWidthValue
+    {
+        get => (decimal)ActiveStyle.Width;
+        set { if (value is { } v) CurrentToolWidth = (double)v; }
     }
 
     /// <summary>Set the active tool's color from a hex string (menu swatch, eyedropper, custom dialog).</summary>
@@ -295,7 +303,18 @@ public sealed class MapViewModel : INotifyPropertyChanged
         set { if (measurementsImperial != value) { measurementsImperial = value; OnPropertyChanged(); } }
     }
 
+    // When true, keep the smaller unit (ft/acres, m/ha) even for large shapes instead of auto-scaling up.
+    private bool preferSmallUnits;
+    public bool PreferSmallUnits
+    {
+        get => preferSmallUnits;
+        set { if (preferSmallUnits != value) { preferSmallUnits = value; OnPropertyChanged(); OnPropertyChanged(nameof(SmallUnitsMenuHeader)); } }
+    }
+
     public string MeasurementsMenuHeader => ShowMeasurements ? "Hide shape measurements" : "Show shape measurements";
+    public string SmallUnitsMenuHeader => PreferSmallUnits
+        ? "Auto-scale units (mi · sq mi · km²)"
+        : "Keep small units (ft · acres · m · ha)";
 
     public event EventHandler<DrawMode>? DrawModeChanged;
 
@@ -313,6 +332,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand ToggleMeasurementsCommand { get; }
     public DesktopCommand UseImperialUnitsCommand { get; }
     public DesktopCommand UseMetricUnitsCommand { get; }
+    public DesktopCommand ToggleSmallUnitsCommand { get; }
     public DesktopCommand SetDrawColorCommand { get; }
     public DesktopCommand SetCustomColorCommand { get; }
     public DesktopCommand SetFillStyleCommand { get; }
