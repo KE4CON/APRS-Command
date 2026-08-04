@@ -293,6 +293,8 @@ public sealed partial class MainWindow : Window
         win.ShowDialog(this);
     }
 
+    private void CloseColorWheel(object? sender, RoutedEventArgs e) => ColorSwatchButton.Flyout?.Hide();
+
     private void ToggleRadarMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         // Direct fallback in case the Command binding doesn't fire reliably for

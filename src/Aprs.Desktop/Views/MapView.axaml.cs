@@ -1373,6 +1373,7 @@ public sealed partial class MapView : UserControl
                     RadiusMetres = 0,
                     Color        = CurrentColorHex(),
                     FillStyle    = CurrentFill(),
+                    StrokeWidth  = CurrentWidth(),
                 };
                 circleDragging = true;
                 e.Pointer.Capture(MapControl);
@@ -1400,8 +1401,8 @@ public sealed partial class MapView : UserControl
                     var picked = SampleMapPixel(e.GetPosition(MapControl));
                     if (picked is not null && DataContext is MapViewModel vmPick)
                     {
-                        vmPick.CurrentDrawColorHex = picked;
-                        vmPick.DrawMode = DrawMode.None;   // one-shot: exit after sampling
+                        vmPick.SetActiveToolColorHex(picked);   // applies to the last drawing tool
+                        vmPick.ExitEyedropper();                // return to that tool (keep the toolbar open)
                     }
                 }
                 break;
@@ -1473,8 +1474,9 @@ public sealed partial class MapView : UserControl
         return (res > 0 ? res : 1.0) * 24.0;
     }
 
-    private string CurrentColorHex() => (DataContext as MapViewModel)?.CurrentDrawColorHex ?? "#FF0000";
-    private DrawFillStyle CurrentFill() => (DataContext as MapViewModel)?.CurrentFillStyle ?? DrawFillStyle.Solid;
+    private string CurrentColorHex() => (DataContext as MapViewModel)?.ActiveColorHex ?? "#FF0000";
+    private DrawFillStyle CurrentFill() => (DataContext as MapViewModel)?.ActiveFill ?? DrawFillStyle.Solid;
+    private double CurrentWidth() => (DataContext as MapViewModel)?.ActiveWidth ?? 3.0;
 
     // Background choices offered in the Add Map Text dialog (label → hex, null = none).
     private static readonly (string Label, string? Hex)[] TextBackgrounds =
@@ -1601,7 +1603,7 @@ public sealed partial class MapView : UserControl
         if (DataContext is not MapViewModel vm) return;
 
         Avalonia.Media.Color initial;
-        try { initial = Avalonia.Media.Color.Parse(vm.CurrentDrawColorHex); }
+        try { initial = Avalonia.Media.Color.Parse(vm.ActiveColorHex); }
         catch { initial = Avalonia.Media.Colors.Red; }
 
         var view = new Avalonia.Controls.ColorView
@@ -1644,7 +1646,7 @@ public sealed partial class MapView : UserControl
         if (ok)
         {
             var c = view.Color;
-            vm.CurrentDrawColorHex = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
+            vm.SetActiveToolColorHex($"#{c.R:X2}{c.G:X2}{c.B:X2}");
         }
     }
 
@@ -1739,9 +1741,10 @@ public sealed partial class MapView : UserControl
     {
         shapeInProgress ??= new DrawingShape
         {
-            ShapeType = currentDrawMode == DrawMode.Polygon ? DrawShapeType.Polygon : DrawShapeType.Line,
-            Color     = CurrentColorHex(),
-            FillStyle = CurrentFill(),
+            ShapeType   = currentDrawMode == DrawMode.Polygon ? DrawShapeType.Polygon : DrawShapeType.Line,
+            Color       = CurrentColorHex(),
+            FillStyle   = CurrentFill(),
+            StrokeWidth = CurrentWidth(),
         };
         shapeInProgress.Points.Add((world.X, world.Y));
         RedrawAllShapes();

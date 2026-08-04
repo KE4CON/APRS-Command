@@ -80,43 +80,8 @@
 
       <MenuItem Header="_Map">
         <MenuItem Header="_Draw">
-          <MenuItem Header="✏ Draw Line"    Command="{Binding Map.DrawLineCommand}"    ToolTip.Tip="Click to add points, double-click to finish" />
-          <MenuItem Header="⬟ Draw Polygon" Command="{Binding Map.DrawPolygonCommand}" ToolTip.Tip="Click to add points, double-click to close" />
-          <MenuItem Header="◯ Draw Circle"  Command="{Binding Map.DrawCircleCommand}"  ToolTip.Tip="Press the centre and drag out to set the radius" />
-          <MenuItem Header="🅣 Draw Text"   Command="{Binding Map.DrawTextCommand}"    ToolTip.Tip="Press and drag on the map to size the text, then type a label" />
-          <MenuItem Header="↔ Resize / Move Text" Command="{Binding Map.DrawSelectTextCommand}" ToolTip.Tip="Click a label to select it, then drag its handle to resize or drag the label to move it" />
-          <MenuItem Header="✕ Erase Shape"  Command="{Binding Map.DrawEraseCommand}"   ToolTip.Tip="Click a shape to delete it" />
-          <Separator />
-          <MenuItem Header="Drawing _Color">
-            <MenuItem Header="Red"    Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FF0000" />
-            <MenuItem Header="Orange" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FF7A00" />
-            <MenuItem Header="Yellow" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FFD400" />
-            <MenuItem Header="Green"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#00C000" />
-            <MenuItem Header="Blue"   Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#0066FF" />
-            <MenuItem Header="Purple" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#A000FF" />
-            <MenuItem Header="Black"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#000000" />
-            <MenuItem Header="White"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FFFFFF" />
-            <Separator />
-            <MenuItem Header="Custom color…" Command="{Binding Map.SetCustomColorCommand}" ToolTip.Tip="Open the color wheel to pick any color" />
-            <MenuItem Header="Eyedropper — sample from map" Command="{Binding Map.DrawEyedropperCommand}" ToolTip.Tip="Click the map to grab that color as the drawing color" />
-          </MenuItem>
-          <MenuItem Header="Shape _Fill" ToolTip.Tip="Fill for polygons and circles">
-            <MenuItem Header="None (outline only)" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="None" />
-            <MenuItem Header="Solid"            Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Solid" />
-            <MenuItem Header="Diagonal hatch"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="DiagonalHatch" />
-            <MenuItem Header="Cross-hatch"      Command="{Binding Map.SetFillStyleCommand}" CommandParameter="CrossHatch" />
-            <MenuItem Header="Horizontal lines" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Horizontal" />
-            <MenuItem Header="Vertical lines"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Vertical" />
-            <MenuItem Header="Dotted"           Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Dotted" />
-          </MenuItem>
-          <MenuItem Header="_Measurements" ToolTip.Tip="Show length / diameter / area on drawn shapes">
-            <MenuItem Header="{Binding Map.MeasurementsMenuHeader}" Command="{Binding Map.ToggleMeasurementsCommand}" />
-            <Separator />
-            <MenuItem Header="Imperial (ft · mi · acres)" Command="{Binding Map.UseImperialUnitsCommand}" />
-            <MenuItem Header="Metric (m · km · ha)"       Command="{Binding Map.UseMetricUnitsCommand}" />
-          </MenuItem>
-          <Separator />
-          <MenuItem Header="Clear All Drawings" Command="{Binding Map.ClearDrawingsCommand}" />
+          <MenuItem Header="🖉 Drawing Toolbar" Command="{Binding Map.OpenDrawingToolbarCommand}"
+                    ToolTip.Tip="Open the on-map drawing toolbar — tools, colour, fill, width, and measurements" />
           <Separator />
           <MenuItem Header="Import GPX / KML…"   Command="{Binding Map.ImportGeoFileCommand}" ToolTip.Tip="Load lines, tracks, and waypoints from a GPX or KML file onto the map" />
           <MenuItem Header="Export Drawings…"    Command="{Binding Map.ExportGeoFileCommand}" ToolTip.Tip="Save your drawn shapes to a GPX or KML file" />
@@ -386,24 +351,88 @@
         </StackPanel>
       </Border>
 
-      <!-- Draw-mode control bar — on-map and prominent; visible while any draw tool is active. -->
+      <!-- On-map drawing toolbar — all drawing controls in one place; visible only in draw mode. -->
       <Border Grid.Column="1"
               IsVisible="{Binding Map.IsDrawModeActive}"
               VerticalAlignment="Top" HorizontalAlignment="Center"
-              Margin="0,14,0,0"
+              Margin="0,12,0,0"
               Background="{DynamicResource MapChromeBgBrush}"
               BorderBrush="{DynamicResource AccentTealBrush}" BorderThickness="1"
-              CornerRadius="9" Padding="14,9"
+              CornerRadius="9" Padding="9,7"
               BoxShadow="0 8 22 -12 #55101828">
-        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-          <Ellipse Width="9" Height="9" Fill="{DynamicResource AccentTealBrush}" VerticalAlignment="Center" />
-          <TextBlock Text="{Binding Map.DrawModeTooltip}" FontWeight="SemiBold" VerticalAlignment="Center"
+        <StackPanel Spacing="6">
+          <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+            <!-- Tools -->
+            <Button Command="{Binding Map.DrawLineCommand}"       Classes.activeTool="{Binding Map.IsLineActive}"       FontSize="16" Padding="7,3" ToolTip.Tip="Line">✏</Button>
+            <Button Command="{Binding Map.DrawPolygonCommand}"    Classes.activeTool="{Binding Map.IsPolygonActive}"    FontSize="16" Padding="7,3" ToolTip.Tip="Polygon">⬟</Button>
+            <Button Command="{Binding Map.DrawCircleCommand}"     Classes.activeTool="{Binding Map.IsCircleActive}"     FontSize="16" Padding="7,3" ToolTip.Tip="Circle">◯</Button>
+            <Button Command="{Binding Map.DrawTextCommand}"       Classes.activeTool="{Binding Map.IsTextActive}"       FontSize="16" Padding="7,3" ToolTip.Tip="Text">🅣</Button>
+            <Button Command="{Binding Map.DrawSelectTextCommand}" Classes.activeTool="{Binding Map.IsSelectTextActive}" FontSize="16" Padding="7,3" ToolTip.Tip="Resize / move text">↔</Button>
+            <Button Command="{Binding Map.DrawEyedropperCommand}" Classes.activeTool="{Binding Map.IsEyedropperActive}" FontSize="16" Padding="7,3" ToolTip.Tip="Eyedropper — sample a colour from the map">🎨</Button>
+            <Button Command="{Binding Map.DrawEraseCommand}"      Classes.activeTool="{Binding Map.IsEraseActive}"      FontSize="16" Padding="7,3" ToolTip.Tip="Erase a shape">🧽</Button>
+
+            <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="5,2" />
+
+            <!-- Colour swatch → wheel flyout -->
+            <Button x:Name="ColorSwatchButton" Padding="4" VerticalAlignment="Center" ToolTip.Tip="Colour (this tool)">
+              <Border Width="20" Height="20" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
+                      Background="{Binding Map.CurrentToolColorBrush}" />
+              <Button.Flyout>
+                <Flyout>
+                  <StackPanel Spacing="8">
+                    <ColorView Color="{Binding Map.CurrentToolColor, Mode=TwoWay}"
+                               ColorSpectrumShape="Ring" IsAlphaEnabled="False" Width="330" Height="390" />
+                    <Button Content="Done" HorizontalAlignment="Right" Padding="16,5" Click="CloseColorWheel" />
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Fill -->
+            <Button Content="Fill ▾" Padding="8,4" VerticalAlignment="Center" ToolTip.Tip="Shape fill (polygon &amp; circle)">
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="None (outline only)" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="None" />
+                  <MenuItem Header="Solid"            Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Solid" />
+                  <MenuItem Header="Diagonal hatch"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="DiagonalHatch" />
+                  <MenuItem Header="Cross-hatch"      Command="{Binding Map.SetFillStyleCommand}" CommandParameter="CrossHatch" />
+                  <MenuItem Header="Horizontal lines" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Horizontal" />
+                  <MenuItem Header="Vertical lines"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Vertical" />
+                  <MenuItem Header="Dotted"           Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Dotted" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+
+            <!-- Line / outline width -->
+            <TextBlock Text="W" VerticalAlignment="Center" Margin="4,0,0,0" Foreground="{DynamicResource TextMutedBrush}" />
+            <NumericUpDown Value="{Binding Map.CurrentToolWidth, Mode=TwoWay}" Minimum="1" Maximum="12" Increment="1"
+                           FormatString="0" Width="124" MinWidth="124" VerticalAlignment="Center" ToolTip.Tip="Line / outline width" />
+
+            <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="5,2" />
+
+            <!-- Measurements -->
+            <ToggleButton Content="Measure" IsChecked="{Binding Map.ShowMeasurements, Mode=TwoWay}" Padding="8,4"
+                          ToolTip.Tip="Show length / diameter / area on shapes" />
+            <Button Content="Units ▾" Padding="8,4" VerticalAlignment="Center" ToolTip.Tip="Measurement units">
+              <Button.Flyout>
+                <MenuFlyout>
+                  <MenuItem Header="Imperial (ft · mi · acres)" Command="{Binding Map.UseImperialUnitsCommand}" />
+                  <MenuItem Header="Metric (m · km · ha)"       Command="{Binding Map.UseMetricUnitsCommand}" />
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+
+            <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="5,2" />
+
+            <Button Content="Clear" Command="{Binding Map.ClearDrawingsCommand}" Padding="10,5"
+                    ToolTip.Tip="Delete all drawings from the map" />
+            <Button Content="✕ Exit" Command="{Binding Map.ExitDrawModeCommand}" Padding="10,5" FontWeight="SemiBold"
+                    ToolTip.Tip="Leave draw mode (your drawings stay)" />
+          </StackPanel>
+
+          <!-- What the current tool does -->
+          <TextBlock Text="{Binding Map.DrawModeTooltip}" FontSize="11" HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
-          <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="4,2" />
-          <Button Content="Clear" Command="{Binding Map.ClearDrawingsCommand}" Padding="12,5"
-                  ToolTip.Tip="Delete all drawings from the map" />
-          <Button Content="✕ Exit" Command="{Binding Map.ExitDrawModeCommand}" Padding="12,5" FontWeight="SemiBold"
-                  ToolTip.Tip="Leave draw mode and return to normal map panning (your drawings stay)" />
         </StackPanel>
       </Border>
     </Grid>

@@ -21,6 +21,15 @@
       <Setter Property="RenderTransform" Value="scale(0.97)" />
     </Style>
 
+    <!-- Active tool button in the on-map drawing toolbar: lit up with the accent so the current tool is obvious. -->
+    <Style Selector="Button.activeTool">
+      <Setter Property="Background" Value="{DynamicResource TabSelectedBgBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TabSelectedFgBrush}" />
+    </Style>
+    <Style Selector="Button.activeTool:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource TabSelectedBgBrush}" />
+    </Style>
+
     <!-- Tab headers ("menu tabs" in Settings, GPS, iGate, Digipeater, …): give them presence.
          Each tab is a rounded pill; the selected one lifts on an accent fill with a soft shadow,
          hover tints and nudges, so the strip reads as a real segmented control, not flat text. -->

@@ -54,19 +54,21 @@ public sealed class MapViewModel : INotifyPropertyChanged
         AlertStatusCommand          = new DesktopCommand(() => AlertStatusRequested?.Invoke(this, EventArgs.Empty));
         ToggleTrailsCommand         = new DesktopCommand(() => ShowTrails = !ShowTrails);
         ToggleRadarCommand             = new DesktopCommand(() => ShowRadar = !ShowRadar);
-        DrawLineCommand                = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Line    ? DrawMode.None : DrawMode.Line);
-        DrawPolygonCommand             = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Polygon ? DrawMode.None : DrawMode.Polygon);
-        DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
-        DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
-        DrawTextCommand                = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Text    ? DrawMode.None : DrawMode.Text);
-        DrawEyedropperCommand          = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Eyedropper ? DrawMode.None : DrawMode.Eyedropper);
-        DrawSelectTextCommand          = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.SelectText ? DrawMode.None : DrawMode.SelectText);
+        // Toolbar tool buttons select their tool (they do not toggle off — Exit leaves draw mode).
+        DrawLineCommand                = new DesktopCommand(() => DrawMode = DrawMode.Line);
+        DrawPolygonCommand             = new DesktopCommand(() => DrawMode = DrawMode.Polygon);
+        DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode.Circle);
+        DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode.Erase);
+        DrawTextCommand                = new DesktopCommand(() => DrawMode = DrawMode.Text);
+        DrawEyedropperCommand          = new DesktopCommand(() => DrawMode = DrawMode.Eyedropper);
+        DrawSelectTextCommand          = new DesktopCommand(() => DrawMode = DrawMode.SelectText);
+        OpenDrawingToolbarCommand      = new DesktopCommand(() => DrawMode = lastDrawingTool);
         ToggleMeasurementsCommand      = new DesktopCommand(() => ShowMeasurements = !ShowMeasurements);
         UseImperialUnitsCommand        = new DesktopCommand(() => MeasurementsImperial = true);
         UseMetricUnitsCommand          = new DesktopCommand(() => MeasurementsImperial = false);
-        SetDrawColorCommand            = new DesktopCommand(p => { if (p is string hex && !string.IsNullOrWhiteSpace(hex)) CurrentDrawColorHex = hex; });
+        SetDrawColorCommand            = new DesktopCommand(p => { if (p is string hex) SetActiveToolColorHex(hex); });
         SetCustomColorCommand          = new DesktopCommand(() => CustomColorRequested?.Invoke(this, EventArgs.Empty));
-        SetFillStyleCommand            = new DesktopCommand(p => { if (p is string s && Enum.TryParse<DrawFillStyle>(s, out var fs)) CurrentFillStyle = fs; });
+        SetFillStyleCommand            = new DesktopCommand(p => { if (p is string s && Enum.TryParse<DrawFillStyle>(s, out var fs)) CurrentToolFill = fs; });
         ExitDrawModeCommand            = new DesktopCommand(() => DrawMode = DrawMode.None);
         ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
         ImportGeoFileCommand           = new DesktopCommand(() => ImportGeoFileRequested?.Invoke(this, EventArgs.Empty));
@@ -150,9 +152,12 @@ public sealed class MapViewModel : INotifyPropertyChanged
             if (drawMode != value)
             {
                 drawMode = value;
+                if (Array.IndexOf(DrawingTools, value) >= 0) lastDrawingTool = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(IsDrawModeActive));
                 OnPropertyChanged(nameof(DrawModeTooltip));
+                RaiseToolStyleChanged();
+                RaiseToolActiveChanged();
                 DrawModeChanged?.Invoke(this, value);
             }
         }
@@ -172,20 +177,92 @@ public sealed class MapViewModel : INotifyPropertyChanged
         _                => "Draw tools — add lines, polygons, and circles to the map"
     };
 
-    // Style applied to newly-drawn shapes; changed from the Map → Draw menu.
-    private string currentDrawColorHex = "#FF0000";
-    public string CurrentDrawColorHex
+    // ── Per-tool drawing style (colour · fill · width) ───────────────────────
+    // Each drawing tool remembers its own style; the on-map drawing toolbar edits the active tool's.
+    private sealed class ToolStyle
     {
-        get => currentDrawColorHex;
-        set { if (currentDrawColorHex != value) { currentDrawColorHex = value; OnPropertyChanged(); } }
+        public string ColorHex = "#FF0000";
+        public DrawFillStyle Fill = DrawFillStyle.Solid;
+        public double Width = 3.0;
     }
 
-    private DrawFillStyle currentFillStyle = DrawFillStyle.Solid;
-    public DrawFillStyle CurrentFillStyle
+    private static readonly DrawMode[] DrawingTools = { DrawMode.Line, DrawMode.Polygon, DrawMode.Circle, DrawMode.Text };
+    private DrawMode lastDrawingTool = DrawMode.Line;
+    private readonly Dictionary<DrawMode, ToolStyle> toolStyles = new()
     {
-        get => currentFillStyle;
-        set { if (currentFillStyle != value) { currentFillStyle = value; OnPropertyChanged(); } }
+        [DrawMode.Line]    = new ToolStyle { ColorHex = "#FF0000", Fill = DrawFillStyle.Solid, Width = 3.0 },
+        [DrawMode.Polygon] = new ToolStyle { ColorHex = "#1E6FEB", Fill = DrawFillStyle.Solid, Width = 3.0 },
+        [DrawMode.Circle]  = new ToolStyle { ColorHex = "#00C000", Fill = DrawFillStyle.None,  Width = 3.0 },
+        [DrawMode.Text]    = new ToolStyle { ColorHex = "#111827", Fill = DrawFillStyle.Solid, Width = 3.0 },
+    };
+
+    // For utility modes (eyedropper/erase/select), the style belongs to the last drawing tool used.
+    private DrawMode StyleMode => Array.IndexOf(DrawingTools, drawMode) >= 0 ? drawMode : lastDrawingTool;
+    private ToolStyle ActiveStyle => toolStyles[StyleMode];
+
+    // Read by the map view when creating a shape.
+    public string ActiveColorHex => ActiveStyle.ColorHex;
+    public DrawFillStyle ActiveFill => ActiveStyle.Fill;
+    public double ActiveWidth => ActiveStyle.Width;
+
+    // Bound (two-way) by the drawing toolbar — edits the active tool's style.
+    public Avalonia.Media.Color CurrentToolColor
+    {
+        get { try { return Avalonia.Media.Color.Parse(ActiveStyle.ColorHex); } catch { return Avalonia.Media.Colors.Red; } }
+        set
+        {
+            var hex = $"#{value.R:X2}{value.G:X2}{value.B:X2}";
+            if (ActiveStyle.ColorHex != hex) { ActiveStyle.ColorHex = hex; RaiseToolStyleChanged(); }
+        }
     }
+    public Avalonia.Media.IBrush CurrentToolColorBrush => new Avalonia.Media.SolidColorBrush(CurrentToolColor);
+
+    public DrawFillStyle CurrentToolFill
+    {
+        get => ActiveStyle.Fill;
+        set { if (ActiveStyle.Fill != value) { ActiveStyle.Fill = value; OnPropertyChanged(); } }
+    }
+
+    public double CurrentToolWidth
+    {
+        get => ActiveStyle.Width;
+        set { if (Math.Abs(ActiveStyle.Width - value) > 1e-9) { ActiveStyle.Width = value; OnPropertyChanged(); } }
+    }
+
+    /// <summary>Set the active tool's colour from a hex string (menu swatch, eyedropper, custom dialog).</summary>
+    public void SetActiveToolColorHex(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex) || ActiveStyle.ColorHex == hex) return;
+        ActiveStyle.ColorHex = hex;
+        RaiseToolStyleChanged();
+    }
+
+    private void RaiseToolStyleChanged()
+    {
+        OnPropertyChanged(nameof(CurrentToolColor));
+        OnPropertyChanged(nameof(CurrentToolColorBrush));
+        OnPropertyChanged(nameof(CurrentToolFill));
+        OnPropertyChanged(nameof(CurrentToolWidth));
+    }
+
+    private void RaiseToolActiveChanged()
+    {
+        OnPropertyChanged(nameof(IsLineActive));
+        OnPropertyChanged(nameof(IsPolygonActive));
+        OnPropertyChanged(nameof(IsCircleActive));
+        OnPropertyChanged(nameof(IsTextActive));
+        OnPropertyChanged(nameof(IsEyedropperActive));
+        OnPropertyChanged(nameof(IsSelectTextActive));
+        OnPropertyChanged(nameof(IsEraseActive));
+    }
+
+    public bool IsLineActive       => drawMode == DrawMode.Line;
+    public bool IsPolygonActive    => drawMode == DrawMode.Polygon;
+    public bool IsCircleActive     => drawMode == DrawMode.Circle;
+    public bool IsTextActive       => drawMode == DrawMode.Text;
+    public bool IsEyedropperActive => drawMode == DrawMode.Eyedropper;
+    public bool IsSelectTextActive => drawMode == DrawMode.SelectText;
+    public bool IsEraseActive      => drawMode == DrawMode.Erase;
 
     // Last-used map-text size; the text dialog defaults to this and updates it.
     private double currentTextSize = 14.0;
@@ -229,6 +306,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand DrawTextCommand { get; }
     public DesktopCommand DrawEyedropperCommand { get; }
     public DesktopCommand DrawSelectTextCommand { get; }
+    public DesktopCommand OpenDrawingToolbarCommand { get; }
+
+    /// <summary>After the eyedropper samples a colour, return to the last drawing tool (keep the toolbar open).</summary>
+    public void ExitEyedropper() => DrawMode = lastDrawingTool;
     public DesktopCommand ToggleMeasurementsCommand { get; }
     public DesktopCommand UseImperialUnitsCommand { get; }
     public DesktopCommand UseMetricUnitsCommand { get; }
