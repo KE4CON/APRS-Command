@@ -3,7 +3,9 @@
 **Goal:** APRS Command parses and generates **every** APRS packet type exactly per the current
 specification, verified against a reference decoder and real traffic.
 
-**Status:** Phase 0 (audit) — first pass complete, below. Phases 1–5 not started.
+**Status:** Phase 0 audit complete; Phases 1–4 done (every data type parsed/generated, network
+behavior audited); Phase 5 standing conformance suite established (all types have spec-cited vector
+coverage). Remaining is residual polish only — see Phase 5.
 
 ---
 
@@ -96,9 +98,22 @@ Each with spec vectors from aprsspec + Dire Wolf:
   do) — to show each station's radio/software. Tocall matching ✅ and MIC-E radio matching ✅ (D10) both
   done. CC BY-SA 2.0 → attribution handled via the third-party-notices flow.
 
-## Phase 5 — Standing conformance suite
-- A dedicated spec-conformance test section fed by aprsspec + Dire Wolf vectors, guarding conformance
-  continuously. Keep the primer updated in lockstep as gaps close.
+## Phase 5 — Standing conformance suite ✅ **established**
+- A dedicated spec-conformance test section now covers **every** APRS data type with spec-cited
+  vectors: positions (all 4 timestamp/messaging DTIs), compressed positions (lat/lon/course-speed/
+  range/altitude), objects (live/killed), items (live/killed), weather (position + positionless +
+  timestamped), messages/bulletins/ack, telemetry (`T#` + bare metadata), status, capabilities,
+  queries, MIC-E, third-party, DAO, raw NMEA, and user-defined —
+  `AprsSpec101ConformanceTests` + `AprsSpecConformanceCompletionTests` + the type-specific suites.
+- **Residual gaps surfaced by the suite (tracked, not blocking):**
+  - **Message-embedded telemetry metadata** — the spec-standard `:CALL :PARM./UNIT./EQNS./BITS.`
+    form is currently classified as a plain message; only the bare info-field form is extracted as
+    `TelemetryMetadataAprsPacket`. Reclassifying the message-embedded form is a parser change with
+    message-handling blast radius (Phase 1), deliberately deferred. Pinned by
+    `AprsSpecConformanceCompletionTests.MessageEmbeddedTelemetryMetadata_CurrentlyParsesAsMessage`.
+  - Deeper byte-exactness against a live Dire Wolf oracle (vs. the spec's worked examples used here)
+    remains an ongoing aspiration rather than a fixed deliverable.
+- Keep the primer updated in lockstep as any of these close.
 
 ---
 
