@@ -22,4 +22,18 @@ public sealed class DrawingShape
     public double RadiusMetres { get; set; }
 
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// True when this shape has enough geometry to be a real, keepable drawing:
+    /// a line needs 2+ points, a polygon 3+, a circle a radius above the minimum.
+    /// Used to decide whether an in-progress shape is committed to the map (on finish
+    /// or when the active draw tool changes) or discarded — so a drawn shape is never
+    /// silently lost, and a stray click never leaves an empty artifact behind.
+    /// </summary>
+    public bool IsCompletable(double minCircleRadiusMetres = 50.0) => ShapeType switch
+    {
+        DrawShapeType.Circle  => RadiusMetres > minCircleRadiusMetres,
+        DrawShapeType.Polygon => Points.Count >= 3,
+        _                     => Points.Count >= 2,
+    };
 }

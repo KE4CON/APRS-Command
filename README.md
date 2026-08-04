@@ -1,6 +1,6 @@
 # APRS Command
 
-A cross-platform APRS client for amateur radio operators, written in C# / .NET 10 with the Avalonia UI framework. Runs on macOS, Windows, Linux (x64), and Raspberry Pi from a single codebase.
+A cross-platform APRS client for amateur radio operators, written in C# / .NET 10 with the Avalonia UI framework. Runs on macOS, Windows, Linux (x64 / ARM64), and Raspberry Pi from a single codebase.
 
 ## Philosophy
 
@@ -35,15 +35,24 @@ APRS Command is released under **GPL v3** so that it can live on and be improved
 
 ---
 
-## Platforms
+## Platforms & Requirements
 
-| Platform | Status |
-|---|---|
-| macOS (Apple Silicon) | Primary development platform |
-| macOS (Intel) | Supported |
-| Windows 10/11 (x64) | Supported |
-| Linux x64 (Ubuntu, Debian, Fedora, Arch, etc.) | Supported |
-| Raspberry Pi 4/5 (ARM64) | Supported |
+APRS Command is a 64-bit desktop application built on .NET 10.
+
+| Platform | Minimum version | Architecture |
+|---|---|---|
+| Windows | Windows 10 or 11 (64-bit) | x64 |
+| macOS | macOS 14 (Sonoma) or later | Apple Silicon (M1–M4) & Intel |
+| Linux | Ubuntu 22.04+, Debian 12+, Fedora, RHEL 8+ | x64 / ARM64, with an X11 or Wayland desktop |
+| Raspberry Pi | Raspberry Pi OS 64-bit (Bookworm) | Pi 3, 4, 5, 400, Zero 2 W — Pi 4/5 recommended |
+
+- **Memory:** 2 GB minimum, 4 GB or more recommended (the live map is the heaviest part).
+- **Storage:** ~300 MB, plus space for logs and the offline map cache.
+- **Display:** a desktop screen at 1280×768 or larger.
+
+**Not supported:** 32-bit operating systems (32-bit Windows, or the 32-bit Raspberry Pi OS / Linux); older 32-bit ARM boards (the original Pi, Pi 1, first Pi Zero / Zero W, and the early Pi 2 v1.1); Windows 8.1 or earlier; macOS 13 or earlier; Linux distributions from before 2022; phones and tablets; and headless servers with no graphical desktop.
+
+OS minimums follow the [.NET 10 supported-OS matrix](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md).
 
 ---
 

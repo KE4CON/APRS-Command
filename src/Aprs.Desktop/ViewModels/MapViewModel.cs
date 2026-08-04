@@ -57,6 +57,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DrawPolygonCommand             = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Polygon ? DrawMode.None : DrawMode.Polygon);
         DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
         DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
+        ExitDrawModeCommand            = new DesktopCommand(() => DrawMode = DrawMode.None);
         ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
         ImportGeoFileCommand           = new DesktopCommand(() => ImportGeoFileRequested?.Invoke(this, EventArgs.Empty));
         ExportGeoFileCommand           = new DesktopCommand(() => ExportGeoFileRequested?.Invoke(this, EventArgs.Empty));
@@ -152,8 +153,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public string DrawModeTooltip => drawMode switch
     {
         DrawMode.Line    => "Drawing: Line — click to add points, double-click to finish",
-        DrawMode.Polygon => "Drawing: Polygon — click to add points, double-click to close",
-        DrawMode.Circle  => "Drawing: Circle — click centre, drag to set radius",
+        DrawMode.Polygon => "Drawing: Polygon — click each corner, double-click to close",
+        DrawMode.Circle  => "Drawing: Circle — press the centre and drag out to set the radius",
         DrawMode.Erase   => "Erase mode — click a shape to delete it",
         _                => "Draw tools — add lines, polygons, and circles to the map"
     };
@@ -164,6 +165,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand DrawPolygonCommand { get; }
     public DesktopCommand DrawCircleCommand { get; }
     public DesktopCommand DrawEraseCommand { get; }
+    public DesktopCommand ExitDrawModeCommand { get; }
     public DesktopCommand ClearDrawingsCommand { get; }
     public DesktopCommand ImportGeoFileCommand { get; }
     public DesktopCommand ExportGeoFileCommand { get; }

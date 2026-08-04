@@ -12,6 +12,28 @@ write to Program Files on Windows.
 
 ---
 
+## System Requirements
+
+APRS Command is a **64-bit desktop application** built on .NET 10.
+
+| Platform | Minimum version | Architecture |
+|---|---|---|
+| Windows | Windows 10 or 11 (64-bit) | x64 |
+| macOS | macOS 14 (Sonoma) or later | Apple Silicon (M1–M4) & Intel |
+| Linux | Ubuntu 22.04+, Debian 12+, Fedora, RHEL 8+ | x64 / ARM64, with an X11 or Wayland desktop |
+| Raspberry Pi | Raspberry Pi OS 64-bit (Bookworm) | Pi 3, 4, 5, 400, Zero 2 W — Pi 4/5 recommended |
+
+- **Memory:** 2 GB minimum, 4 GB or more recommended. The live map is the most memory-hungry part; on a Raspberry Pi aim for 2 GB+ (the 1 GB Pi 3 and 512 MB Pi Zero 2 W run it, but the map feels slow).
+- **Storage:** ~300 MB for the program, plus room for logs and the offline map cache (which can grow to hundreds of MB depending on the area and detail you save).
+- **Display:** a desktop screen at 1280×768 or larger. APRS Command is a windowed desktop app — it does not run headless or on a phone/tablet OS.
+- **No administrator account** is needed to run APRS Command; only the installer needs admin, to write into place.
+
+**Not supported:** 32-bit operating systems (32-bit Windows, or the 32-bit Raspberry Pi OS / Linux); older 32-bit ARM boards (the original Pi, Pi 1, first Pi Zero / Zero W, and the early Pi 2 v1.1); Windows 8.1 or earlier; macOS 13 or earlier; Linux distributions from before 2022; phones and tablets; and headless servers with no graphical desktop.
+
+> OS minimums follow the [.NET 10 supported-OS matrix](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md). On Linux you also need glibc 2.27 or newer — any distribution from 2022 onward qualifies.
+
+---
+
 ## macOS
 
 ### Installer (.dmg) — recommended

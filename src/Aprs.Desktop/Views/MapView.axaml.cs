@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using Mapsui;
+using Mapsui.Extensions;
 using Mapsui.Layers;
 using Mapsui.Nts;
 using Mapsui.Projections;
@@ -34,6 +35,9 @@ public sealed partial class MapView : UserControl
     private WritableLayer? drawingLayer;
     private readonly List<DrawingShape> completedShapes = [];
     private DrawingShape? shapeInProgress;
+    private (double X, double Y)? drawHoverWorld;   // cursor position for the in-progress rubber-band preview
+    private bool circleDragging;                    // true while press-dragging a circle radius
+    private const double MinCircleRadiusMetres = 50.0;
     private DrawMode currentDrawMode = DrawMode.None;
     private TileLayer? radarLayer;           // single static layer (legacy, kept for compat)
     private Mapping.WmsRadarUrlBuilder? radarUrlBuilder;
@@ -111,6 +115,17 @@ public sealed partial class MapView : UserControl
         map.Layers.Add(markerLayer);
 
         map.Info += OnMapInfo;
+
+        // Draw tools use raw pointer input (not Mapsui's discrete tap event) so we can
+        // support press-drag gestures (circle radius) and suppress the map's own pan/zoom
+        // while a tool is active. Tunnel routing lets us pre-empt Mapsui's built-in handling:
+        // when a draw tool is active we mark the event handled, so the map never pans underneath.
+        MapControl.AddHandler(Avalonia.Input.InputElement.PointerPressedEvent, OnDrawPointerPressed,
+            Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        MapControl.AddHandler(Avalonia.Input.InputElement.PointerMovedEvent, OnDrawPointerMoved,
+            Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        MapControl.AddHandler(Avalonia.Input.InputElement.PointerReleasedEvent, OnDrawPointerReleased,
+            Avalonia.Interactivity.RoutingStrategies.Tunnel);
 
         RefreshFeatures();
 
@@ -1032,13 +1047,8 @@ public sealed partial class MapView : UserControl
             return;
         }
 
-        // Handle draw tool clicks before station selection.
-        if (currentDrawMode != DrawMode.None && e.GetMapInfo([])?.WorldPosition is { } worldPos)
-        {
-            OnDrawToolClick(new MPoint(worldPos.X, worldPos.Y));
-            return;
-        }
-
+        // While a draw tool is active, pointer input is consumed by the draw handlers
+        // (OnDrawPointer*), so Mapsui never raises Info here — no draw branch needed.
         var feature = e.GetMapInfo(new ILayer[] { markerLayer })?.Feature;
         if (feature is not null)
         {
@@ -1145,9 +1155,13 @@ public sealed partial class MapView : UserControl
 
     private void OnDrawModeChanged(object? sender, DrawMode mode)
     {
+        // Commit — do NOT discard — any shape already drawn before switching tools.
+        // Previously this nulled shapeInProgress, so a finished-looking line/polygon
+        // vanished the moment the next tool was picked. Now it is kept on the map.
+        CommitInProgressShape();
         currentDrawMode = mode;
-        shapeInProgress = null;
-        circleFirstClick = true;
+        circleDragging = false;
+        drawHoverWorld = null;
         MapControl.Cursor = mode == DrawMode.None
             ? Avalonia.Input.Cursor.Default
             : new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Cross);
@@ -1157,6 +1171,8 @@ public sealed partial class MapView : UserControl
     {
         completedShapes.Clear();
         shapeInProgress = null;
+        drawHoverWorld = null;
+        circleDragging = false;
         drawingLayer?.Clear();
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
@@ -1287,57 +1303,121 @@ public sealed partial class MapView : UserControl
         await writer.WriteAsync(content);
     }
 
-    private void OnDrawToolClick(MPoint worldPoint)
+    // Convert an Avalonia pointer position (device-independent pixels) to map world
+    // coordinates (EPSG:3857 metres) via the current Mapsui viewport.
+    private MPoint? ScreenToWorld(Avalonia.Point screen)
+    {
+        try { return MapControl.Map.Navigator.Viewport.ScreenToWorld(screen.X, screen.Y); }
+        catch { return null; }
+    }
+
+    private void OnDrawPointerPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
     {
         if (currentDrawMode == DrawMode.None || drawingLayer is null) return;
+        if (!e.GetCurrentPoint(MapControl).Properties.IsLeftButtonPressed) return;
+        e.Handled = true;   // suppress Mapsui pan/zoom while drawing
+
+        var world = ScreenToWorld(e.GetPosition(MapControl));
+        if (world is null) return;
+
         switch (currentDrawMode)
         {
-            case DrawMode.Line:    HandleLineClick(worldPoint);    break;
-            case DrawMode.Polygon: HandlePolygonClick(worldPoint); break;
-            case DrawMode.Circle:  HandleCircleClick(worldPoint);  break;
-            case DrawMode.Erase:   EraseShapeAt(worldPoint);       break;
+            case DrawMode.Line:
+            case DrawMode.Polygon:
+                // Double-click finishes the shape; a single click adds a vertex.
+                if (e.ClickCount >= 2) CommitInProgressShape();
+                else AddVertex(world);
+                break;
+
+            case DrawMode.Circle:
+                // Press = centre; the following drag sets the radius (see moved/released).
+                shapeInProgress = new DrawingShape
+                {
+                    ShapeType    = DrawShapeType.Circle,
+                    Centre       = (world.X, world.Y),
+                    RadiusMetres = 0,
+                };
+                circleDragging = true;
+                e.Pointer.Capture(MapControl);
+                break;
+
+            case DrawMode.Erase:
+                EraseShapeAt(world);
+                break;
         }
     }
 
-    private void HandleLineClick(MPoint pt)
+    private void OnDrawPointerMoved(object? sender, Avalonia.Input.PointerEventArgs e)
     {
-        if (shapeInProgress is null)
-        {
-            shapeInProgress = new DrawingShape { ShapeType = DrawShapeType.Line };
-            shapeInProgress.Points.Add((pt.X, pt.Y));
-        }
-        else
-        {
-            shapeInProgress.Points.Add((pt.X, pt.Y));
-            RenderShapePreview();
-        }
-    }
+        if (currentDrawMode == DrawMode.None || drawingLayer is null) return;
+        e.Handled = true;
 
-    private void HandlePolygonClick(MPoint pt)
-    {
-        shapeInProgress ??= new DrawingShape { ShapeType = DrawShapeType.Polygon };
-        shapeInProgress.Points.Add((pt.X, pt.Y));
-        RenderShapePreview();
-    }
+        var world = ScreenToWorld(e.GetPosition(MapControl));
+        if (world is null) return;
 
-    private bool circleFirstClick = true;
-    private void HandleCircleClick(MPoint pt)
-    {
-        if (circleFirstClick)
+        if (currentDrawMode == DrawMode.Circle && circleDragging &&
+            shapeInProgress is { ShapeType: DrawShapeType.Circle })
         {
-            shapeInProgress = new DrawingShape { ShapeType = DrawShapeType.Circle };
-            shapeInProgress.Centre = (pt.X, pt.Y);
-            circleFirstClick = false;
-        }
-        else
-        {
-            var dx = pt.X - shapeInProgress!.Centre.X;
-            var dy = pt.Y - shapeInProgress.Centre.Y;
+            var dx = world.X - shapeInProgress.Centre.X;
+            var dy = world.Y - shapeInProgress.Centre.Y;
             shapeInProgress.RadiusMetres = Math.Sqrt(dx * dx + dy * dy);
-            FinaliseShape(shapeInProgress);
-            circleFirstClick = true;
+            RedrawAllShapes();
+        }
+        else if ((currentDrawMode == DrawMode.Line || currentDrawMode == DrawMode.Polygon) &&
+                 shapeInProgress is not null && shapeInProgress.Points.Count >= 1)
+        {
+            // Rubber-band the segment from the last placed point to the cursor.
+            drawHoverWorld = (world.X, world.Y);
+            RedrawAllShapes();
         }
     }
+
+    private void OnDrawPointerReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        if (currentDrawMode == DrawMode.None || drawingLayer is null) return;
+        e.Handled = true;
+
+        if (currentDrawMode == DrawMode.Circle && circleDragging)
+        {
+            circleDragging = false;
+            e.Pointer.Capture(null);
+            // A real drag becomes a circle; a bare click (no meaningful radius) is discarded.
+            if (shapeInProgress is { ShapeType: DrawShapeType.Circle } c && c.RadiusMetres > MinCircleRadiusMetres)
+                FinaliseShape(c);
+            else
+            {
+                shapeInProgress = null;
+                RedrawAllShapes();
+            }
+        }
+    }
+
+    private void AddVertex(MPoint world)
+    {
+        shapeInProgress ??= new DrawingShape
+        {
+            ShapeType = currentDrawMode == DrawMode.Polygon ? DrawShapeType.Polygon : DrawShapeType.Line
+        };
+        shapeInProgress.Points.Add((world.X, world.Y));
+        RedrawAllShapes();
+    }
+
+    /// <summary>
+    /// Commit the in-progress shape to the map if it has enough points to be a real shape;
+    /// otherwise discard it. Called when the shape is finished (double-click) and whenever
+    /// the active tool changes — so a drawn shape is never silently lost on tool switch.
+    /// </summary>
+    public void CommitInProgressShape()
+    {
+        var s = shapeInProgress;
+        drawHoverWorld = null;
+        if (s is null) return;
+        if (s.IsCompletable(MinCircleRadiusMetres)) FinaliseShape(s);
+        else { shapeInProgress = null; RedrawAllShapes(); }
+    }
+
+    // Retained public name (kept for potential Enter-key wiring); finishes the current shape.
+    public void FinaliseCurrentShape() => CommitInProgressShape();
 
     private void EraseShapeAt(MPoint pt)
     {
@@ -1359,24 +1439,52 @@ public sealed partial class MapView : UserControl
         if (toRemove is not null) { completedShapes.Remove(toRemove); RedrawAllShapes(); }
     }
 
-    public void FinaliseCurrentShape()
+    private void FinaliseShape(DrawingShape shape)
     {
-        if (shapeInProgress is null || shapeInProgress.Points.Count < 2) { shapeInProgress = null; return; }
-        FinaliseShape(shapeInProgress);
+        completedShapes.Add(shape);
+        shapeInProgress = null;
+        drawHoverWorld = null;
+        RedrawAllShapes();
     }
-
-    private void FinaliseShape(DrawingShape shape) { completedShapes.Add(shape); shapeInProgress = null; RedrawAllShapes(); }
-    private void RenderShapePreview() => RedrawAllShapes();
 
     private void RedrawAllShapes()
     {
         if (drawingLayer is null) return;
         drawingLayer.Clear();
-        var all = completedShapes.ToList();
-        if (shapeInProgress is not null) all.Add(shapeInProgress);
-        foreach (var shape in all) { var f = BuildShapeFeature(shape); if (f is not null) drawingLayer.Add(f); }
+        foreach (var shape in completedShapes)
+        {
+            var f = BuildShapeFeature(shape);
+            if (f is not null) drawingLayer.Add(f);
+        }
+        if (shapeInProgress is not null)
+        {
+            var preview = BuildShapeFeature(RenderableInProgress());
+            if (preview is not null) drawingLayer.Add(preview);
+        }
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
+    }
+
+    // The in-progress line/polygon rendered with a temporary trailing point at the cursor,
+    // so the user sees the next segment before they click. Circles render as-is (live radius).
+    private DrawingShape RenderableInProgress()
+    {
+        var s = shapeInProgress!;
+        if ((s.ShapeType == DrawShapeType.Line || s.ShapeType == DrawShapeType.Polygon)
+            && drawHoverWorld is { } hv && s.Points.Count >= 1)
+        {
+            var clone = new DrawingShape
+            {
+                ShapeType   = s.ShapeType,
+                Color       = s.Color,
+                StrokeWidth = s.StrokeWidth,
+                Label       = s.Label,
+            };
+            clone.Points.AddRange(s.Points);
+            clone.Points.Add(hv);
+            return clone;
+        }
+        return s;
     }
 
     private static GeometryFeature? BuildShapeFeature(DrawingShape shape)

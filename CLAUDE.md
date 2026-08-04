@@ -75,6 +75,10 @@ This software can key a real transmitter (RF via KISS/AGWPE) and post to the APR
   method pipeline (static analysis → oracle/fuzz → safety-critical/concurrency → human), the pillars,
   and the one rule — **every bug found gets a regression test before moving on.** Parser spec
   compliance is only one pillar; most bugs live in UI, concurrency, integrations, and feature logic.
+- **Documentation initiative: read `docs/DOCUMENTATION_PLAN.md`.** Plan-of-record for the two big
+  deliverables — the operator **User Manual** (Word → screenshots → PDF, every feature, step-by-step)
+  and the **APRS-Command Programming Guide Book** (Markdown + PDF + Word; who/what/why/how of the code).
+  Both use a stable-numbering + dated-amendment model, and both must look "wow"-professional.
 
 ## Approved NuGet Packages (list here before adding)
 - **Avalonia** 11.3.7 (`Avalonia.Desktop`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`)
