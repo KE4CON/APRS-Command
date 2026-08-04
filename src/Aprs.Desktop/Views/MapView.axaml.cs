@@ -1567,7 +1567,7 @@ public sealed partial class MapView : UserControl
         return result;
     }
 
-    // Render a 1×1 sample of the map under the given point and return its colour as #RRGGBB.
+    // Render a 1×1 sample of the map under the given point and return its color as #RRGGBB.
     private string? SampleMapPixel(Avalonia.Point pos)
     {
         try
@@ -1595,7 +1595,7 @@ public sealed partial class MapView : UserControl
         catch { return null; }
     }
 
-    // Native colour picker: Avalonia ColorView with a round ring spectrum (plus palette swatches,
+    // Native color picker: Avalonia ColorView with a round ring spectrum (plus palette swatches,
     // RGB/HSV sliders, and hex). Themed via the ColorPicker StyleInclude added to App.axaml.
     private async void OnCustomColorRequested(object? sender, EventArgs e)
     {
@@ -1930,7 +1930,7 @@ public sealed partial class MapView : UserControl
             var r     = Convert.ToByte(hex[..2], 16);
             var g     = Convert.ToByte(hex[2..4], 16);
             var b     = Convert.ToByte(hex[4..6], 16);
-            // Mapsui's Color constructor is (red, green, blue, alpha); build an opaque colour.
+            // Mapsui's Color constructor is (red, green, blue, alpha); build an opaque color.
             var color = new Color(r, g, b);
             var factory = new NetTopologySuite.Geometries.GeometryFactory();
 
@@ -1957,8 +1957,8 @@ public sealed partial class MapView : UserControl
                 return new GeometryFeature { Geometry = anchor, Styles = [labelStyle] };
             }
 
-            // A thin dark casing drawn under the coloured stroke, so any colour — even white or
-            // yellow — reads clearly on any base map. Styles render in order: casing first, colour on top.
+            // A thin dark casing drawn under the colored stroke, so any color — even white or
+            // yellow — reads clearly on any base map. Styles render in order: casing first, color on top.
             var casing = new VectorStyle
             {
                 Line = new Pen(new Color(20, 20, 20), shape.StrokeWidth + 2.0),
@@ -1992,7 +1992,7 @@ public sealed partial class MapView : UserControl
         catch { return null; }
     }
 
-    // Parse "#RRGGBB" into a Mapsui colour, or null if empty/invalid.
+    // Parse "#RRGGBB" into a Mapsui color, or null if empty/invalid.
     private static Color? HexColor(string? hex)
     {
         if (string.IsNullOrWhiteSpace(hex)) return null;

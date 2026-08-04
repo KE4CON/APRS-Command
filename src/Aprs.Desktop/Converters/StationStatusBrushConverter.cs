@@ -7,8 +7,8 @@ using Avalonia.Media;
 namespace Aprs.Desktop.Converters;
 
 /// <summary>
-/// Maps a station's lifecycle state to a status-dot colour: green when it's actively being heard, amber
-/// when it's gone quiet (stale), and a muted grey once it's old/expired. Theme-agnostic vivid colours so
+/// Maps a station's lifecycle state to a status-dot color: green when it's actively being heard, amber
+/// when it's gone quiet (stale), and a muted grey once it's old/expired. Theme-agnostic vivid colors so
 /// the dot reads on both the light and dark surfaces.
 /// </summary>
 public sealed class StationStatusBrushConverter : IValueConverter

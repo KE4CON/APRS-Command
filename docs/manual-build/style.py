@@ -252,6 +252,16 @@ def toc(doc):
     p = doc.add_paragraph()
     _field(p, 'TOC \\o "1-2" \\h \\z \\u')
 
+def section_title(doc, text):
+    """A big front-matter title (Philosophy, How to Use, …) that also lists in the TOC at level 1."""
+    h = doc.add_paragraph()
+    r = h.add_run(text)
+    r.font.name = 'Segoe UI Semibold'; r.font.size = Pt(24); r.font.color.rgb = ACCENT
+    _set_outline_level(h, 0)
+    _style_as_toc_entry(h, text, level=1)
+    rule = doc.add_paragraph(); par_border(rule, 'bottom', sz=12, color=ACCENT_HEX, space=8)
+    return h
+
 def _table_light_borders(t, color="D7DEE7", sz=4):
     tblPr = t._tbl.tblPr
     borders = OxmlElement('w:tblBorders')

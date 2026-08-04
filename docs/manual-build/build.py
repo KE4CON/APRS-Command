@@ -38,9 +38,7 @@ def title_page(doc):
 
 def philosophy(doc):
     S.page_break(doc)
-    h = doc.add_paragraph(); hr = h.add_run("A Note on Philosophy")
-    hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(24); hr.font.color.rgb = S.ACCENT
-    rule = doc.add_paragraph(); S.par_border(rule, 'bottom', sz=12, color=S.ACCENT_HEX, space=8)
+    S.section_title(doc, "A Note on Philosophy")
     S.body(doc, "APRS Command exists because of two people and one promise.")
     S.body(doc, [("Bob Bruninga WB4APR", 'b'), " began building what became APRS in the early 1980s — his first "
         "position-mapping software ran on an Apple II in 1982, and a 1984 version tracked riders in a 100-mile endurance "
@@ -69,9 +67,7 @@ def philosophy(doc):
 
 def how_to_use(doc):
     S.page_break(doc)
-    h = doc.add_paragraph(); hr = h.add_run("How to Use This Manual")
-    hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(24); hr.font.color.rgb = S.ACCENT
-    rule = doc.add_paragraph(); S.par_border(rule, 'bottom', sz=12, color=S.ACCENT_HEX, space=8)
+    S.section_title(doc, "How to Use This Manual")
     S.body(doc, "This manual is written to be read start-to-finish by a brand-new operator, or dipped into one chapter "
         "at a time. Every feature has its own chapter. Every chapter walks through the feature step by step, with nothing "
         "assumed. If you ever wonder what a button, panel, or field does, there is a chapter that explains it.")
@@ -96,9 +92,7 @@ def how_to_use(doc):
 
 def amendments_register(doc):
     S.page_break(doc)
-    h = doc.add_paragraph(); hr = h.add_run("Amendments Register")
-    hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(24); hr.font.color.rgb = S.ACCENT
-    rule = doc.add_paragraph(); S.par_border(rule, 'bottom', sz=12, color=S.ACCENT_HEX, space=8)
+    S.section_title(doc, "Amendments Register")
     S.body(doc, ["This manual uses ", ("stable chapter and section numbers", 'b'), ". When the program changes, we do not "
         "reprint the whole book — we publish a short, dated ", ("amendment", 'b'), " that revises or adds specific sections. "
         "Each amendment is listed in the table below. To keep a printed copy current, print the amendment and file it with "
@@ -431,7 +425,7 @@ def ch_maptour(doc, n):
         ["Icon", "Name", "What it does"],
         [
             ["⌂", "Home", "Reset the map to the default overview."],
-            ["◎", "Centre on my station", "Recenter the map on your own station."],
+            ["◎", "Center on my station", "Recenter the map on your own station."],
             ["🔍", "Find station", "Search for a callsign and jump to it."],
             ["📏", "Measure distance", "Measure the distance between points on the map."],
             ["🗺", "Map layer", "Switch the base-map layer (see below)."],
@@ -476,7 +470,7 @@ def ch_maptour(doc, n):
     S.h1(doc, "How the Other Features Open")
     S.body(doc, ["Everything beyond the map itself — the Station List, Messages, Objects, Weather, Replay, and the rest — "
         "opens from the menus as its own ", ("floating panel", 'b'), ": a movable window you can drag by its ",
-        ("panel title bar", 'b'), " (the coloured strip with the grip dots) and close with its ", ("✕", 'b'),
+        ("panel title bar", 'b'), " (the colored strip with the grip dots) and close with its ", ("✕", 'b'),
         ". You can have several open at once and arrange them around the map however suits you."])
     S.callout(doc, "tip", "Prefer a dark screen?",
         "Choose View → Toggle Dark Mode to switch between light and dark themes at any time — handy for night operating.")
@@ -486,10 +480,11 @@ def ch_maptour(doc, n):
 
 def ch_drawing(doc, n):
     S.chapter_open(doc, n, "Drawing on the Map",
-        "Mark up the map with lines, shapes, and circles for planning and situational awareness.",
-        ["What the drawing tools are for", "Finding the tools & how draw mode works",
-         "Line, polygon, and circle", "Erasing, clearing, and exiting",
-         "Importing & exporting (GPX / KML)", "Saving your work", "Troubleshooting"])
+        "Annotate the map with lines, shapes, circles, and text — with color, fill, width, and real-world measurements.",
+        ["What the drawing tools are for", "Opening the drawing toolbar", "A tour of the toolbar",
+         "Choosing color, fill, and width", "Lines, polygons, and circles",
+         "Adding, sizing, and moving text", "The eyedropper", "Measurements",
+         "Erasing, clearing, and exiting", "Importing & exporting (GPX / KML)", "Troubleshooting"])
 
     S.h1(doc, "What the Drawing Tools Are For")
     S.body(doc, "The drawing tools let you mark directly on the map — lines, filled shapes, and circles — to turn a plain "
@@ -499,119 +494,160 @@ def ch_drawing(doc, n):
         "Everything you draw is a local annotation on your own map only. It is never transmitted over the air (RF) or to "
         "the internet (APRS-IS), and no other station ever sees it. Draw freely — nothing you sketch goes anywhere.")
 
-    S.h1(doc, "Finding the Drawing Tools")
-    S.body(doc, ["All of the drawing tools live in one place: the ", ("menu bar", 'b'), ", under ",
-        ("Map → Draw", 'b'), ". You will find:"])
-    S.bullets(doc, [
-        [("Draw Line", 'b'), ", ", ("Draw Polygon", 'b'), ", ", ("Draw Circle", 'b'), " — the three drawing tools."],
-        [("Erase Shape", 'b'), " — remove one shape."],
-        [("Clear All Drawings", 'b'), " — remove everything you have drawn."],
-        [("Import GPX / KML…", 'b'), " and ", ("Export Drawings…", 'b'), " — load shapes from, or save them to, a file."],
-    ])
-    S.screenshot(doc, "The Map menu open, showing the Draw submenu with all of its items")
-
-    S.h1(doc, "How Draw Mode Works")
-    S.body(doc, ["When you pick a drawing tool, APRS Command enters ", ("draw mode", 'b'), ". A ",
-        ("draw-mode banner", 'b'), " appears across the top of the map area, telling you what the current tool does and "
-        "giving you ", ("Clear", 'b'), " and ", ("✕ Exit", 'b'), " buttons."])
+    S.h1(doc, "Opening the Drawing Toolbar")
+    S.body(doc, ["All of the drawing is done from an on-map ", ("drawing toolbar", 'b'), " that appears only while you are "
+        "drawing. To open it, choose ", ("Map → Draw → Drawing Toolbar", 'b'), " from the menu bar. The toolbar appears "
+        "across the top of the map, and the map enters ", ("draw mode", 'b'), "."])
+    S.body(doc, ["That same menu also holds ", ("Import GPX / KML", 'b'), " and ", ("Export Drawings", 'b'),
+        " (covered later) — everything else lives on the toolbar."])
+    S.screenshot(doc, "The Map → Draw menu open, showing Drawing Toolbar, Import, and Export")
     S.callout(doc, "note", "The map holds still while you draw.",
-        "While a drawing tool is active, clicking and dragging draws on the map instead of moving it — so your points land "
-        "exactly where you click and the map never jumps out from under you. You can still zoom in and out with the mouse "
-        "wheel. To pan the map again, finish your shape or click ✕ Exit to leave draw mode.")
-    S.body(doc, ["Switching from one tool to another ", ("keeps", 'b'), " the shape you just drew — picking the circle "
-        "tool after drawing a line will not erase the line."])
-    S.screenshot(doc, "The draw-mode banner across the top of the map, with its Clear and ✕ Exit buttons")
+        "In draw mode, clicking and dragging draws on the map instead of moving it — so your points land exactly where you "
+        "click and the map never jumps out from under you. You can still zoom with the mouse wheel. To pan the map again, "
+        "click ✕ Exit on the toolbar to leave draw mode.")
+
+    S.h1(doc, "A Tour of the Drawing Toolbar")
+    S.body(doc, "The toolbar puts every drawing control in one place. The tool you are using is highlighted.")
+    S.table(doc,
+        ["Control", "What it does"],
+        [
+            ["Tool buttons", "Line, Polygon, Circle, Text, Resize/Move text, Eyedropper, and Erase. Click one to switch tools; the active tool lights up. (Switching tools never deletes what you have already drawn.)"],
+            ["Color swatch", "Shows the current tool's color; click it to open the color wheel and choose any color."],
+            ["Fill", "The fill for polygons and circles: None (outline only), Solid, or a hatch / dot pattern."],
+            ["W (width)", "Line / outline thickness, from 1 to 12."],
+            ["Measure", "Turns the length / diameter / area labels on shapes on or off."],
+            ["Units", "Switches measurements between Imperial and Metric."],
+            ["Clear", "Deletes every drawing on the map."],
+            ["✕ Exit", "Leaves draw mode (your drawings stay)."],
+        ],
+        [Inches(1.35), Inches(5.15)])
+    S.screenshot(doc, "The drawing toolbar across the top of the map, with each control labeled")
+    S.callout(doc, "important", "Each tool remembers its own style.",
+        "Color, fill, and width are kept per tool. Your line can be a red 3-px line while your circle is a blue "
+        "cross-hatch — switch tools and the toolbar shows that tool's settings. Changing a setting affects only the tool "
+        "you are on.")
+
+    S.h1(doc, "Choosing Color, Fill, and Width")
+    S.body(doc, [("Color.", 'b'), " Click the color swatch on the toolbar to open the color wheel. Pick from the round "
+        "spectrum, the Palette of preset swatches, or by typing a hex value — then click ", ("Done", 'b'),
+        " (or click outside the wheel) to close it. The color applies to whatever you draw next with the current tool."])
+    S.body(doc, [("Fill.", 'b'), " Polygons and circles can be filled. Click ", ("Fill", 'b'), " and choose ",
+        ("None", 'b'), " (outline only), ", ("Solid", 'b'), " (a soft tint of the shape's color), or a pattern — "
+        "Diagonal hatch, Cross-hatch, Horizontal, Vertical, or Dotted (handy for telling zones apart)."])
+    S.body(doc, [("Width.", 'b'), " The ", ("W", 'b'), " box sets the line or outline thickness (1–12)."])
+    S.screenshot(doc, "The color wheel open from the toolbar swatch, with its Done button")
 
     S.h1(doc, "Drawing a Line")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Draw Line", 'b'), "."],
+        ["Click the ", ("Line", 'b'), " tool on the toolbar."],
         ["Click once on the map where the line should ", ("start", 'b'), "."],
-        ["Click again at each point you want the line to pass through. A preview segment follows your cursor so you can "
-         "see the next piece before you place it."],
+        ["Click at each point the line should pass through — a preview segment follows your cursor."],
         ["When the line is complete, ", ("double-click", 'b'), " to finish it."],
     ])
-    S.callout(doc, "note", "NOTE", "A line needs at least two points. If you change your mind before finishing, just pick "
-        "another tool or click ✕ Exit — a line with only one point is discarded.")
+    S.callout(doc, "note", "NOTE", "A line needs at least two points; a one-point line is discarded.")
     S.screenshot(doc, "A multi-point line being drawn, with the preview segment stretching to the cursor")
 
     S.h1(doc, "Drawing a Polygon")
-    S.body(doc, "A polygon is a closed, filled shape — good for outlining an area.")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Draw Polygon", 'b'), "."],
-        ["Click each ", ("corner", 'b'), " of the area in turn. As with the line, a preview follows your cursor."],
-        ["When you have placed the last corner, ", ("double-click", 'b'), " to close the shape. APRS Command connects the "
-         "final corner back to the first and fills the area."],
+        ["Click the ", ("Polygon", 'b'), " tool."],
+        ["Click each ", ("corner", 'b'), " of the area in turn — a preview follows your cursor."],
+        ["Double-click to close the shape; the last corner joins back to the first."],
     ])
-    S.callout(doc, "note", "NOTE", "A polygon needs at least three corners to form an area.")
-    S.screenshot(doc, "A polygon being drawn around an area, showing the filled shape after closing")
+    S.callout(doc, "note", "NOTE", "A polygon needs at least three corners.")
+    S.screenshot(doc, "A polygon being drawn around an area, with a hatch fill")
 
     S.h1(doc, "Drawing a Circle")
-    S.body(doc, "The circle tool works by dragging outward from the centre — the same way most mapping programs do it.")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Draw Circle", 'b'), "."],
-        ["Press and hold the mouse button at the ", ("centre", 'b'), " of the circle."],
-        ["Drag ", ("outward", 'b'), " — a preview circle grows to follow your cursor, so you can size it by eye."],
-        ["Release the mouse button to set the radius and finish the circle."],
+        ["Click the ", ("Circle", 'b'), " tool."],
+        ["Press and hold at the ", ("center", 'b'), " of the circle."],
+        ["Drag ", ("outward", 'b'), " — a preview circle grows — and release to set the radius."],
     ])
-    S.callout(doc, "tip", "TIP", "Drag out far enough to give the circle a real size. A quick click without dragging does "
-        "not create a circle — so a stray tap in circle mode is simply ignored.")
-    S.screenshot(doc, "A circle being dragged outward from its centre, with the live preview")
+    S.callout(doc, "tip", "TIP", "Drag out far enough to give the circle a real size. A quick click with no drag makes no circle.")
+    S.screenshot(doc, "A circle being dragged outward from its center")
 
-    S.h1(doc, "Erasing a Single Shape")
+    S.h1(doc, "Adding Text")
+    S.body(doc, "Text labels are sized by dragging, and they are anchored to the map — they grow and shrink with it as you "
+        "zoom, so a label stays the right size for the area it marks.")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Erase Shape", 'b'), "."],
-        ["Click on (or very near) the shape you want to remove. It disappears; every other drawing stays put."],
+        ["Click the ", ("Text", 'b'), " tool."],
+        ["Press and ", ("drag", 'b'), " on the map — the further you drag, the larger the text."],
+        ["Release, type your label, choose a ", ("Background", 'b'), " (None, White, Black, Yellow, or Light gray), and "
+         "click ", ("Place", 'b'), "."],
     ])
-    S.body(doc, "Erase mode stays active, so you can click several shapes in a row to remove them one at a time.")
+    S.callout(doc, "note", "Text scales with the map.",
+        "Unlike a fixed on-screen label, map text is tied to the ground: zoom in and it grows with the map; zoom out and it "
+        "shrinks. That keeps it the right size for the area it labels at every zoom level.")
+    S.screenshot(doc, "Placing text — dragging to size it, then the label dialog with the Background choice")
 
-    S.h1(doc, "Clearing Everything at Once")
-    S.body(doc, ["To wipe all of your drawings in one step, use either ", ("Map → Draw → Clear All Drawings", 'b'),
-        " or the ", ("Clear", 'b'), " button on the draw-mode banner."])
-    S.callout(doc, "warning", "WARNING — Clear cannot be undone.",
-        "Clear removes every drawing on the map at once, and there is no undo. If you might want your drawings later, "
-        "export them first (see below).")
+    S.h1(doc, "Resizing or Moving Text")
+    S.steps(doc, [
+        ["Click the ", ("Resize / Move text", 'b'), " tool on the toolbar."],
+        ["Click a label to ", ("select", 'b'), " it — a small square handle appears."],
+        ["Drag the ", ("handle", 'b'), " to resize the text, or drag the ", ("label itself", 'b'), " to move it."],
+    ])
+    S.screenshot(doc, "A selected text label showing its resize handle")
 
-    S.h1(doc, "Leaving Draw Mode")
-    S.body(doc, ["Click ", ("✕ Exit", 'b'), " on the draw-mode banner (or choose the same tool again from the menu to "
-        "toggle it off). This returns the map to normal panning and zooming."])
-    S.callout(doc, "important", "Exit vs. Clear — an important difference.",
-        "✕ Exit only leaves draw mode — all of your drawings stay on the map. Clear deletes the drawings. They sit side by "
-        "side on the banner, so make sure you click the one you mean.")
+    S.h1(doc, "The Eyedropper")
+    S.body(doc, "The eyedropper matches a color that is already on the map — a station symbol, the terrain, another drawing.")
+    S.steps(doc, [
+        ["Click the ", ("Eyedropper", 'b'), " tool."],
+        ["Click anywhere on the map. The color under your click becomes the current tool's color, and you return to "
+         "your drawing tool automatically."],
+    ])
+
+    S.h1(doc, "Measurements")
+    S.body(doc, ["Turn on ", ("Measure", 'b'), " on the toolbar to label each shape with its real-world size:"])
+    S.bullets(doc, [
+        [("Line", 'b'), " — its length."],
+        [("Circle", 'b'), " — its diameter and area."],
+        [("Polygon", 'b'), " — its area."],
+    ])
+    S.body(doc, ["Use ", ("Units", 'b'), " to switch between ", ("Imperial", 'b'), " (feet, miles, acres) and ",
+        ("Metric", 'b'), " (meters, kilometers, hectares) — the unit auto-scales to the size. The value is the true "
+        "distance on the ground, stays correct as you zoom, is the same on every base map, and updates live while you draw."])
+    S.callout(doc, "note", "NOTE", "Measurements are corrected for the map projection, so a mile measured near the poles "
+        "reads the same as a mile at the equator — the on-screen size differs, but the real-world number is right.")
+    S.screenshot(doc, "Shapes with measurement labels — a line's length, a circle's diameter and area, a polygon's area")
+
+    S.h1(doc, "Erasing a Shape")
+    S.steps(doc, [
+        ["Click the ", ("Erase", 'b'), " tool."],
+        ["Click on (or near) the shape to remove. It disappears; everything else stays."],
+    ])
+    S.body(doc, "Erase stays active, so you can remove several shapes one after another.")
+
+    S.h1(doc, "Clearing Everything, and Leaving Draw Mode")
+    S.body(doc, ["The toolbar's ", ("Clear", 'b'), " button deletes every drawing at once. The ", ("✕ Exit", 'b'),
+        " button leaves draw mode and returns the map to normal panning — your drawings stay."])
+    S.callout(doc, "important", "Clear vs. Exit.",
+        "Clear deletes your drawings. ✕ Exit keeps them and just leaves draw mode. They sit next to each other on the "
+        "toolbar, so click the one you mean. Clear cannot be undone — export first if you might want them later.")
 
     S.h1(doc, "Importing Shapes from a File (GPX / KML)")
-    S.body(doc, "You can bring in lines, tracks, polygons, and waypoints created in other mapping or GPS programs.")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Import GPX / KML…", 'b'), "."],
-        ["Choose a ", (".gpx", 'b'), " or ", (".kml", 'b'), " file and click Open."],
-        ["The shapes appear on the map. Waypoints show as labelled dots; tracks and lines show as lines; areas show as "
-         "polygons. Imported shapes are ", ("added", 'b'), " to whatever you have already drawn."],
+        ["Choose ", ("Map → Draw → Import GPX / KML…", 'b'), "."],
+        ["Pick a ", (".gpx", 'b'), " or ", (".kml", 'b'), " file and open it."],
+        ["Lines, tracks, and areas appear on the map; waypoints show as labeled dots. Imported shapes are added to "
+         "whatever you have already drawn."],
     ])
-    S.screenshot(doc, "The file picker for importing a GPX or KML file, and the shapes after they load")
 
     S.h1(doc, "Exporting Your Drawings")
     S.steps(doc, [
-        ["Open ", ("Map → Draw → Export Drawings…", 'b'), "."],
-        ["Choose a format — ", ("GPX", 'b'), " or ", ("KML", 'b'), " — and a file name, then click Save."],
-        ["Your drawn shapes are written to the file, ready to reuse here or share with another program."],
+        ["Choose ", ("Map → Draw → Export Drawings…", 'b'), "."],
+        ["Pick ", ("GPX", 'b'), " or ", ("KML", 'b'), " and a file name, then Save."],
     ])
-    S.callout(doc, "note", "NOTE", "If you have not drawn anything yet, Export tells you there is nothing to save instead "
-        "of writing an empty file.")
-
-    S.h1(doc, "Saving Your Work Between Sessions")
-    S.callout(doc, "important", "IMPORTANT — drawings are not saved automatically.",
-        "Drawings live only for the current session. They are cleared when you close APRS Command. If you want to keep a "
-        "set of drawings, use Export Drawings… to save them to a GPX or KML file, then Import that file next time.")
+    S.callout(doc, "important", "Drawings are not saved automatically.",
+        "Your drawings live only for the current session and are cleared when you close APRS Command. To keep a set of "
+        "drawings, Export them to a GPX or KML file and Import that file next time.")
 
     S.h1(doc, "Troubleshooting")
     S.bullets(doc, [
-        [("“I can’t pan the map.”", 'b'), " You are in draw mode — dragging draws instead of panning. Click ✕ Exit on "
-         "the draw-mode banner to return to normal map movement (you can still zoom with the wheel while drawing)."],
-        [("“My circle didn’t appear.”", 'b'), " Press at the centre and drag outward before releasing. A click with no "
-         "drag makes no circle."],
-        [("“My line or polygon vanished.”", 'b'), " Finishing is a double-click; switching tools also keeps a finished "
-         "shape. If everything is gone, you may have used Clear (which deletes) rather than ✕ Exit (which keeps your drawings)."],
-        [("“I lost my drawings after restarting.”", 'b'), " Drawings are session-only. Export them to a file before "
-         "closing to keep them (see “Saving Your Work Between Sessions”)."],
+        [("“I can’t pan the map.”", 'b'), " You are in draw mode — dragging draws instead of panning. Click ✕ Exit on the "
+         "toolbar (you can still zoom with the wheel while drawing)."],
+        [("“My circle didn’t appear.”", 'b'), " Press at the center and drag outward before releasing; a click with no drag makes no circle."],
+        [("“My color change affected only one tool.”", 'b'), " That is by design — color, fill, and width are remembered "
+         "per tool. Switch to the other tool and set its color there."],
+        [("“I lost my drawings after restarting.”", 'b'), " Drawings are session-only. Export them before closing to keep them."],
     ])
 
 

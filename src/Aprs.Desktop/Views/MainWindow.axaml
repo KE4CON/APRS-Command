@@ -81,7 +81,7 @@
       <MenuItem Header="_Map">
         <MenuItem Header="_Draw">
           <MenuItem Header="🖉 Drawing Toolbar" Command="{Binding Map.OpenDrawingToolbarCommand}"
-                    ToolTip.Tip="Open the on-map drawing toolbar — tools, colour, fill, width, and measurements" />
+                    ToolTip.Tip="Open the on-map drawing toolbar — tools, color, fill, width, and measurements" />
           <Separator />
           <MenuItem Header="Import GPX / KML…"   Command="{Binding Map.ImportGeoFileCommand}" ToolTip.Tip="Load lines, tracks, and waypoints from a GPX or KML file onto the map" />
           <MenuItem Header="Export Drawings…"    Command="{Binding Map.ExportGeoFileCommand}" ToolTip.Tip="Save your drawn shapes to a GPX or KML file" />
@@ -150,9 +150,9 @@
         <Border.Styles>
           <!-- Sidebar icon buttons. The default Fluent Button swapped in a dark pointer-over
                background/foreground on hover (blacking the glyphs out). Instead, every icon behaves the
-               same: at rest it sits on the sidebar text colour; on hover it grows and fades in a subtle
+               same: at rest it sits on the sidebar text color; on hover it grows and fades in a subtle
                highlight, presses in slightly on click, and springs smoothly back when the pointer leaves.
-               (Recolour is intentionally omitted — the OS renders the emoji icons in fixed colours it
+               (Recolor is intentionally omitted — the OS renders the emoji icons in fixed colors it
                won't let us tint, so tinting only some icons would look inconsistent.) -->
           <Style Selector="Button">
             <Setter Property="CornerRadius" Value="6" />
@@ -203,7 +203,7 @@
                   Command="{Binding Map.HomeCommand}">
             <TextBlock Text="⌂" />
           </Button>
-          <Button ToolTip.Tip="Centre on my station"
+          <Button ToolTip.Tip="Center on my station"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Padding="4,12"
@@ -368,13 +368,13 @@
             <Button Command="{Binding Map.DrawCircleCommand}"     Classes.activeTool="{Binding Map.IsCircleActive}"     FontSize="16" Padding="7,3" ToolTip.Tip="Circle">◯</Button>
             <Button Command="{Binding Map.DrawTextCommand}"       Classes.activeTool="{Binding Map.IsTextActive}"       FontSize="16" Padding="7,3" ToolTip.Tip="Text">🅣</Button>
             <Button Command="{Binding Map.DrawSelectTextCommand}" Classes.activeTool="{Binding Map.IsSelectTextActive}" FontSize="16" Padding="7,3" ToolTip.Tip="Resize / move text">↔</Button>
-            <Button Command="{Binding Map.DrawEyedropperCommand}" Classes.activeTool="{Binding Map.IsEyedropperActive}" FontSize="16" Padding="7,3" ToolTip.Tip="Eyedropper — sample a colour from the map">🎨</Button>
+            <Button Command="{Binding Map.DrawEyedropperCommand}" Classes.activeTool="{Binding Map.IsEyedropperActive}" FontSize="16" Padding="7,3" ToolTip.Tip="Eyedropper — sample a color from the map">🎨</Button>
             <Button Command="{Binding Map.DrawEraseCommand}"      Classes.activeTool="{Binding Map.IsEraseActive}"      FontSize="16" Padding="7,3" ToolTip.Tip="Erase a shape">🧽</Button>
 
             <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="5,2" />
 
-            <!-- Colour swatch → wheel flyout -->
-            <Button x:Name="ColorSwatchButton" Padding="4" VerticalAlignment="Center" ToolTip.Tip="Colour (this tool)">
+            <!-- Color swatch → wheel flyout -->
+            <Button x:Name="ColorSwatchButton" Padding="4" VerticalAlignment="Center" ToolTip.Tip="Color (this tool)">
               <Border Width="20" Height="20" CornerRadius="4" BorderBrush="Gray" BorderThickness="1"
                       Background="{Binding Map.CurrentToolColorBrush}" />
               <Button.Flyout>

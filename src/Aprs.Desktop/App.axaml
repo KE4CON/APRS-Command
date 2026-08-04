@@ -8,7 +8,7 @@
     <!-- ColorPicker/ColorView controls are a separate package and are NOT themed by FluentTheme
          alone; this include gives them their Fluent control themes (without it, ColorView is blank). -->
     <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
-    <!-- Buttons: a subtle press-in for tactile feedback, on top of Fluent's hover colours. -->
+    <!-- Buttons: a subtle press-in for tactile feedback, on top of Fluent's hover colors. -->
     <Style Selector="Button">
       <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
       <Setter Property="Transitions">

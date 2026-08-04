@@ -30,7 +30,7 @@ public sealed class DrawingShape
     /// </summary>
     public double GroundHeightMetres { get; set; }
 
-    /// <summary>Background colour behind text (hex), or null for none — text shapes only.</summary>
+    /// <summary>Background color behind text (hex), or null for none — text shapes only.</summary>
     public string? BackgroundColorHex { get; set; } = "#FFFFFF";
 
     // Points in world coordinates (Mapsui units = EPSG:3857 metres)

@@ -169,15 +169,15 @@ public sealed class MapViewModel : INotifyPropertyChanged
     {
         DrawMode.Line    => "Drawing: Line — click to add points, double-click to finish",
         DrawMode.Polygon => "Drawing: Polygon — click each corner, double-click to close",
-        DrawMode.Circle  => "Drawing: Circle — press the centre and drag out to set the radius",
+        DrawMode.Circle  => "Drawing: Circle — press the center and drag out to set the radius",
         DrawMode.Text    => "Text — press and drag on the map to size it, then type your label",
-        DrawMode.Eyedropper => "Eyedropper — click the map to grab that colour",
+        DrawMode.Eyedropper => "Eyedropper — click the map to grab that color",
         DrawMode.SelectText => "Edit text — click a label to select it, then drag its handle to resize or drag the label to move it",
         DrawMode.Erase   => "Erase mode — click a shape to delete it",
         _                => "Draw tools — add lines, polygons, and circles to the map"
     };
 
-    // ── Per-tool drawing style (colour · fill · width) ───────────────────────
+    // ── Per-tool drawing style (color · fill · width) ───────────────────────
     // Each drawing tool remembers its own style; the on-map drawing toolbar edits the active tool's.
     private sealed class ToolStyle
     {
@@ -229,7 +229,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
         set { if (Math.Abs(ActiveStyle.Width - value) > 1e-9) { ActiveStyle.Width = value; OnPropertyChanged(); } }
     }
 
-    /// <summary>Set the active tool's colour from a hex string (menu swatch, eyedropper, custom dialog).</summary>
+    /// <summary>Set the active tool's color from a hex string (menu swatch, eyedropper, custom dialog).</summary>
     public void SetActiveToolColorHex(string hex)
     {
         if (string.IsNullOrWhiteSpace(hex) || ActiveStyle.ColorHex == hex) return;
@@ -308,7 +308,7 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand DrawSelectTextCommand { get; }
     public DesktopCommand OpenDrawingToolbarCommand { get; }
 
-    /// <summary>After the eyedropper samples a colour, return to the last drawing tool (keep the toolbar open).</summary>
+    /// <summary>After the eyedropper samples a color, return to the last drawing tool (keep the toolbar open).</summary>
     public void ExitEyedropper() => DrawMode = lastDrawingTool;
     public DesktopCommand ToggleMeasurementsCommand { get; }
     public DesktopCommand UseImperialUnitsCommand { get; }

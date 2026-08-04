@@ -40,6 +40,7 @@ Dependencies flow downward only. Each layer sees only the layers below it.
 - **MVVM is hand-rolled** (manual `INotifyPropertyChanged`, `DesktopCommand`/`AsyncDesktopCommand`/`RelayCommand`). This project does **not** use CommunityToolkit.Mvvm or ReactiveUI — do not introduce them without discussion. Use the one shared `RelayCommand` (parameterized) / `DesktopCommand` (parameterless) / `AsyncDesktopCommand` (async) — do not add new per-file command classes.
 - Views/viewmodels talk to **services and abstractions**, never directly to transports or the parser.
 - Source-tag data models by origin (received / generated / imported / replayed / simulated / transmitted).
+- **American English everywhere** — user-facing UI strings, tooltips, all docs and the User Manual, and code comments (color not colour, center not centre, meters not metres, gray not grey, `-ize` endings). Match the app's own labels. (Don't rename existing internal identifiers like the `Centre` property just for spelling.)
 
 ## Key Domain Rules
 
