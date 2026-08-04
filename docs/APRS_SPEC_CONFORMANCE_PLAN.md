@@ -31,7 +31,7 @@ test vectors to confirm exactness.
 | **MIC-E** | `` ` `` `'` `0x1C` `0x1D` | ✅ **Done** | `AprsMicEParser` (built against Dire Wolf's decoder): destination-field lat + N/S/offset/W-E, longitude/speed/course, symbol, MIC-E altitude, and the message code (Emergency/En Route/… surfaced in the comment). Decodes to `PositionAprsPacket`. Tests: `AprsMicEParserTests`. |
 | Weather (positionless + position) | `_` / position+`_` | ✅ | Timestamped `@`/`/` offset fixed (D2). *(verify compressed-weather, all wx fields)* |
 | Message + ACK/REJ | `:` | ✅ | ack/rej now case-sensitive (D2). *(verify bulletins `BLNx`, announcements, group bulletins, 67-char limit, telemetry-in-message)* |
-| **Object** | `;` | ✅ | Live `*` / killed `_` — **verified correct** against Dire Wolf (objects: `*`/`_`; items: `!`/`_`). The primer §7.3 is the one in error (says kill uses `/`); the code is right. **Action: correct the primer.** *(still verify compressed object + timestamp forms)* |
+| **Object** | `;` | ✅ | Live `*` / killed `_` — **verified correct** against Dire Wolf (objects: `*`/`_`; items: `!`/`_`). The primer §7.3 was the one in error (said kill uses `/`); **corrected ✅** (`_`, not `/`). *(still verify compressed object + timestamp forms)* |
 | Item | `)` | ✅ | *(verify live/kill char `!`/`_` per spec, same discrepancy class as objects)* |
 | Telemetry | `T#` | ✅ | Sequence + analog + `BITS` + `PARM./UNIT./EQNS./BITS.` metadata handled. *(verify base-91 telemetry + telemetry-in-message)* |
 | Status | `>` | ✅ **Done** | `AprsStatusReport` decomposes the body into optional leading DHM-zulu timestamp **or** Maidenhead locator+symbol, and trailing beam-heading/ERP (`^`) — remainder is the display message (`StatusText`); `RawStatusText` keeps the verbatim body. Built against Dire Wolf's decoder. Tests: `AprsStatusReportTests`. |
@@ -54,8 +54,8 @@ Formatters exist for position beacons (tested, `>APCMD0` ✅), weather, objects,
   non-sequential shape codes (0,1,3,4,5,6,8,9). Tests: `AprsAreaObjectEncoderTests`.
   **Caveat:** area objects are obscure — even Dire Wolf doesn't decode them — so there is no
   independent decoder oracle; this is validated against the spec formula + hand-computed math.
-  **Primer §7.4 is wrong too** (a second doc error, like §7.3): it states `offset = value² × 1500`; the
-  correct scaling is `value² / 100`. **Action: correct the primer §7.4 formula.**
+  **Primer §7.4 — corrected ✅** — the primer now states `yy = √(offset ÷ 0.01)` /
+  `offset = value² × 0.01` (i.e. `value² / 100`), matching the encoder. (An earlier draft had `× 1500`.)
 - Remaining generate-side verification: round-trip (generate → parse → equal) for position/object/
   message/weather; object-kill char on emit.
 
@@ -67,7 +67,7 @@ Each with spec vectors from aprsspec + Dire Wolf:
 2. ~~**Third-party `}`** unwrap~~ ✅ **done** (`AprsParser`, depth-guarded).
 3. ~~**Query `?`** decomposition~~ ✅ **done** (`QueryType`/keyword/target).
 4. ~~**DAO `!Dxx!`** precision~~ ✅ **done** (`AprsDaoExtension`, applied to all position-bearing types). Remaining: any compressed-position / telemetry gaps Phase 0 verification surfaces.
-5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; the **primer §7.3 needs correcting** (killed object is `_`, not `/`).
+5. ~~Resolve the **object/item kill-char** discrepancy~~ ✅ **done** — code verified correct against Dire Wolf; **primer §7.3 corrected** (killed object is `_`, not `/`).
 
 ## Phase 2 — Generate-side exactness
 - Verify every emitted packet is spec-exact (tocall ✅ done; area-object `Tyy/Cxx` ✅ fixed; position,
