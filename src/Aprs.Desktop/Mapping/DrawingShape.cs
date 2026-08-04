@@ -1,6 +1,9 @@
 namespace Aprs.Desktop.Mapping;
 
-public enum DrawShapeType { Line, Polygon, Circle }
+public enum DrawShapeType { Line, Polygon, Circle, Text }
+
+/// <summary>Fill for polygons and circles. Mapped to the renderer's fill styles in the map view.</summary>
+public enum DrawFillStyle { Solid, None, DiagonalHatch, CrossHatch, Horizontal, Vertical, Dotted }
 
 /// <summary>
 /// A user-drawn shape on the APRS map — line, polygon, or circle.
@@ -11,8 +14,24 @@ public sealed class DrawingShape
     public Guid Id { get; } = Guid.NewGuid();
     public DrawShapeType ShapeType { get; init; }
     public string Label { get; set; } = string.Empty;
-    public string Color { get; set; } = "#e63946"; // APRS red
-    public double StrokeWidth { get; set; } = 2.0;
+    public string Color { get; set; } = "#FF0000"; // vivid red default
+    public double StrokeWidth { get; set; } = 3.0;
+
+    /// <summary>Fill pattern — polygons only.</summary>
+    public DrawFillStyle FillStyle { get; set; } = DrawFillStyle.Solid;
+
+    /// <summary>Fixed on-screen font size — text shapes with no ground height.</summary>
+    public double FontSize { get; set; } = 14.0;
+
+    /// <summary>
+    /// Text height in world metres. When &gt; 0 the text scales with zoom (its pixel size is
+    /// GroundHeightMetres / resolution); when 0 the fixed <see cref="FontSize"/> is used.
+    /// Set by drag-sizing when the text is placed.
+    /// </summary>
+    public double GroundHeightMetres { get; set; }
+
+    /// <summary>Background colour behind text (hex), or null for none — text shapes only.</summary>
+    public string? BackgroundColorHex { get; set; } = "#FFFFFF";
 
     // Points in world coordinates (Mapsui units = EPSG:3857 metres)
     public List<(double X, double Y)> Points { get; } = [];
@@ -34,6 +53,7 @@ public sealed class DrawingShape
     {
         DrawShapeType.Circle  => RadiusMetres > minCircleRadiusMetres,
         DrawShapeType.Polygon => Points.Count >= 3,
+        DrawShapeType.Text    => Points.Count >= 1 && !string.IsNullOrWhiteSpace(Label),
         _                     => Points.Count >= 2,
     };
 }

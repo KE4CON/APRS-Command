@@ -3,10 +3,11 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Aprs.Mapping;
 using Aprs.Services;
+using Aprs.Desktop.Mapping;
 
 namespace Aprs.Desktop.ViewModels;
 
-public enum DrawMode { None, Line, Polygon, Circle, Erase }
+public enum DrawMode { None, Line, Polygon, Circle, Text, Erase, Eyedropper, SelectText }
 
 public sealed class MapViewModel : INotifyPropertyChanged
 {
@@ -57,6 +58,15 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DrawPolygonCommand             = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Polygon ? DrawMode.None : DrawMode.Polygon);
         DrawCircleCommand              = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Circle  ? DrawMode.None : DrawMode.Circle);
         DrawEraseCommand               = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Erase   ? DrawMode.None : DrawMode.Erase);
+        DrawTextCommand                = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Text    ? DrawMode.None : DrawMode.Text);
+        DrawEyedropperCommand          = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.Eyedropper ? DrawMode.None : DrawMode.Eyedropper);
+        DrawSelectTextCommand          = new DesktopCommand(() => DrawMode = DrawMode == DrawMode.SelectText ? DrawMode.None : DrawMode.SelectText);
+        ToggleMeasurementsCommand      = new DesktopCommand(() => ShowMeasurements = !ShowMeasurements);
+        UseImperialUnitsCommand        = new DesktopCommand(() => MeasurementsImperial = true);
+        UseMetricUnitsCommand          = new DesktopCommand(() => MeasurementsImperial = false);
+        SetDrawColorCommand            = new DesktopCommand(p => { if (p is string hex && !string.IsNullOrWhiteSpace(hex)) CurrentDrawColorHex = hex; });
+        SetCustomColorCommand          = new DesktopCommand(() => CustomColorRequested?.Invoke(this, EventArgs.Empty));
+        SetFillStyleCommand            = new DesktopCommand(p => { if (p is string s && Enum.TryParse<DrawFillStyle>(s, out var fs)) CurrentFillStyle = fs; });
         ExitDrawModeCommand            = new DesktopCommand(() => DrawMode = DrawMode.None);
         ClearDrawingsCommand           = new DesktopCommand(() => ClearDrawingsRequested?.Invoke(this, EventArgs.Empty));
         ImportGeoFileCommand           = new DesktopCommand(() => ImportGeoFileRequested?.Invoke(this, EventArgs.Empty));
@@ -155,9 +165,60 @@ public sealed class MapViewModel : INotifyPropertyChanged
         DrawMode.Line    => "Drawing: Line — click to add points, double-click to finish",
         DrawMode.Polygon => "Drawing: Polygon — click each corner, double-click to close",
         DrawMode.Circle  => "Drawing: Circle — press the centre and drag out to set the radius",
+        DrawMode.Text    => "Text — press and drag on the map to size it, then type your label",
+        DrawMode.Eyedropper => "Eyedropper — click the map to grab that colour",
+        DrawMode.SelectText => "Edit text — click a label to select it, then drag its handle to resize or drag the label to move it",
         DrawMode.Erase   => "Erase mode — click a shape to delete it",
         _                => "Draw tools — add lines, polygons, and circles to the map"
     };
+
+    // Style applied to newly-drawn shapes; changed from the Map → Draw menu.
+    private string currentDrawColorHex = "#FF0000";
+    public string CurrentDrawColorHex
+    {
+        get => currentDrawColorHex;
+        set { if (currentDrawColorHex != value) { currentDrawColorHex = value; OnPropertyChanged(); } }
+    }
+
+    private DrawFillStyle currentFillStyle = DrawFillStyle.Solid;
+    public DrawFillStyle CurrentFillStyle
+    {
+        get => currentFillStyle;
+        set { if (currentFillStyle != value) { currentFillStyle = value; OnPropertyChanged(); } }
+    }
+
+    // Last-used map-text size; the text dialog defaults to this and updates it.
+    private double currentTextSize = 14.0;
+    public double CurrentTextSize
+    {
+        get => currentTextSize;
+        set { if (currentTextSize != value) { currentTextSize = value; OnPropertyChanged(); } }
+    }
+
+    // Last-used text background (hex, or null for none).
+    private string? currentTextBackground = "#FFFFFF";
+    public string? CurrentTextBackground
+    {
+        get => currentTextBackground;
+        set { if (currentTextBackground != value) { currentTextBackground = value; OnPropertyChanged(); } }
+    }
+
+    // Shape measurements (length / diameter / area) shown as labels on drawn shapes.
+    private bool showMeasurements = true;
+    public bool ShowMeasurements
+    {
+        get => showMeasurements;
+        set { if (showMeasurements != value) { showMeasurements = value; OnPropertyChanged(); OnPropertyChanged(nameof(MeasurementsMenuHeader)); } }
+    }
+
+    private bool measurementsImperial = true;
+    public bool MeasurementsImperial
+    {
+        get => measurementsImperial;
+        set { if (measurementsImperial != value) { measurementsImperial = value; OnPropertyChanged(); } }
+    }
+
+    public string MeasurementsMenuHeader => ShowMeasurements ? "Hide shape measurements" : "Show shape measurements";
 
     public event EventHandler<DrawMode>? DrawModeChanged;
 
@@ -165,6 +226,18 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand DrawPolygonCommand { get; }
     public DesktopCommand DrawCircleCommand { get; }
     public DesktopCommand DrawEraseCommand { get; }
+    public DesktopCommand DrawTextCommand { get; }
+    public DesktopCommand DrawEyedropperCommand { get; }
+    public DesktopCommand DrawSelectTextCommand { get; }
+    public DesktopCommand ToggleMeasurementsCommand { get; }
+    public DesktopCommand UseImperialUnitsCommand { get; }
+    public DesktopCommand UseMetricUnitsCommand { get; }
+    public DesktopCommand SetDrawColorCommand { get; }
+    public DesktopCommand SetCustomColorCommand { get; }
+    public DesktopCommand SetFillStyleCommand { get; }
+
+    /// <summary>Raised when the user asks for the custom color picker (handled by the map view).</summary>
+    public event EventHandler? CustomColorRequested;
     public DesktopCommand ExitDrawModeCommand { get; }
     public DesktopCommand ClearDrawingsCommand { get; }
     public DesktopCommand ImportGeoFileCommand { get; }

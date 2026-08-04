@@ -307,17 +307,41 @@ def ch_installing(doc, n):
         "the download-quarantine flag) and launch ", ("./Aprs.Desktop", 'c'), "."])
 
     S.h1(doc, "Linux")
-    S.body(doc, "Choose the package that matches your distribution:")
+    S.body(doc, "APRS Command comes in three Linux formats. First, pick the download that matches your computer:")
     S.bullets(doc, [
-        [("Debian / Ubuntu / Mint / Raspberry Pi OS", 'b'), " — the ", (".deb", 'c'), " package: ",
-         ("sudo dpkg -i aprs-command_…_amd64.deb", 'c'), " (or ", ("…_arm64.deb", 'c'), " on ARM)."],
-        [("Fedora / RHEL / openSUSE", 'b'), " — the ", (".rpm", 'c'), " package: ",
-         ("sudo rpm -i aprs-command-…-1.x86_64.rpm", 'c'), " (or ", ("…aarch64.rpm", 'c'), " on ARM)."],
-        [("Any distribution", 'b'), " — the portable ", (".tar.gz", 'c'), ": extract it, ", ("chmod +x Aprs.Desktop", 'c'),
-         ", then run ", ("./Aprs.Desktop", 'c'), "."],
+        [("amd64", 'c'), " — a standard 64-bit PC or laptop (Intel or AMD processor)."],
+        [("arm64", 'c'), " — a Raspberry Pi or other ARM-based computer."],
     ])
-    S.body(doc, ["Installed packages place the program at ", ("/opt/aprs-command/", 'c'), ", add a launcher command ",
-        ("aprs-command", 'c'), ", and create an entry in your application menu."])
+    S.callout(doc, "note", "About the version number in these commands.",
+        "The commands below show an example version, 1.0.0. Type the exact name of the file you actually downloaded — "
+        "your version number may be different. (In a terminal, you can type the first few letters and press Tab to "
+        "complete the file name for you.)")
+
+    S.h2(doc, "Debian, Ubuntu, Mint, or Raspberry Pi OS  (.deb)")
+    S.body(doc, "Open a terminal in the folder where the file was downloaded, then run the command for your computer.")
+    S.body(doc, [("On a PC or laptop", 'b'), " (amd64):"])
+    S.code_block(doc, "sudo dpkg -i aprs-command_1.0.0_amd64.deb")
+    S.body(doc, [("On a Raspberry Pi or ARM computer", 'b'), " (arm64):"])
+    S.code_block(doc, "sudo dpkg -i aprs-command_1.0.0_arm64.deb")
+
+    S.h2(doc, "Fedora, RHEL, or openSUSE  (.rpm)")
+    S.body(doc, "Open a terminal in the download folder, then run the command for your computer.")
+    S.body(doc, [("On a PC or laptop", 'b'), " (x86_64):"])
+    S.code_block(doc, "sudo rpm -i aprs-command-1.0.0-1.x86_64.rpm")
+    S.body(doc, [("On a Raspberry Pi or ARM computer", 'b'), " (aarch64):"])
+    S.code_block(doc, "sudo rpm -i aprs-command-1.0.0-1.aarch64.rpm")
+
+    S.h2(doc, "Any distribution — portable archive  (.tar.gz)")
+    S.body(doc, "No installation needed. Unpack the archive and run the program in place:")
+    S.code_block(doc, [
+        "tar -xzf APRSCommand-1.0.0-linux-x64.tar.gz",
+        "cd APRS-Command-linux-x64",
+        "chmod +x Aprs.Desktop",
+        "./Aprs.Desktop",
+    ])
+
+    S.body(doc, ["An installed package (.deb or .rpm) places the program at ", ("/opt/aprs-command/", 'c'), ", adds an ",
+        ("aprs-command", 'c'), " command you can run from a terminal, and creates an entry in your application menu."])
     S.callout(doc, "tip", "Using a hardware TNC over serial?",
         "On Linux and macOS your user must belong to the “dialout” group to open serial ports: run "
         "“sudo usermod -aG dialout $USER”, then log out and back in. On Windows no extra step is needed. "
@@ -346,10 +370,12 @@ def ch_installing(doc, n):
 
     S.h1(doc, "Running from Source (Optional)")
     S.body(doc, "If you would rather build it yourself — for example to try the very latest changes — install the "
-        ".NET 10 SDK and run:")
-    S.body(doc, [("git clone https://github.com/KE4CON/APRS-Command.git", 'c')])
-    S.body(doc, [("cd APRS-Command", 'c')])
-    S.body(doc, [("dotnet run --project src/Aprs.Desktop/Aprs.Desktop.csproj", 'c')])
+        ".NET 10 SDK, then run:")
+    S.code_block(doc, [
+        "git clone https://github.com/KE4CON/APRS-Command.git",
+        "cd APRS-Command",
+        "dotnet run --project src/Aprs.Desktop/Aprs.Desktop.csproj",
+    ])
     S.body(doc, ["With APRS Command installed, the next chapter walks through your ", ("first launch and first-run setup", 'i'), "."])
 
 

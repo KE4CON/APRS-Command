@@ -83,7 +83,38 @@
           <MenuItem Header="✏ Draw Line"    Command="{Binding Map.DrawLineCommand}"    ToolTip.Tip="Click to add points, double-click to finish" />
           <MenuItem Header="⬟ Draw Polygon" Command="{Binding Map.DrawPolygonCommand}" ToolTip.Tip="Click to add points, double-click to close" />
           <MenuItem Header="◯ Draw Circle"  Command="{Binding Map.DrawCircleCommand}"  ToolTip.Tip="Press the centre and drag out to set the radius" />
+          <MenuItem Header="🅣 Draw Text"   Command="{Binding Map.DrawTextCommand}"    ToolTip.Tip="Press and drag on the map to size the text, then type a label" />
+          <MenuItem Header="↔ Resize / Move Text" Command="{Binding Map.DrawSelectTextCommand}" ToolTip.Tip="Click a label to select it, then drag its handle to resize or drag the label to move it" />
           <MenuItem Header="✕ Erase Shape"  Command="{Binding Map.DrawEraseCommand}"   ToolTip.Tip="Click a shape to delete it" />
+          <Separator />
+          <MenuItem Header="Drawing _Color">
+            <MenuItem Header="Red"    Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FF0000" />
+            <MenuItem Header="Orange" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FF7A00" />
+            <MenuItem Header="Yellow" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FFD400" />
+            <MenuItem Header="Green"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#00C000" />
+            <MenuItem Header="Blue"   Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#0066FF" />
+            <MenuItem Header="Purple" Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#A000FF" />
+            <MenuItem Header="Black"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#000000" />
+            <MenuItem Header="White"  Command="{Binding Map.SetDrawColorCommand}" CommandParameter="#FFFFFF" />
+            <Separator />
+            <MenuItem Header="Custom color…" Command="{Binding Map.SetCustomColorCommand}" ToolTip.Tip="Open the color wheel to pick any color" />
+            <MenuItem Header="Eyedropper — sample from map" Command="{Binding Map.DrawEyedropperCommand}" ToolTip.Tip="Click the map to grab that color as the drawing color" />
+          </MenuItem>
+          <MenuItem Header="Shape _Fill" ToolTip.Tip="Fill for polygons and circles">
+            <MenuItem Header="None (outline only)" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="None" />
+            <MenuItem Header="Solid"            Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Solid" />
+            <MenuItem Header="Diagonal hatch"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="DiagonalHatch" />
+            <MenuItem Header="Cross-hatch"      Command="{Binding Map.SetFillStyleCommand}" CommandParameter="CrossHatch" />
+            <MenuItem Header="Horizontal lines" Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Horizontal" />
+            <MenuItem Header="Vertical lines"   Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Vertical" />
+            <MenuItem Header="Dotted"           Command="{Binding Map.SetFillStyleCommand}" CommandParameter="Dotted" />
+          </MenuItem>
+          <MenuItem Header="_Measurements" ToolTip.Tip="Show length / diameter / area on drawn shapes">
+            <MenuItem Header="{Binding Map.MeasurementsMenuHeader}" Command="{Binding Map.ToggleMeasurementsCommand}" />
+            <Separator />
+            <MenuItem Header="Imperial (ft · mi · acres)" Command="{Binding Map.UseImperialUnitsCommand}" />
+            <MenuItem Header="Metric (m · km · ha)"       Command="{Binding Map.UseMetricUnitsCommand}" />
+          </MenuItem>
           <Separator />
           <MenuItem Header="Clear All Drawings" Command="{Binding Map.ClearDrawingsCommand}" />
           <Separator />
@@ -354,6 +385,27 @@
                      Foreground="{DynamicResource TextMutedBrush}" />
         </StackPanel>
       </Border>
+
+      <!-- Draw-mode control bar — on-map and prominent; visible while any draw tool is active. -->
+      <Border Grid.Column="1"
+              IsVisible="{Binding Map.IsDrawModeActive}"
+              VerticalAlignment="Top" HorizontalAlignment="Center"
+              Margin="0,14,0,0"
+              Background="{DynamicResource MapChromeBgBrush}"
+              BorderBrush="{DynamicResource AccentTealBrush}" BorderThickness="1"
+              CornerRadius="9" Padding="14,9"
+              BoxShadow="0 8 22 -12 #55101828">
+        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+          <Ellipse Width="9" Height="9" Fill="{DynamicResource AccentTealBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Map.DrawModeTooltip}" FontWeight="SemiBold" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <Border Width="1" Background="{DynamicResource AppBorderBrush}" Margin="4,2" />
+          <Button Content="Clear" Command="{Binding Map.ClearDrawingsCommand}" Padding="12,5"
+                  ToolTip.Tip="Delete all drawings from the map" />
+          <Button Content="✕ Exit" Command="{Binding Map.ExitDrawModeCommand}" Padding="12,5" FontWeight="SemiBold"
+                  ToolTip.Tip="Leave draw mode and return to normal map panning (your drawings stay)" />
+        </StackPanel>
+      </Border>
     </Grid>
 
     <!-- NWS weather alert banner — visible only when alerts are active -->
@@ -361,27 +413,6 @@
                                DataContext="{Binding NwsAlerts}"
                                Cursor="Hand"
                                PointerPressed="NwsBanner_PointerPressed" />
-
-    <!-- Draw mode indicator banner — visible when a draw tool is active -->
-    <Border Grid.Row="3" IsVisible="{Binding Map.IsDrawModeActive}"
-            Background="{DynamicResource PanelAccentBgBrush}" Padding="10,5">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding Map.DrawModeTooltip}" FontSize="11" FontWeight="SemiBold"
-                   Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-          <Button Content="Clear" Padding="8,3" FontSize="10"
-                  Command="{Binding Map.ClearDrawingsCommand}"
-                  ToolTip.Tip="Delete all drawings from the map"
-                  Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}"
-                  BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}" />
-          <Button Content="✕ Exit" Padding="8,3" FontSize="10"
-                  Command="{Binding Map.ExitDrawModeCommand}"
-                  ToolTip.Tip="Leave draw mode and return to normal map panning (your drawings stay)"
-                  Background="Transparent" Foreground="{DynamicResource TextPrimaryBrush}"
-                  BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}" />
-        </StackPanel>
-      </Grid>
-    </Border>
 
     <views:MainStatusBarView Grid.Row="5" />
   </Grid>

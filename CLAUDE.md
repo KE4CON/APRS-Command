@@ -81,7 +81,7 @@ This software can key a real transmitter (RF via KISS/AGWPE) and post to the APR
   Both use a stable-numbering + dated-amendment model, and both must look "wow"-professional.
 
 ## Approved NuGet Packages (list here before adding)
-- **Avalonia** 11.3.7 (`Avalonia.Desktop`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`)
+- **Avalonia** 11.3.7 (`Avalonia.Desktop`, `Avalonia.Themes.Fluent`, `Avalonia.Fonts.Inter`, `Avalonia.Controls.ColorPicker` — round ColorView wheel; needs its Fluent StyleInclude in App.axaml)
 - **Mapsui** 5.1.0 (`Mapsui.Avalonia`, `Mapsui.Tiling`, `Mapsui.Nts`) + **BruTile.MbTiles** 6.0.0 — mapping/tiles
 - **Microsoft.Data.Sqlite** 9.0.0 + **SQLitePCLRaw.bundle_e_sqlite3** 3.0.3 — station persistence
 - **Microsoft.Extensions.DependencyInjection** 10.0.0 — composition root

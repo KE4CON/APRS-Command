@@ -196,6 +196,20 @@ def screenshot(doc, caption):
 def page_break(doc):
     p = doc.add_paragraph(); p.add_run().add_break(WD_BREAK.PAGE)
 
+def code_block(doc, text):
+    """A shaded monospace command block. `text` is one command (str) or several (list of str)."""
+    _, cell = _one_cell(doc)
+    _shade(cell, "F3F4F6")
+    _borders(cell, {'left': {'sz': 18, 'color': 'B7C0CC'}, 'top': {'sz': 2, 'color': 'CBD5E1'},
+                    'bottom': {'sz': 2, 'color': 'CBD5E1'}, 'right': {'sz': 2, 'color': 'CBD5E1'}})
+    _margins(cell, top=80, bottom=80, start=150, end=150)
+    lines = text if isinstance(text, list) else [text]
+    for i, line in enumerate(lines):
+        p = cell.paragraphs[0] if i == 0 else cell.add_paragraph()
+        p.paragraph_format.space_after = Pt(0)
+        r = p.add_run(line); r.font.name = 'Consolas'; r.font.size = Pt(9.5); r.font.color.rgb = INK
+    doc.add_paragraph().paragraph_format.space_after = Pt(3)
+
 # ---- chapter opener -------------------------------------------------------
 def chapter_open(doc, number, title, subtitle, in_this_chapter=None):
     page_break(doc)

@@ -37,6 +37,13 @@ public sealed partial class MapView : UserControl
     private DrawingShape? shapeInProgress;
     private (double X, double Y)? drawHoverWorld;   // cursor position for the in-progress rubber-band preview
     private bool circleDragging;                    // true while press-dragging a circle radius
+    private bool textDragging;                      // true while press-dragging a new text's size
+    private (double X, double Y) textAnchor;        // world anchor of the text being drag-sized
+    private double lastResolution;                  // last map resolution seen (to re-scale zoom-scaled text)
+    private DrawingShape? selectedText;             // text selected for resize/move (SelectText mode)
+    private bool resizingText;                      // dragging the selected text's resize handle
+    private bool movingText;                        // dragging the selected text's body
+    private (double X, double Y) moveGrabOffset;    // grab-point → anchor offset while moving
     private const double MinCircleRadiusMetres = 50.0;
     private DrawMode currentDrawMode = DrawMode.None;
     private TileLayer? radarLayer;           // single static layer (legacy, kept for compat)
@@ -126,6 +133,22 @@ public sealed partial class MapView : UserControl
             Avalonia.Interactivity.RoutingStrategies.Tunnel);
         MapControl.AddHandler(Avalonia.Input.InputElement.PointerReleasedEvent, OnDrawPointerReleased,
             Avalonia.Interactivity.RoutingStrategies.Tunnel);
+
+        // Zoom-scaled text (GroundHeightMetres > 0) must be re-rendered when the zoom changes.
+        // Mapsui exposes no viewport-changed event here, so poll the resolution and redraw when it moves.
+        var zoomWatch = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+        zoomWatch.Tick += (_, _) =>
+        {
+            var res = MapControl.Map.Navigator.Viewport.Resolution;
+            if (res <= 0 || Math.Abs(res - lastResolution) < 1e-9) return;
+            lastResolution = res;
+            if (completedShapes.Any(s => s.ShapeType == DrawShapeType.Text && s.GroundHeightMetres > 0)
+                || shapeInProgress is { ShapeType: DrawShapeType.Text })
+            {
+                RedrawAllShapes();
+            }
+        };
+        zoomWatch.Start();
 
         RefreshFeatures();
 
@@ -284,6 +307,7 @@ public sealed partial class MapView : UserControl
             currentViewModel.ClearDrawingsRequested -= OnClearDrawings;
             currentViewModel.ImportGeoFileRequested -= OnImportGeoFile;
             currentViewModel.ExportGeoFileRequested -= OnExportGeoFile;
+            currentViewModel.CustomColorRequested -= OnCustomColorRequested;
             currentViewModel.RingCenterChanged -= OnRingCenterChanged;
         }
 
@@ -299,6 +323,7 @@ public sealed partial class MapView : UserControl
             currentViewModel.ClearDrawingsRequested += OnClearDrawings;
             currentViewModel.ImportGeoFileRequested += OnImportGeoFile;
             currentViewModel.ExportGeoFileRequested += OnExportGeoFile;
+            currentViewModel.CustomColorRequested += OnCustomColorRequested;
             currentViewModel.RingCenterChanged += OnRingCenterChanged;
         }
 
@@ -348,6 +373,12 @@ public sealed partial class MapView : UserControl
         if (e.PropertyName == nameof(MapViewModel.ShowTrails) && trailService is not null)
         {
             UpdateTrails(trailService);
+        }
+
+        // Measurement toggle / unit change — redraw the drawing layer to add/remove/reformat labels.
+        if (e.PropertyName is nameof(MapViewModel.ShowMeasurements) or nameof(MapViewModel.MeasurementsImperial))
+        {
+            RedrawAllShapes();
         }
 
         // When radar toggle changes, enable/disable the layer.
@@ -1161,7 +1192,10 @@ public sealed partial class MapView : UserControl
         CommitInProgressShape();
         currentDrawMode = mode;
         circleDragging = false;
+        textDragging = false;
         drawHoverWorld = null;
+        if (mode != DrawMode.SelectText) { selectedText = null; resizingText = false; movingText = false; }
+        RedrawAllShapes();
         MapControl.Cursor = mode == DrawMode.None
             ? Avalonia.Input.Cursor.Default
             : new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Cross);
@@ -1173,6 +1207,7 @@ public sealed partial class MapView : UserControl
         shapeInProgress = null;
         drawHoverWorld = null;
         circleDragging = false;
+        selectedText = null; resizingText = false; movingText = false;
         drawingLayer?.Clear();
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
@@ -1336,14 +1371,280 @@ public sealed partial class MapView : UserControl
                     ShapeType    = DrawShapeType.Circle,
                     Centre       = (world.X, world.Y),
                     RadiusMetres = 0,
+                    Color        = CurrentColorHex(),
+                    FillStyle    = CurrentFill(),
                 };
                 circleDragging = true;
+                e.Pointer.Capture(MapControl);
+                break;
+
+            case DrawMode.Text:
+                // Press = anchor; drag sets the size (see moved/released), then a dialog asks for the label.
+                textAnchor = (world.X, world.Y);
+                shapeInProgress = new DrawingShape
+                {
+                    ShapeType          = DrawShapeType.Text,
+                    Color              = CurrentColorHex(),
+                    Label              = "Text",   // placeholder shown while sizing
+                    BackgroundColorHex = (DataContext as MapViewModel)?.CurrentTextBackground,
+                    GroundHeightMetres = DefaultTextGroundHeight(),
+                };
+                shapeInProgress.Points.Add((world.X, world.Y));
+                textDragging = true;
+                e.Pointer.Capture(MapControl);
+                RedrawAllShapes();
+                break;
+
+            case DrawMode.Eyedropper:
+                {
+                    var picked = SampleMapPixel(e.GetPosition(MapControl));
+                    if (picked is not null && DataContext is MapViewModel vmPick)
+                    {
+                        vmPick.CurrentDrawColorHex = picked;
+                        vmPick.DrawMode = DrawMode.None;   // one-shot: exit after sampling
+                    }
+                }
+                break;
+
+            case DrawMode.SelectText:
+                HandleSelectTextPress(world);
                 e.Pointer.Capture(MapControl);
                 break;
 
             case DrawMode.Erase:
                 EraseShapeAt(world);
                 break;
+        }
+    }
+
+    private double CurrentResolution()
+    {
+        var res = MapControl.Map.Navigator.Viewport.Resolution;
+        return res > 0 ? res : 1.0;
+    }
+
+    private static double DistWorld(double ax, double ay, double bx, double by)
+    {
+        var dx = ax - bx; var dy = ay - by;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    // Resize handle position: down-and-right of the anchor at a distance equal to the text height.
+    private static (double X, double Y) TextHandleWorld(DrawingShape t)
+    {
+        var h = t.GroundHeightMetres > 0 ? t.GroundHeightMetres : 50.0;
+        return (t.Points[0].X + h * 0.7071, t.Points[0].Y - h * 0.7071);
+    }
+
+    private void HandleSelectTextPress(MPoint world)
+    {
+        var res = CurrentResolution();
+
+        // If a text is already selected and the press is on its handle → start resizing.
+        if (selectedText is not null)
+        {
+            var hp = TextHandleWorld(selectedText);
+            if (DistWorld(world.X, world.Y, hp.X, hp.Y) < 14 * res) { resizingText = true; return; }
+        }
+
+        // Otherwise select the nearest text under the cursor (and start moving it).
+        DrawingShape? hit = null;
+        double best = double.MaxValue;
+        foreach (var s in completedShapes)
+        {
+            if (s.ShapeType != DrawShapeType.Text || s.Points.Count < 1) continue;
+            var d = DistWorld(world.X, world.Y, s.Points[0].X, s.Points[0].Y);
+            var reach = Math.Max(s.GroundHeightMetres > 0 ? s.GroundHeightMetres : 40 * res, 20 * res);
+            if (d < reach && d < best) { best = d; hit = s; }
+        }
+        selectedText = hit;
+        if (hit is not null)
+        {
+            movingText = true;
+            moveGrabOffset = (world.X - hit.Points[0].X, world.Y - hit.Points[0].Y);
+        }
+        RedrawAllShapes();
+    }
+
+    // A sensible starting text size (~24 px at the current zoom), expressed in world metres.
+    private double DefaultTextGroundHeight()
+    {
+        var res = MapControl.Map.Navigator.Viewport.Resolution;
+        return (res > 0 ? res : 1.0) * 24.0;
+    }
+
+    private string CurrentColorHex() => (DataContext as MapViewModel)?.CurrentDrawColorHex ?? "#FF0000";
+    private DrawFillStyle CurrentFill() => (DataContext as MapViewModel)?.CurrentFillStyle ?? DrawFillStyle.Solid;
+
+    // Background choices offered in the Add Map Text dialog (label → hex, null = none).
+    private static readonly (string Label, string? Hex)[] TextBackgrounds =
+    [
+        ("None (transparent)", null),
+        ("White",  "#FFFFFF"),
+        ("Black",  "#000000"),
+        ("Yellow", "#FFF3A0"),
+        ("Light gray", "#E6E9EE"),
+    ];
+
+    // Called after the drag that sizes the text: asks for the label + background, then commits.
+    private async System.Threading.Tasks.Task FinishTextAsync(DrawingShape ts)
+    {
+        var vm = DataContext as MapViewModel;
+        var entry = await PromptForTextAsync(vm?.CurrentTextBackground);
+        if (entry is not { } e || string.IsNullOrWhiteSpace(e.Text))
+        {
+            if (ReferenceEquals(shapeInProgress, ts)) shapeInProgress = null;   // cancelled — drop the placeholder
+            RedrawAllShapes();
+            return;
+        }
+        if (vm is not null) vm.CurrentTextBackground = e.Background;
+        ts.Label = e.Text.Trim();
+        ts.BackgroundColorHex = e.Background;
+        if (ReferenceEquals(shapeInProgress, ts)) FinaliseShape(ts);
+        else { completedShapes.Add(ts); RedrawAllShapes(); }
+    }
+
+    private async System.Threading.Tasks.Task<(string Text, string? Background)?> PromptForTextAsync(string? initialBackground)
+    {
+        if (TopLevel.GetTopLevel(this) is not Avalonia.Controls.Window owner) return null;
+
+        var box = new Avalonia.Controls.TextBox { Watermark = "Label text", MinWidth = 320, AcceptsReturn = false };
+
+        var bg = new Avalonia.Controls.ComboBox { Width = 170 };
+        foreach (var o in TextBackgrounds) bg.Items.Add(o.Label);
+        var bgIdx = Array.FindIndex(TextBackgrounds, o => string.Equals(o.Hex, initialBackground, StringComparison.OrdinalIgnoreCase));
+        bg.SelectedIndex = bgIdx >= 0 ? bgIdx : 1;   // default White
+
+        (string, string?)? result = null;
+
+        var place  = new Avalonia.Controls.Button { Content = "Place", IsDefault = true };
+        var cancel = new Avalonia.Controls.Button { Content = "Cancel", IsCancel = true };
+
+        var bgRow = new Avalonia.Controls.StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+        };
+        bgRow.Children.Add(new Avalonia.Controls.TextBlock { Text = "Background:", Width = 90, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
+        bgRow.Children.Add(bg);
+
+        var buttons = new Avalonia.Controls.StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
+        };
+        buttons.Children.Add(place);
+        buttons.Children.Add(cancel);
+
+        var panel = new Avalonia.Controls.StackPanel { Margin = new Avalonia.Thickness(16), Spacing = 12 };
+        panel.Children.Add(new Avalonia.Controls.TextBlock { Text = "Text to place on the map:" });
+        panel.Children.Add(box);
+        panel.Children.Add(bgRow);
+        panel.Children.Add(new Avalonia.Controls.TextBlock { Text = "(Size was set by your drag; it scales as you zoom.)", Opacity = 0.7, FontSize = 11 });
+        panel.Children.Add(buttons);
+
+        var dlg = new Avalonia.Controls.Window
+        {
+            Title = "Add Map Text",
+            Content = panel,
+            SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+            CanResize = false,
+            WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+        };
+
+        place.Click  += (_, _) =>
+        {
+            var chosenBg = TextBackgrounds[Math.Max(0, bg.SelectedIndex)].Hex;
+            result = (box.Text ?? string.Empty, chosenBg);
+            dlg.Close();
+        };
+        cancel.Click += (_, _) => { result = null; dlg.Close(); };
+        dlg.Opened   += (_, _) => box.Focus();
+
+        await dlg.ShowDialog(owner);
+        return result;
+    }
+
+    // Render a 1×1 sample of the map under the given point and return its colour as #RRGGBB.
+    private string? SampleMapPixel(Avalonia.Point pos)
+    {
+        try
+        {
+            var scale = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+            int w = (int)Math.Ceiling(MapControl.Bounds.Width * scale);
+            int h = (int)Math.Ceiling(MapControl.Bounds.Height * scale);
+            if (w <= 0 || h <= 0) return null;
+
+            using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new Avalonia.PixelSize(w, h), new Avalonia.Vector(96 * scale, 96 * scale));
+            rtb.Render(MapControl);
+
+            int px = Math.Clamp((int)(pos.X * scale), 0, w - 1);
+            int py = Math.Clamp((int)(pos.Y * scale), 0, h - 1);
+
+            var buf = new byte[4];
+            var handle = System.Runtime.InteropServices.GCHandle.Alloc(buf, System.Runtime.InteropServices.GCHandleType.Pinned);
+            try { rtb.CopyPixels(new Avalonia.PixelRect(px, py, 1, 1), handle.AddrOfPinnedObject(), buf.Length, 4); }
+            finally { handle.Free(); }
+
+            // RenderTargetBitmap is Bgra8888.
+            return $"#{buf[2]:X2}{buf[1]:X2}{buf[0]:X2}";
+        }
+        catch { return null; }
+    }
+
+    // Native colour picker: Avalonia ColorView with a round ring spectrum (plus palette swatches,
+    // RGB/HSV sliders, and hex). Themed via the ColorPicker StyleInclude added to App.axaml.
+    private async void OnCustomColorRequested(object? sender, EventArgs e)
+    {
+        if (TopLevel.GetTopLevel(this) is not Avalonia.Controls.Window owner) return;
+        if (DataContext is not MapViewModel vm) return;
+
+        Avalonia.Media.Color initial;
+        try { initial = Avalonia.Media.Color.Parse(vm.CurrentDrawColorHex); }
+        catch { initial = Avalonia.Media.Colors.Red; }
+
+        var view = new Avalonia.Controls.ColorView
+        {
+            Color = initial,
+            IsAlphaEnabled = false,
+            ColorSpectrumShape = Avalonia.Controls.ColorSpectrumShape.Ring,   // round wheel
+            Palette = new Avalonia.Controls.FluentColorPalette(),             // rich swatch grid on the Palette tab
+            Width = 360,
+            Height = 420,
+        };
+
+        bool ok = false;
+        var use    = new Avalonia.Controls.Button { Content = "Use color", IsDefault = true };
+        var cancel = new Avalonia.Controls.Button { Content = "Cancel", IsCancel = true };
+        var buttons = new Avalonia.Controls.StackPanel
+        {
+            Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Margin = new Avalonia.Thickness(0, 10, 0, 0),
+        };
+        buttons.Children.Add(use);
+        buttons.Children.Add(cancel);
+
+        var panel = new Avalonia.Controls.StackPanel { Margin = new Avalonia.Thickness(14), Spacing = 8 };
+        panel.Children.Add(view);
+        panel.Children.Add(buttons);
+
+        var dlg = new Avalonia.Controls.Window
+        {
+            Title = "Custom Drawing Color",
+            Content = panel,
+            SizeToContent = Avalonia.Controls.SizeToContent.WidthAndHeight,
+            CanResize = false,
+            WindowStartupLocation = Avalonia.Controls.WindowStartupLocation.CenterOwner,
+        };
+        use.Click    += (_, _) => { ok = true; dlg.Close(); };
+        cancel.Click += (_, _) => { ok = false; dlg.Close(); };
+
+        await dlg.ShowDialog(owner);
+        if (ok)
+        {
+            var c = view.Color;
+            vm.CurrentDrawColorHex = $"#{c.R:X2}{c.G:X2}{c.B:X2}";
         }
     }
 
@@ -1362,6 +1663,30 @@ public sealed partial class MapView : UserControl
             var dy = world.Y - shapeInProgress.Centre.Y;
             shapeInProgress.RadiusMetres = Math.Sqrt(dx * dx + dy * dy);
             RedrawAllShapes();
+        }
+        else if (currentDrawMode == DrawMode.Text && textDragging &&
+                 shapeInProgress is { ShapeType: DrawShapeType.Text })
+        {
+            // Drag distance from the anchor sets the text's ground height (grows 1:1 with the drag).
+            var dx = world.X - textAnchor.X;
+            var dy = world.Y - textAnchor.Y;
+            var dist = Math.Sqrt(dx * dx + dy * dy);
+            if (dist > 0) shapeInProgress.GroundHeightMetres = dist;
+            RedrawAllShapes();
+        }
+        else if (currentDrawMode == DrawMode.SelectText && selectedText is not null &&
+                 e.GetCurrentPoint(MapControl).Properties.IsLeftButtonPressed)
+        {
+            if (resizingText)
+            {
+                var h = DistWorld(world.X, world.Y, selectedText.Points[0].X, selectedText.Points[0].Y);
+                if (h > 0) { selectedText.GroundHeightMetres = h; RedrawAllShapes(); }
+            }
+            else if (movingText)
+            {
+                selectedText.Points[0] = (world.X - moveGrabOffset.X, world.Y - moveGrabOffset.Y);
+                RedrawAllShapes();
+            }
         }
         else if ((currentDrawMode == DrawMode.Line || currentDrawMode == DrawMode.Polygon) &&
                  shapeInProgress is not null && shapeInProgress.Points.Count >= 1)
@@ -1390,13 +1715,33 @@ public sealed partial class MapView : UserControl
                 RedrawAllShapes();
             }
         }
+        else if (currentDrawMode == DrawMode.Text && textDragging)
+        {
+            textDragging = false;
+            e.Pointer.Capture(null);
+            if (shapeInProgress is { ShapeType: DrawShapeType.Text } ts)
+            {
+                // A bare click (little/no drag) gets the default size.
+                if (ts.GroundHeightMetres < DefaultTextGroundHeight() * 0.4)
+                    ts.GroundHeightMetres = DefaultTextGroundHeight();
+                _ = FinishTextAsync(ts);
+            }
+        }
+        else if (currentDrawMode == DrawMode.SelectText)
+        {
+            resizingText = false;
+            movingText = false;
+            e.Pointer.Capture(null);
+        }
     }
 
     private void AddVertex(MPoint world)
     {
         shapeInProgress ??= new DrawingShape
         {
-            ShapeType = currentDrawMode == DrawMode.Polygon ? DrawShapeType.Polygon : DrawShapeType.Line
+            ShapeType = currentDrawMode == DrawMode.Polygon ? DrawShapeType.Polygon : DrawShapeType.Line,
+            Color     = CurrentColorHex(),
+            FillStyle = CurrentFill(),
         };
         shapeInProgress.Points.Add((world.X, world.Y));
         RedrawAllShapes();
@@ -1412,6 +1757,9 @@ public sealed partial class MapView : UserControl
         var s = shapeInProgress;
         drawHoverWorld = null;
         if (s is null) return;
+        // Text is only committed through its own dialog (FinishTextAsync); never auto-commit the
+        // "Text" placeholder that exists mid-placement.
+        if (s.ShapeType == DrawShapeType.Text) { shapeInProgress = null; RedrawAllShapes(); return; }
         if (s.IsCompletable(MinCircleRadiusMetres)) FinaliseShape(s);
         else { shapeInProgress = null; RedrawAllShapes(); }
     }
@@ -1450,19 +1798,102 @@ public sealed partial class MapView : UserControl
     private void RedrawAllShapes()
     {
         if (drawingLayer is null) return;
+        var resolution = MapControl.Map.Navigator.Viewport.Resolution;
+        if (resolution <= 0) resolution = 1.0;
+        var vm = DataContext as MapViewModel;
+        bool showMeas = vm?.ShowMeasurements ?? false;
+        bool imperial = vm?.MeasurementsImperial ?? true;
+
         drawingLayer.Clear();
         foreach (var shape in completedShapes)
         {
-            var f = BuildShapeFeature(shape);
+            var f = BuildShapeFeature(shape, resolution);
             if (f is not null) drawingLayer.Add(f);
+            if (showMeas) AddMeasurementLabel(shape, imperial);
         }
         if (shapeInProgress is not null)
         {
-            var preview = BuildShapeFeature(RenderableInProgress());
-            if (preview is not null) drawingLayer.Add(preview);
+            var preview = RenderableInProgress();
+            var pf = BuildShapeFeature(preview, resolution);
+            if (pf is not null) drawingLayer.Add(pf);
+            if (showMeas) AddMeasurementLabel(preview, imperial);
+        }
+        // Resize handle for the selected text (SelectText mode).
+        if (currentDrawMode == DrawMode.SelectText && selectedText is { Points.Count: > 0 })
+        {
+            var hp = TextHandleWorld(selectedText);
+            drawingLayer.Add(BuildHandleFeature(hp, resolution));
         }
         MapControl.Map.RefreshData();
         MapControl.RefreshGraphics();
+    }
+
+    // ── Shape measurements (length / diameter / area) ─────────────────────────
+    // Shapes are stored in Web Mercator (EPSG:3857), which stretches distance and area away from the
+    // equator; multiply by cos(latitude) (and cos² for area) to recover true ground values.
+
+    private void AddMeasurementLabel(DrawingShape shape, bool imperial)
+    {
+        var m = MeasureShape(shape, imperial);
+        if (m is not { } info) return;
+        var factory = new NetTopologySuite.Geometries.GeometryFactory();
+        var pt = factory.CreatePoint(new NetTopologySuite.Geometries.Coordinate(info.X, info.Y));
+        var label = new LabelStyle
+        {
+            Text      = info.Text,
+            ForeColor = new Color(17, 24, 39),
+            BackColor = new Brush(new Color(255, 255, 255, 220)),
+            Halo      = new Pen(new Color(255, 255, 255, 160), 1),
+            Font      = new Font { Size = 12 },
+        };
+        drawingLayer?.Add(new GeometryFeature { Geometry = pt, Styles = [label] });
+    }
+
+    private static (string Text, double X, double Y)? MeasureShape(DrawingShape s, bool imperial)
+    {
+        switch (s.ShapeType)
+        {
+            case DrawShapeType.Line when s.Points.Count >= 2:
+            {
+                var len = ShapeMeasurements.GroundLengthMetres(s.Points);
+                var mid = s.Points[s.Points.Count / 2];
+                return (ShapeMeasurements.FormatLength(len, imperial), mid.X, mid.Y);
+            }
+            case DrawShapeType.Polygon when s.Points.Count >= 3:
+            {
+                var (area, cx, cy) = ShapeMeasurements.GroundAreaAndCentroid(s.Points);
+                return (ShapeMeasurements.FormatArea(area, imperial), cx, cy);
+            }
+            case DrawShapeType.Circle when s.RadiusMetres > 0:
+            {
+                var r = ShapeMeasurements.GroundRadiusMetres(s.RadiusMetres, s.Centre.X, s.Centre.Y);
+                var text = $"Ø {ShapeMeasurements.FormatLength(r * 2, imperial)}  ·  {ShapeMeasurements.FormatArea(Math.PI * r * r, imperial)}";
+                return (text, s.Centre.X, s.Centre.Y);
+            }
+            default:
+                return null;
+        }
+    }
+
+    // A small square handle (~11 px) drawn at a world point, for grabbing to resize text.
+    private static GeometryFeature BuildHandleFeature((double X, double Y) pos, double resolution)
+    {
+        var half = 5.5 * resolution;
+        var factory = new NetTopologySuite.Geometries.GeometryFactory();
+        var ring = factory.CreateLinearRing(new[]
+        {
+            new NetTopologySuite.Geometries.Coordinate(pos.X - half, pos.Y - half),
+            new NetTopologySuite.Geometries.Coordinate(pos.X + half, pos.Y - half),
+            new NetTopologySuite.Geometries.Coordinate(pos.X + half, pos.Y + half),
+            new NetTopologySuite.Geometries.Coordinate(pos.X - half, pos.Y + half),
+            new NetTopologySuite.Geometries.Coordinate(pos.X - half, pos.Y - half),
+        });
+        var style = new VectorStyle
+        {
+            Fill = new Brush(new Color(255, 255, 255)),
+            Line = new Pen(new Color(20, 20, 20), 2),
+        };
+        return new GeometryFeature { Geometry = factory.CreatePolygon(ring), Styles = [style] };
     }
 
     // The in-progress line/polygon rendered with a temporary trailing point at the cursor,
@@ -1479,6 +1910,7 @@ public sealed partial class MapView : UserControl
                 Color       = s.Color,
                 StrokeWidth = s.StrokeWidth,
                 Label       = s.Label,
+                FillStyle   = s.FillStyle,
             };
             clone.Points.AddRange(s.Points);
             clone.Points.Add(hv);
@@ -1487,7 +1919,7 @@ public sealed partial class MapView : UserControl
         return s;
     }
 
-    private static GeometryFeature? BuildShapeFeature(DrawingShape shape)
+    private static GeometryFeature? BuildShapeFeature(DrawingShape shape, double resolution)
     {
         try
         {
@@ -1495,17 +1927,49 @@ public sealed partial class MapView : UserControl
             var r     = Convert.ToByte(hex[..2], 16);
             var g     = Convert.ToByte(hex[2..4], 16);
             var b     = Convert.ToByte(hex[4..6], 16);
-            var color = new Color(255, r, g, b);
-            var style = new VectorStyle
+            // Mapsui's Color constructor is (red, green, blue, alpha); build an opaque colour.
+            var color = new Color(r, g, b);
+            var factory = new NetTopologySuite.Geometries.GeometryFactory();
+
+            // Text: a point at the anchor carrying a label style with the user's text.
+            if (shape.ShapeType == DrawShapeType.Text)
+            {
+                if (shape.Points.Count < 1 || string.IsNullOrWhiteSpace(shape.Label)) return null;
+                var anchor = factory.CreatePoint(
+                    new NetTopologySuite.Geometries.Coordinate(shape.Points[0].X, shape.Points[0].Y));
+                var bg = HexColor(shape.BackgroundColorHex);
+                // Ground-sized text scales with zoom (pixels = height / resolution); otherwise fixed.
+                var fontPx = shape.GroundHeightMetres > 0 && resolution > 0
+                    ? Math.Clamp(shape.GroundHeightMetres / resolution, 6.0, 400.0)
+                    : shape.FontSize;
+                var labelStyle = new LabelStyle
+                {
+                    Text      = shape.Label,
+                    ForeColor = color,
+                    BackColor = bg is { } bc ? new Brush(new Color(bc.R, bc.G, bc.B, 215)) : null,
+                    // Halo only when there is no background — otherwise it reads as a white glow.
+                    Halo      = bg is null ? new Pen(new Color(255, 255, 255, 180), 2) : null,
+                    Font      = new Font { Size = fontPx },
+                };
+                return new GeometryFeature { Geometry = anchor, Styles = [labelStyle] };
+            }
+
+            // A thin dark casing drawn under the coloured stroke, so any colour — even white or
+            // yellow — reads clearly on any base map. Styles render in order: casing first, colour on top.
+            var casing = new VectorStyle
+            {
+                Line = new Pen(new Color(20, 20, 20), shape.StrokeWidth + 2.0),
+                Fill = null,
+            };
+            var main = new VectorStyle
             {
                 Line = new Pen(color, shape.StrokeWidth),
-                Fill = shape.ShapeType == DrawShapeType.Polygon
-                       ? new Brush(Color.FromArgb(40, color.R, color.G, color.B))
-                       : null
+                // Polygons and circles both take a fill; lines never do.
+                Fill = shape.ShapeType is DrawShapeType.Polygon or DrawShapeType.Circle
+                       ? ShapeFillBrush(shape.FillStyle, color) : null
             };
-            var factory = new NetTopologySuite.Geometries.GeometryFactory();
-            NetTopologySuite.Geometries.Geometry? geom = null;
 
+            NetTopologySuite.Geometries.Geometry? geom = null;
             if (shape.ShapeType == DrawShapeType.Circle && shape.RadiusMetres > 0)
             {
                 var centre = new NetTopologySuite.Geometries.Coordinate(shape.Centre.X, shape.Centre.Y);
@@ -1520,9 +1984,39 @@ public sealed partial class MapView : UserControl
                     geom = factory.CreateLineString(coords);
             }
             if (geom is null) return null;
-            return new GeometryFeature { Geometry = geom, Styles = [style] };
+            return new GeometryFeature { Geometry = geom, Styles = [casing, main] };
         }
         catch { return null; }
+    }
+
+    // Parse "#RRGGBB" into a Mapsui colour, or null if empty/invalid.
+    private static Color? HexColor(string? hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex)) return null;
+        try
+        {
+            var h = hex.TrimStart('#');
+            return new Color(Convert.ToByte(h[..2], 16), Convert.ToByte(h[2..4], 16), Convert.ToByte(h[4..6], 16));
+        }
+        catch { return null; }
+    }
+
+    // None = no fill (outline only); Solid = translucent tint; the rest draw a hatch/dot pattern.
+    private static Brush? ShapeFillBrush(DrawFillStyle fill, Color color)
+    {
+        if (fill == DrawFillStyle.None) return null;
+        if (fill == DrawFillStyle.Solid)
+            return new Brush(Color.FromArgb(40, color.R, color.G, color.B));
+        var fillStyle = fill switch
+        {
+            DrawFillStyle.DiagonalHatch => FillStyle.BackwardDiagonal,
+            DrawFillStyle.CrossHatch    => FillStyle.DiagonalCross,
+            DrawFillStyle.Horizontal    => FillStyle.Horizontal,
+            DrawFillStyle.Vertical      => FillStyle.Vertical,
+            DrawFillStyle.Dotted        => FillStyle.Dotted,
+            _                           => FillStyle.Solid,
+        };
+        return new Brush { FillStyle = fillStyle, Color = color };
     }
 
 

@@ -57,4 +57,29 @@ public class DrawingShapeTests
         Assert.False(tiny.IsCompletable(minCircleRadiusMetres: 50));  // a bare click, no drag
         Assert.True(real.IsCompletable(minCircleRadiusMetres: 50));   // a real drag-out
     }
+
+    [Fact]
+    public void Text_NeedsAnAnchorPointAndNonEmptyLabel()
+    {
+        var noPoint = new DrawingShape { ShapeType = DrawShapeType.Text, Label = "Staging" };
+        var noText  = new DrawingShape { ShapeType = DrawShapeType.Text };
+        noText.Points.Add((0, 0));
+        var ok = new DrawingShape { ShapeType = DrawShapeType.Text, Label = "Staging" };
+        ok.Points.Add((0, 0));
+
+        Assert.False(noPoint.IsCompletable());                 // label but never placed
+        Assert.False(noText.IsCompletable());                  // placed but blank
+        Assert.False(new DrawingShape { ShapeType = DrawShapeType.Text }.IsCompletable());
+        Assert.True(ok.IsCompletable());
+    }
+
+    [Fact]
+    public void NewShape_HasSensibleStyleDefaults()
+    {
+        var s = new DrawingShape { ShapeType = DrawShapeType.Polygon };
+        Assert.Equal(DrawFillStyle.Solid, s.FillStyle);   // polygons default to solid tint
+        Assert.Equal("#FF0000", s.Color);                 // default vivid red
+        Assert.Equal(3.0, s.StrokeWidth);                 // bold enough to read true colour
+        Assert.Equal(14.0, s.FontSize);                   // default text size
+    }
 }
