@@ -1,0 +1,278 @@
+{
+  "order": 13,
+  "title": "Replay, Simulation & Training",
+  "subtitle": "The three transmit-safe ways to feed APRS-Command without a live radio — and the tagging that keeps every fake packet off the air.",
+  "in_this_chapter": [
+    "Why a map program needs a way to run without a radio, and the three ways it does",
+    "How Replay turns a saved log of real traffic back into moving map markers",
+    "How Simulation invents believable stations, weather, and messages out of thin air",
+    "How Training wraps Simulation and Replay into guided, checklist-driven scenarios",
+    "The source tag that rides on every packet and marks it as fake",
+    "The structural reason none of these can ever key up the radio",
+    "How replayed traffic is quarantined in its own station database"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command is a program for watching __APRS__ traffic — the short digital position and message packets that ham radios broadcast on the air. Normally the packets arrive from a real radio plugged into the computer. But there are many times you want the app to be *doing something* without any radio attached: demonstrating it at a club meeting, practicing before a public-service event, debugging a display bug on a train with no antenna, or teaching a newcomer which button does what."
+    },
+    {
+      "p": "For all of those, APRS-Command has three ways to feed itself packets that never came from the air: **Replay**, **Simulation**, and **Training**. This chapter explains what each one is, why it was built as its own separate service, and — most importantly — the safety design that guarantees none of this invented traffic can ever accidentally get transmitted back out over a real radio."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one rule that shapes everything here",
+        "text": "A ham radio license carries a legal duty not to transmit garbage. Fake stations, replayed old positions, and practice messages must NEVER reach the air. Every design choice in this chapter exists to make that impossible — not merely discouraged, but structurally unreachable."
+      }
+    },
+    {
+      "p": "Define the key term once: a __packet__ is a single line of APRS text, for example `SIM001>APRS:!3903.50N/08430.50W-Fixed simulated station`. It names who sent it, where they are, and maybe a short comment. The whole app is a machine for turning lines like that into markers on a map. Replay, Simulation, and Training are simply three different *factories* that produce those lines when no radio is doing it."
+    },
+    {
+      "h2": "The three factories at a glance"
+    },
+    {
+      "p": "The three features answer three different questions, so they are three separate services rather than one mode with switches. Keeping them apart means each can be tested, reasoned about, and turned on independently."
+    },
+    {
+      "table": {
+        "headers": [
+          "Feature",
+          "Plain-language what",
+          "Where the packets come from",
+          "Service class"
+        ],
+        "rows": [
+          [
+            "Replay",
+            "Play back real traffic you already recorded",
+            "A saved log file or the app's own raw packet log",
+            "ReplayService"
+          ],
+          [
+            "Simulation",
+            "Invent believable traffic from nothing",
+            "A generator that fabricates stations, weather, objects, messages",
+            "SimulationService"
+          ],
+          [
+            "Training",
+            "Run a guided practice scenario with a checklist",
+            "Orchestrates Simulation and/or Replay underneath",
+            "TrainingModeService"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Notice the layering: Training does not generate its own packets. It is a *conductor* that starts and stops the other two. That is a deliberate reuse decision — the practice scenarios get realistic traffic for free by leaning on machinery that already exists and is already tested."
+    },
+    {
+      "h2": "The source tag: one small enum that carries the whole safety story"
+    },
+    {
+      "p": "Every packet that flows through APRS-Command carries a label saying where it came from. That label is an __enum__ — a fixed list of named choices, like a drop-down menu the code chooses from — called **AprsPacketSource**, defined in `C:\\Dev\\APRS-Command\\src\\Aprs.Services\\StationSnapshot.cs`."
+    },
+    {
+      "code": "public enum AprsPacketSource\n{\n    Unknown,\n    AprsIs,        // came from the internet APRS-IS servers\n    Rf,            // came in over real radio\n    TcpKiss,\n    SerialKiss,\n    Direwolf,\n    Agwpe,\n    Replay,        // <- played back from a log\n    Simulation,    // <- invented by the generator\n    External,\n    LocalGenerated\n}"
+    },
+    {
+      "p": "This tiny list is load-bearing. Because `Replay` and `Simulation` are their own distinct values — not lumped in with real radio sources — every downstream part of the app can look at a packet and know, with certainty, that it is fake. The map can style it differently, the station list can filter it out, and the raw packet log can show a column that reads `Simulation` next to every synthetic line. The tag rides along on the `StationSnapshot`, the `StationTrailPoint`, and the raw log entry, so the fakeness is never lost."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why a tag and not a separate window",
+        "text": "An earlier, simpler design might have shown replayed and simulated traffic in a totally separate throwaway view. Instead APRS-Command feeds it through the *same* map and lists as real traffic, tagged. That means you practice with the actual interface you will use for real — the markers, the trails, the detail popups are identical. The tag, not a parallel UI, is what keeps it honest."
+      }
+    },
+    {
+      "h1": "Replay: turning a recording back into a live map"
+    },
+    {
+      "p": "__Replay__ takes a file of packets you captured earlier — a real day of traffic — and feeds those lines back into the app one at a time, in their original time order, so the map comes alive again exactly as it did that day. Think of it as a DVR for radio traffic. It lives in `C:\\Dev\\APRS-Command\\src\\Aprs.Services\\ReplayService.cs`."
+    },
+    {
+      "h2": "Step one: loading and understanding the file"
+    },
+    {
+      "p": "Replay is forgiving about file formats because your recording might come from several places. `LoadFromFileAsync` reads all the lines, then `ParseLines` sniffs the first non-blank line to decide whether it is a spreadsheet-style __CSV__ (comma-separated values, like a table saved as text) with a proper header, or just plain packet lines one per row."
+    },
+    {
+      "code": "private IReadOnlyList<ReplayLogEntry> ParseLines(IReadOnlyList<string> lines)\n{\n    var firstLine = lines.FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));\n    if (firstLine is not null && LooksLikeCsvHeader(firstLine))\n    {\n        return ParseCsvLines(lines);   // structured export with timestamps, source, notes\n    }\n\n    return lines\n        .Select((line, index) => ParseTextLine(line, index))\n        .Where(entry => entry is not null)\n        .Select(entry => entry!)\n        .ToArray();\n}"
+    },
+    {
+      "p": "The plain-text path (`ParseTextLine`) skips blank lines and lines starting with `#` (treated as comments), and can even peel a leading timestamp off the front of a line if one is present. If no timestamp is found, it invents an increasing one using the clock plus the line's position, so the entries still have a stable order to play in. Every loaded entry is then run through the real APRS parser so the app knows the callsign, position, and packet type before playback even starts."
+    },
+    {
+      "p": "After loading, the entries are sorted by their original timestamp and any time-window filter is applied, so playback marches forward in true chronological order:"
+    },
+    {
+      "code": "entries.AddRange(ApplyFilters(loaded));\nentries.Sort((left, right) => left.OriginalTimestampUtc.CompareTo(right.OriginalTimestampUtc));"
+    },
+    {
+      "h2": "Step two: playback, and where the source tag gets stamped"
+    },
+    {
+      "p": "Playback walks the list. For each entry, `PlayNextAsync` builds a fresh copy stamped with the moment it is being replayed and, crucially, with its source overwritten to `Replay`:"
+    },
+    {
+      "code": "var replayTimestamp = clock.UtcNow;\nvar dispatchEntry = entry with\n{\n    ReplayTimestampUtc = replayTimestamp,\n    PacketSource = AprsPacketSource.Replay   // stamped fake, always\n};\n\nawait sink.PublishReplayPacketAsync(\n    new ReplayPacketDispatch(dispatchEntry, dispatchEntry.RawPacketText,\n                             replayTimestamp, AprsPacketSource.Replay),\n    cancellationToken).ConfigureAwait(false);"
+    },
+    {
+      "p": "The `with` keyword makes a copy of the record with just those fields changed — the original is a __record__, an immutable data object, so nothing is mutated in place. Note that even if the recording *said* a packet originally came from real radio, the replayed copy is forced to `Replay`. The recording's original source is preserved separately in the entry (as `originalPacketSource`) for reference, but what leaves this method is unambiguously tagged as a replay."
+    },
+    {
+      "p": "Replay also supports the controls you would expect from a media player — `Pause`, `Resume`, `Stop`, `SeekToEntryIndex`, `SeekToTimestamp`, an adjustable `SpeedMultiplier`, and a `LoopReplay` option — all implemented as simple state changes on a small `ReplaySessionState` state machine (Stopped, Loading, Ready, Playing, Paused, Completed, Faulted)."
+    },
+    {
+      "h2": "Where replayed packets go — and the quarantine that keeps them from polluting live state"
+    },
+    {
+      "p": "The `ReplayService` itself does not know about the map or the UI. It hands each packet to an __IReplayPacketSink__ — a __sink__ being simply a destination that accepts something and does whatever it wants with it. This is the seam that keeps the service testable: in a test the sink can just count packets; in the real app the sink routes them onto the map."
+    },
+    {
+      "p": "The real desktop sink is `LiveReplayPacketSink` in `C:\\Dev\\APRS-Command\\src\\Aprs.Desktop\\Runtime\\LiveReplayPacketSink.cs`:"
+    },
+    {
+      "code": "public Task PublishReplayPacketAsync(ReplayPacketDispatch dispatch, CancellationToken ct = default)\n{\n    if (!string.IsNullOrWhiteSpace(dispatch.RawPacketText))\n    {\n        ingestionService.IngestReceivedLine(\n            dispatch.RawPacketText,\n            AprsPacketSource.Replay,          // tag travels with it\n            dispatch.ReplayTimestampUtc);\n    }\n    return Task.CompletedTask;\n}"
+    },
+    {
+      "p": "It calls `IngestReceivedLine` — the app's single **receive** pipeline. That is the same door real radio packets come in through, which is exactly why replayed traffic looks and behaves identically on the map. But look at what the ingestion service does with the `Replay` tag, in `AprsIngestionService.cs`:"
+    },
+    {
+      "code": "var target = source == AprsPacketSource.Replay && replayStationDatabase is not null\n    ? replayStationDatabase   // a SEPARATE database, just for replay\n    : stationDatabase;        // the real, live one\ntarget.ProcessPacket(packet, source);"
+    },
+    {
+      "p": "Replayed positions are applied to a *dedicated* replay station database, not the live one. The comment in the source says it plainly — a replay session can be shown on the map in isolation \"without polluting — or clearing — the live station state.\" The desktop `LiveDataCoordinator` swaps the map over to this replay database when you enter replay mode and swaps back when you leave, and the live radio feed keeps quietly filling its own database underneath the whole time. Play back a two-hour-old log without losing track of who is on the air right now."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The two sinks pattern",
+        "text": "There is also a NoOpReplayPacketSink that accepts packets and throws them away. It is the safe default: a ReplayService constructed without a real sink simply produces nothing observable. You have to deliberately wire in the live sink to make replay appear on screen — feeding the map is opt-in, not accidental."
+      }
+    },
+    {
+      "h1": "Simulation: believable traffic invented from nothing"
+    },
+    {
+      "p": "__Simulation__ makes up APRS traffic that never existed — a handful of fixed stations, a couple of moving vehicles that actually drive around, a weather station reporting wind and temperature, an object or two, plus the occasional message and bulletin. It exists so you can see a busy, moving map with zero radio and zero recording. It lives in `C:\\Dev\\APRS-Command\\src\\Aprs.Services\\SimulationService.cs`."
+    },
+    {
+      "h2": "How a batch of fake traffic is born"
+    },
+    {
+      "p": "The heart is `GenerateNextBatchAsync`. Each call produces one round of packets — a snapshot of the pretend world at this instant — by asking a generator for each kind of station the configuration calls for:"
+    },
+    {
+      "code": "for (var i = 1; i <= Configuration.FixedStationCount; i++)\n{\n    generated.Add(CreatePacket(generator.GenerateFixedStationPacket(i, Configuration), now, \"FixedStation\", $\"SIM{i:000}\"));\n    generated.Add(CreatePacket(generator.GenerateStatusPacket(i), now, \"Status\", $\"SIM{i:000}\"));\n}\n\nfor (var i = 0; i < mobileStations.Count; i++)\n{\n    mobileStations[i] = generator.UpdateMobileStation(mobileStations[i], elapsed, Configuration);\n    generated.Add(CreatePacket(generator.GenerateMobileStationPacket(mobileStations[i]), now, \"MobileStation\", mobileStations[i].Callsign));\n}"
+    },
+    {
+      "p": "The actual text is built by `SimulatedAprsPacketGenerator`. It produces real, valid-looking APRS packets — for example a fixed station is `SIM001>APRS:!3903.50N/08430.50W-Fixed simulated station`. The callsigns are deliberately unmistakable fakes: `SIM001`, `TESTWX1` for weather, `OBJTEST1` for objects, and `N0CALL` (the universally recognized \"no real station\" placeholder) for messages. Anyone glancing at the map can tell at once this is not real traffic."
+    },
+    {
+      "p": "The moving stations are genuinely simulated with basic dead-reckoning navigation — `UpdateMobileStation` converts speed in knots and a compass course into a real distance traveled since the last batch, nudges the latitude and longitude accordingly, and turns the station around if it wanders past the configured area radius so it stays on-screen:"
+    },
+    {
+      "code": "var distanceMeters = station.SpeedKnots * 0.514444 * elapsed.TotalSeconds;\nvar courseRadians = station.CourseDegrees * Math.PI / 180.0;\nvar deltaNorth = Math.Cos(courseRadians) * distanceMeters;\nvar deltaEast  = Math.Sin(courseRadians) * distanceMeters;\n// ... convert meters to degrees and add to lat/lon ...\nif (distance from center > AreaRadiusMeters)\n    next = next with { CourseDegrees = (next.CourseDegrees + 180) % 360 }; // U-turn"
+    },
+    {
+      "h2": "Every simulated packet is born tagged"
+    },
+    {
+      "p": "Unlike replay, which stamps the tag during playback, simulation stamps it at the moment of creation. `CreatePacket` builds a `SimulatedAprsPacket` record whose source is fixed to `Simulation` — there is no code path that produces a simulated packet with any other source:"
+    },
+    {
+      "code": "private SimulatedAprsPacket CreatePacket(string rawPacket, DateTimeOffset timestamp, string packetKind, string? entityName)\n{\n    return new SimulatedAprsPacket(Guid.NewGuid(), rawPacket,\n        AprsPacketSource.Simulation,   // hard-coded, not a parameter\n        timestamp, Configuration.SimulationSourceName, packetKind, entityName);\n}"
+    },
+    {
+      "p": "From there the story mirrors replay exactly. The service pushes each packet to an `ISimulatedAprsPacketSink`; the desktop's `LiveSimulatedPacketSink` forwards it into `IngestReceivedLine` carrying the `Simulation` tag, so it flows onto the same map and lists as everything else — visibly labeled as fake. Simulated stations feed the *live* station database (there is no separate quarantine like replay has), which is fine precisely because the tag makes them filterable and identifiable everywhere they appear."
+    },
+    {
+      "h1": "Training: guided practice built on top of the other two"
+    },
+    {
+      "p": "__Training__ mode turns loose simulation and replay into structured, guided exercises — a named scenario with a difficulty level, a plain-language description, and a checklist of practice tasks you tick off. It is for learning the app deliberately rather than just watching it move. It lives in `C:\\Dev\\APRS-Command\\src\\Aprs.Services\\TrainingModeService.cs`."
+    },
+    {
+      "h2": "A conductor, not a new instrument"
+    },
+    {
+      "p": "The most important design fact about Training is what it does *not* do: it does not generate a single packet of its own. It holds references to the `ISimulationService` and `IReplayService` and simply starts, pauses, and stops them according to the selected scenario's settings:"
+    },
+    {
+      "code": "if (Configuration.UseSimulatedAprsSource && Configuration.AutoStartSimulation && simulationService is not null)\n{\n    await simulationService.StartAsync(cancellationToken).ConfigureAwait(false);\n}\n\nif (Configuration.UseReplaySource && Configuration.AutoStartReplay && replayService is not null)\n{\n    await replayService.StartReplayAsync(cancellationToken).ConfigureAwait(false);\n}"
+    },
+    {
+      "p": "Pause, resume, stop, and reset all forward straight through to both underlying services. This is why training inherits every safety property of the other two automatically — because the traffic it puts on screen *is* simulation and replay traffic, tagged `Simulation` and `Replay` just as before. There is no third, less-careful path to worry about."
+    },
+    {
+      "h2": "The scenarios and the checklist"
+    },
+    {
+      "p": "`CreateBuiltInScenarios` ships eight ready-made exercises, from \"Beginner APRS map familiarization\" up to an \"Alert response practice\" rated Advanced. Each is a `TrainingScenario` record carrying a difficulty, a scenario type, a suggested duration, and a list of `TrainingScenarioTask` items — the checklist:"
+    },
+    {
+      "code": "CreateScenario(\"Beginner APRS map familiarization\",\n    TrainingScenarioDifficulty.Beginner,\n    TrainingScenarioType.BasicMapFamiliarization,\n    \"Find simulated stations and inspect map markers.\",\n    [\"Locate SIM001 on the map\", \"Open station details\", \"Identify packet source\"],\n    now)"
+    },
+    {
+      "p": "You mark each task done through `SetTaskStatus`, and the service tracks progress. When every task is Completed or Skipped, the scenario flips to a `Completed` state and reports a percentage. Note the very last task of that beginner scenario — \"Identify packet source\" — literally teaches the newcomer to read the fake-vs-real tag this whole chapter is about."
+    },
+    {
+      "p": "Each built-in scenario is created with its notes field reading, verbatim, \"Built-in offline training scenario using fake data only.\" Training also writes a running event trail through `AddEvent`, and every one of those entries is logged with `packetSource: AprsPacketSource.Simulation` — even the audit trail of a training session is stamped as non-real."
+    },
+    {
+      "h1": "The air-gap: why none of this can transmit"
+    },
+    {
+      "p": "This is the payoff. Two independent design properties together make it structurally impossible for replayed, simulated, or training traffic to reach a real radio."
+    },
+    {
+      "h2": "Property one: these sinks only speak to the receive pipeline"
+    },
+    {
+      "p": "Look again at both live sinks. `LiveReplayPacketSink` and `LiveSimulatedPacketSink` each call exactly one method: `ingestionService.IngestReceivedLine(...)`. That method's name is not decoration — as its own summary comment states, it is the \"central receive pipeline,\" the door packets come *in* through. There is no transmit method anywhere in these code paths. A fake packet physically cannot travel toward the radio because the only wiring that exists points inward, toward the map. Transmitting would require calling code that these classes simply never reference."
+    },
+    {
+      "h2": "Property two: TransmitDisabled is hard-wired true, not a setting"
+    },
+    {
+      "p": "Each of the three configuration records exposes a `TransmitDisabled` property — and in all three it is a computed value that is always `true`, with no setter to flip it:"
+    },
+    {
+      "code": "// ReplaySessionConfiguration.cs\npublic bool TransmitDisabled => true;\n\n// SimulationConfiguration.cs\npublic bool TransmitDisabled => true;\n\n// TrainingModeConfiguration.cs\npublic bool TransmitDisabled => true;"
+    },
+    {
+      "p": "The `=>` makes it a read-only computed property. There is no `{ get; set; }` and no `init` — no configuration screen, no saved file, and no line of code can ever set it to `false`, because there is nothing to set. The UI honestly surfaces this to the operator: the simulation panel shows \"Simulation transmit disabled\" and the training panel shows \"Training transmit disabled,\" both driven straight from that always-true flag. Even the app's REST API contract, `ReplayStatusDto`, defaults `TransmitDisabled` to `true`."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Belt and suspenders on purpose",
+        "text": "Either property alone would arguably be enough. Having both — no wiring to the transmit path AND a flag that cannot be turned off — is intentional defense in depth. If some future change accidentally created a transmit route, the always-true flag would still be there to gate it; if the flag were ever weakened, there would still be no code path to carry the packet outward. A licensed operator's legal duty deserves two locks, not one."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "Replay, Simulation, and Training let APRS-Command be genuinely useful with no radio at all — for demos, for practice, for debugging on the couch, and for teaching. That flexibility could easily have been dangerous. The design makes it safe instead."
+    },
+    {
+      "bullets": [
+        "**One tag, everywhere.** The AprsPacketSource enum marks every packet as Replay or Simulation at birth and carries that label onto the map, the trails, and the logs. Fakeness is never inferred or lost — it is stamped and permanent.",
+        "**Reuse over reinvention.** Training generates nothing itself; it conducts Simulation and Replay. Simulation and Replay both feed the one shared receive pipeline. Fewer code paths means fewer places for a safety bug to hide.",
+        "**Feed the real UI, not a toy.** Synthetic traffic runs through the exact same map and lists as real traffic, so what you practice on is what you will use for real — the only difference is the honest tag.",
+        "**Quarantine where it counts.** Replayed positions land in a separate station database so reviewing an old log never disturbs — or erases — knowledge of who is on the air right now.",
+        "**Safety by structure, not by discipline.** Nothing here relies on a developer remembering to be careful. The sinks only touch the receive door, and TransmitDisabled is a constant true with no setter. The unsafe action is not forbidden by policy — it is unreachable by construction."
+      ]
+    },
+    {
+      "p": "If you maintain this code, treat those two air-gap properties as sacred. Adding a transmit capability to any of these paths, or making `TransmitDisabled` settable, would break the single most important promise the feature makes. Extend the factories all you like — new scenarios, richer simulated behavior, smarter replay filters — but the fake packets must always stay fake, tagged, and off the air."
+    }
+  ]
+}

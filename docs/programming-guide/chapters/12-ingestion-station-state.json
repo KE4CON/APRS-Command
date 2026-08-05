@@ -1,0 +1,230 @@
+{
+  "order": 12,
+  "title": "Ingestion & Station State",
+  "subtitle": "How a stream of raw radio text becomes the living, aging list of stations you see on the map.",
+  "in_this_chapter": [
+    "The single front door every packet enters through: AprsIngestionService",
+    "How the station store keeps one up-to-date record per callsign",
+    "The StationSnapshot record and why it is rebuilt, never mutated",
+    "Live vs. replay: two separate databases so playback never corrupts reality",
+    "The Active / Stale / Expired / Hidden lifecycle and the clock that drives it",
+    "Duplicate detection, position trails, and tactical labels",
+    "How station memory survives a restart via SQLite"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command listens to radios and internet feeds that spit out a constant stream of short text lines. Each line is one __packet__ — a burst of data a ham radio station transmitted, saying something like \"here I am, this is my position, here's my weather.\" Raw, those lines are gibberish. This chapter is about the machinery that turns that firehose of text into the thing you actually care about: a clean, always-current list of who is out there, where they are, and how recently you heard from them."
+    },
+    {
+      "p": "Two pieces do this work. The first is the __ingestion service__ — think of it as the building's single front door and mail room. Every packet, no matter which radio or internet source it came from, walks in through this one door, gets logged, gets read, and gets filed. The second is the __station store__ (also called the station database) — the filing cabinet that keeps exactly one folder per station, always holding the newest information, and quietly marks folders as going stale when a station stops being heard."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why one front door matters",
+        "text": "APRS-Command can receive from many sources at once — a radio over serial, a TCP connection, the APRS-IS internet backbone, a replayed recording, a simulator. If each source filed its own packets its own way, the code would drift into five slightly-different versions of the same logic. Funneling everything through one AprsIngestionService means parsing, logging, and de-duplication happen exactly once, in exactly one place."
+      }
+    },
+    {
+      "h2": "The front door: AprsIngestionService"
+    },
+    {
+      "p": "The whole service is small on purpose. Its one real job, in plain terms: take a line of text, write it to the raw log, try to understand it, and if that succeeds, update the right filing cabinet. It lives in `Aprs.Services/Runtime/AprsIngestionService.cs` and deliberately knows nothing about screens or radios — transports push lines in, and the desktop layer listens for the \"done\" signal."
+    },
+    {
+      "code": "public void IngestReceivedLine(string rawLine, AprsPacketSource source, DateTimeOffset receivedAtUtc)\n{\n    if (string.IsNullOrWhiteSpace(rawLine))\n        return;\n\n    rawPacketLog.AddReceivedRawPacket(rawLine, source, timestampUtc: receivedAtUtc);\n\n    AprsPacket? packet = null;\n    if (parser.TryParse(rawLine, receivedAtUtc, out packet, out _) && packet is not null)\n    {\n        var target = source == AprsPacketSource.Replay && replayStationDatabase is not null\n            ? replayStationDatabase\n            : stationDatabase;\n        target.ProcessPacket(packet, source);\n    }\n\n    PacketParsed?.Invoke(this, new ParsedPacketEventArgs(packet, source));\n    PacketIngested?.Invoke(this, EventArgs.Empty);\n}"
+    },
+    {
+      "p": "Reading it line by meaningful line: an empty or whitespace line is dropped immediately — no point logging nothing. The raw line is then recorded to the __raw packet log__ (a verbatim, unparsed history — the \"security camera footage\" of everything received) *before* any parsing, so even a line the parser chokes on is still on record. `parser.TryParse` attempts to decode the text; the __Try__ naming convention means it returns true/false instead of throwing an error, so a malformed packet is a normal, expected outcome, not a crash. Only if a real packet came back does it get filed via `ProcessPacket`. Finally two events fire — `PacketParsed` (carries the decoded packet, or null if it couldn't be read) and `PacketIngested` (a bare \"something happened, you may want to refresh\" nudge)."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "It never throws on bad input",
+        "text": "The XML doc on IngestReceivedLine promises it is \"safe to call repeatedly; never throws on malformed input.\" That is a load-bearing guarantee. Packets arrive from the open airwaves and the public internet — a meaningful fraction are corrupt, truncated, or simply weird. The receive pipeline treats a bad packet as data to be flagged, never as an exception to be handled. One garbled line can never take down the feed."
+      }
+    },
+    {
+      "h2": "Live vs. replay: the two-database split"
+    },
+    {
+      "p": "One line above quietly does something important: it chooses *which* filing cabinet to write to based on where the packet came from. APRS-Command keeps two separate station stores. The __live database__ holds the real world — everything actually being heard right now. The __replay database__ is a scratch space used only when you play back a recorded session. When a packet's source is `Replay`, it is filed in the replay store; everything else goes to the live store."
+    },
+    {
+      "p": "The reason is stated right in the constructor comment: replayed packets go to \"a dedicated station database so a replay session can be shown on the map in isolation without polluting — or clearing — the live station state.\" If replay and live shared one cabinet, watching a recording of last weekend's event would overwrite the position of a station you are tracking *right now*. The split guarantees that never happens. Notably, everything *else* still runs for replay packets — they are logged, parsed, and can trigger alerts — only the station-state filing is diverted."
+    },
+    {
+      "code": "// DesktopRuntime.cs — the two stores are registered as different types\nservices.AddSingleton<IStationDatabase>(_ => new Persistence.SqliteStationDatabase());\n// Ephemeral in-memory station database that holds ONLY replayed packets\nservices.AddSingleton<StationDatabase>(_ => new StationDatabase());"
+    },
+    {
+      "p": "The live store is a `SqliteStationDatabase` (it survives restarts — more on that below). The replay store is a plain in-memory `StationDatabase` that is thrown away when you exit replay. Registering them under two different types lets the dependency-injection container hand each one to whoever needs it without confusion."
+    },
+    {
+      "p": "The `LiveDataCoordinator` decides which cabinet the map reads from. A one-line property, `ActiveStationDatabase => replayMode ? replayStationDatabase : stationDatabase`, is the switch. Entering replay mode calls `Clear()` on the replay store so playback always starts from a blank map, while the live store keeps ingesting underneath. Exiting replay clears the replay store again and flips the view back — the live cabinet already holds everything that arrived during playback."
+    },
+    {
+      "h2": "The station store and the StationSnapshot"
+    },
+    {
+      "p": "The store, `StationDatabase`, is at heart three dictionaries — fast lookup tables keyed by callsign. One holds the current record for each station, one holds each station's position trail, one holds tactical labels. All three use a case-insensitive key so `w4abc` and `W4ABC` are the same station."
+    },
+    {
+      "code": "private readonly Dictionary<string, StationSnapshot> stations = new(StringComparer.OrdinalIgnoreCase);\nprivate readonly Dictionary<string, List<StationTrailPoint>> trails = new(StringComparer.OrdinalIgnoreCase);\nprivate readonly Dictionary<string, TacticalLabel> tacticalLabels = new(StringComparer.OrdinalIgnoreCase);"
+    },
+    {
+      "p": "The __key__ each station is filed under is not always the callsign. For a normal position or status packet it is the sender's callsign plus its __SSID__ (the `-9` in `W4ABC-9`, a number 0–15 that lets one operator run several stations — a truck, a handheld, a weather box). But for an __Object__ or __Item__ packet — where a station is reporting *something else*, like a shelter or an incident marker — the key is that object's name instead. `GetStationKey` handles all three cases, and `NormalizeStationKey` trims whitespace and upper-cases so the key is always consistent."
+    },
+    {
+      "p": "Each folder in the cabinet is a `StationSnapshot` — an __immutable record__, meaning once created it is never edited in place. This is a deliberate design choice. Instead of reaching into a station's record and changing a field (which is easy to get wrong when several things touch it), the code builds a brand-new snapshot every time a packet arrives, copying forward whatever the new packet didn't mention. That is what the `with` keyword does throughout: \"give me a copy of this record, but with these fields changed.\""
+    },
+    {
+      "code": "public void ProcessPacket(AprsPacket packet, AprsPacketSource packetSource = AprsPacketSource.Unknown)\n{\n    if (!packet.IsValid)\n        return;\n\n    var stationKey = GetStationKey(packet);\n    if (string.IsNullOrWhiteSpace(stationKey))\n        return;\n\n    var existing = stations.GetValueOrDefault(stationKey);\n    var updated = CreateBaseUpdate(stationKey, packet, packetSource, existing);\n    updated = ApplyPacketSpecificFields(updated, packet);\n\n    stations[stationKey] = updated;\n    AddTrailPointIfNeeded(stationKey, packet, packetSource);\n}"
+    },
+    {
+      "p": "The flow: reject an invalid packet outright; find the station's key; pull the existing folder if there is one; build a fresh __base__ snapshot (fields common to every packet — last-heard time, packet count, path); then layer on the __packet-specific__ fields; store the result back; and finally record a trail point if the packet carried a position."
+    },
+    {
+      "p": "Why the two-step \"base then specific\" build? Different packet types carry different information. A position packet has latitude and longitude; a status packet carries a text message; a weather packet carries temperature and wind; a message packet just proves the station can exchange messages. `ApplyPacketSpecificFields` is a `switch` over the packet type that merges in only the fields that type actually provides — and critically, it uses the pattern `position.Latitude ?? station.Latitude`, meaning \"use the new value if present, otherwise keep what we already knew.\" So a station that sends a status update doesn't lose the position it reported five minutes ago."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Copy-forward is the quiet hero",
+        "text": "Because every field falls back to the existing value, a station's folder accumulates a complete picture over many packets of different kinds — position from one, weather from another, messaging-capability from a third — without any one packet erasing what the others contributed. The immutable-record design makes this composition safe and obvious to read."
+      }
+    },
+    {
+      "h2": "Not hearing double: duplicate detection"
+    },
+    {
+      "p": "APRS packets are often repeated — a __digipeater__ (a relay station that rebroadcasts what it hears to extend range) can bounce the same transmission back to you within seconds. Counting those as separate reports would inflate a station's packet count and muddy the picture. The store defends against this with a lightweight fingerprinting scheme."
+    },
+    {
+      "code": "var contentHash = ComputePacketHash(packet.RawLine);\nvar isDuplicate = recentPacketHashes.TryGetValue(contentHash, out var lastSeen)\n    && (packet.ReceivedAtUtc - lastSeen) < DupeWindow;   // DupeWindow = 30 seconds\nrecentPacketHashes[contentHash] = packet.ReceivedAtUtc;"
+    },
+    {
+      "p": "`ComputePacketHash` deliberately hashes only the __information element__ — the meaningful payload after the routing header — so the same content relayed through a different path still fingerprints identically. If a matching fingerprint was seen within the last 30 seconds (`DupeWindow`), the new packet is flagged a duplicate: it still bumps the station's `DuplicatePacketCount` but is understood as an echo, not a fresh report. The fingerprint table self-prunes once it grows past 2,000 entries so it can't leak memory during a long, busy session."
+    },
+    {
+      "h2": "The lifecycle: Active, Stale, Expired, Hidden"
+    },
+    {
+      "p": "A station you heard three hours ago is not the same as one you heard three seconds ago, and the map needs to show that difference. Every station carries a __lifecycle state__ — one of four values — that answers \"how fresh is this?\" These are defined in a simple enum: `Active`, `Stale`, `Expired`, `Hidden`."
+    },
+    {
+      "table": {
+        "headers": [
+          "State",
+          "Plain meaning",
+          "Default trigger (time since last heard)"
+        ],
+        "rows": [
+          [
+            "Active",
+            "Heard recently; fully trustworthy",
+            "0 to 30 minutes"
+          ],
+          [
+            "Stale",
+            "Getting old; probably still there",
+            "30 minutes to 2 hours"
+          ],
+          [
+            "Expired",
+            "Old enough to doubt; kept but dimmed",
+            "2 hours to 24 hours"
+          ],
+          [
+            "Hidden",
+            "Off the normal lists (aged out or hidden by hand)",
+            "24 hours or more, or manually hidden"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The thresholds live in a `StationAgingConfiguration` record, so they are tunable rather than hard-coded magic numbers. The defaults: Active up to 30 minutes, Stale threshold at 2 hours, Expired threshold at 2 hours, Hidden threshold at 24 hours. The classification itself is done by `CalculateLifecycleState`:"
+    },
+    {
+      "code": "private StationLifecycleState CalculateLifecycleState(StationSnapshot station, DateTimeOffset now)\n{\n    if (station.IsManuallyHidden)\n        return StationLifecycleState.Hidden;\n\n    var age = now - station.LastHeardUtc;\n    if (age < TimeSpan.Zero) age = TimeSpan.Zero;   // guard against clock skew\n\n    if (age >= agingConfiguration.HiddenThreshold)   return StationLifecycleState.Hidden;\n    if (age >= agingConfiguration.ExpiredThreshold)  return StationLifecycleState.Expired;\n    if (age > agingConfiguration.ActiveThreshold && age < agingConfiguration.StaleThreshold)\n        return StationLifecycleState.Stale;\n    if (age >= agingConfiguration.StaleThreshold)    return StationLifecycleState.Expired;\n    return StationLifecycleState.Active;\n}"
+    },
+    {
+      "p": "Line by line: a station hidden by hand short-circuits to Hidden regardless of age. The __age__ is now minus when we last heard it, clamped to zero so a slightly-off clock can't produce a negative age. Then a cascade of thresholds, oldest first: past 24 hours is Hidden, past the Expired threshold is Expired, in the 30-minutes-to-2-hours band is Stale, and anything that falls through is Active."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "A subtlety worth knowing",
+        "text": "In the default configuration the Expired and Stale thresholds are the same value (2 hours). Because the Expired check runs first, the later `age >= StaleThreshold -> Expired` line can never be reached with the defaults — it exists to stay correct if someone tunes the two thresholds apart. If you ever change these numbers, re-read this method carefully; the branch order, not just the values, determines the outcome."
+      }
+    },
+    {
+      "h2": "The clock that drives aging"
+    },
+    {
+      "p": "A station doesn't age itself — nothing changes in its folder just because time passed. Something has to periodically walk the cabinet and recompute states. That is `UpdateAgeStates(now)`, which rebuilds each snapshot with a freshly-calculated lifecycle state for the supplied moment. It is called by the `LiveDataCoordinator`'s refresh loop."
+    },
+    {
+      "code": "// LiveDataCoordinator — a coalesced refresh runs at most a couple times a second\nprivate void RefreshIfDirty()\n{\n    if (!dirty) return;\n    dirty = false;\n    var source = ActiveStationDatabase;\n    source.UpdateAgeStates(DateTimeOffset.UtcNow);\n    map.UpdateStations(source.GetVisibleStations());\n    rawPacketLog.Refresh();\n}"
+    },
+    {
+      "p": "The coordinator sets a `dirty` flag whenever a packet is ingested, and a timer firing every 500 milliseconds does the actual work only if something changed. This is __coalescing__ — under a heavy feed, dozens of packets might arrive between ticks, but the map is recomputed and redrawn at most twice a second instead of dozens of times. Each refresh re-ages every station against the current UTC time, then hands the map only the __visible__ stations."
+    },
+    {
+      "p": "\"Visible\" is its own filter, `IsVisible`, honoring two configuration switches: whether Expired stations should still show, and whether Hidden stations belong in normal lists (by default: show Expired, hide Hidden). This is how an old-but-not-ancient station stays dimly on the map while a station last heard yesterday drops off it — without either being deleted."
+    },
+    {
+      "h2": "Trails and tactical labels"
+    },
+    {
+      "p": "Alongside the current snapshot, the store keeps two other kinds of state per station. A __trail__ is the breadcrumb history of where a moving station has been — a list of `StationTrailPoint`s, added by `AddTrailPointIfNeeded` whenever a positioned packet arrives. Trails are bounded on three axes so they can't grow without limit: a maximum number of points per station (default 100), an optional minimum-distance filter (don't record a point unless the station actually moved), and an optional maximum age. Exact-duplicate points (same time and place) are rejected outright."
+    },
+    {
+      "p": "A __tactical label__ is a human-friendly name an operator pins to a callsign — \"NET CONTROL\" onto `W4ABC-9`, say — stored as a `TacticalLabel` record with the real callsign, the label, optional notes, and created/updated timestamps. When a label is set or removed, `RefreshStationDisplayName` rebuilds that station's snapshot so its `DisplayName` reflects the label (falling back to the real callsign when there's no label). This keeps the display name a computed consequence of the label, never a separately-maintained copy that could drift out of sync."
+    },
+    {
+      "h2": "Surviving a restart: the SQLite layer"
+    },
+    {
+      "p": "The live store needs memory that outlives the app — close APRS-Command and reopen it, and the stations you knew should still be there. That is `SqliteStationDatabase`, a wrapper that holds a plain `StationDatabase` inside it and mirrors changes to an on-disk SQLite file (a lightweight single-file database) at `%AppData%/APRSCommand/stations.db`."
+    },
+    {
+      "p": "It implements the same `IStationDatabase` interface, so the rest of the app can't tell it apart from the in-memory store — it just does more. Every method is a pass-through to the inner store, and the write methods additionally persist. `ProcessPacket`, for example, updates the in-memory store synchronously (so the UI sees the change instantly) and then serializes the fresh snapshot to disk on a background thread so the UI is never blocked waiting on a disk write."
+    },
+    {
+      "code": "public void ProcessPacket(AprsPacket packet, AprsPacketSource packetSource = AprsPacketSource.Unknown)\n{\n    inner.ProcessPacket(packet, packetSource);\n    var callsign = packet.SourceCallsign;\n    if (!string.IsNullOrWhiteSpace(callsign))\n    {\n        var snapshot = inner.GetStation(callsign);\n        if (snapshot is not null)\n            Task.Run(() => PersistSnapshot(snapshot));   // off the UI thread\n    }\n}"
+    },
+    {
+      "p": "Snapshots are stored as JSON text keyed by callsign, and a database __trigger__ (a rule the database runs automatically) prunes the table to the 2,000 most-recently-heard stations after every insert, capping the file's size. On startup, `LoadSnapshots` reads those rows back and feeds each through `RestoreSnapshot`, which drops it straight into the in-memory dictionary *without* re-running it through the parser — and skips anything the current session already heard more recently. Every persistence operation is wrapped in a swallow-and-continue `try/catch`: a corrupt row or a disk hiccup is skipped, never fatal."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "What is and isn't remembered",
+        "text": "Station snapshots and tactical labels persist across restarts. Position trails deliberately do not — the comment in the file notes they \"rebuild from new packets.\" Trail history is cheap to regenerate and would otherwise bloat the file, so it is treated as disposable session state. The replay database, being in-memory only, persists nothing at all — which is exactly what you want from a scratch space."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "Ingestion and station state are the spine of APRS-Command: almost everything the operator sees — the map, the station list, alerts, exports — is ultimately a view onto the store this pipeline maintains. Getting its shape right is what lets the rest of the app stay simple."
+    },
+    {
+      "bullets": [
+        "One front door, many sources: every packet enters through AprsIngestionService, so parsing, logging, and de-duplication are written once and can't drift between sources.",
+        "Fail soft, never crash: malformed packets are flagged and logged, not thrown — a mandatory property when your input is the open airwaves and the public internet.",
+        "Two databases keep replay honest: playing back a recording can never overwrite the live picture, because replayed packets are filed in a separate, disposable store.",
+        "Immutable snapshots rebuilt with copy-forward: each packet produces a fresh record that keeps what it didn't mention, so a station's folder composes a full picture from many partial reports without any field-mutation bugs.",
+        "Freshness is computed, not stored: a coalesced timer re-ages every station against the current clock, so state reflects the passage of time without the app hammering the CPU or the screen.",
+        "Memory that survives, cheaply: snapshots and labels persist to a self-pruning SQLite file on background threads; trails and replay state are treated as disposable and rebuilt on demand."
+      ]
+    },
+    {
+      "p": "The deeper lesson is separation of responsibility. The ingestion service knows how to receive; the store knows how to remember and age; the SQLite wrapper knows how to persist; the coordinator knows when to refresh. None reaches into another's job. That is why a future maintainer can change the aging thresholds, swap the persistence backend, or add a new receive source without touching — or even fully understanding — the other three."
+    }
+  ]
+}

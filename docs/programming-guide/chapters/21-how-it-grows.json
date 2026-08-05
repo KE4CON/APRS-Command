@@ -1,0 +1,293 @@
+{
+  "order": 21,
+  "title": "How This Codebase Is Meant to Grow",
+  "subtitle": "The four rules a future maintainer must never break, and a worked example of adding a feature through every layer.",
+  "in_this_chapter": [
+    "Why the code is split into compiler-enforced layers, and which layer may depend on which",
+    "The source-tagging rule: every piece of data carries a label saying where it came from",
+    "How transmit safety is funneled through a single authority so no path can key up unchecked",
+    "The receive-first default: the app listens by default and only transmits after a deliberate opt-in",
+    "A worked example: adding a new packet type from core record to on-screen row",
+    "The specific anti-patterns that quietly destroy the architecture"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This chapter is the contract between the person who wrote APRS-Command and everyone who will touch it later. Its job is to make the codebase outlive its author: to explain not just how the pieces fit, but the handful of design decisions that hold the whole thing together, so a future contributor can add a feature without accidentally tearing out a load-bearing wall."
+    },
+    {
+      "p": "A __codebase__ is just the full collection of source files that make up the program. Most codebases rot the same way: someone in a hurry reaches across a boundary that was there for a reason — a screen talks directly to a radio, a piece of received data loses track of where it came from, a new button transmits over the air without asking permission — and each shortcut makes the next shortcut easier. APRS-Command is built to resist that. It leans on four rules, and it wires the code so that breaking them is hard, sometimes impossible, rather than merely discouraged."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "APRS in one sentence",
+        "text": "APRS (Automatic Packet Reporting System) is a ham-radio system where stations broadcast short text 'packets' with their position, weather, or messages. APRS-Command receives those packets from radios and the internet, plots them on a map, and — carefully — can transmit them back out."
+      }
+    },
+    {
+      "h2": "The four rules, at a glance"
+    },
+    {
+      "p": "Everything in this chapter comes back to these four. They are stated plainly in the project's own `AGENTS.md` architecture rules and enforced throughout the source. If you remember nothing else, remember these and the reason each exists."
+    },
+    {
+      "table": {
+        "headers": [
+          "Rule",
+          "In plain words",
+          "What it prevents"
+        ],
+        "rows": [
+          [
+            "Layer boundaries",
+            "The code is split into stacked layers; each may only depend downward, never upward or sideways in the wrong direction.",
+            "A screen quietly reaching into a serial port; protocol logic dragging in UI code."
+          ],
+          [
+            "Source-tagging",
+            "Every packet or reading carries a label of where it came from — real radio, internet, replay, simulation, training.",
+            "Simulated or replayed data being mistaken for a live station, or worse, re-transmitted as real."
+          ],
+          [
+            "Centralized transmit safety",
+            "All eight transmit paths (RF, APRS-IS, beacon, object, message, weather, iGate, digipeater) ask the same one authority before keying up.",
+            "A new feature transmitting by a side path that forgot a safety check."
+          ],
+          [
+            "Receive-first",
+            "The app listens by default. Transmitting requires deliberate, explicit configuration.",
+            "An out-of-the-box install accidentally jamming a frequency or beaconing as a placeholder callsign."
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "Rule 1 — The layers, and why the compiler enforces them"
+    },
+    {
+      "p": "__What it does:__ the program is divided into separate projects stacked like floors of a building, and each floor is only allowed to look at the floors below it. __Why:__ this keeps concerns from bleeding together — the part that speaks the APRS protocol never needs to know a screen exists, and the screen never needs to know whether a packet arrived over a radio or the internet. When concerns stay separate, you can change one without breaking the others."
+    },
+    {
+      "p": "The layers, bottom to top, each a separate `.csproj` project so the boundary is real and not just a folder convention:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Project",
+          "Responsibility",
+          "May depend on"
+        ],
+        "rows": [
+          [
+            "Aprs.Core",
+            "Pure APRS packet models and the parser. No I/O, no UI.",
+            "nothing (framework only)"
+          ],
+          [
+            "Aprs.Transport",
+            "Talking to radios and the internet: APRS-IS, KISS, Direwolf, serial, AGWPE.",
+            "Aprs.Core"
+          ],
+          [
+            "Aprs.Services",
+            "Business logic: station database, beacon scheduler, messaging, transmit safety.",
+            "Aprs.Core"
+          ],
+          [
+            "Aprs.Mapping",
+            "Map tiles and marker rendering logic.",
+            "Aprs.Core / Services"
+          ],
+          [
+            "Aprs.Desktop",
+            "The Avalonia desktop app — views and viewmodels.",
+            "everything below"
+          ],
+          [
+            "AprsCommand.Contracts / .Api",
+            "Versioned public data shapes for outside integrations.",
+            "kept separate on purpose"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The enforcement is the point. Because `Aprs.Core` has no __project reference__ (a declared dependency from one project to another) to `Aprs.Transport` or `Aprs.Desktop`, a line of code in the parser that tried to open a serial port or touch a screen simply would not compile. The rule isn't a guideline you have to remember — the build tool rejects the violation. `AGENTS.md` spells out the same boundaries in words:"
+    },
+    {
+      "code": "Keep APRS protocol parsing in `Aprs.Core` only.\nKeep transport-specific code in `Aprs.Transport` only.\nKeep business logic in `Aprs.Services` only.\nKeep UI logic in `Aprs.Desktop` only.\nDo not put serial-port, TCP, file-system, or UI dependencies in `Aprs.Core`.\nPrefer interfaces and dependency injection for services."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The direction is one-way",
+        "text": "Lower layers must never reach up. When a low layer needs something a higher layer knows (for example, the transport layer needs to ask 'are we in exercise mode?'), it declares a small interface it owns and the higher layer implements it. You will see exactly this pattern in Rule 3 with ITransmitInhibitGate — the transport defines the question, Services supplies the answer, and the dependency arrow still points downward."
+      }
+    },
+    {
+      "h2": "Rule 2 — Everything that arrives gets a source tag"
+    },
+    {
+      "p": "__What it does:__ every packet and reading that enters the app is stamped with a label saying where it came from. __Why:__ APRS-Command doesn't just show live radio traffic. It also replays recorded logs, runs a built-in simulator, and has a training mode for exercises. If a simulated station looked identical to a real one, an operator could act on fiction during a real emergency, or the app could re-broadcast a fake packet as though it were genuine. The source tag is what keeps make-believe data visibly separated from reality — the same instinct behind the whole 'receive-first' philosophy."
+    },
+    {
+      "p": "The tag is not one flag but a small vocabulary of enums (an __enum__ is a fixed list of named choices). The transport-facing tag `AprsPacketSource` says which pipe a packet came in on:"
+    },
+    {
+      "code": "public enum AprsPacketSource\n{\n    Unknown,\n    AprsIs,        // the internet backbone\n    Rf,            // over the air\n    TcpKiss, SerialKiss, Direwolf, Agwpe,   // specific radio interfaces\n    Replay,        // a recorded log being played back\n    Simulation,    // the built-in packet generator\n    External,\n    LocalGenerated // something this app produced itself\n}"
+    },
+    {
+      "p": "For richer needs there is `SourceMetadata`, an __immutable record__ (a small data object whose fields never change after creation) that pairs the source type with a trust level and an origin. Notice the two extra dimensions: `DataOrigin` (was this Received, Generated, Imported, Replayed, Simulated, Training…) and `SourceTrustLevel` (Untrusted, External, OperatorConfigured, Local, Internal). Three separate questions — what pipe, what kind of origin, how much do we trust it — because they genuinely differ. A packet can arrive over trusted local hardware but carry simulated content."
+    },
+    {
+      "code": "public sealed record SourceMetadata(\n    string? SourceName,\n    DataSourceType SourceType,\n    string? SourceId,\n    DateTimeOffset TimestampUtc,\n    DataOrigin Origin,\n    SourceTrustLevel TrustLevel)\n{\n    // A safe default: unknown source, untrusted, at a known time.\n    public static SourceMetadata Unknown(DateTimeOffset timestampUtc) =>\n        new(null, DataSourceType.Unknown, null, timestampUtc,\n            DataOrigin.Unknown, SourceTrustLevel.Untrusted);\n}"
+    },
+    {
+      "p": "The tag travels with the data from the moment of entry. The single receive funnel, `AprsIngestionService.IngestReceivedLine`, takes the source as a required argument and hands it forward at every step — into the raw log, into the station database, and out on the parsed-packet event:"
+    },
+    {
+      "code": "public void IngestReceivedLine(string rawLine, AprsPacketSource source, DateTimeOffset receivedAtUtc)\n{\n    if (string.IsNullOrWhiteSpace(rawLine)) return;\n\n    rawPacketLog.AddReceivedRawPacket(rawLine, source, timestampUtc: receivedAtUtc);\n\n    if (parser.TryParse(rawLine, receivedAtUtc, out var packet, out _) && packet is not null)\n    {\n        // Replayed packets go to a SEPARATE database so a replay session can be\n        // shown in isolation without polluting live station state.\n        var target = source == AprsPacketSource.Replay && replayStationDatabase is not null\n            ? replayStationDatabase\n            : stationDatabase;\n        target.ProcessPacket(packet, source);\n    }\n\n    PacketParsed?.Invoke(this, new ParsedPacketEventArgs(packet, source));\n}"
+    },
+    {
+      "p": "That `target` switch is source-tagging earning its keep: because the line carries an honest `Replay` tag, the funnel can route replayed traffic to a dedicated database and keep the live map clean. `ProcessPacket(packet, source)` then defaults its source parameter to `Unknown` — meaning the only way a station gets a real source label is if the caller supplied one, and the compiler makes the caller think about it."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "When you add a new way for data to enter",
+        "text": "A new input driver — a new radio type, a file importer, a plugin — must add its own value to the source enums and pass it through the ingestion funnel. Never let new data default to Unknown when you actually know its origin. There is a matching AprsPortSourceMapper that translates a port type to a packet source; extend it in lock-step so ports and packets agree."
+      }
+    },
+    {
+      "h2": "Rule 3 — Transmit safety lives in exactly one place"
+    },
+    {
+      "p": "__What it does:__ before anything is transmitted — a beacon, an object, a message, a weather bulletin, an iGate relay — the code asks one shared authority 'am I allowed to key up right now?' and obeys the answer. __Why:__ transmitting is the one thing this app does that affects the outside world and other operators. Scattering the safety checks across eight features would guarantee that, eventually, one of them forgets one check. Funneling every path through a single gate means a rule added once is enforced everywhere, automatically."
+    },
+    {
+      "p": "The authority is `ITransmitSafetyAuthority` in the Services layer. Its `Evaluate` method runs the checks in a deliberate priority order and returns a `TransmitDecision` — allowed, or denied with a precise, human-readable reason:"
+    },
+    {
+      "code": "public TransmitDecision Evaluate(TransmitRequest request)\n{\n    // 1) Master inhibit wins over everything (exercise / training mode).\n    lock (gate) { isInhibited = inhibited; reason = inhibitReason; }\n    if (isInhibited)\n        return TransmitDecision.Deny(TransmitDenyReason.GlobalInhibit, reason ?? \"Transmit is inhibited.\");\n\n    // 2) Identity: never transmit without a real callsign (not the N0CALL placeholder).\n    if (!policy.HasValidStationCallsign)\n        return TransmitDecision.Deny(TransmitDenyReason.NoValidCallsign,\n            \"No valid station callsign is set...\");\n\n    // 3) Destination: transmitting to the internet needs a real APRS-IS passcode.\n    if (request.Destination == TransmitDestination.AprsIs && !policy.HasValidAprsIsPasscode)\n        return TransmitDecision.Deny(TransmitDenyReason.AprsIsPasscodeRequired, \"...receive-only...\");\n\n    // 4) Per-port: is THIS port enabled, connected, transmit-enabled, not receive-only?\n    var portResult = portManager.CheckTransmitSafety(request.PortId, globalTransmitSafetyEnabled: true);\n    if (!portResult.IsSafe)\n        return TransmitDecision.Deny(TransmitDenyReason.Port, portResult.FailureReason ?? \"...\");\n\n    return TransmitDecision.Allow();\n}"
+    },
+    {
+      "p": "Read the order top to bottom: the global inhibit is checked first because it must beat everything — flip exercise mode on and no feature can transmit, full stop. Then identity, then destination credentials, then the specific port. Each denial names its cause, so the UI can tell the operator exactly why the radio stayed silent instead of failing mysteriously."
+    },
+    {
+      "p": "Now the clever part that satisfies Rule 1 at the same time. The lowest-level transmit code lives in `Aprs.Transport`, which may not depend upward on `Aprs.Services`. So the transport layer defines a tiny interface of its own — the only question it needs answered:"
+    },
+    {
+      "code": "// In Aprs.Transport — the minimal contract the transmit chokepoints consult.\npublic interface ITransmitInhibitGate\n{\n    bool IsTransmitInhibited { get; }\n    string? InhibitReason { get; }\n}"
+    },
+    {
+      "p": "`TransmitSafetyAuthority` in Services implements that interface, and the __composition root__ (the single startup place where the app wires its parts together) hands the very same object to every transmit client. One authority, worn two ways:"
+    },
+    {
+      "code": "// DesktopRuntime — the composition root.\nvar transmitAuthority = provider.GetRequiredService<ITransmitSafetyAuthority>();\nvar inhibitGate = (ITransmitInhibitGate)transmitAuthority;   // same object, transport's view of it\nrfTransmitClient.InhibitGate = inhibitGate;\n\nvar beaconService = BeaconService.CreateFromSettings(..., inhibitGate: inhibitGate);"
+    },
+    {
+      "p": "And the RF client actually consults it, at the last moment before a frame is encoded and sent — so even a path that never called `Evaluate` still cannot key up while inhibited:"
+    },
+    {
+      "code": "// KissRfBeaconTransmitClient.SendBeaconAsync\nvar gate = InhibitGate;\nif (gate is not null && gate.IsTransmitInhibited)\n    return Fail(gate.InhibitReason ?? \"Transmit is globally inhibited (exercise mode).\", rawPacket);"
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The one rule that must never be relaxed",
+        "text": "If you add any new way to transmit, it MUST go through the transmit authority (or at minimum consult the inhibit gate). Do not write a new SendPacket call that keys up on its own judgment. The whole guarantee — that exercise mode silences everything, that a placeholder callsign never goes on the air — collapses the instant one path decides the check doesn't apply to it."
+      }
+    },
+    {
+      "h2": "Rule 4 — Receive-first: silence is the default"
+    },
+    {
+      "p": "__What it does:__ a fresh install listens and plots; it does not transmit until the operator has deliberately set up a real identity and turned a specific port on. __Why:__ radio spectrum is shared. An app that transmitted by default — or under a placeholder callsign like `N0CALL` — would be antisocial at best and, at a bad moment, harmful. `AGENTS.md` states it flatly: 'Do not transmit RF by default. Any RF transmit feature must require explicit user configuration.'"
+    },
+    {
+      "p": "This principle is why the transmit checks in Rule 3 are shaped the way they are. The identity check refuses the `N0CALL` placeholder. The APRS-IS check treats the passcode value `-1` as a deliberate 'receive-only' sentinel — a magic value meaning 'I have not set up transmit credentials.' Transmit is opt-in, and the opt-in must be a real, positive act:"
+    },
+    {
+      "code": "// SettingsTransmitPolicyContext — 'may we transmit to the internet?'\npublic bool HasValidAprsIsPasscode\n{\n    get\n    {\n        foreach (var port in store.Load().Connections.Ports)\n        {\n            if (port.Type != ConnectionPortType.AprsIs) continue;\n            var passcode = port.Configuration.AprsIs?.Passcode?.Trim();\n            if (!string.IsNullOrEmpty(passcode)\n                && !string.Equals(passcode, \"-1\", StringComparison.Ordinal)  // the receive-only sentinel\n                && int.TryParse(passcode, out var value) && value >= 0)\n                return true;\n        }\n        return false;   // default answer is NO\n    }\n}"
+    },
+    {
+      "p": "The default return is `false`. You have to earn a `true`. That is receive-first expressed in code: the burden of proof is on transmitting, never on staying quiet. Preserve this whenever you add a feature that could emit — make the safe, silent state the one you get for free."
+    },
+    {
+      "h2": "A worked example — adding a new packet type end to end"
+    },
+    {
+      "p": "Suppose a contributor wants first-class support for a new APRS packet variant the parser currently lumps into 'Unknown.' Here is the path through every layer, using the real seams the code already provides. The shape of this example generalizes to almost any feature."
+    },
+    {
+      "steps": [
+        "Core type — add a new record to the AprsPacket family in Aprs.Core. Every packet is an immutable record deriving from the abstract `AprsPacket`, carrying the common header fields (source callsign, destination, path, information, received time, validity) plus its own decoded fields. Model your new type the same way, so downstream code can pattern-match on it.",
+        "Parser / transport — teach the parser to recognize it. `AprsParser.Parse` is an ordered chain of 'can you parse this?' checks; each delegates to a small specialized parser. Insert your check at the correct priority (order matters — weather is tried before generic position because their lead characters overlap). If the data instead arrives over a new wire, that is a new Aprs.Transport client feeding the same ingestion funnel with the correct source tag.",
+        "Service — decide what the app does with it. If it updates a station, `StationDatabase.ProcessPacket` already receives the packet and its source tag; extend the handling there or in the relevant peer service. This is where business meaning lives — never in the parser and never in a view.",
+        "Viewmodel — expose it to the screen. A __viewmodel__ is the bridge object a screen binds to; it holds display-ready values and commands. Add the new fields to the appropriate row/detail viewmodel so the view has something to show, keeping the raw packet type out of the view itself.",
+        "View — render it. The Avalonia view binds to the viewmodel's properties. No transport, parser, or service type ever appears in a view — that is the Rule 1 boundary holding at the top of the stack."
+      ]
+    },
+    {
+      "p": "Step 2 is worth seeing concretely, because the parser's dispatch order is a design decision, not an accident. Each guard returns the moment it matches:"
+    },
+    {
+      "code": "// AprsParser.Parse — ordered dispatch. Earlier wins.\nif (weatherParser.CanParse(rawPacket.Information))   return weatherParser.Parse(rawPacket);\nif (IsPositionInformation(rawPacket.Information))    return positionParser.Parse(rawPacket);\nif (micEParser.CanParse(rawPacket.Information))      return micEParser.Parse(rawPacket);\n// ...status '>', capability '<', telemetry, message, object/item, query '?'...\n// <-- a new specialized parser check would slot in here, at its correct priority\nif (rawPacket.Information.StartsWith('{')) { /* user-defined */ }\n// Falls through to UnknownAprsPacket only when nothing above claimed it."
+    },
+    {
+      "p": "The `UnknownAprsPacket` at the very bottom is the safety net: anything unrecognized is still captured as a valid, labeled packet rather than thrown away or crashing the pipeline. That is the same defensive instinct as source-tagging — the app never silently loses data it doesn't understand."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The non-negotiable last step",
+        "text": "Every feature ships with a test. CONTRIBUTING.md and AGENTS.md both require it, and the parser especially is test-driven from sample packets. A new packet type without a parse test in tests/Aprs.Tests is an incomplete contribution. This mirrors the project's bug-hunting rule: every behavior you add or fix gets a test that pins it down, so the next person can't unknowingly break it."
+      }
+    },
+    {
+      "h2": "Public contracts stay separate from internal models"
+    },
+    {
+      "p": "One more boundary a maintainer must respect. APRS-Command exposes a local API and event stream for outside integrations, and those outsiders see a __DTO__ — a Data Transfer Object, a plain, stable data shape published for external use — not the app's internal models. Notice `ExternalSourceType` in `AprsCommand.Contracts` is a near-twin of the internal `DataSourceType`, deliberately duplicated rather than shared."
+    },
+    {
+      "p": "That looks redundant until you consider why: internal models change freely as the app evolves, but a published contract is a promise to third parties that must stay stable across versions. Keeping them as separate types with explicit mapping means you can refactor the internals without breaking someone's integration — and you can't accidentally leak an internal-only concept out through the public API. When you add an internal source, think separately about whether the public contract should learn about it too."
+    },
+    {
+      "h2": "The anti-patterns that quietly break the philosophy"
+    },
+    {
+      "p": "These are the shortcuts that feel harmless in the moment and cost the project its structure. Each one is the direct negation of a rule above."
+    },
+    {
+      "bullets": [
+        "A view or viewmodel that reaches straight into a transport client or the parser instead of going through a service abstraction — this is how the top of the stack fuses to the bottom and layers stop meaning anything.",
+        "New data that enters the app untagged, or tagged `Unknown` when its true origin was known — this is how simulated, replayed, or training data starts masquerading as live traffic.",
+        "A new transmit path that keys up on its own logic instead of consulting the transmit authority or the inhibit gate — this is how exercise mode stops being trustworthy.",
+        "A feature that transmits (or beacons) by default, or that treats a blank/placeholder identity as good enough — this violates receive-first and can put bad traffic on shared spectrum.",
+        "Putting business meaning in the parser, or protocol parsing in a service — decode belongs in Aprs.Core, meaning belongs in Aprs.Services, and mixing them makes both harder to test.",
+        "Leaking internal model types through the public Contracts/API boundary instead of mapping to a DTO — this turns a private implementation detail into a promise you didn't mean to make.",
+        "Shipping the change without a test — the one habit that, dropped, lets every other rule erode unnoticed."
+      ]
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "APRS-Command is built so that the right way to extend it is also the easy way, and the wrong way is either hard or impossible. The layers are separate projects so a boundary violation won't compile. Source tags ride along with data so make-believe never impersonates reality. Every transmit path bows to one authority so a safety rule written once is enforced everywhere. And the app listens before it speaks, so an untouched install is a good radio citizen by default."
+    },
+    {
+      "p": "The through-line is that safety and clarity are structural, not disciplinary. The design does not ask a future contributor to remember to be careful; it arranges the code so that carefulness is the path of least resistance. When you add to this codebase, your real task is to find the seam that already exists — the ingestion funnel, the transmit authority, the parser's ordered dispatch, the source enums — and extend it in the established shape. Do that, add the test, and the program stays comprehensible and safe long after any single author has moved on. That is what it means for a codebase to be built to grow."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The one-line test before you commit",
+        "text": "Ask of any change: could this key up the radio without asking the authority? Could this data reach the map without an honest source tag? Does this make a screen depend on a wire? If any answer is yes, you're fighting the architecture — find the seam and go through it instead."
+      }
+    }
+  ]
+}

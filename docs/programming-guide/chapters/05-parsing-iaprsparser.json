@@ -1,0 +1,305 @@
+{
+  "order": 5,
+  "title": "Parsing: IAprsParser and the Parser Family",
+  "subtitle": "How a raw line of APRS text is recognized, split into its parts, and routed to the one specialized parser that understands its shape.",
+  "in_this_chapter": [
+    "What an interface is, and why parsing hides behind IAprsParser",
+    "The TryParse contract: parse-don't-throw on bad input",
+    "How a raw line is split into source, destination, path, and information",
+    "The dispatch chain: how the first character picks the right parser",
+    "Why order matters — and the traps deliberately avoided",
+    "Third-party unwrapping, recursion depth guards, and the fallbacks",
+    "The CanParse/Parse pattern every specialized parser shares"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Every APRS station on the air speaks in short bursts of text. A weather station, a car with a GPS tracker, a person sending a text message, a repeater announcing itself — they all send lines that look superficially similar but mean completely different things. Something has to look at each incoming line, figure out *what kind* of packet it is, pull it apart into meaningful pieces, and hand back a tidy object the rest of the app can use. That something is the parser."
+    },
+    {
+      "p": "This chapter is about two files: **IAprsParser.cs**, which is the *promise* the parser makes to everyone who calls it, and **AprsParser.cs**, the *main* parser that keeps that promise. The main parser does not try to understand every packet type by itself. Instead it does the front-desk work — split the line into its standard parts — and then acts as a switchboard, routing each packet to one of several specialized parsers (weather, position, MIC-E, telemetry, message, and so on), each an expert in one format."
+    },
+    {
+      "p": "Understanding this file is understanding the spine of the whole application. Every piece of live data that ever appears on the map, in a message window, or on a weather panel enters through here first. If you grasp how a line becomes a typed packet, the rest of the codebase reads much more easily."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where the code lives",
+        "text": "src/Aprs.Core/IAprsParser.cs (the contract) and src/Aprs.Core/AprsParser.cs (the dispatcher). The specialized parsers — AprsWeatherParser, AprsPositionParser, AprsMicEParser, AprsTelemetryParser, AprsMessageParser, AprsObjectItemParser, AprsNmeaParser — sit beside them in the same folder."
+      }
+    },
+    {
+      "h2": "First, what is an interface?"
+    },
+    {
+      "p": "__An interface__ is a list of things a class promises to be able to do, written down separately from *how* it does them. The classic analogy is a wall socket: any appliance with the right plug works, and the socket does not care whether you plug in a lamp or a laptop charger. The socket defines the *shape* of the connection; the appliance provides the behavior."
+    },
+    {
+      "p": "In C#, an interface is a named set of method signatures with no bodies. Here is the entire parsing contract, **IAprsParser**:"
+    },
+    {
+      "code": "public interface IAprsParser\n{\n    bool TryParse(string rawLine, DateTimeOffset receivedAtUtc,\n                  out AprsPacket? packet, out string? error);\n}"
+    },
+    {
+      "p": "That is the whole promise: give me a raw line and the time it arrived, and I will give you back a parsed **packet** and, if something was wrong, an **error** describing it. The `bool` return says at a glance whether the line looked valid."
+    },
+    {
+      "p": "Two words there deserve unpacking. __out__ marks a parameter the method fills in *for* you rather than reads *from* you — it is a second and third way to hand results back, alongside the normal return value. And the `?` in `AprsPacket?` and `string?` means \"this may be null\" (null = \"nothing here\") — the compiler will remind any caller to check before using it. So the signature itself tells the honest story: you get a true/false answer, a packet that might be null, and an error that might be null."
+    },
+    {
+      "h2": "Why parse behind an interface at all?"
+    },
+    {
+      "p": "The main parser could simply be a class everyone calls directly. Putting an interface in front of it buys three concrete things."
+    },
+    {
+      "bullets": [
+        "**Swappability.** Anything that needs to parse depends on the *shape* (IAprsParser), not the specific class (AprsParser). A future parser — a faster one, a stricter one, a fake one — can drop into the same socket with no changes to callers.",
+        "**Testability.** Tests for code that *uses* a parser can plug in a tiny stand-in that returns canned packets, without dragging in the full parsing machinery. This is the same reason ProcessEngine hides VOACAP behind IProcessTransport in the sibling project — depend on the plug, not the appliance.",
+        "**A clear boundary.** The interface is a short, readable summary of exactly what the parser offers. A newcomer reads seventeen lines and knows the contract, without wading through three hundred lines of parsing logic."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Read the interface first",
+        "text": "When you meet an unfamiliar subsystem in this codebase, find its interface. It is the honest one-paragraph summary — the menu before the kitchen."
+      }
+    },
+    {
+      "h2": "The contract's real rule: parse, don't throw"
+    },
+    {
+      "p": "The XML comment on the interface states the single most important design decision in one phrase: it parses lines \"without throwing on malformed input.\" This matters enormously for APRS."
+    },
+    {
+      "p": "APRS is radio. Packets arrive corrupted, truncated, half-decoded, or simply weird — a burst of static clips the end of a line, two stations transmit at once, an old radio uses a nonstandard format. If the parser __threw an exception__ (crashed out of its normal flow with an error) every time it met a bad line, the receive loop would have to wrap every single call in error-handling, and one malformed packet could stall the stream of good ones."
+    },
+    {
+      "p": "Instead the design says: a bad line is *normal*, not exceptional. The parser always returns a packet. If the line was malformed, the packet simply carries a list of validation errors and reports itself invalid. Nothing crashes. Here is how the main class delivers on that promise:"
+    },
+    {
+      "code": "public bool TryParse(string rawLine, DateTimeOffset receivedAtUtc,\n                     out AprsPacket? packet, out string? error)\n{\n    var parsed = Parse(rawLine, receivedAtUtc);\n    packet = parsed;\n    error = parsed.ValidationErrors.FirstOrDefault();\n    return parsed.IsValid;\n}"
+    },
+    {
+      "p": "`Parse` does the real work and *always* returns something. `TryParse` then repackages that into the interface's shape: the packet goes out through `packet`, the first validation error (if any) through `error`, and the true/false answer is just `parsed.IsValid`. Even a completely garbled line comes back as a packet you can safely inspect — never a crash."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The Try pattern",
+        "text": "The name TryParse follows a long-standing .NET convention (int.TryParse, DateTime.TryParse): return a bool for success, hand the real result back through an out parameter, and never throw for ordinary bad input. Following the convention means the method behaves exactly the way an experienced C# developer expects on sight."
+      }
+    },
+    {
+      "h2": "Step one: split the line into its standard parts"
+    },
+    {
+      "p": "Before anything can decide *what kind* of packet a line is, the line has to be cut into its universal pieces. Every APRS line shares the same skeleton:"
+    },
+    {
+      "code": "SOURCE>DESTINATION,PATH1,PATH2:information text\n\n// Example:\n// KE4CON-9>APRS,WIDE1-1,WIDE2-1:!3745.00N/12225.00W>on the trail"
+    },
+    {
+      "p": "The __source__ is who sent it (a callsign, optionally with a `-9` style __SSID__ — a number 0-15 that distinguishes a ham's several stations, like a home rig versus a car). The __destination__ and __path__ describe how it was addressed and which digipeaters relayed it. Everything after the colon is the __information field__ — the actual payload, and the part whose first character reveals the packet type."
+    },
+    {
+      "p": "The private `Parse` method carves this up with two landmark characters. First the colon splits header from information:"
+    },
+    {
+      "code": "var separatorIndex = workingLine.IndexOf(':');\nif (separatorIndex < 0)\n    validationErrors.Add(\"Packet is missing ':' information separator.\");\n\nvar header = separatorIndex >= 0 ? workingLine[..separatorIndex] : workingLine;\nvar information = separatorIndex >= 0 ? workingLine[(separatorIndex + 1)..] : string.Empty;"
+    },
+    {
+      "p": "Note the pattern that repeats throughout: a missing landmark adds a validation error but does *not* stop the work. If there is no colon, the code records the complaint and carries on treating the whole line as a header. Then the `>` splits the header into source versus destination-and-path, and helper methods `ParseSource` and `ParseDestinationAndPath` finish the job — validating the callsign, checking the SSID is in range 0-15, and rejecting empty path components. All of it accumulates errors rather than throwing."
+    },
+    {
+      "p": "The result of this first stage is a **RawAprsPacket** — every packet type in the app inherits from the shared **AprsPacket** record, and RawAprsPacket is the plain, not-yet-classified version carrying the split-up fields. (A __record__ is C#'s shorthand for a simple, immutable data-holder — see the fields listed in AprsPacket.cs.) This raw packet is the common raw material every specialized parser receives."
+    },
+    {
+      "h2": "Step two: the dispatch chain"
+    },
+    {
+      "p": "With the line split, the parser now plays switchboard operator. It looks at the information field and routes the raw packet to whichever specialized parser recognizes its shape. The mechanism is a straightforward top-to-bottom sequence of checks — the first one that matches wins and returns immediately:"
+    },
+    {
+      "code": "if (weatherParser.CanParse(rawPacket.Information))\n    return weatherParser.Parse(rawPacket);\n\nif (IsPositionInformation(rawPacket.Information))\n    return positionParser.Parse(rawPacket);\n\nif (micEParser.CanParse(rawPacket.Information))\n    return micEParser.Parse(rawPacket);\n\n// ... status '>', capability '<', telemetry, message, object/item,\n//     query '?', third-party '}', NMEA '$', user-defined '{' ...\n\nreturn new UnknownAprsPacket(/* ... */);"
+    },
+    {
+      "p": "Most of these decisions come down to the *first character* of the information field, because the APRS specification assigns each packet type a __data type indicator__ — a single leading character that announces the format. A `:` means a message, a `;` an object, a `>` a status report, a `_` or certain position characters a weather report, a `?` a query, and so on. The parser reads that first character and knows which door to open."
+    },
+    {
+      "table": {
+        "headers": [
+          "Leading character",
+          "Routed to",
+          "Meaning"
+        ],
+        "rows": [
+          [
+            "!  =  /  @",
+            "AprsPositionParser (or weather)",
+            "Position report (with/without timestamp)"
+          ],
+          [
+            "_",
+            "AprsWeatherParser",
+            "Positionless weather report"
+          ],
+          [
+            "0x60  0x27  0x1C  0x1D",
+            "AprsMicEParser",
+            "Compact MIC-E position (Kenwood/Yaesu)"
+          ],
+          [
+            ">",
+            "StatusAprsPacket",
+            "Status report"
+          ],
+          [
+            "<",
+            "CapabilityAprsPacket",
+            "Station capabilities"
+          ],
+          [
+            "T#",
+            "AprsTelemetryParser",
+            "Telemetry data"
+          ],
+          [
+            ":",
+            "AprsMessageParser",
+            "Text message"
+          ],
+          [
+            ";  )",
+            "AprsObjectItemParser",
+            "Object / item"
+          ],
+          [
+            "?",
+            "QueryAprsPacket",
+            "Query (?WX?, ?PING?, ...)"
+          ],
+          [
+            "}",
+            "(unwrap and re-parse)",
+            "Third-party traffic"
+          ],
+          [
+            "$",
+            "AprsNmeaParser",
+            "Raw NMEA GPS sentence"
+          ],
+          [
+            "{",
+            "UserDefinedAprsPacket",
+            "Developer-defined format"
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "The CanParse / Parse pattern"
+    },
+    {
+      "p": "Notice the shape of most branches: `if (someParser.CanParse(...)) return someParser.Parse(...)`. Every specialized parser exposes two methods. **CanParse** answers a yes/no question — *is this line mine to handle?* — cheaply and without side effects. **Parse** does the actual, heavier decoding, and is only ever called after CanParse has already said yes."
+    },
+    {
+      "p": "This split keeps each format's recognition logic living *with* that format's decoding logic, instead of piling every recognition rule into the dispatcher. The weather parser knows what a weather packet looks like; the MIC-E parser knows what MIC-E looks like. The dispatcher just asks each expert in turn. Some CanParse checks are trivial one-liners:"
+    },
+    {
+      "code": "// AprsMessageParser\npublic bool CanParse(string information) => information.StartsWith(':');\n\n// AprsObjectItemParser\npublic bool CanParse(string information)\n    => information.StartsWith(';') || information.StartsWith(')');"
+    },
+    {
+      "p": "Others encode real domain knowledge. The MIC-E check recognizes four specific data type indicators, kept as numeric code points so no non-printable characters have to sit in the source file:"
+    },
+    {
+      "code": "// AprsMicEParser\npublic bool CanParse(string information)\n    => information.Length > 0\n       && information[0] is CurrentGps or OldGps or LegacyCurrentGps or LegacyOldGps;"
+    },
+    {
+      "p": "And the weather parser's recognition is genuinely subtle: a weather report can be *positionless* (starts with `_`) or ride *inside* a position report, where a `_` symbol code appears at a computed offset after the latitude and longitude — a different offset depending on whether the position is compressed. That entire judgement lives in the weather parser's `IsPositionWeather`, exactly where it belongs, not in the dispatcher."
+    },
+    {
+      "h2": "Why the order of the checks is not arbitrary"
+    },
+    {
+      "p": "Because the first matching branch wins, the *sequence* of the checks is itself a design decision — and a couple of orderings prevent real bugs."
+    },
+    {
+      "p": "Weather is checked **before** plain position. Many weather packets *are* position packets with a weather payload attached; a weather report often begins with the very same `!`, `=`, `/`, or `@` characters a position report uses. If the position check ran first, every weather station would be misfiled as an ordinary position and its temperature, wind, and rain would be silently dropped. Putting weather first, with its more specific recognition, ensures the richer interpretation wins."
+    },
+    {
+      "p": "MIC-E is safe to place mid-chain, and a code comment says exactly why:"
+    },
+    {
+      "code": "// MIC-E encodes position in the destination field; its DTIs (0x60 / 0x27 / 0x1C / 0x1D) do not\n// collide with any other packet type, so it is safe to dispatch here.\nif (micEParser.CanParse(rawPacket.Information))\n    return micEParser.Parse(rawPacket);"
+    },
+    {
+      "p": "MIC-E is unusual — it stashes latitude and the N/S sign inside the *destination* field, an idea most formats never use — but its four leading indicators are unique to it, so no earlier or later check could accidentally swallow a MIC-E packet. The comment records that reasoning so a future maintainer does not \"tidy\" the order and break it."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Ordering is load-bearing",
+        "text": "Reordering these checks is not a cosmetic change. Move the position check above the weather check and weather data vanishes. When touching the dispatch chain, treat the sequence as part of the correctness, and lean on the parser tests in tests/Aprs.Tests/AprsParserTests.cs to catch a regression."
+      }
+    },
+    {
+      "h2": "Third-party traffic and the recursion guard"
+    },
+    {
+      "p": "One branch is cleverer than the rest. On the internet side of APRS (APRS-IS), a gateway station often forwards a packet it heard on the radio, wrapping the *entire original packet* inside its own, marked by a leading `}`. If the app parsed that at face value, the *gateway* would appear on the map instead of the station that actually sent the report."
+    },
+    {
+      "p": "So the parser unwraps it and parses the inner packet instead — by calling *itself*:"
+    },
+    {
+      "code": "if (rawPacket.Information.StartsWith('}') && thirdPartyDepth < 3)\n{\n    var inner = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;\n    return Parse(inner, receivedAtUtc, thirdPartyDepth + 1);\n}"
+    },
+    {
+      "p": "This is __recursion__ — a method calling itself to handle a smaller version of the same problem, here \"parse the packet hidden inside this packet.\" But recursion left unchecked is dangerous: a malformed or malicious chain of nested `}` wrappers could make the parser call itself forever and exhaust memory. The guard is the **thirdPartyDepth** counter. It starts at 0, rises by one with each unwrap, and once it reaches 3 the branch simply stops matching — the packet falls through to a later check instead. A real packet is never wrapped that deeply; three is plenty of headroom while still capping the danger."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "A recursion guard in the wild",
+        "text": "Any time a method can call itself on attacker-influenced data, it needs a bound. The public Parse overload starts the depth at 0 and hides the counter from callers; only the private overload threads it through. That is the standard, safe way to expose recursion without exposing its bookkeeping."
+      }
+    },
+    {
+      "h2": "The fallbacks: nothing is ever silently lost"
+    },
+    {
+      "p": "After all the specific formats have had their turn, two final safety nets catch whatever remains. A `$` line is treated as a raw NMEA GPS sentence — a legacy format — and decoded into a position so the station still plots on the map. A `{` line is a developer-defined \"user-defined\" format, which the parser at least recognizes as such (pulling off its ID byte and payload) rather than lumping it in with the truly unknown."
+    },
+    {
+      "p": "And if a line matches nothing at all, it does not disappear — it becomes an **UnknownAprsPacket** (or, if it was already flagged invalid or empty, the raw packet is returned as-is):"
+    },
+    {
+      "code": "if (!rawPacket.IsValid || string.IsNullOrEmpty(rawPacket.Information))\n    return rawPacket;\n\nreturn new UnknownAprsPacket(/* all the common fields */);"
+    },
+    {
+      "p": "This is the parse-don't-throw philosophy carried all the way to the end. There is no code path where a line comes in and nothing comes out. Even genuine gibberish becomes an object the rest of the app can display, count, or log — which is exactly what you want when the input is a noisy radio channel and you would rather see an odd packet than lose one."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The parsing layer is small in lines but large in consequence — it is the single gate every scrap of live data passes through. A future maintainer should preserve four ideas above all."
+    },
+    {
+      "bullets": [
+        "**The interface is the contract, and the contract is parse-don't-throw.** IAprsParser promises a result for every line and a crash for none. Any replacement parser must keep that promise, because the entire receive path depends on it and none of the callers are written to handle exceptions.",
+        "**The dispatcher classifies; the specialists decode.** AprsParser splits the line and routes it; each CanParse/Parse pair owns one format's rules. Keep new format knowledge inside a new specialized parser and add one branch to the chain — do not grow the dispatcher into a monolith.",
+        "**Check order encodes correctness.** Weather-before-position and the placement of MIC-E are deliberate. The inline comments explain why; respect them, and let the tests guard them.",
+        "**Recursion is bounded and nothing is discarded.** The third-party unwrap is capped at depth 3, and every unmatched line still becomes a packet (Unknown or user-defined). Both choices come from the reality of the medium: radio data is untrusted and lossy, so the parser is defensive and total by design."
+      ]
+    },
+    {
+      "p": "Read this way, AprsParser is less a pile of if-statements and more a small, well-reasoned protocol: recognize the universal skeleton, ask the right expert, prefer the richer interpretation, never trust the input further than a counter allows, and never drop a line on the floor."
+    }
+  ]
+}

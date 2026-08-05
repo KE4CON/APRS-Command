@@ -1,0 +1,331 @@
+{
+  "order": 8,
+  "title": "Transports: APRS-IS, KISS, Direwolf, and AGWPE",
+  "subtitle": "How raw APRS packets travel in and out of APRS-Command over the internet and over the air, through one shared contract and four purpose-built clients.",
+  "in_this_chapter": [
+    "What a transport is, and why the program has several of them",
+    "The plain-text APRS-IS internet link: login, passcode, and the logresp handshake",
+    "What a TNC and KISS framing actually are, in everyday terms",
+    "TCP KISS, Serial KISS, and Direwolf as three faces of the same radio link",
+    "The AGWPE binary frame format and how it differs from KISS",
+    "The safety gauntlet every transmit must pass, and the global inhibit gate",
+    "The shared engineering patterns: injected stream factories, channels, and reconnect loops"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command's job is to move little bursts of text called __packets__ — a ham radio operator's position, a status message, a weather report — between your computer and the wider world. But there is no single 'world' to plug into. Sometimes the packets ride the public internet. Sometimes they go out over a real radio, through a box that turns text into sound and back. Sometimes that box is a physical gadget on a USB cable; sometimes it is a piece of software pretending to be one. The **Transports** layer is the collection of adapters that speaks each of these links so the rest of the program does not have to."
+    },
+    {
+      "p": "Think of it like the mail. You have a letter to send. It does not care whether it leaves your house by the post office, a courier van, or a friend driving across town — it just needs to get there, and replies need to get back. A __transport__ is one of those delivery routes. This chapter walks through the four routes APRS-Command supports: the **APRS-IS** internet backbone, and three ways of reaching a radio — **TCP KISS**, **Serial KISS**, and **AGWPE** — plus **Direwolf**, which is really TCP KISS wearing a friendlier label."
+    },
+    {
+      "code": ""
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where this lives",
+        "text": "Everything in this chapter is in the `Aprs.Transport` project (folder `src/Aprs.Transport`). The real classes are `AprsIsClient`, `TcpKissClient`, `SerialKissClient`, and `AgwpeClient`, sitting behind the interfaces `IAprsIsClient`, `ITcpKissClient`, `ISerialKissClient`, and `IAgwpeClient`."
+      }
+    },
+    {
+      "h2": "The common contract: what every transport promises"
+    },
+    {
+      "p": "There is a deliberately tiny shared interface that captures the essence of 'a delivery route,' called **IAprsTransport**. It is the smallest possible promise a transport can make."
+    },
+    {
+      "code": "public interface IAprsTransport : IAsyncDisposable\n{\n    string Name { get; }\n    IAsyncEnumerable<string> ReadPacketsAsync(CancellationToken cancellationToken);\n    Task SendPacketAsync(string packet, CancellationToken cancellationToken);\n}"
+    },
+    {
+      "p": "Read that as three sentences. `Name` — tell me what you are, so a human can see it. `ReadPacketsAsync` — hand me a never-ending stream of incoming packets as plain text, one at a time, and let me stop listening whenever I pass you a __cancellation token__ (a small object whose only job is to signal 'stop now'). `SendPacketAsync` — take this one packet and get it out onto your link. The `IAsyncDisposable` part means 'when I'm done with you, you get a chance to clean up — close the socket, hang up the phone.'"
+    },
+    {
+      "p": "`IAsyncEnumerable<string>` is worth a plain-words definition because it appears everywhere here. It is a __lazy stream you loop over with `await`__: a sequence whose items may not exist yet. The consumer writes `await foreach (var packet in transport.ReadPacketsAsync(token))` and simply waits, item by item, for as long as packets keep arriving — no polling, no busy-waiting, no callback spaghetti."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The reality is richer than the contract",
+        "text": "In practice each transport does NOT just implement the three-method `IAprsTransport`. Each has its own fuller interface — `IAprsIsClient`, `ITcpKissClient`, and so on — that adds a live connection **State**, a **LastError**, connect/disconnect control, C# **events** that fire on each arrival, and a **transmit result** object describing exactly what happened. The minimal `IAprsTransport` is the lowest common denominator; the per-transport interfaces are what the app actually wires up, because a radio link genuinely needs more knobs than an idealized 'send a string' abstraction admits."
+      }
+    },
+    {
+      "p": "Why keep the minimal interface at all, then? Because it names the shared shape. Anyone reading the code sees instantly that these four very different clients are the same kind of thing, and any future code that only needs 'get me packets, send me packets' can lean on the small contract and ignore the differences."
+    },
+    {
+      "h2": "The shape every client shares"
+    },
+    {
+      "p": "Before diving into each link, it pays to notice that all four clients are built to the same blueprint. Learn it once and every client reads the same way. Here is the per-transport interface for TCP KISS as a representative example."
+    },
+    {
+      "code": "public interface ITcpKissClient : IAsyncDisposable\n{\n    event EventHandler<KissFrameReceivedEventArgs>? FrameReceived;\n    event EventHandler<TcpKissRawPacketReceivedEventArgs>? RawPacketReceived;\n    TcpKissConnectionState State { get; }\n    Exception? LastError { get; }\n    Task ConnectAsync(CancellationToken cancellationToken);\n    Task DisconnectAsync(CancellationToken cancellationToken);\n    IAsyncEnumerable<KissFrame> ReadFramesAsync(CancellationToken cancellationToken);\n    IAsyncEnumerable<TcpKissRawPacketReceivedEventArgs> ReadPacketsAsync(CancellationToken cancellationToken);\n    Task<TcpKissTransmitResult> SendFrameAsync(int portNumber, KissCommandType commandType,\n        IReadOnlyList<byte> ax25Payload, bool transmitConfirmed, CancellationToken cancellationToken);\n}"
+    },
+    {
+      "p": "The recurring pieces, in plain terms: **State** is a traffic light — Disconnected, Connecting, Connected, Reconnecting, or Faulted. **LastError** is the last thing that went wrong, kept around so the UI can show it instead of crashing. The two **events** are doorbells: `RawPacketReceived` rings with a ready-to-use text packet, while the lower-level `FrameReceived` rings with the raw structured frame for anyone who wants the bytes. **ReadPacketsAsync** is the same information delivered as a stream you can `await foreach` over. And **SendFrameAsync** returns not a bare success/failure but a full __result record__ — a small immutable report — saying whether it went, when, from what connection state, and if it failed, why."
+    },
+    {
+      "p": "Why offer both events and a stream for the same data? Because they suit different consumers. A viewmodel that wants to react instantly (flash an icon) subscribes to the event; a background pipeline that wants to process packets in an orderly queue reads the stream. Both are fed from one internal buffer, so nothing is duplicated or lost."
+    },
+    {
+      "h1": "APRS-IS: the internet backbone"
+    },
+    {
+      "p": "**APRS-IS** (the APRS Internet System) is a worldwide network of servers that relay APRS packets over the internet. It is the easiest link to use because it needs no radio at all — just a TCP connection to a server and a login line of plain text. `AprsIsClient` is the client that speaks it."
+    },
+    {
+      "p": "The protocol is charmingly simple: you open a socket, send one line identifying yourself, and then the server streams you packets as text, one per line, forever. Lines that begin with `#` are the server talking to you (comments and status), not real packets. Here is the login line the program constructs."
+    },
+    {
+      "code": "var loginLine = $\"user {configuration.Callsign.Trim()} pass {configuration.Passcode.Trim()} \" +\n                $\"vers {configuration.ApplicationName.Trim()} {configuration.ApplicationVersion.Trim()}\";\nif (!string.IsNullOrWhiteSpace(configuration.Filter))\n{\n    loginLine += $\" filter {configuration.Filter.Trim()}\";\n}"
+    },
+    {
+      "p": "In English: 'I am callsign X, here is my passcode, I am running APRSCommand version Y, and please only send me packets matching this filter.' The __passcode__ is a number derived from your callsign — not a secret password, just a light gate proving you own the call. A passcode of `-1` means 'receive only, I will never transmit,' which is exactly the safe default the program ships with (`ReceiveOnly: true`, `TransmitEnabled: false` in `AprsIsClientConfiguration.Default`). The __filter__ is a request like 'only stations within 100 km of me,' so you are not firehosed with the entire planet's traffic."
+    },
+    {
+      "h2": "The logresp handshake: waiting for the green light"
+    },
+    {
+      "p": "A subtle but important detail: after you send your login line, the server has not yet accepted you. If you blurt out a packet immediately, the server silently throws it away. So the client waits for a specific acknowledgment line before it declares itself Connected."
+    },
+    {
+      "code": "// Wait for the server's logresp line before marking Connected.\n// APRS-IS sends \"# logresp CALLSIGN verified, server ...\" or \"unverified\".\n// Packets sent before this acknowledgment are silently discarded.\nawait WaitForLogrespAsync(opened, connectionCancellation.Token).ConfigureAwait(false);\nSetState(AprsIsConnectionState.Connected);"
+    },
+    {
+      "p": "The wait is capped at five seconds. If the server is slow or non-standard and never sends a clean `# logresp`, the client proceeds anyway rather than hanging forever — the comment in the code spells out that reasoning: 'better to attempt transmit than to hang.' One more careful touch: any real packets that arrived in the same network read as the logresp are not thrown away. They are stashed in a `pendingData` string and replayed into the receive loop the moment it starts, so nothing that arrived early is lost."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Failover built in",
+        "text": "`AprsIsClientConfiguration` carries an optional `FailoverServers` list and an `AllServers()` helper that returns the primary first, then the backups. The default primary is `rotate.aprs2.net:14580`, itself a rotating DNS name that hands out a different healthy server each time — so resilience is layered: rotating DNS, plus an explicit backup list."
+      }
+    },
+    {
+      "h2": "Reconnecting without leaking"
+    },
+    {
+      "p": "Radios and internet links drop. The receive loop is written to survive that. When the stream ends (a read returns zero bytes), and reconnect is enabled, it waits a configured delay, disposes the dead stream, opens a fresh one, re-sends the login line, waits for logresp again, and carries on. The disposal is not an afterthought — the comment flags exactly why it matters: skipping it 'leaks the previous NetworkStream/socket' on every reconnect, which over days of running would exhaust the machine."
+    },
+    {
+      "h1": "KISS and TNCs: getting onto the air"
+    },
+    {
+      "p": "To send APRS over an actual radio you need a __TNC__ — a Terminal Node Controller. In plain terms a TNC is a modem for ham radio: it turns your text packet into the warbling tones the radio transmits, and turns received tones back into text. It can be a small hardware box, or a program like Direwolf running on the same computer."
+    },
+    {
+      "p": "But your computer and the TNC need an agreed way to hand bytes back and forth over a wire (or a socket). That agreement is __KISS__ — 'Keep It Simple, Stupid.' KISS is a wrapping, not a language: it does not care what the packet says, it just marks where each frame begins and ends so neither side gets confused about where one message stops and the next starts. `KissFrameCodec` is the little library that does this wrapping and unwrapping."
+    },
+    {
+      "h2": "Frame markers and escaping"
+    },
+    {
+      "p": "KISS uses one special byte, `0xC0`, called __FEND__ ('frame end'), as a fence post at the start and end of every frame. That raises an obvious problem: what if the packet data itself contains a `0xC0` byte? Then the receiver would think the frame ended early. KISS solves this with __escaping__ — a substitution trick, the same idea as typing `\\\"` inside a quoted string so the quote does not end the string."
+    },
+    {
+      "code": "foreach (var value in payload)\n{\n    switch (value)\n    {\n        case Fend:   // 0xC0 — would look like a frame boundary\n            encoded.Add(Fesc);   // 0xDB, \"an escape follows\"\n            encoded.Add(Tfend);  // 0xDC, \"...it was really a FEND\"\n            break;\n        case Fesc:   // 0xDB — the escape byte itself must be escaped too\n            encoded.Add(Fesc);\n            encoded.Add(Tfesc);  // 0xDD, \"...it was really a FESC\"\n            break;\n        default:\n            encoded.Add(value);\n            break;\n    }\n}"
+    },
+    {
+      "p": "So a real `0xC0` in the data becomes the two bytes `0xDB 0xDC`, and a real `0xDB` becomes `0xDB 0xDD`. The receiver reverses this in `DecodePayload`. The codec is defensive on the way back in: an escape byte with nothing after it, or an escape followed by a byte that is neither of the two legal follow-ups, is recorded as a validation error rather than silently mangled — a `KissFrame` carries its own list of `ValidationErrors` and an `IsValid` flag."
+    },
+    {
+      "h2": "The command byte: which port, what kind"
+    },
+    {
+      "p": "The byte right after the opening FEND packs two things into its two halves (its 'nibbles'): which of up to 16 radio ports the frame is for, and what kind of command it is."
+    },
+    {
+      "code": "var commandByte = (byte)(((portNumber & 0x0F) << 4) | ((int)commandType & 0x0F));"
+    },
+    {
+      "p": "The `KissCommandType` enum lists the kinds — `DataFrame` (0) is an actual packet; the rest (`TxDelay`, `Persistence`, `SlotTime`, and so on) are tuning settings for the TNC's timing. Only `DataFrame` frames are decoded into APRS text; the codec calls the `Ax25AprsPayloadDecoder` to peel the packet out of its lower-level wrapping."
+    },
+    {
+      "h2": "Streaming reassembly: frames don't arrive whole"
+    },
+    {
+      "p": "A crucial real-world detail: bytes arrive from a socket or serial port in arbitrary chunks, not tidy frames. Half a frame may come in one read, the rest in the next; or three frames may arrive glued together. The receive loops handle this by keeping a running `pending` buffer and asking the codec where the last *complete* frame ends before decoding."
+    },
+    {
+      "code": "pending.AddRange(readBuffer.Take(bytesRead));\nvar lastCompleteEnd = KissFrameCodec.FindLastCompleteFrameEnd(pending);\nif (lastCompleteEnd < 0)\n{\n    continue; // nothing complete yet — wait for more bytes\n}\nvar completeBytes = pending.Take(lastCompleteEnd + 1).ToArray();\npending.RemoveRange(0, lastCompleteEnd + 1); // keep the leftover partial frame"
+    },
+    {
+      "p": "This is the standard, robust way to read a __stream protocol__ (one with no message boundaries of its own): buffer, find complete units, process them, and hold the remainder for next time. All three radio clients — TCP KISS, Serial KISS, and AGWPE — use exactly this pattern, which is why fixing a bug in one usually means checking the other two."
+    },
+    {
+      "h2": "AX.25: the packet inside the frame"
+    },
+    {
+      "p": "Inside a KISS data frame is not raw APRS text but an __AX.25 UI frame__ — the actual over-the-air radio packet format, named after the amateur adaptation of the X.25 networking standard. 'UI' means 'Unnumbered Information': a fire-and-forget broadcast with no acknowledgment, which is exactly what APRS wants. `Ax25AprsFrameEncoder` builds these, and `Ax25AprsPayloadDecoder` reads them. The header comment lays out the layout cleanly."
+    },
+    {
+      "code": "// TNC2 format:  SOURCE>DEST,PATH1,PATH2:information\n// AX.25 UI frame layout:\n//   [dest 7 bytes][source 7 bytes][digi1 7]...[digiN 7][control 1][pid 1][info N]\nprivate const byte ControlUi   = 0x03;   // UI frame\nprivate const byte PidNoLayer3 = 0xF0;   // No layer 3 protocol (standard APRS)"
+    },
+    {
+      "p": "Each address is seven bytes: six for the callsign and one for the __SSID__ (the `-9` in `KE4CON-9`, distinguishing your handheld from your base station). A quirk worth knowing: callsign letters are each shifted left by one bit on the wire, so the decoder shifts them back with `(char)(value >> 1)`. The last address field flips its lowest bit to 1 to mark 'no more addresses follow.' The decoder walks addresses by that end bit, then insists the control byte is `0x03` and the PID is `0xF0` before trusting the frame — anything else is flagged as 'not a UI frame' or 'not a no-layer-3 APRS payload.'"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A friendly fallback",
+        "text": "`Ax25AprsPayloadDecoder` first checks `LooksLikeAprsText` — if the payload is all printable characters and contains both `>` and `:`, it accepts it as APRS text directly. Some test tools and simple software TNCs send plain text rather than a full AX.25 frame, and this keeps them working without special cases."
+      }
+    },
+    {
+      "h1": "TCP KISS, Serial KISS, and Direwolf"
+    },
+    {
+      "p": "There are two ways to reach a KISS TNC, and they differ only in the wire underneath. **TCP KISS** (`TcpKissClient`) reaches a TNC over a network socket — host and port. **Serial KISS** (`SerialKissClient`) reaches a TNC over a physical serial/USB cable — a COM port, a baud rate, data bits, parity, stop bits, and a handshake mode (`SerialKissHandshake`: None, XOn/XOff, RTS, or both). Above that difference they are near-identical twins: same KISS codec, same reassembly loop, same channel buffering, same transmit-result records."
+    },
+    {
+      "p": "The one meaningful behavioral difference is a safety flag. Serial KISS talks to hardware that is very likely wired straight to a transmitter, so its `SendFrameAsync` takes an extra `rfSafetyEnabled` argument and refuses to send without it."
+    },
+    {
+      "code": "if (!configuration.TransmitEnabled)\n    return \"Serial KISS transmit is disabled.\";\nif (!rfSafetyEnabled)\n    return \"RF transmit safety settings are not enabled.\";\nif (!transmitConfirmed)\n    return \"Serial KISS transmit confirmation is required.\";"
+    },
+    {
+      "h2": "Direwolf is TCP KISS in a nicer coat"
+    },
+    {
+      "p": "__Direwolf__ is a popular free software TNC: it uses your computer's sound card as the modem, so you need no hardware TNC at all. From APRS-Command's point of view Direwolf is just a KISS TNC listening on a TCP port (8001 by default). So there is no separate 'Direwolf client' — instead there is a `DirewolfProfile`, a friendly named bundle of settings, and a service that converts it into a plain `TcpKissConfiguration`."
+    },
+    {
+      "code": "public TcpKissConfiguration ToTcpKissConfiguration(DirewolfProfile profile)\n{\n    return TcpKissConfiguration.Default with\n    {\n        Host = profile.Host.Trim(),\n        Port = profile.KissPort,\n        Enabled = profile.Enabled,\n        ReconnectEnabled = profile.AutoReconnect,\n        ReceiveEnabled = profile.ReceiveEnabled,\n        TransmitEnabled = profile.TransmitEnabled,\n        SourceName = string.IsNullOrWhiteSpace(profile.SourceName) ? \"Direwolf\" : profile.SourceName.Trim()\n    };\n}"
+    },
+    {
+      "p": "This is a deliberate design choice worth calling out: rather than duplicate a whole client for Direwolf, the code recognizes that Direwolf *is* TCP KISS and simply adapts the friendlier profile onto the existing transport. Less code, fewer bugs, one reassembly loop to maintain. There is also a `DirewolfConnectionTestService` that pokes the host and port with a short probe (3-second default timeout) so a user can click 'Test' in setup and get a clear success or failure before committing."
+    },
+    {
+      "table": {
+        "headers": [
+          "Transport",
+          "Underlying link",
+          "Frame format",
+          "Extra safety knob"
+        ],
+        "rows": [
+          [
+            "APRS-IS",
+            "TCP to internet server",
+            "Plain text lines",
+            "Passcode + confirmation"
+          ],
+          [
+            "TCP KISS",
+            "TCP to a TNC",
+            "KISS-wrapped AX.25",
+            "Transmit confirmation"
+          ],
+          [
+            "Serial KISS",
+            "Serial/USB cable to a TNC",
+            "KISS-wrapped AX.25",
+            "Confirmation + RF safety flag"
+          ],
+          [
+            "Direwolf",
+            "TCP KISS (adapter over sound-card TNC)",
+            "KISS-wrapped AX.25",
+            "Transmit confirmation"
+          ],
+          [
+            "AGWPE",
+            "TCP to AGW packet engine",
+            "AGWPE 36-byte binary frames",
+            "Confirmation + RF safety flag"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "AGWPE: a different binary language"
+    },
+    {
+      "p": "The last transport, `AgwpeClient`, speaks to an **AGW Packet Engine** — another software TNC family (SoundModem, AGWPE itself) with its own wire format. Unlike KISS's byte-stuffed frames, AGWPE uses a fixed **36-byte header** followed by a payload whose length is written into the header, in __little-endian__ order (least significant byte first — the ordering Intel-family CPUs use natively)."
+    },
+    {
+      "code": "var radioPort   = raw[0];\nvar commandType = (char)raw[4];\nvar source      = DecodeCallsign(raw, 8, 10);\nvar destination = DecodeCallsign(raw, 18, 10);\nvar payloadLength = BinaryPrimitives.ReadInt32LittleEndian(raw.AsSpan(28, 4));"
+    },
+    {
+      "p": "Because the length is read straight off the wire, the codec cannot trust it — a corrupt or hostile stream could claim a wildly large or negative length. The decoder clamps it hard, and the comment explains the real danger being prevented."
+    },
+    {
+      "code": "// Reject a negative length and any length larger than the bytes we actually have. A single\n// frame's payload can never exceed the received buffer, and clamping here also prevents the\n// HeaderLength + payloadLength additions below from overflowing on a hostile length.\nif (payloadLength < 0 || payloadLength > raw.Length)\n{\n    errors.Add(\"AGWPE frame payload length is invalid.\");\n    payloadLength = 0;\n}"
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The infinite-loop trap this avoids",
+        "text": "In `DecodeMany` and `FindLastCompleteFrameEnd`, an unchecked oversize length would make `HeaderLength + length` overflow to a negative number, which would march the read offset *backwards* and spin the loop forever — a hang, or a denial-of-service from one bad packet. Bounding the length by the buffer size is what keeps a single corrupt frame from freezing the receive thread. This is a genuine hardening fix, not decoration."
+      }
+    },
+    {
+      "p": "On transmit, AGWPE frames are built with command character `'K'` (send raw AX.25 data), the selected radio port, and the source/destination pulled from the parsed packet. Received data frames are recognized by command characters `'K'`, `'U'`, or `'D'`. It is a different dialect from KISS, but the client wraps it in the same familiar outer shape — state, events, channels, reconnect — so it slots into the app identically."
+    },
+    {
+      "h1": "The safety gauntlet and the global inhibit"
+    },
+    {
+      "p": "Transmitting on a ham radio is a licensed, regulated act, and an accidental transmission — during a drill, or from a half-configured setup — is a real harm. Every radio-capable transport therefore runs each send request through a validation gauntlet *before a single byte reaches the wire*. AGWPE's is representative."
+    },
+    {
+      "code": "if (!configuration.TransmitEnabled)\n    return \"AGWPE transmit is disabled.\";\nif (!transmitConfirmed)\n    return \"AGWPE transmit confirmation is required.\";\nif (!rfSafetyEnabled)\n    return \"AGWPE transmit requires RF transmit safety to be explicitly enabled.\";\nif (stateAtRequest != AgwpeConnectionState.Connected || stream is null)\n    return \"AGWPE client is not connected.\";"
+    },
+    {
+      "p": "Each check returns a plain-English reason string, and any non-null reason turns the whole send into a *failed result* — never an exception, never a silent drop. The layered gates are intentional: transmit is off by default, must be enabled, must be individually confirmed at the moment of sending, and for the RF paths must also have an explicit safety flag set. It takes several deliberate 'yes' answers to key up a radio."
+    },
+    {
+      "h2": "One switch that overrides everything"
+    },
+    {
+      "p": "Above all those per-transport checks sits a single master kill-switch, the **ITransmitInhibitGate**. It exists so that one global condition — most importantly __exercise mode__, a practice drill where nothing should ever actually go on the air — can hard-block every transmit path at once, no matter which feature (beacon, message, weather, iGate) asked to send."
+    },
+    {
+      "code": "var gate = InhibitGate;\nif (gate is not null && gate.IsTransmitInhibited)\n{\n    return AprsIsTransmitResult.Failed(\n        timestamp, normalizedPacket, stateAtRequest,\n        gate.InhibitReason ?? \"Transmit is globally inhibited (exercise mode).\");\n}"
+    },
+    {
+      "p": "In `AprsIsClient` this check runs *first*, before any other validation, so 'a drill can never key up APRS-IS by any path.' The gate interface deliberately lives in the transport layer, not in Services, so the lowest-level transmit code can consult it without depending upward on higher layers. The Services-layer safety authority implements the interface, and the composition root hands the same authority to every client — meaning there is no side door: no transport can be constructed that quietly forgot the inhibit check."
+    },
+    {
+      "h1": "The engineering patterns worth copying"
+    },
+    {
+      "p": "Three patterns recur across all four clients, and understanding them once explains the shape of every transport in the codebase."
+    },
+    {
+      "p": "__Injected stream factories.__ None of the clients open their own socket directly in the normal code path. Each takes a `Func<Configuration, CancellationToken, Task<Stream>>` — a small function that produces the connection — with a real TCP implementation supplied by default. The plain-words payoff: in tests you hand the client a fake stream and drive it with canned bytes, so the entire frame-parsing and reconnect logic can be tested with no network and no radio at all."
+    },
+    {
+      "code": "public AprsIsClient(AprsIsClientConfiguration configuration)\n    : this(configuration, CreateTcpStreamAsync) { }\n\npublic AprsIsClient(AprsIsClientConfiguration configuration,\n    Func<AprsIsClientConfiguration, CancellationToken, Task<Stream>> streamFactory)\n{\n    this.configuration = configuration;\n    this.streamFactory = streamFactory;   // tests pass a fake here\n}"
+    },
+    {
+      "p": "__Channels as an internal mailbox.__ Each client owns an unbounded `Channel<T>` — a thread-safe producer/consumer queue. The receive loop writes each decoded item into the channel; `ReadPacketsAsync` reads from it. This cleanly separates the background thread pulling bytes off the wire from the foreground code consuming packets, with no shared state to corrupt and no locks in the hot path."
+    },
+    {
+      "p": "__Snapshot-under-lock for reconnects.__ The TCP KISS, Serial KISS, and APRS-IS clients guard their mutable connection and state with a small `sync` lock, and — critically — never hold that lock across an `await`. The send path takes an atomic `Snapshot()` of the current stream and state, then does its I/O on that snapshot. The comment states the exact hazard: without it, a concurrent reconnect could swap the stream out 'between the write and the flush.' It is a textbook example of holding a lock for the shortest possible moment while still being correct under concurrency."
+    },
+    {
+      "code": "var (active, stateAtRequest) = Snapshot();  // consistent view, taken atomically\n// ... validate against that snapshot ...\nawait active!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);\nawait active.FlushAsync(cancellationToken).ConfigureAwait(false);"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "One inconsistency to know about",
+        "text": "`AgwpeClient` uses simple auto-properties for `State` and `LastError` and a plain `stream` field rather than the lock-and-snapshot discipline of the other three clients. It works for the common single-threaded-caller case, but it is the odd one out — worth remembering if you ever chase a rare reconnect race on the AGWPE path specifically."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The Transports layer earns its keep by turning five genuinely different ways of moving packets — a plain-text internet feed, byte-stuffed KISS over TCP, the same KISS over a serial cable, a sound-card TNC via Direwolf, and AGWPE's binary frames — into a handful of interchangeable clients that the rest of APRS-Command can treat almost identically. The differences that genuinely matter (a passcode here, an RF-safety flag there, a binary header versus escaped bytes) are preserved; the differences that don't (state tracking, buffering, reconnection) are solved once and reused."
+    },
+    {
+      "p": "The through-line is respect for two hard realities: streams don't arrive in tidy messages, so every reader buffers and reassembles; and transmitting on a radio is consequential, so every send runs a gauntlet of explicit gates topped by a single global inhibit that no code path can bypass. Injected stream factories make all of it testable without hardware, and the snapshot-under-lock pattern keeps it correct while connections drop and rebuild underneath. If you extend the program with a new link tomorrow, the blueprint is already here to copy."
+    }
+  ]
+}

@@ -1,0 +1,291 @@
+{
+  "order": 10,
+  "title": "The Event Bus",
+  "subtitle": "How the parts of APRS-Command tell each other what happened without ever knowing who is listening.",
+  "in_this_chapter": [
+    "The bulletin-board idea: publishers, subscribers, and why decoupling keeps the code maintainable",
+    "What an event actually is — IAprsEvent, AprsEventMetadata, and the generic AprsEventEnvelope<T>",
+    "The AprsEventType menu, and why RawPacketReceived and AprsPacketParsed are two stages of one packet",
+    "A real subscribe (the WebSocket feed) and a real publish (the decoded event log), read line by line",
+    "Inside PublishAsync: snapshotting under a lock, per-handler isolation, and the publish report card",
+    "The disposable subscription receipt and the lapsed-listener leak it prevents",
+    "The 500-event rolling history, the lighter ApplicationEventBus sibling, and the single injected singleton"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Inside APRS-Command, dozens of little machines are running at once. One machine reads raw radio text off a serial cable. Another decodes that text into a real station on the map. Another writes a plain-language line into an on-screen event log. Another streams the same news out over a WebSocket to any external tool that's listening. The obvious way to wire these together would be to have each machine hold a direct reference to every other machine it wants to notify — the decoder would call the map, then call the log, then call the WebSocket service, one after another. That works until it doesn't: every time you add a new listener, you have to go back and edit the decoder to tell it about the new listener. The decoder becomes a tangled hub that knows about the entire application."
+    },
+    {
+      "p": "The __event bus__ is the app's answer to that tangle. An event bus is a shared bulletin board: one part of the program pins up a note (\"a raw packet just arrived,\" \"a packet was successfully parsed,\" \"a station expired\"), and any other part that cares about that kind of note gets handed a copy — without the note-writer knowing or caring who is reading. The writer is called a __publisher__ (or producer); the reader is called a __subscriber__ (or consumer). The bus sits in the middle so the two never have to know each other exists. In APRS-Command this board lives in `AprsEventBus.cs` in the `Aprs.Services` project."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The name to remember",
+        "text": "The interface is IAprsEventBus and the concrete board is AprsEventBus. The kinds of notes are the values of the AprsEventType enum — RawPacketReceived, AprsPacketParsed, StationUpdated, and about forty more."
+      }
+    },
+    {
+      "h2": "Why a bus at all — the problem it prevents"
+    },
+    {
+      "p": "The design goal is __decoupling__: letting two parts of a program cooperate without either one holding a reference to the other. Think of a newspaper. The reporter writes a story and hands it to the paper; subscribers get it on their doorstep. The reporter has never met the subscribers, doesn't know how many there are, and doesn't change a word of the story when someone new subscribes or cancels. That independence is exactly what the event bus buys the codebase."
+    },
+    {
+      "p": "The concrete payoff shows up every time a feature is added. When APRS-Command grew a live WebSocket feed for external tools, the packet-decoding code did not change at all. The WebSocket service simply subscribed to the bus and started receiving the events that were already being published. The publisher (the decoder) and the consumer (the WebSocket feed) were developed, and can be tested, in complete isolation. That is the whole point: __new consumers are additive, not invasive.__"
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The test that proves it",
+        "text": "A healthy event bus lets you answer \"who reacts when a packet is parsed?\" by searching for subscribers, and \"what does the decoder notify?\" by searching for publishes — as two separate lists. You never have to read one to understand the other."
+      }
+    },
+    {
+      "h2": "The vocabulary, defined once"
+    },
+    {
+      "table": {
+        "headers": [
+          "Term",
+          "Plain meaning"
+        ],
+        "rows": [
+          [
+            "Publish",
+            "Pin a note on the board. \"Here's something that happened; whoever cares can react.\""
+          ],
+          [
+            "Subscribe",
+            "Ask the board to hand you a copy of every note of a certain kind, from now on."
+          ],
+          [
+            "Event",
+            "The note itself — a small immutable record describing something that happened, plus metadata about when and where."
+          ],
+          [
+            "Handler",
+            "The function you give the bus that runs each time your kind of note appears."
+          ],
+          [
+            "Subscription",
+            "A little receipt the bus gives you back. Throw it away (dispose it) and you stop receiving notes."
+          ],
+          [
+            "Decoupling",
+            "Two parts cooperating without either holding a direct reference to the other."
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "An event is a note with a stamped envelope"
+    },
+    {
+      "p": "Every note on the board implements one tiny contract, `IAprsEvent`, which promises exactly one thing: a `Metadata` property. Everything the bus needs to route, timestamp, and remember a note lives in that metadata; the actual contents ride along separately."
+    },
+    {
+      "code": "// IAprsEvent.cs — the whole contract\npublic interface IAprsEvent\n{\n    AprsEventMetadata Metadata { get; }\n}\n\n// AprsEventBase.cs — a ready-made base for events\npublic abstract record AprsEventBase(AprsEventMetadata Metadata) : IAprsEvent;"
+    },
+    {
+      "p": "`AprsEventMetadata` is the stamped envelope. It is an immutable __record__ (a C# type built for holding data that never changes after it's created — like a printed receipt) carrying a unique `EventId`, the `EventType` (which of the ~forty kinds of note this is), an `EventCategory` (a coarser grouping — Packet, Station, Weather, and so on), a UTC timestamp, where the data came from, a severity, and a set of optional \"related\" fields — the callsign, object name, message id, or packet id this note is about. Those related fields are what let a consumer filter (\"only notes about station W1AW\") without cracking open the payload."
+    },
+    {
+      "code": "// AprsEventMetadata.cs (fields, abbreviated)\npublic sealed record AprsEventMetadata(\n    Guid EventId,\n    AprsEventType EventType,\n    AprsEventCategory EventCategory,\n    DateTimeOffset TimestampUtc,\n    ExternalSourceMetadata SourceMetadata,\n    AprsEventSeverity Severity = AprsEventSeverity.Info,\n    string? RelatedCallsign = null,\n    string? RelatedObjectName = null,\n    string? RelatedMessageId = null,\n    string? RelatedPacketId = null,\n    string? Summary = null,\n    string? Notes = null);"
+    },
+    {
+      "p": "The contents of the note — the actual station, log entry, or text — travel in a generic wrapper, `AprsEventEnvelope<TPayload>`. \"Generic\" here means the box is the same shape no matter what you put in it; the `<TPayload>` is a fill-in-the-blank for the cargo type. One publisher stuffs a `DecodedEventLogEntry` in the box, another stuffs a plain `string`, and the bus treats both identically because both are just an `IAprsEvent` with metadata."
+    },
+    {
+      "code": "// AprsEventEnvelope.cs — one box, any cargo\npublic sealed record AprsEventEnvelope<TPayload>(\n    AprsEventMetadata Metadata,\n    TPayload? Payload = default,\n    IReadOnlyDictionary<string, string>? Attributes = null) : AprsEventBase(Metadata);"
+    },
+    {
+      "h2": "The kinds of note: the AprsEventType menu"
+    },
+    {
+      "p": "`AprsEventType` is the fixed menu of every kind of note the bus understands. It reads like a table of contents for everything interesting that can happen in the app — and the two the outline for this chapter singles out are right at the top."
+    },
+    {
+      "code": "// AprsEventType.cs (first several of ~44 values)\npublic enum AprsEventType\n{\n    RawPacketReceived,     // radio text arrived, not yet understood\n    RawPacketTransmitted,\n    AprsPacketParsed,      // that text was decoded into a real packet\n    AprsPacketParseFailed,\n    StationCreated,\n    StationUpdated,\n    StationExpired,\n    ObjectCreated,\n    // ... WeatherUpdated, MessageReceived, GpsUpdated,\n    //     PacketTransmitBlocked, IGatePacketGated, AlertTriggered, ...\n}"
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Two notes, two moments",
+        "text": "RawPacketReceived and AprsPacketParsed describe the same packet at two different stages of its life. RawPacketReceived means \"undigested text just came off a transport.\" AprsPacketParsed means \"we successfully turned that text into a structured packet.\" A consumer that wants to log everything off the air subscribes to the first; a consumer that only cares about packets it can actually plot subscribes to the second. Because they are separate note types, each consumer asks for exactly the stage it needs."
+      }
+    },
+    {
+      "h2": "Subscribing: asking the board for a kind of note"
+    },
+    {
+      "p": "There are two ways to subscribe. `Subscribe(eventType, handler)` says \"hand me only this one kind of note.\" `SubscribeAll(handler)` says \"hand me everything.\" Both take a __handler__ — a function the bus will call for each matching note — and both hand back an `AprsEventSubscription` receipt."
+    },
+    {
+      "code": "// IAprsEventBus.cs\nAprsEventSubscription Subscribe(\n    AprsEventType eventType,\n    Func<IAprsEvent, CancellationToken, ValueTask<AprsEventHandlerResult>> handler);\n\nAprsEventSubscription SubscribeAll(\n    Func<IAprsEvent, CancellationToken, ValueTask<AprsEventHandlerResult>> handler);"
+    },
+    {
+      "p": "Read that handler signature in plain words: \"give me an event and a cancellation token, and I'll go do some work and eventually report back whether I handled it.\" The `CancellationToken` is a standard .NET stop-signal — a way for the caller to say \"never mind, abandon this\" — and it's threaded through so a slow handler can bail out cleanly. The return value, an `AprsEventHandlerResult`, is the handler's honest yes/no: did I cope with this note, or did I fail?"
+    },
+    {
+      "code": "// AprsEventHandlerResult.cs — a handler's answer\npublic sealed record AprsEventHandlerResult(\n    bool Success, string? ErrorMessage = null, Exception? Exception = null)\n{\n    public static AprsEventHandlerResult Handled { get; } = new(true);\n    public static AprsEventHandlerResult Failed(string errorMessage, Exception? exception = null)\n        => new(false, errorMessage, exception);\n}"
+    },
+    {
+      "p": "Here is a real subscribe, from the live WebSocket feed. When the feed starts, it subscribes to everything and forwards each event to its connected clients, then reports success. Notice what the WebSocket service does not do: it never mentions the decoder, the map, or any publisher. It only mentions the bus."
+    },
+    {
+      "code": "// WebSocketEventStreamService.cs — a real SubscribeAll\nsubscription ??= eventBus?.SubscribeAll(async (evt, token) =>\n{\n    await BroadcastAsync(evt, token).ConfigureAwait(false);\n    return AprsEventHandlerResult.Handled;\n});"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Reading ??= and ?.",
+        "text": "subscription ??= ... means \"only subscribe if we haven't already\" — it prevents a double-subscription if Start is called twice. eventBus?. means \"only if a bus was actually supplied\" — the service tolerates running without one. Small guards, but they keep the feed from misbehaving on restart."
+      }
+    },
+    {
+      "h2": "The receipt is the off-switch"
+    },
+    {
+      "p": "The `AprsEventSubscription` the bus hands back is more than a token — it is the only way to stop listening. It implements `IDisposable`, the standard .NET pattern for \"something you're expected to clean up when you're done.\" Disposing it runs the exact un-hook logic the bus prepared at subscribe time, and it's written to be safe to call twice."
+    },
+    {
+      "code": "// AprsEventSubscription.cs\npublic sealed class AprsEventSubscription : IDisposable\n{\n    private readonly Action dispose;\n    private bool disposed;\n    // ...\n    public void Dispose()\n    {\n        if (disposed) return;   // idempotent: calling twice is harmless\n        disposed = true;\n        dispose();              // runs the bus's Unsubscribe for this exact id\n    }\n}"
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Why this matters: the lapsed-listener leak",
+        "text": "If a subscriber holds a handler on the bus but the object that owns it is otherwise finished, the bus keeps a reference to it forever — the object can never be garbage-collected, and it keeps reacting to events it no longer cares about. This is the classic \"lapsed listener\" memory leak. The cure is discipline: whoever subscribes must dispose the subscription when they shut down. The WebSocket service does exactly this — subscription?.Dispose() in its StopAsync — which is why starting and stopping the feed repeatedly doesn't slowly leak."
+      }
+    },
+    {
+      "h2": "Publishing: pinning the note"
+    },
+    {
+      "p": "Publishing is the mirror image, and even simpler for the caller: build an event, hand it to `Publish`. Here is a real one from `DecodedEventLogService`, which turns each decoded log entry into a bus event so the rest of the app can react. It assembles the metadata, wraps the entry and some attributes in an envelope, and drops it on the board."
+    },
+    {
+      "code": "// DecodedEventLogService.cs — a real Publish\nvar metadata = new AprsEventMetadata(\n    entry.EventId,\n    MapEventType(entry.EventType),\n    MapEventCategory(entry.EventCategory),\n    entry.EventTimestampUtc,\n    CreateSourceMetadata(entry),\n    MapSeverity(entry.Severity),\n    RelatedCallsign: entry.SourceCallsign,\n    // ... related object / message / packet ids, summary, notes\n    Summary: entry.Summary,\n    Notes: entry.Notes);\n\neventBus.Publish(new AprsEventEnvelope<DecodedEventLogEntry>(metadata, entry, attributes));"
+    },
+    {
+      "p": "The publisher's whole world is those two lines: build the note, call `Publish`. It has no idea whether zero or five consumers will react, and it doesn't wait around to find out in any way it has to reason about. That ignorance is the feature."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Guard before you publish",
+        "text": "DecodedEventLogService checks if (eventBus is null) return; before doing any of this. The bus is an optional collaborator — the service is fully functional without one, and only lights up the event stream when a bus is wired in. That keeps the service easy to test in isolation and impossible to crash by leaving the bus out."
+      }
+    },
+    {
+      "h2": "Inside the board: how Publish actually routes a note"
+    },
+    {
+      "p": "`PublishAsync` is the heart of the bus, and it's worth reading line by meaningful line because it encodes three deliberate safety decisions."
+    },
+    {
+      "code": "// AprsEventBus.cs — the routing core (abridged)\npublic async Task<AprsEventPublishResult> PublishAsync(IAprsEvent aprsEvent, CancellationToken ct = default)\n{\n    Subscriber[] subscribers;\n    lock (syncRoot)                                   // (1) take a consistent snapshot\n    {\n        AddToHistory(aprsEvent);\n        var typed = typedSubscribers.TryGetValue(aprsEvent.Metadata.EventType, out var t) ? t : [];\n        subscribers = allSubscribers.Concat(typed).ToArray();\n    }\n\n    var results = new List<AprsEventHandlerResult>(subscribers.Length);\n    foreach (var subscriber in subscribers)\n    {\n        if (ct.IsCancellationRequested) { results.Add(AprsEventHandlerResult.Failed(\"...cancelled.\")); break; }\n        try\n        {\n            var result = await subscriber.Handler(aprsEvent, ct).ConfigureAwait(false);\n            results.Add(result);\n        }\n        catch (Exception ex)                          // (2) one bad handler can't sink the rest\n        {\n            results.Add(AprsEventHandlerResult.Failed(ex.Message, ex));\n        }\n    }\n    return new AprsEventPublishResult(aprsEvent, subscribers.Length, results);\n}"
+    },
+    {
+      "p": "__Decision 1 — snapshot under a lock.__ The `lock (syncRoot)` block copies the current subscriber list into a fresh array, then releases the lock before any handler runs. `syncRoot` is a private object used purely as a \"talking stick\": only one thread may hold it at a time, so the subscriber lists can't be corrupted by a subscribe happening on another thread mid-publish. Crucially, the handlers themselves run outside the lock — so a slow handler can't freeze the whole bus, and a handler that subscribes or unsubscribes while reacting won't deadlock or throw \"collection modified.\""
+    },
+    {
+      "p": "__Decision 2 — one bad handler can't sink the rest.__ Each handler runs inside its own `try/catch`. If a subscriber throws, the bus catches it, records the failure as a `Failed` result, and keeps going down the list. A crash in the WebSocket feed can't stop the on-screen log from updating. This directly honors the project rule \"do not swallow exceptions silently\" — the exception isn't discarded, it's captured into the result the publisher can inspect afterward."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Sequential, not fan-out",
+        "text": "Handlers run one after another with await, in order: all-subscribers first, then the type-specific ones. This is a deliberate simplicity choice over firing them all in parallel — it makes the order predictable and the failure handling easy to reason about. The trade-off is that one genuinely slow handler delays the ones behind it. For this app's event volumes that's a fair bargain; if it ever isn't, the seam to change is this single loop."
+      }
+    },
+    {
+      "p": "__Decision 3 — a full report card.__ `PublishAsync` returns an `AprsEventPublishResult` bundling the original event, how many subscribers it reached, and every handler's result. Its `Success` is true only if all of them succeeded. A publisher that cares can check; one that doesn't can ignore it. There's also a synchronous `Publish` that simply waits on the async version — a convenience for callers (like the log service above) that aren't themselves async."
+    },
+    {
+      "code": "// AprsEventPublishResult.cs\npublic sealed record AprsEventPublishResult(\n    IAprsEvent Event, int SubscriberCount, IReadOnlyList<AprsEventHandlerResult> HandlerResults)\n{\n    public bool Success => HandlerResults.All(result => result.Success);\n}"
+    },
+    {
+      "h2": "The board also remembers: recent-event history"
+    },
+    {
+      "p": "The bus isn't only a pass-through; it keeps a short rolling memory. Every published event is added to a `recentEvents` list, capped at 500 by default, oldest dropped first. That memory is what lets a screen that opens late still show what just happened, instead of a blank slate."
+    },
+    {
+      "code": "// AprsEventBus.cs — bounded history\nprivate void AddToHistory(IAprsEvent aprsEvent)\n{\n    if (configuration.MaximumRecentEvents <= 0) return;\n    recentEvents.Add(aprsEvent);\n    while (recentEvents.Count > configuration.MaximumRecentEvents)\n        recentEvents.RemoveAt(0);          // drop the oldest\n}\n\n// AprsEventBusConfiguration.cs\npublic sealed record AprsEventBusConfiguration(int MaximumRecentEvents)\n{\n    public static AprsEventBusConfiguration Default { get; } = new(500);\n}"
+    },
+    {
+      "p": "The on-screen Event Monitor is the natural customer for that memory. `EventMonitorViewModel` doesn't subscribe to a live firehose at all in its main path — it just asks the bus, \"what happened recently?\" via `GetRecentEvents()`, and can wipe the board with `ClearHistory()`. Because the history is capped, this stays cheap no matter how long the app runs."
+    },
+    {
+      "code": "// EventMonitorViewModel.cs\nIEnumerable<IAprsEvent> events = eventBus.GetRecentEvents();   // newest first\n// ...\neventBus.ClearHistory();"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Stateless-friendly by design",
+        "text": "The 500-event cap keeps this consistent with APRS-Command's broader habit of session-local, bounded memory rather than unbounded history. The board remembers enough to be useful and then forgets — no file grows without limit behind your back."
+      }
+    },
+    {
+      "h2": "One bus per family: the second, simpler board"
+    },
+    {
+      "p": "There are actually two buses, and the difference is instructive. `AprsEventBus` carries __domain__ events — the radio-and-station facts, rich with metadata, async handlers, and history. Alongside it, `ApplicationEventBus` carries lighter __application/UI__ events, and it's deliberately plainer: synchronous handlers (`Action<ApplicationEvent>`, no return value, no async), no history, no report card."
+    },
+    {
+      "code": "// ApplicationEventBus.cs — the lighter sibling\npublic IDisposable Subscribe(ApplicationEventType eventType, Action<ApplicationEvent> handler) { /* ... */ }\npublic IDisposable SubscribeAll(Action<ApplicationEvent> handler) { /* ... */ }\npublic void Publish(ApplicationEvent applicationEvent)\n{\n    Action<ApplicationEvent>[] handlers;\n    lock (syncRoot) { /* snapshot, same pattern */ }\n    foreach (var handler in handlers) handler(applicationEvent);\n}"
+    },
+    {
+      "p": "They share the same publish/subscribe DNA — snapshot under a lock, hand back a disposable receipt, un-hook on dispose — but the domain bus pays for extras (async, results, history) that the UI bus doesn't need. Splitting them keeps each fit for purpose: heavy machinery where the physics of radio traffic warrants it, a featherweight version where a menu just needs to tell a window that a setting changed."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Which bus to reach for",
+        "text": "If the thing that happened is about packets, stations, weather, messages, or transmit safety — anything in the AprsEventType menu — it belongs on AprsEventBus. If it's an app-level nudge between UI pieces with no domain weight, it belongs on ApplicationEventBus. When in doubt, the presence of an AprsEventType value is the tell."
+      }
+    },
+    {
+      "h2": "Where the bus comes from: one board, shared by all"
+    },
+    {
+      "p": "For the bulletin-board metaphor to work, everyone must be looking at the same board. That's guaranteed at startup in `DesktopRuntime`, where the bus is registered as a __singleton__ — one instance for the entire application's lifetime — in the dependency-injection container. Every part of the app that asks for an `IAprsEventBus` gets that same one."
+    },
+    {
+      "code": "// DesktopRuntime.cs — one board for everybody\nservices.AddSingleton<IAprsEventBus, AprsEventBus>();\n// ...later, handed to each collaborator by the container:\n//   new LocalRestApiService(..., eventBus: provider.GetRequiredService<IAprsEventBus>());\n//   new WebSocketEventStreamService(..., eventBus: provider.GetRequiredService<IAprsEventBus>());\n//   new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>());"
+    },
+    {
+      "p": "This is also why every collaborator depends on the interface `IAprsEventBus`, never the concrete `AprsEventBus`. In a test you can hand a service a fake bus and watch exactly what it publishes, or feed a subscriber events by hand — no radios, no threads, no real board required. The seam that decouples producers from consumers at runtime is the very same seam that makes each of them testable alone."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Singleton, not static",
+        "text": "The board is a single shared instance, but it is not a global static variable. It's handed to each part through its constructor by the DI container. That distinction is what keeps the code honest: a class's dependencies are visible in its constructor, and a test can supply a different bus without any global state to reset."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The event bus is the app's nervous system: it lets the many independent machines inside APRS-Command react to each other's news without any of them being wired directly together. A publisher builds a small immutable note and drops it on a shared board; subscribers that asked for that kind of note get a copy; nobody on either side holds a reference to anybody on the other. New features arrive as new subscribers, not as edits to old publishers — which is exactly how a codebase stays workable long after its author has moved on."
+    },
+    {
+      "bullets": [
+        "__Decoupling is the whole point.__ Publishers name a note type, not a recipient. The decoder doesn't know the WebSocket feed exists — and that ignorance is what lets the feed be added, tested, and removed without touching the decoder.",
+        "__Events are stamped, immutable notes.__ Every event is an IAprsEvent carrying AprsEventMetadata (who, when, what kind, related callsign/object/message) with the real cargo riding in a generic AprsEventEnvelope<T>. Route on the envelope, unwrap the payload only if you care.",
+        "__RawPacketReceived vs. AprsPacketParsed are the same packet at two life stages__ — undigested text versus a structured packet — so each consumer subscribes to exactly the moment it needs.",
+        "__The subscription is the off-switch.__ Subscribe returns a disposable receipt; disposing it un-hooks you. Skip that and you get the lapsed-listener leak. The WebSocket service disposing on stop is the model to copy.",
+        "__The board is defensive.__ Publish snapshots subscribers under a lock, runs each handler outside the lock in its own try/catch, and returns a per-handler report — so one slow or throwing consumer can't freeze or crash the others, and nothing is swallowed silently.",
+        "__The board remembers, but only a little.__ A 500-event rolling history lets late-opening screens catch up, capped so it never grows without bound — consistent with the app's session-local memory habit.",
+        "__Two buses, fit for purpose.__ Heavyweight AprsEventBus (async, results, history) for domain facts; featherweight ApplicationEventBus (synchronous, no history) for UI nudges. Same DNA, different weight.",
+        "__One shared board, injected as an interface.__ Registered as a singleton in DesktopRuntime and handed around as IAprsEventBus — which is simultaneously what makes it shared at runtime and trivially fakeable in tests."
+      ]
+    }
+  ]
+}

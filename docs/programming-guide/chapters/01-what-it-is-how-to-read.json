@@ -1,0 +1,235 @@
+{
+  "order": 1,
+  "title": "What APRS Command Is, and How to Read This Book",
+  "subtitle": "A plain-language orientation to the program, the parts it is built from, and the stable-numbering, dated-amendment discipline that keeps this book alive as the code grows.",
+  "in_this_chapter": [
+    "What APRS Command is, and the story of why it exists at all",
+    "Who this book is written for — and how to read it beside the code",
+    "The receive-first idea that shapes the whole design",
+    "The seven projects the program is built from, and why they are kept apart",
+    "How the book is organized into six parts",
+    "The stable section numbers and dated AMENDS / ADDS amendment model",
+    "The Amendments Register, and the one rule that keeps numbers from ever shifting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "__APRS Command__ is a desktop program for amateur (\"ham\") radio operators. It shows a live map of nearby radio stations, lets you send and receive short digital messages and position reports, and turns a scatter of radio traffic into a single shared picture of what is happening in an area — who is where, what the weather is doing, where the resources and hazards are. It runs from one codebase on Windows, macOS, Linux, and the Raspberry Pi, and it is written in __C#__ on __.NET 10__ with the __Avalonia__ user-interface framework."
+    },
+    {
+      "p": "The name for that shared picture is __APRS__ — the Automatic Packet Reporting System. This book does not assume you know what any of that means yet; every term gets explained in plain words the first time it appears, and the chapters that follow build the whole picture from the ground up. What matters here, at the very start, is the spirit of the thing. APRS was created in the 1980s by __Bob Bruninga, WB4APR__, not as a way to track vehicles but as a __situational-awareness__ tool: a way for radio operators to share, in real time, what is going on around them. That vision — a common operating picture for emergencies, public-service events, and any operation where hams need to see the whole board — guides every design decision in this program."
+    },
+    {
+      "p": "There is a second, sadder reason this program exists in the exact form it does. A beloved earlier APRS client, __UI-View32__ by __Roger Barker, G4IDE__, was closed-source. When Roger passed away in 2004, the source code was destroyed at his request. The program could never again be fixed, updated, or moved to a new operating system, and a tool that many operators relied on slowly died as the world moved on around it. APRS Command is released under the __GPL v3__ license specifically so that can never happen to it: no one can take it closed, no one can destroy its source, and if the original author is gone tomorrow, any ham in the world can pick it up and carry it forward. This very book is part of that same promise — it exists so the reasoning behind the code survives, not just the code."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one-sentence version",
+        "text": "APRS Command is a cross-platform, open-source APRS client built to give ham operators a shared, real-time operating picture; this book explains not just what the code does but why it was written the way it was, so the project can outlive its author."
+      }
+    },
+    {
+      "h2": "Who this book is for, and how to read it"
+    },
+    {
+      "p": "This is the __Programming Guide Book__ — the developer-and-maintainer companion to the separate operator's __User Manual__. It is written for three readers at once: a future maintainer who has to change the code safely, a curious newcomer who has never written a line of C#, and the project's own posterity — whoever inherits this program years from now. The standard it holds itself to is deliberately high: the thoroughness of a doctoral thesis, expressed in the language of an everyday person. Nothing is dumbed down and nothing is left mysterious."
+    },
+    {
+      "p": "Every section answers the same three questions in the same order: __what__ it does, in one plain sentence; __why__ it was built this way, including the alternative that was rejected and the problem the chosen shape prevents; and __how__ it actually works, in real code from the real source, explained line by meaningful line. Read this book beside the code, not instead of it — the file and method names are real, and you are meant to open them. When a piece of jargon appears for the first time, it is defined right there, usually with a plain-world comparison, so you never have to already know the vocabulary to follow the argument."
+    },
+    {
+      "h2": "The theme that runs through everything: receive-first"
+    },
+    {
+      "p": "If you remember one idea before reading anything else, remember this one, because it shapes the whole design: __receive-first__. Listening to the radio costs nothing and breaks no rules, so the app listens freely, by default, the moment it starts. __Transmitting__ — actually putting a signal on the air or posting to the shared internet backbone — is the opposite. It is a serious, regulated act: you must identify yourself with a real, licensed callsign, you must not jam a shared frequency, and during a training drill you must be able to guarantee that nothing leaks onto the real air."
+    },
+    {
+      "p": "So in APRS Command, transmitting is never assumed; it is earned. Every condition that would make a transmission legal or safe starts out as \"no,\" and only a deliberate, correct configuration turns it to \"yes.\" You will see this asymmetry echoed everywhere — in how the network connection defaults to receive-only, in how radio ports must be explicitly enabled before they can key up, and above all in the single locked door that every outgoing packet must pass through (the subject of §11, the chapter that set this book's voice). Receive-first is not a slogan; it is a structural commitment you can point at in the source."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A few terms, in plain words",
+        "text": "A codebase is simply all the source files that make up the program. A project (here, a .csproj) is one buildable box of related code. A layer is a project with a defined job that is only allowed to depend on the layers beneath it. GPL v3 is an open-source license that guarantees the source must always stay open and available. A callsign is the unique, government-issued identifier a licensed ham transmits under. None of this requires prior programming knowledge to follow."
+      }
+    },
+    {
+      "h2": "How the program is organized — the parts"
+    },
+    {
+      "p": "APRS Command is not one giant blob of code. It is deliberately split into separate __projects__, each a small box with one clear job, arranged in __layers__ so that dependencies only ever point downward. Think of it as a building: the foundation knows nothing about the roof, but the roof rests on everything below it. The lowest layer understands the radio protocol and nothing else; the top layer draws the windows and buttons and rests on all the layers below. This separation is enforced by the compiler itself — a project simply cannot reach a project it was not given permission to reference — so the boundaries cannot quietly rot over time."
+    },
+    {
+      "code": "// Dependency direction is downward-only, enforced at compile time by ProjectReference.\n// A layer may see the layers below it, never the layers above.\n//\n//   Aprs.Core         (pure APRS protocol: packet types + parser, no I/O, no UI)\n//        ^\n//   Aprs.Transport    (moving bytes: APRS-IS, serial/TCP KISS, AGWPE)\n//        ^\n//   Aprs.Services     (the brains: stations, beacons, iGate, digipeater, alerts, safety)\n//        ^\n//   Aprs.Mapping      (map symbols, tile providers, Mapsui glue)\n//        ^\n//   Aprs.Desktop      (Avalonia UI + the composition root that wires it all together)\n//\n//   AprsCommand.Api / .Contracts  (optional local REST + WebSocket surface + shared DTOs)",
+      "lang": "csharp"
+    },
+    {
+      "p": "The reason for this discipline is exactly the lesson of UI-View32. Protocol parsing, network I/O, business rules, and the user interface all change at different speeds and for different reasons; keeping them physically apart is what prevents the tangled coupling that made older clients impossible to port to new platforms. Here is what each box does and, just as importantly, what it is forbidden to do:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Project",
+          "Its one job",
+          "What it must never touch"
+        ],
+        "rows": [
+          [
+            "Aprs.Core",
+            "APRS packet types and the parser — pure protocol logic",
+            "No serial, no network, no files, no UI"
+          ],
+          [
+            "Aprs.Transport",
+            "Carrying bytes in and out: APRS-IS, KISS, AGWPE",
+            "No business rules, no UI"
+          ],
+          [
+            "Aprs.Services",
+            "The business logic: stations, beacons, iGate, digipeat, alerts, transmit safety",
+            "No UI; reaches Core/Transport only through interfaces"
+          ],
+          [
+            "Aprs.Mapping",
+            "Map symbols, tile sources and cache, Mapsui integration",
+            "No transmit logic"
+          ],
+          [
+            "Aprs.Desktop",
+            "The Avalonia UI — views, viewmodels, and the composition root",
+            "No raw sockets or parser calls; talks to services"
+          ],
+          [
+            "AprsCommand.Api / .Contracts",
+            "Optional local REST API, WebSocket stream, and shared DTOs",
+            "Ships disabled, read-only, transmit blocked by default"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "All seven projects, plus the test projects, are gathered in one Visual Studio __solution__ file, `CrossPlatformAprs.sln` — the single entry point a developer opens to build the whole program. Correctness is guarded by two test projects: `tests/Aprs.Tests`, a suite of roughly twelve hundred automated checks, and `tests/Aprs.FuzzHarness`, which throws torrents of malformed and hostile input at the parser to prove it never crashes. The whole thing targets .NET 10, with the exact toolchain version pinned in `global.json` so every contributor builds against the same compiler."
+    },
+    {
+      "h2": "How this book is organized"
+    },
+    {
+      "p": "The book follows the same downward path as the code: it starts at the surface with orientation, descends into the pure protocol core, works outward through transport and services, and finishes at the user interface and the concerns of long-term health. There are six parts and, at the time of writing, twenty-two numbered chapters. You are reading §1 now. The chapter numbers are fixed and meaningful — more on why that matters in a moment."
+    },
+    {
+      "table": {
+        "headers": [
+          "Part",
+          "Covers",
+          "Chapters"
+        ],
+        "rows": [
+          [
+            "I — Orientation",
+            "What the program is, the architecture at a glance, the project layout",
+            "§1–§3"
+          ],
+          [
+            "II — The Core Domain",
+            "Packets as data, the parser family, position and specialized decoders",
+            "§4–§7"
+          ],
+          [
+            "III — Moving Data",
+            "Transports, async streams and back-pressure, the event bus",
+            "§8–§10"
+          ],
+          [
+            "IV — The Services Layer",
+            "Transmit safety, station state, replay/training, feature services, persistence",
+            "§11–§15"
+          ],
+          [
+            "V — The Desktop App",
+            "Composition & startup, MVVM, the map, extension surfaces",
+            "§16–§19"
+          ],
+          [
+            "VI — Quality & Longevity",
+            "The test suite, how the codebase is meant to grow, how this book is maintained",
+            "§20–§22"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Chapter §11, __The Transmit-Safety Authority__, was written first, before all the others, as the calibration piece — the sample that locked this book's voice and depth before the rest were generated. If you want to feel the standard the whole book is held to, read §11 early. It is also the fullest expression of the receive-first theme introduced above."
+    },
+    {
+      "h2": "How this book is maintained — stable numbers, dated amendments"
+    },
+    {
+      "p": "A program under active development changes constantly, and a book that has to be reprinted from scratch every time a paragraph goes stale is a book nobody keeps current. So this guide is maintained by a specific discipline, borrowed from the way technical standards and legal codes stay current without being reissued cover to cover. The rule is simple and absolute: __section numbers are permanent__. Once §11 means the Transmit-Safety Authority, it means that forever. New material is *added* with a fresh number; it is never *inserted* in a way that pushes existing numbers up. A cross-reference written today still points at the same section a decade from now."
+    },
+    {
+      "p": "When something does change, the change ships as its own short, dated, standalone __amendment__ document rather than as a silent edit buried in a reprint. Each amendment carries one of two tags so its nature is obvious at a glance:"
+    },
+    {
+      "code": "AMENDS §11.3   // revises existing material within section 11.3\nADDS   §23     // adds an entirely new section, numbered after the last one\n\n// An amendment is dated, printable on its own, and appended to the book.\n// Existing section numbers are never renumbered to make room — only extended.",
+      "lang": "csharp"
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one discipline that makes this work",
+        "text": "Never renumber. To revise, issue an AMENDS for the existing number. To add, issue an ADDS with the next unused number. This is what lets improvements accumulate over years without invalidating a single reference anyone has ever written — \"we won't kill so many trees,\" and no reader is ever left unsure which edition they hold."
+      }
+    },
+    {
+      "p": "To keep all of this legible, the core book carries an __Amendments Register__ — a running table, maintained in §22, that lists every amendment ever issued with its date, its tag, and a one-line summary. A reader can glance at the register and know exactly what state the book is in and which loose amendment pages, if any, belong appended to it. The register is empty at first publication; its first rows will look like this:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Date",
+          "Tag",
+          "Summary"
+        ],
+        "rows": [
+          [
+            "—",
+            "(none yet)",
+            "First publication — no amendments issued"
+          ],
+          [
+            "(future)",
+            "AMENDS §X.Y",
+            "Revises the named subsection; supersedes the prior text"
+          ],
+          [
+            "(future)",
+            "ADDS §Z",
+            "Adds a new section; existing numbers unchanged"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The book is produced in three formats from a single source. The __Markdown__ files in the repository are the living source of truth — they live beside the code, travel with it through version control, and are the thing you edit. The polished __PDF__ and __Word__ editions are generated from that Markdown for reading, printing, and sharing; they are never hand-edited. Because the source lives next to the code, a __freshness manifest__ maps each chapter to the source files it describes, so a single change to the code can flag exactly which chapters need a look — the guide is designed to be kept honest, not to drift."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "APRS Command exists to make sure a tool the community depends on can never again be lost the way UI-View32 was — and this book exists for the same reason, one level up: to preserve the *reasoning*, not just the code, so a stranger years from now can understand every decision well enough to carry the project forward. Read it beside the source, expect every term to be explained, and expect every design choice to come with the alternative it beat and the problem it prevents."
+    },
+    {
+      "p": "Two ideas carry through everything that follows. First, __receive-first__: listening is free and default, transmitting is earned and deliberate — you will see that asymmetry structurally, not just rhetorically. Second, __layered separation__: seven small projects with compiler-enforced boundaries, so the parts can evolve independently and the whole stays portable. Hold those two, and the rest of the book is elaboration."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "For the maintainer of this book",
+        "text": "The numbering discipline is not optional decoration — it is the mechanism that lets the guide grow for years without ever being invalidated. When you improve a section, issue an AMENDS; when you document something new, issue an ADDS with the next free number and log it in the Amendments Register. Never renumber an existing section. That single rule is what keeps this book, like the program it documents, alive after its author."
+      }
+    }
+  ]
+}

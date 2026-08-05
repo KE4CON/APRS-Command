@@ -1,0 +1,271 @@
+{
+  "order": 7,
+  "title": "The Specialized Parsers",
+  "subtitle": "Five format-specific decoders — MIC-E, object/item, weather, telemetry, and message — that turn the trickiest APRS packet types into clean, mappable data.",
+  "in_this_chapter": [
+    "Why APRS needs a whole family of parsers instead of one",
+    "MIC-E: how position data is smuggled into the callsign field with bit tricks",
+    "Objects and items: named markers other stations place on the map",
+    "Weather: fixed-column fields and the dual position/positionless forms",
+    "Telemetry: numbers now, their meaning later",
+    "Messages: acks, rejects, bulletins, and the case-sensitivity trap",
+    "The design instincts that keep all five parsers honest"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS (the Automatic Packet Reporting System) is a ham-radio data network where every transmission is a short text line called a __packet__. Chapter 6 covered the ordinary position report, where a station simply says \"here I am, at this latitude and longitude.\" But APRS carries far more than plain positions, and several of its packet types pack their information in ways that look, at first glance, like line noise. This chapter is a tour of the five parsers that handle those harder formats."
+    },
+    {
+      "p": "A __parser__ is just a piece of code that reads raw text and pulls out its meaning — the same job your brain does when it reads \"3:45pm\" and understands \"quarter to four in the afternoon.\" Each of the five parsers here specializes in one wire format: **AprsMicEParser** (compressed position from trackers), **AprsObjectItemParser** (named markers), **AprsWeatherParser** (weather stations), **AprsTelemetryParser** (sensor numbers), and **AprsMessageParser** (person-to-person text, bulletins, and acknowledgements)."
+    },
+    {
+      "p": "Why five separate classes instead of one giant one? Because each format has genuinely different rules, and a bug in the weather decoder should never be able to break message handling. Splitting them keeps each file small enough to hold in your head, and lets the test suite hammer each format in isolation. This is the same instinct as having separate specialists in a hospital rather than one doctor who does everything adequately and nothing expertly."
+    },
+    {
+      "note": {
+        "kind": "note",
+        "label": "How a packet reaches the right parser",
+        "text": "All five live in the Aprs.Core project and are owned by the top-level AprsParser, which reads the very first character of a packet's information field and dispatches to whichever specialist can handle it. Each parser exposes a CanParse(string) method — a quick yes/no on whether this is its kind of packet — and a Parse(RawAprsPacket) method that does the real work. AprsParser calls CanParse in a deliberate order and hands the packet to the first one that says yes."
+      }
+    },
+    {
+      "h2": "MIC-E: Position Hidden Inside the Callsign"
+    },
+    {
+      "p": "**What it does:** **AprsMicEParser** decodes the most cunning format in all of APRS — a compact position report used by many Kenwood and Yaesu radios and by small GPS trackers, where the location is split across two places in the packet and scrambled with bit tricks to save airtime."
+    },
+    {
+      "p": "**Why it exists this way:** MIC-E (\"Microphone Encoder\") was designed when every byte on the air mattered. Rather than spend characters spelling out a latitude, its designers noticed that the AX.25 protocol underneath APRS already reserves a __destination field__ — normally the intended recipient — and for position beacons that field is essentially wasted. So MIC-E hides the six latitude digits, the North/South sign, a longitude offset flag, and a status code inside the destination callsign, and puts longitude, speed, course, and symbol in the information field. It is ugly, but it is the reason a handheld radio can beacon its position in a fraction of a second."
+    },
+    {
+      "p": "The class begins by naming the four bytes that mark a packet as MIC-E, using their numeric codes so the source file stays free of unprintable characters:"
+    },
+    {
+      "code": "private const char CurrentGps = (char)0x60;      // '`' current GPS data\nprivate const char OldGps = (char)0x27;          // apostrophe, old GPS data\nprivate const char LegacyCurrentGps = (char)0x1C;\nprivate const char LegacyOldGps = (char)0x1D;\n\npublic bool CanParse(string information)\n    => information.Length > 0\n       && information[0] is CurrentGps or OldGps or LegacyCurrentGps or LegacyOldGps;"
+    },
+    {
+      "p": "**How it works:** The first information character (the __data type indicator__, or DTI) must be one of those four. As the dispatch code notes, none of those four bytes collide with any other packet type, so recognizing MIC-E is unambiguous — that is what makes it safe to check by the first byte alone."
+    },
+    {
+      "p": "The clever part is decoding the destination. Each of its six characters is really carrying two things at once: a latitude digit AND, for the first three characters, one bit of a three-bit status code (the message A/B/C bits). The **DecodeDigit** helper untangles both in a single pass:"
+    },
+    {
+      "code": "private static int DecodeDigit(char c, int mask, ref int stdMsg, ref int custMsg, ref int ambiguity)\n{\n    if (c is >= '0' and <= '9') return c - '0';\n    if (c is >= 'A' and <= 'J') { custMsg |= mask; return c - 'A'; }\n    if (c is >= 'P' and <= 'Y') { stdMsg |= mask; return c - 'P'; }\n    if (c == 'K') { custMsg |= mask; ambiguity++; return 0; }\n    if (c == 'L') { ambiguity++; return 0; }\n    if (c == 'Z') { stdMsg |= mask; ambiguity++; return 0; }\n    return -1;\n}"
+    },
+    {
+      "p": "Read it as three parallel alphabets that all encode the digits 0-9. Characters `0`-`9` are the plain digits. Characters `A`-`J` also mean 0-9 but they light up a __custom__ status bit. Characters `P`-`Y` again mean 0-9 but light up a __standard__ status bit. The `|= mask` line is the bit trick: the caller passes a mask of 4, 2, or 1 for the first three characters (and 0 for the rest), so each character contributes one bit to the eventual A/B/C code. The special letters `K`, `L`, `Z` mean \"this digit was deliberately blanked for privacy\" — the __ambiguity__ counter records how many digits were fuzzed so the map can show reduced precision instead of a false pinpoint."
+    },
+    {
+      "warning": {
+        "kind": "warning",
+        "label": "The all-zero status means Emergency",
+        "text": "After decoding, the parser interprets the three status bits. A value of zero on both the standard and custom tables is not 'no status' — it maps to Emergency. Getting this backwards would silently drop the single most important signal a MIC-E packet can carry. The code handles it explicitly: 'if (stdMsg == 0 && custMsg == 0) status = \"Emergency\";'. That is why the test suite includes dedicated MIC-E status cases."
+      }
+    },
+    {
+      "p": "Latitude is assembled from the six decoded digits as degrees, minutes, and hundredths of a minute, with the sign taken from whether the fourth destination character is `P` or higher:"
+    },
+    {
+      "code": "var latMinutes = (digits[2] * 10 + digits[3]) + (digits[4] * 10 + digits[5]) / 100.0;\nvar latitude = (digits[0] * 10 + digits[1]) + latMinutes / 60.0;\nvar north = dest[3] >= 'P';\nif (!north) latitude = -latitude;"
+    },
+    {
+      "p": "Longitude, speed, and course come from the information field, and each of those bytes is offset by a fixed amount (the longitude bytes by 28, the speed/course bytes by 28 as well) because the encoding shifts everything into the range of printable characters. The three longitude helpers (**DecodeLongitudeDegrees**, **DecodeLongitudeMinutes**, **DecodeLongitudeHundredths**) each map a printable byte back to a number, with the degrees decode further split into four ranges depending on the 100-degree offset flag read from the destination. The end result is fed into an ordinary **PositionAprsPacket**, so — as the class summary puts it — a MIC-E station \"appears on the map exactly like any other position report.\""
+    },
+    {
+      "note": {
+        "kind": "note",
+        "label": "Faithful to the reference decoders",
+        "text": "The parser's own documentation states it follows the APRS 1.2 reference and Dire Wolf's decode_aprs.c — the widely trusted open-source decoder. When a format is this bit-twiddly, matching a proven implementation byte-for-byte is worth far more than a clever-but-untested reinvention. The optional !DAO! precision extension and the base-91 altitude field are also handled, then stripped from the comment before it is surfaced."
+      }
+    },
+    {
+      "h2": "Objects and Items: Markers a Station Places for You"
+    },
+    {
+      "p": "**What it does:** **AprsObjectItemParser** decodes two closely related formats that let one station put a *named marker* on everyone's map — a storm cell, an aid station, a repeater, a lost hiker's last known spot. An __object__ (information starts with `;`) has a timestamp and a live/killed flag; an __item__ (starts with `)`) is the lighter-weight version without a timestamp."
+    },
+    {
+      "p": "**Why one parser for both:** Objects and items are nearly the same idea — a name plus a position plus a symbol — differing mainly in their header layout. Handling them together keeps the shared position-decoding logic in one place, while a single top-level switch routes each to its own method:"
+    },
+    {
+      "code": "public bool CanParse(string information)\n{\n    return information.StartsWith(';') || information.StartsWith(')');\n}\n\npublic AprsPacket Parse(RawAprsPacket rawPacket)\n{\n    return rawPacket.Information.StartsWith(';')\n        ? ParseObject(rawPacket)\n        : ParseItem(rawPacket);\n}"
+    },
+    {
+      "p": "**How objects work:** An object name is a __fixed-width__ field — exactly nine characters, space-padded — so the parser can slice it by position rather than hunting for a delimiter. That is why the constants **ObjectNameLength** (9) and **ObjectTimestampLength** (7) exist: fixed-column formats are fast to parse but unforgiving, so the magic numbers are named and centralized rather than sprinkled through the code."
+    },
+    {
+      "code": "var objectName = rawObjectBody.Length >= ObjectNameLength\n    ? rawObjectBody[..ObjectNameLength].TrimEnd()\n    : rawObjectBody.TrimEnd();\nvar liveKilledIndicatorIndex = 1 + ObjectNameLength;\nvar liveKilledIndicator = TryGetChar(information, liveKilledIndicatorIndex);\nvar isAlive = liveKilledIndicator == '*';\nvar isKilled = liveKilledIndicator == '_'; // Real-world convention (WB4APR PROTOCOL.TXT)"
+    },
+    {
+      "p": "Right after the nine-character name sits a single __live/killed indicator__: `*` means the object is active, `_` means it has been killed (removed from the map). This matters operationally — a station can place a storm-warning object and later kill it once the danger passes. The code comment credits WB4APR's PROTOCOL.TXT (the late Bob Bruninga, APRS's inventor) because the killed convention is a real-world usage detail, not something you would guess from the formal spec."
+    },
+    {
+      "p": "**How items differ:** An item has no fixed-width name and no timestamp. Instead its name runs up to a separator character — `!` for a live item, `_` for a killed one — and the parser must find whichever comes first:"
+    },
+    {
+      "code": "private static int FindItemPositionSeparator(string rawItemBody)\n{\n    var liveIndex = rawItemBody.IndexOf('!', StringComparison.Ordinal);\n    var killedIndex = rawItemBody.IndexOf('_', StringComparison.Ordinal);\n\n    return liveIndex switch\n    {\n        >= 0 when killedIndex >= 0 => Math.Min(liveIndex, killedIndex),\n        >= 0 => liveIndex,\n        _ => killedIndex\n    };\n}"
+    },
+    {
+      "p": "The `switch` reads cleanly once you know the cases: if both separators appear, take whichever comes first (`Math.Min`); if only one appears, take it; if neither appears, return -1 and let the caller record a validation error. Both methods then hand the remaining text to the shared **AprsPositionComponents.Parse** helper, so an object and an item and a plain position report all decode their latitude/longitude/symbol through identical, well-tested code."
+    },
+    {
+      "h2": "Weather: Fixed Columns and Two Different Shells"
+    },
+    {
+      "p": "**What it does:** **AprsWeatherParser** decodes reports from weather stations — wind, temperature, rain, humidity, pressure, and more — which APRS encodes as a run of single-letter-tagged number fields like `t072` (temperature 72 F) or `h55` (humidity 55%)."
+    },
+    {
+      "p": "**Why it is the trickiest of the everyday formats:** Weather can arrive in two completely different shells. Some reports are __position weather__ — a normal position packet whose symbol code happens to be `_` (the weather-station symbol), with the weather data tacked onto the end. Others are __positionless weather__ — starting with `_` directly, no location at all, just the readings. The parser has to recognize both and, for position weather, figure out where the position ends and the weather begins."
+    },
+    {
+      "code": "public bool CanParse(string information)\n{\n    return information.StartsWith('_')\n        || IsPositionWeather(information);\n}"
+    },
+    {
+      "p": "**How it finds the weather symbol:** For position weather, the giveaway is that `_` symbol code, but its location in the string depends on whether the position is compressed or uncompressed (two different encodings) and whether the report carries a timestamp. **IsPositionWeather** computes exactly the right offset for each case before checking for the `_`:"
+    },
+    {
+      "code": "var symbolCodeIndex = AprsCompressedPositionDecoder.IsCompressed(information, positionStart)\n    ? positionStart + CompressedSymbolCodeOffset\n    : positionStart + UncompressedSymbolCodeOffset;\n\nreturn information.Length > symbolCodeIndex && information[symbolCodeIndex] == '_';"
+    },
+    {
+      "p": "The offsets are named constants — **UncompressedSymbolCodeOffset** is 18 (8 latitude chars + 1 symbol-table char + 9 longitude chars), **CompressedSymbolCodeOffset** is 9 — because these fixed-column arithmetic values are exactly the kind of thing that breaks silently if someone fat-fingers a number. Naming them makes the intent auditable."
+    },
+    {
+      "p": "**How it reads the fields:** Once positioned at the weather body, **ParseWeatherBody** walks it field by field. Each reading is a tag letter followed by a fixed number of digits — `s` for wind speed (3 digits), `g` for gust (3), `t` for temperature (3, or 4 if negative), `h` for humidity (2), `b` for barometric pressure (5), and so on. A `switch` on the tag handles each:"
+    },
+    {
+      "code": "case 'h':\n    if (TryReadUnsigned(body, index, 2, out humidityPercent))\n    {\n        humidityPercent = humidityPercent == 0 ? 100 : humidityPercent;\n        index += 2;\n        parsedFieldCount++;\n        break;\n    }\n    validationErrors.Add(\"Weather humidity is invalid.\");\n    index = fieldStart;\n    return Finish(body, index, parsedFieldCount, validationErrors);"
+    },
+    {
+      "p": "Two design details in this one case repay attention. First, the `humidityPercent == 0 ? 100` line: APRS encodes 100% humidity as `h00`, because the field is only two digits wide and \"100\" would not fit — so a literal zero is really one hundred. Miss this and every rain-soaked hilltop reads as bone dry. Second, when a field fails to parse, the code does not throw or guess; it rewinds the index to the start of the bad field (`index = fieldStart`) and calls **Finish**, treating everything from that point on as free-text comment. This is deliberate leniency: real transmitters send imperfect data, and a plausible partial weather report is far more useful than a discarded one."
+    },
+    {
+      "important": {
+        "kind": "important",
+        "label": "Compressed weather hides wind in the position",
+        "text": "In a compressed weather report, wind direction and speed are not in the c.../s... fields at all — they ride in the compressed position's course/speed bytes (spec section 12). The parser pulls them from there and converts knots to mph via the named MphPerKnot constant, then falls back to those values only if the body did not supply its own. This dual-source merge is easy to get wrong and is exactly the kind of edge the parser documents inline."
+      }
+    },
+    {
+      "h2": "Telemetry: Numbers Now, Meaning Later"
+    },
+    {
+      "p": "**What it does:** **AprsTelemetryParser** handles sensor data — a station reporting up to five analog readings and eight on/off (digital) bits, plus separate __metadata__ packets that say what those numbers mean (their names, units, and scaling formulas)."
+    },
+    {
+      "p": "**Why the split matters:** A telemetry value packet is deliberately tiny — just `T#` followed by a sequence number and comma-separated numbers — because it is sent constantly. The human-readable labels (\"channel 1 is battery voltage in volts\") are sent rarely, as separate PARM./UNIT./EQNS./BITS. metadata packets. Splitting definition from data is how APRS keeps the frequent packet small; the parser mirrors that split with **ParseTelemetryValues** and **ParseMetadata**."
+    },
+    {
+      "code": "public bool CanParse(string information)\n{\n    return information.StartsWith(\"T#\", StringComparison.Ordinal)\n        || MetadataPrefixes.Any(prefix => information.StartsWith(prefix, StringComparison.Ordinal))\n        || TryGetMessageEmbeddedMetadata(information, out _);\n}"
+    },
+    {
+      "p": "**How it reads values:** The value form splits on commas, treats the first field as the sequence number, takes up to five analog values, and — if present — reads the seventh field as a string of `0`/`1` digital bits:"
+    },
+    {
+      "code": "var body = rawPacket.Information[2..];\nvar components = body.Split(',', StringSplitOptions.None);\n...\nforeach (var valueText in components.Skip(1).Take(5))\n{\n    if (!int.TryParse(valueText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var analogValue))\n    {\n        validationErrors.Add(\"Telemetry analog value is invalid.\");\n        continue;\n    }\n    analogValues.Add(analogValue);\n}"
+    },
+    {
+      "p": "The `CultureInfo.InvariantCulture` is a small but important guard: it forces number parsing to use a fixed, machine-neutral convention regardless of the operator's regional settings, so a period-versus-comma locale difference can never corrupt a reading. A single bad value is logged and skipped rather than aborting the whole packet — the same lenient instinct as the weather parser."
+    },
+    {
+      "note": {
+        "kind": "note",
+        "label": "Metadata can hide inside a message",
+        "text": "The spec allows telemetry metadata to be sent addressed as a message (':ADDRESSEE :PARM.…') as well as in the bare info field. TryGetMessageEmbeddedMetadata detects that nine-character-addressee wrapper and unwraps it, so the same ParseMetadata handles both wire forms. Supporting the real-world variant, not just the textbook one, is a recurring theme across these parsers."
+      }
+    },
+    {
+      "h2": "Messages: Text, Acks, Rejects, and Bulletins"
+    },
+    {
+      "p": "**What it does:** **AprsMessageParser** decodes person-to-person text messages and their close relatives: __acknowledgements__ (proof a message arrived), __rejects__, __bulletins__ (broadcast notices), and __announcements__."
+    },
+    {
+      "p": "**How it works:** A message packet is `:` then a nine-character addressee, then a second `:`, then the body. The parser slices the fixed-width addressee, verifies the separator, and pulls the body:"
+    },
+    {
+      "code": "addressee = rawPacket.Information.Substring(1, AddresseeLength).TrimEnd();\n\nif (rawPacket.Information[AddresseeLength + 1] != ':')\n{\n    validationErrors.Add(\"Message packet is missing second ':' body separator.\");\n}\nelse\n{\n    rawMessageBody = rawPacket.Information[(AddresseeLength + 2)..];\n}"
+    },
+    {
+      "p": "A message may end with a __message ID__ introduced by `{`, which lets the sender ask for an acknowledgement. The parser finds the *last* `{` (the sender's own text might contain an earlier one) and splits the body from the ID there. It then checks whether the body itself is an ack or reject."
+    },
+    {
+      "warning": {
+        "kind": "warning",
+        "label": "Why 'ack' must be case-sensitive",
+        "text": "The spec defines the acknowledgement and reject keywords as the lowercase literals 'ack' and 'rej'. The StartsWithCommand helper deliberately uses StringComparison.Ordinal — a case-sensitive, byte-exact match — precisely so an ordinary human message like 'ACKNOWLEDGED the shipment' is not misread as a protocol acknowledgement. A case-insensitive match here would be a real, data-corrupting bug, and the code documents exactly that reasoning."
+      }
+    },
+    {
+      "p": "**Bulletins** are messages whose addressee starts with `BLN`. The character immediately after `BLN` decides the sub-type, and the parser is careful about exactly which character it trusts:"
+    },
+    {
+      "code": "var identifier = addressee[3];\nbulletinId = identifier.ToString();\nisAnnouncement = char.IsLetter(identifier);\nif (!isAnnouncement && addressee.Length > 4)\n{\n    var group = addressee[4..].TrimEnd();\n    bulletinGroup = group.Length > 0 ? group : null;\n}"
+    },
+    {
+      "p": "Per the spec's section 14, a *digit* after `BLN` marks a general or group bulletin, while a *letter* marks an announcement. Only that one character decides. As the code's comment warns, a group name that happens to contain letters — like `BLN1WX` — must not be misread as an announcement, because the deciding character (`1`) is a digit. This is a subtle classification trap, and the parser gets it right by looking only at position 3."
+    },
+    {
+      "h2": "Common DNA Across All Five"
+    },
+    {
+      "p": "Read together, the five parsers share a set of habits worth naming, because a future maintainer adding a sixth parser should copy them."
+    },
+    {
+      "table": {
+        "headers": [
+          "Parser",
+          "Starts with",
+          "The genuinely tricky bit"
+        ],
+        "rows": [
+          [
+            "MIC-E",
+            "0x60 / 0x27 / 0x1C / 0x1D",
+            "Position split between destination and info, packed with status bits; all-zero status = Emergency"
+          ],
+          [
+            "Object / Item",
+            "; or )",
+            "Fixed-width 9-char name and live/killed flag (object); first-of-two separators (item)"
+          ],
+          [
+            "Weather",
+            "_ or a position with '_' symbol",
+            "Two shells (position vs positionless); h00 means 100%; compressed wind hides in position bytes"
+          ],
+          [
+            "Telemetry",
+            "T# or PARM./UNIT./EQNS./BITS.",
+            "Values and their meaning arrive in separate packets; metadata can be message-wrapped"
+          ],
+          [
+            "Message",
+            ":",
+            "Case-sensitive ack/rej; bulletin sub-type decided by one character after BLN"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "First, every parser exposes the same **CanParse** / **Parse** pair, so the owning **AprsParser** can treat them uniformly — a consistent shape that makes the dispatch code readable and the parsers swappable. Second, none of them throw exceptions on bad input; they collect human-readable strings in a `validationErrors` list and press on, producing the best partial result they can. Real radio data is noisy, and a decoder that gives up at the first oddity would be useless. Third, all fixed-column offsets are named constants, never bare numbers, because column arithmetic is where silent parsing bugs breed."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The reasoning a future maintainer must preserve comes down to a few principles. **One format, one parser.** Each of these formats is complex enough that mixing them would multiply the ways things break; the separation is what makes each file understandable and independently testable."
+    },
+    {
+      "p": "**Follow the reference implementations, especially for the bit-twiddly formats.** MIC-E and compressed weather are error-prone enough that matching APRS 1.2 and Dire Wolf is more valuable than any clever shortcut. The inline comments citing the spec sections and WB4APR's PROTOCOL.TXT are not decoration — they are the receipts that let a maintainer verify the code against the source of truth."
+    },
+    {
+      "p": "**Be lenient with real-world data, strict with protocol keywords.** The parsers happily accept partial or slightly malformed packets and downgrade gracefully to comments and validation notes — because hams' equipment sends imperfect data every day. But where a keyword carries protocol meaning (`ack`, `rej`, the `_` kill flag, the Emergency status), they are exact and case-sensitive, because a loose match there would silently corrupt meaning. Knowing which situations call for tolerance and which call for precision is the single most important judgement encoded in this chapter's code."
+    },
+    {
+      "p": "**Name the magic numbers.** Every fixed-column offset and length in these formats is a named constant. When the next person needs to fix a one-character misalignment in a weather report, the difference between a named `UncompressedSymbolCodeOffset = 18` and a bare `18` buried in an expression is the difference between a five-minute fix and an afternoon lost."
+    }
+  ]
+}

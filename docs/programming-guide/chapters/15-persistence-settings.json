@@ -1,0 +1,260 @@
+{
+  "order": 15,
+  "title": "Persistence & Settings",
+  "subtitle": "How APRS-Command remembers who you are and what you prefer between runs — a single plain-text JSON file, loaded so carefully it can never stop the app from starting.",
+  "in_this_chapter": [
+    "Why every setting lives in one human-readable settings.json file instead of a database or the Windows registry",
+    "The AppSettings tree: one root object whose sections each own a slice of configuration",
+    "The StationProfile record and why a brand-new install identifies as N0CALL and cannot transmit",
+    "How JsonStringEnumConverter writes enums by name so files stay readable and survive reordering",
+    "The four safety pillars of the loader: defaults on missing, salvage on corruption, atomic saves, and forward migration",
+    "Receive-first: every transmit switch in the app defaults to off, on purpose",
+    "How legacy files from earlier builds are imported once so no operator loses their profile"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Every program that is worth using has to __remember things__ — who you are, where you are, which knobs you have set — so you do not re-enter them every single time you open it. This chapter is about the part of APRS-Command that does that remembering: the __persistence__ layer (a fancy word for \"the code that saves your stuff to disk and reads it back next time\") and the __settings store__ that sits on top of it."
+    },
+    {
+      "p": "The whole design rests on one deliberately boring decision: everything the app remembers is written to a single, plain, human-readable text file called `settings.json`. You could open it in Notepad and read it. That choice — plain text over a database, one file over many — shapes everything else in this chapter, and there are good reasons for it that we will walk through."
+    },
+    {
+      "p": "Two things make this layer worth a careful read even though \"save a file\" sounds trivial. First, the loader is built so that it can __never__ be the reason the app fails to start — a missing file, a half-written file, or a file somebody hand-edited into garbage all resolve to something usable instead of a crash. Second, the __defaults__ baked into a fresh install are chosen for safety: a new station is anonymous and silent (it listens but will not transmit) until the operator deliberately turns transmitting on. In ham radio that is not a nicety; transmitting with a bad configuration can put wrong data on the air under your callsign."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where this lives",
+        "text": "All the files discussed here are in src/Aprs.Desktop/Configuration/ — chiefly JsonAppSettingsStore.cs, AppSettings.cs, StationProfile.cs, DistanceUnit.cs, plus the per-feature section records (ConnectionSettings.cs, IGateSettings.cs, and so on). The folder-path helper is ApplicationFolderLayout.cs over in src/Aprs.Services/."
+      }
+    },
+    {
+      "h2": "The big picture: one tree, one file"
+    },
+    {
+      "p": "__What it does:__ Everything the app persists hangs off a single object called `AppSettings`. Think of it as a filing cabinet with one labeled drawer per feature — one drawer for your station identity, one for your radio connections, one for the iGate feature, one for GPS, and so on. Saving the settings means writing the whole cabinet to disk as one JSON file; loading means reading that one file back into the cabinet."
+    },
+    {
+      "p": "__Why built this way:__ The alternative — a scattering of little files, or a small embedded database like SQLite — was rejected on purpose. One file is trivial to back up (copy it), trivial to inspect (open it), trivial to reason about (there is no \"which file wins\" question), and trivial to reset (delete it and you are back to a clean install). A database would add a dependency and a binary format you cannot eyeball. For a single-user desktop app whose settings are measured in kilobytes, plain JSON is the right amount of technology."
+    },
+    {
+      "code": "public sealed record AppSettings(\n    int SchemaVersion,\n    StationProfile Station,\n    ConnectionSettings Connections,\n    IGateSettings IGate,\n    DigipeaterSettings Digipeater,\n    AudioSettings Audio,\n    WindowStates Windows,\n    GpsSettings Gps,\n    ManagedModemSettings ManagedModem,\n    bool DarkMode,\n    MessageTemplatesSettings MessageTemplates,\n    SmartBeaconingSettings SmartBeaconing,\n    GpsdSettings Gpsd,\n    FrequencyReferenceSettings FrequencyReference,\n    NetScriptSettings NetScripts,\n    WinlinkSettings Winlink,\n    SessionTemplateSettings SessionTemplates,\n    VoiceSettings Voice,\n    RepeaterBookSettings RepeaterBook,\n    CalTopoSettings CalTopo)"
+    },
+    {
+      "p": "This is `AppSettings.cs`. It is a C# __record__ — a compact way to declare an immutable data object (immutable means: once created, its fields never change; to \"change\" one you make a fresh copy with the one field swapped). Each parameter is a __section__: `Station` holds identity and position, `Connections` holds the list of radios/network links, `IGate` holds the internet-gateway options, and so on. The very first field, `SchemaVersion`, is a version stamp we will come back to."
+    },
+    {
+      "p": "The file's own comment states the payoff of this shape directly: adding a whole new area of configuration is just adding one more section property here — __no change to the storage code itself__. The saver already writes the entire tree; the loader already reads the entire tree. A new feature that needs to remember something drops in its own little settings record, adds one line to `AppSettings`, and it persists for free."
+    },
+    {
+      "code": "public const int CurrentSchemaVersion = 2;\n\npublic static AppSettings Default { get; } = new(\n    SchemaVersion: CurrentSchemaVersion,\n    Station: StationProfile.Default,\n    Connections: ConnectionSettings.Default,\n    IGate: IGateSettings.Default,\n    Digipeater: DigipeaterSettings.Default,\n    ...\n    DarkMode: false,\n    ...);"
+    },
+    {
+      "p": "Every section knows its own sensible starting point through a static `Default`, and `AppSettings.Default` simply assembles all of them. This is the object you get on a brand-new install where no file exists yet. Notice there is one authoritative default per section, defined next to that section's own code — so the person who owns the iGate feature owns its defaults, not some central list far away."
+    },
+    {
+      "h2": "The StationProfile: who you are, and why you start as \"N0CALL\""
+    },
+    {
+      "p": "__What it does:__ `StationProfile` is the drawer holding your on-air identity and everything tied to it — your callsign, your position, the map symbol that represents you, how often you beacon (announce your position), and the switches that control whether you transmit at all."
+    },
+    {
+      "code": "public sealed record StationProfile(\n    string Callsign,\n    int Ssid,\n    double Latitude,\n    double Longitude,\n    int FilterRadiusKm,\n    char SymbolTable,\n    char SymbolCode,\n    string StationComment,\n    string BeaconPath,\n    int AprsIsBeaconMinutes,\n    int RfBeaconMinutes,\n    bool FixedStationMode,\n    bool TransmitEnabled,\n    bool AprsIsTransmitEnabled,\n    bool RfTransmitEnabled,\n    string? PhgData,\n    DistanceUnit DistanceUnit = DistanceUnit.Miles,\n    int Ring1Distance = 10,\n    int Ring2Distance = 25,\n    int Ring3Distance = 50)"
+    },
+    {
+      "p": "A few terms defined in passing, since APRS is dense with them. A __callsign__ is your government-issued radio identifier (the author's is KE4CON). An __SSID__ is a small number tacked onto it to distinguish your gadgets — KE4CON-7 might be your handheld, KE4CON-9 your car. A __symbol__ is the little icon that marks you on everyone's map, encoded as two characters (a table character and a code character). __Beaconing__ is broadcasting your position on a timer. A __beacon path__ (here `WIDE1-1,WIDE2-1`) tells the network how far to relay your beacon."
+    },
+    {
+      "code": "public static StationProfile Default { get; } = new(\n    Callsign:             \"N0CALL\",\n    Ssid:                 0,\n    Latitude:             39.5,\n    Longitude:            -98.35,\n    FilterRadiusKm:       200,\n    SymbolTable:          '/',\n    SymbolCode:           '-',\n    StationComment:       \"APRS Command\",\n    BeaconPath:           \"WIDE1-1,WIDE2-1\",\n    AprsIsBeaconMinutes:  30,\n    RfBeaconMinutes:      60,\n    FixedStationMode:     true,\n    TransmitEnabled:      false,\n    AprsIsTransmitEnabled:false,\n    RfTransmitEnabled:    false,\n    PhgData:              null,\n    ...);"
+    },
+    {
+      "p": "Look at the defaults with a safety eye. The callsign is `N0CALL` — a well-known placeholder in ham radio meaning \"not a real station.\" The position (39.5, -98.35) is the geographic center of the continental United States, a neutral \"somewhere in the middle\" until you set your real spot. And the three transmit flags — `TransmitEnabled`, `AprsIsTransmitEnabled`, `RfTransmitEnabled` — are all __false__."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Receive-first is a safety stance, not a default nobody thought about",
+        "text": "A fresh install listens and shows you traffic, but it will not put a single packet on the air until you deliberately enable transmitting. This prevents the worst first-run mistake in APRS: an un-configured station beaconing a placeholder callsign at the center of the country onto the live network. The master switch (TransmitEnabled) and the two channel switches (APRS-IS and RF) all start off, so it takes a conscious choice to go from silent to transmitting."
+      }
+    },
+    {
+      "p": "The record also carries small conveniences that keep this logic in one place. `IsConfigured` returns true only when the callsign is present and is not still `N0CALL` — a clean way for the rest of the app to ask \"has this operator actually set themselves up?\" `FullCallsign` stitches the SSID back on when it is non-zero (\"KE4CON-7\"), and `SymbolDisplay` joins the two symbol characters for display. These are computed on demand, so they can never drift out of sync with the raw fields."
+    },
+    {
+      "code": "public static StationProfile Load() => JsonAppSettingsStore.Default.Load().Station;\n\npublic void Save() => JsonAppSettingsStore.Default.Update(s => s with { Station = this });"
+    },
+    {
+      "p": "These two lines are the bridge from the profile to the storage engine. `Load()` pulls the whole settings tree through the shared store and hands back just the `Station` slice. `Save()` does the careful thing — it does not overwrite the whole file with a station-only view; it uses `Update` to swap __only__ the station section and leave every other drawer untouched. The `s with { Station = this }` syntax is the record \"copy with one change\" move mentioned earlier."
+    },
+    {
+      "h2": "How the pieces are turned into text: the JSON options"
+    },
+    {
+      "p": "__What it does:__ A single shared configuration object tells .NET's built-in JSON library exactly how to translate the settings objects to and from text. Getting these options right is what makes the saved file readable, tolerant of hand edits, and stable over time."
+    },
+    {
+      "code": "private static readonly JsonSerializerOptions JsonOptions = new()\n{\n    WriteIndented = true,\n    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,\n    PropertyNameCaseInsensitive = true,\n    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,\n    Converters = { new JsonStringEnumConverter() }\n};"
+    },
+    {
+      "p": "Each option earns its place. `WriteIndented = true` pretty-prints the file with line breaks and indentation so a human can actually read it. `PropertyNamingPolicy = CamelCase` writes field names in the JavaScript style (`filterRadiusKm`) that looks natural in a `.json` file. `PropertyNameCaseInsensitive = true` means reading back does not care about capitalization — so a file written by an older build with different casing still loads. `DefaultIgnoreCondition = WhenWritingNull` skips fields that are empty, keeping the file tidy rather than littering it with `null`s."
+    },
+    {
+      "p": "The last one is the star of this section. `JsonStringEnumConverter` controls how an __enum__ is written. An enum is a fixed menu of named choices — `DistanceUnit` is either `Miles` or `Kilometres`, nothing else. By default .NET would save an enum as a bare number: `Miles` becomes `0`, `Kilometres` becomes `1`. This converter makes it save the __name__ instead."
+    },
+    {
+      "code": "public enum DistanceUnit\n{\n    /// <summary>Miles (default for US operators).</summary>\n    Miles,\n\n    /// <summary>Kilometres (default for operators outside the US).</summary>\n    Kilometres\n}"
+    },
+    {
+      "table": {
+        "headers": [
+          "Approach",
+          "What the file contains",
+          "What happens if someone reorders the enum later"
+        ],
+        "rows": [
+          [
+            "Default (numbers)",
+            "\"distanceUnit\": 0",
+            "0 now means something else — every saved file silently changes meaning"
+          ],
+          [
+            "JsonStringEnumConverter (names)",
+            "\"distanceUnit\": \"Miles\"",
+            "Names still match by name; reordering is harmless"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why names beat numbers",
+        "text": "Saving \"Miles\" instead of 0 does two things at once. It makes the file self-explanatory — you can read your own settings without a decoder ring — and it makes the format resilient: if a future developer inserts a new option in the middle of the enum, the numeric positions all shift, but a file that stored the name \"Miles\" still lands on Miles. This is exactly the kind of quiet decision that keeps old files loadable years later."
+      }
+    },
+    {
+      "p": "The same converter is why the connection settings can round-trip things like a serial-port __parity__ setting (`SerialKissParity.Even`) or a port type (`ConnectionPortType.NetworkTncKiss`) as readable words in the file. The test suite explicitly checks that an enum and a `TimeSpan` survive a save-and-reload unchanged, which is the guarantee this converter underwrites."
+    },
+    {
+      "h2": "The loader that refuses to fail"
+    },
+    {
+      "p": "The interface that defines the store, `IAppSettingsStore`, states the contract in one uncompromising sentence: implementations __must never throw on load__. A missing or corrupt file has to fall back to defaults so the app always starts. Everything in `JsonAppSettingsStore.Load()` exists to honor that promise. It defends on four fronts."
+    },
+    {
+      "code": "public AppSettings Load()\n{\n    if (!File.Exists(settingsFilePath))\n    {\n        var migrated = TryImportLegacy();\n        if (migrated is not null)\n        {\n            Save(migrated);          // persist the imported profile in the new location\n            return migrated;\n        }\n        return AppSettings.Default;\n    }\n\n    string json;\n    try { json = File.ReadAllText(settingsFilePath); }\n    catch { return AppSettings.Default; }  // unreadable file: start from defaults, never crash\n\n    // Fast path: deserialize the whole file at once.\n    try\n    {\n        var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);\n        if (settings is not null) return Normalize(settings);\n    }\n    catch { /* fall through to per-section salvage */ }\n\n    return SalvageLoad(json);\n}"
+    },
+    {
+      "p": "__Front one — nothing saved yet:__ if the file does not exist, try a one-time legacy import (covered below), and otherwise return `AppSettings.Default`. Note the file is __not__ written at this point — a first run with no configuration leaves the disk untouched until you actually save something, which the test `Load_WithNoFile_ReturnsDefaults` verifies by asserting the file still does not exist."
+    },
+    {
+      "p": "__Front two — file present but unreadable__ (locked by another process, permissions, whatever): the `try/catch` around `File.ReadAllText` swallows the failure and returns defaults. The app opens; it does not die because a file was busy."
+    },
+    {
+      "p": "__Front three — the fast path:__ in the normal case it deserializes the whole file in one shot and hands off to `Normalize` (which fills in any missing sections and runs migrations). This is the path taken every ordinary launch."
+    },
+    {
+      "p": "__Front four — salvage:__ if that whole-file parse throws — because someone hand-edited the file and broke it — it does not give up on everything. It falls through to `SalvageLoad`."
+    },
+    {
+      "code": "private static AppSettings SalvageLoad(string json)\n{\n    JsonObject? root;\n    try { root = JsonNode.Parse(json) as JsonObject; }\n    catch { return AppSettings.Default; }\n    ...\n    var station = TryDeserializeSection(root, \"station\", StationProfile.Default);\n    ...\n    var connections = (TryDeserializeSection(root, \"connections\", ConnectionSettings.Default)\n        ?? ConnectionSettings.Default).Normalized();\n    ...\n}"
+    },
+    {
+      "p": "__Salvage reads the file drawer by drawer.__ Instead of demanding that the entire file be valid, it parses the JSON into a loose tree and then deserializes __each section independently__, dropping back to that one section's default if it is malformed. So if you botch an edit to the station section, you lose only the station section — your carefully configured list of radio connections survives intact. The test `Load_WithBrokenStationSection_SalvagesConnections` deliberately corrupts just the station block and confirms the connections come back with the right host address. This is the difference between \"one typo resets everything\" and \"one typo resets one thing.\""
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Why swallowing these exceptions is correct here — and the exception to the rule",
+        "text": "The project's coding standards say never swallow exceptions silently, and that is the right default. The loader is the deliberate exception: the entire point is that a bad file must never stop the app from starting, so each failure quietly degrades to a safe fallback rather than propagating. The trade-off is accepted knowingly and documented in the interface contract itself. This is not sloppiness leaking through — it is a narrow, intentional carve-out at exactly the boundary where a crash would hurt most."
+      }
+    },
+    {
+      "h2": "Saving without ever corrupting the file"
+    },
+    {
+      "p": "__What it does:__ Writing settings uses an __atomic write__ — a technique that guarantees the real file is either the complete old version or the complete new version, and never a half-written mess in between."
+    },
+    {
+      "code": "public void Save(AppSettings settings)\n{\n    ArgumentNullException.ThrowIfNull(settings);\n\n    // Always persist with the current schema version stamped.\n    var toWrite = settings with { SchemaVersion = AppSettings.CurrentSchemaVersion };\n    ...\n    var json = JsonSerializer.Serialize(toWrite, JsonOptions);\n\n    // Atomic write: temp file then move-with-overwrite so a partial write cannot corrupt the file.\n    var tempPath = settingsFilePath + \".tmp\";\n    File.WriteAllText(tempPath, json);\n    File.Move(tempPath, settingsFilePath, overwrite: true);\n}"
+    },
+    {
+      "p": "__Why built this way:__ if the code wrote directly into `settings.json` and the machine lost power (or the app was killed) halfway through, you would be left with a truncated, unparseable file — your configuration gone. The fix is a two-step: write the full new content to a scratch file (`settings.json.tmp`), then `File.Move` it over the real file. On a normal filesystem a move-with-overwrite is effectively instantaneous and all-or-nothing. If a crash happens during the write, it happens to the throwaway `.tmp` file; the real `settings.json` still holds the last good version. The test `Save_IsAtomic_NoLeftoverTempFile` confirms the real file exists and no stray `.tmp` is left behind afterward."
+    },
+    {
+      "p": "Two more details in `Save` matter. `ArgumentNullException.ThrowIfNull` means the __save__ path does throw on a genuinely invalid call — the never-throw promise is specifically about __load__, where a fallback is always possible; being handed a null to save is a programming bug worth surfacing. And `settings with { SchemaVersion = CurrentSchemaVersion }` means every save re-stamps the file with today's format version, so the version marker is always truthful."
+    },
+    {
+      "h2": "Change one drawer, keep the rest: the Update method"
+    },
+    {
+      "code": "public AppSettings Update(Func<AppSettings, AppSettings> mutate)\n{\n    ArgumentNullException.ThrowIfNull(mutate);\n\n    var updated = mutate(Load());\n    Save(updated);\n    return updated;\n}"
+    },
+    {
+      "p": "__What it does:__ `Update` is the safe way to change one section. You hand it a small function describing the change (\"take the current settings, give me back a copy with a new station\"), and it loads the current file, applies your change, saves the result, and returns it. Because it always starts from a fresh `Load`, it can never accidentally wipe a section that some other part of the app changed a moment ago — it reads, tweaks, writes. This is why `StationProfile.Save()` routes through `Update` rather than `Save`: it changes the station and provably leaves connections, GPS, window positions, and everything else exactly as they were. The test `Update_ChangesOneSection_PreservesOthers` locks that behavior in."
+    },
+    {
+      "h2": "Growing the format safely: schema versions and migration"
+    },
+    {
+      "p": "__What it does:__ The `SchemaVersion` stamp lets the app read files written by __older__ versions of itself and quietly upgrade them, rather than choking on an outdated shape. `CurrentSchemaVersion` is `2` today."
+    },
+    {
+      "code": "private static AppSettings Migrate(AppSettings settings)\n{\n    if (settings.SchemaVersion >= AppSettings.CurrentSchemaVersion)\n    {\n        return settings;\n    }\n\n    // v1 -> v2 introduced the connection port-list. A v1 file's old flat connections object has\n    // no \"ports\" array, so it deserializes to an empty port list and Normalize() above has\n    // already replaced it with the default single APRS-IS port. Nothing more is needed here; the\n    // version is simply stamped forward.\n\n    return settings with { SchemaVersion = AppSettings.CurrentSchemaVersion };\n}"
+    },
+    {
+      "p": "__Why built this way:__ formats change as features are added, and users must never lose data because they upgraded the app. The real migration this code has already lived through is instructive. Version 1 stored connection settings as a single flat object (one TCP link, one APRS-IS login). Version 2 changed that to a __list__ of ports so an operator can run several radios and network links at once. When a v1 file is read, its old flat connection block has no `ports` array, so it comes through as an empty list — and `Normalize` (via `ConnectionSettings.Normalized()`) replaces an empty list with the default single receive-only APRS-IS port. The `Migrate` step then just stamps the version forward to 2. The test `Load_MigratesPrePortListConnections_ToDefaultPort` feeds in a genuine hand-written v1 JSON file and confirms it comes back as a valid v2 with one APRS-IS port and the operator's callsign preserved."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The migration hook is deliberately a no-op today",
+        "text": "Migrate() currently does no data transformation — the v1-to-v2 change was absorbed entirely by the \"missing section becomes its default\" behavior. But the method exists and is wired into the load path so that the day a future format change does need real rewriting (say, splitting a field in two), there is one obvious, tested place to add that step — applied incrementally, version by version, so saved data is never dropped."
+      }
+    },
+    {
+      "h2": "Not losing a returning operator: legacy import"
+    },
+    {
+      "code": "private AppSettings? TryImportLegacy()\n{\n    if (string.IsNullOrWhiteSpace(legacyStationProfilePath) || !File.Exists(legacyStationProfilePath))\n    {\n        return null;\n    }\n\n    try\n    {\n        var legacy = JsonSerializer.Deserialize<StationProfile>(\n            File.ReadAllText(legacyStationProfilePath), JsonOptions);\n\n        if (legacy is not null && !string.IsNullOrWhiteSpace(legacy.Callsign))\n        {\n            return AppSettings.Default with { Station = legacy };\n        }\n    }\n    catch { /* ignore a bad legacy file; caller falls back to defaults */ }\n\n    return null;\n}"
+    },
+    {
+      "p": "__What it does:__ An earlier build of APRS-Command saved just the station profile to its own little file (`station-profile.json`) in a different folder. When the new unified store finds no `settings.json` yet, it looks for that old file first, and if it holds a real callsign, it lifts the profile into a fresh settings tree and saves it in the new location. The operator upgrades and their identity is simply there — no re-entry. The whole thing is wrapped in a `try/catch` so a corrupt legacy file is ignored rather than fatal, and it only runs on first launch (once a `settings.json` exists, this path is never taken again). The `Default` store wires up the old path automatically; the tests `Load_ImportsLegacyStationProfile...` and `Load_IgnoresMissingLegacyFile` cover both the hit and the miss."
+    },
+    {
+      "h2": "Where the file actually lives, and the test-only twin"
+    },
+    {
+      "p": "The default store does not hardcode a path; it asks `ApplicationFolderLayout` for the standard per-user application-data folder (\"APRS Command\" under the OS's roaming app-data location) and places `settings.json` in that folder's `config` subfolder. `ApplicationFolderLayout` is the single source of truth for __every__ folder the app uses — logs, map cache, exports, backups, plugins — so paths are consistent and defined in exactly one place. Its `GetDefaultApplicationDataFolder` also degrades gracefully across platforms, trying roaming app-data, then local app-data, then the user profile, then the executable's own folder, so it always resolves to something writable on Windows, macOS, and Linux alike."
+    },
+    {
+      "code": "public sealed class InMemoryAppSettingsStore : IAppSettingsStore\n{\n    private AppSettings settings;\n    ...\n    public AppSettings Load() => settings;\n    public void Save(AppSettings value) { ... settings = value with { SchemaVersion = ... }; }\n}"
+    },
+    {
+      "p": "Because the store is defined behind the `IAppSettingsStore` interface, there is a second implementation, `InMemoryAppSettingsStore`, that keeps settings in a variable and never touches the disk. It exists for two reasons: __design-time__ view models (so the visual designer can show realistic data without reading your real profile) and __unit tests__ (so a test can exercise a settings-backed screen without leaving files behind). This is the payoff of coding to an interface — the same view models run against the real JSON store in production and the throwaway memory store in tests, with no changes."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The persistence layer is small, but it embodies a philosophy that shows up all over APRS-Command: __be boring where boring is safe, and paranoid where a failure would hurt.__ One plain-text file is boring on purpose — easy to read, back up, and reset. The loader is paranoid on purpose — four independent fallbacks so it can never be the reason the app fails to open."
+    },
+    {
+      "bullets": [
+        "One file, one tree. All persisted state hangs off AppSettings and lands in a single readable settings.json. Adding a feature's settings means adding one section — the storage code never changes.",
+        "The loader can never crash the app. Missing file, unreadable file, or corrupt file each resolve to safe defaults; a broken section is salvaged in isolation so it cannot take good sections down with it.",
+        "Saves are atomic. Write to a temp file, then move it into place — a crash mid-write can never leave a truncated, unparseable settings.json.",
+        "Enums are stored by name, not number. JsonStringEnumConverter keeps the file self-explanatory and immune to later reordering of enum options.",
+        "Receive-first is baked into the defaults. A fresh profile is N0CALL with every transmit switch off — it listens but stays silent until the operator deliberately enables transmitting.",
+        "The format can grow without losing data. A version stamp plus a migration hook means files from older builds are read and upgraded, and an older single-profile file is imported once so returning operators keep their identity.",
+        "Behind an interface. The same view models run against the real JSON store in production and an in-memory store in tests and the designer — persistence is testable without ever touching disk."
+      ]
+    },
+    {
+      "p": "If you are maintaining this app years from now, the one rule to preserve is the never-throw-on-load contract stated in `IAppSettingsStore`. Every defensive branch in the loader serves it, and every test in `AppSettingsStoreTests` guards it. When you add a new settings section, give it a `Default`, add it to `AppSettings` and to both the `Normalize` and `SalvageLoad` paths, and write the round-trip test — and the operator in the field will keep their configuration through corruption, upgrades, and power failures alike."
+    }
+  ]
+}

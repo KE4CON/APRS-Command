@@ -1,0 +1,263 @@
+{
+  "order": 4,
+  "title": "Packets as Data: the AprsPacket Record Hierarchy",
+  "subtitle": "How one abstract record and its thirteen sealed subtypes turn a line of radio text into a safe, immutable, self-describing object.",
+  "in_this_chapter": [
+    "What an APRS packet is and why the app models it as a data record",
+    "What a C# record is, in plain terms, and why it beats a mutable class here",
+    "Why immutability and value-equality prevent whole categories of bugs",
+    "The shared base fields every packet carries — and why they live on the base",
+    "A tour of all thirteen real subtypes, from Position to Weather to Unknown",
+    "How the parser builds a rich subtype from a bare RawAprsPacket",
+    "How the rest of the app safely tells packet types apart with pattern matching"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS is a system where ham radios broadcast tiny bursts of text over the air — a position report, a weather reading, a short message, a status line. Each burst, once decoded, is a single line of text. The file `src/Aprs.Core/AprsPacket.cs` is where APRS-Command decides how to *hold* one of those decoded bursts in memory so the rest of the program can work with it safely."
+    },
+    {
+      "p": "The whole file is one idea expressed thirteen times: there is a single family of data types called **AprsPacket**, and every kind of packet the app understands is a member of that family. A position report becomes a **PositionAprsPacket**. A weather report becomes a **WeatherAprsPacket**. A line nobody could make sense of becomes an **UnknownAprsPacket**. They are all `AprsPacket`s, so any code that just wants \"a packet\" can accept the whole family, while code that cares about weather specifically can ask for exactly the weather kind."
+    },
+    {
+      "p": "This chapter explains three things: what a __record__ is and why the author chose it, why the packets are __immutable__ (unchangeable once created), and what each of the real subtypes represents. Getting this right matters because this file is the *vocabulary* of the entire application. Every map marker, every log entry, every message thread eventually traces back to one of these records. If the shape of the data is wrong or fragile here, every layer above inherits the problem."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where this sits",
+        "text": "AprsPacket lives in Aprs.Core, the lowest layer — no UI, no networking, just the plain data shapes and the parsers that fill them. Everything else in the app depends on Core; Core depends on nothing."
+      }
+    },
+    {
+      "h2": "First, what is a \"record\"?"
+    },
+    {
+      "p": "In C#, a __record__ is a special kind of type whose job is to *hold data* rather than *do things*. You can think of the difference like this: a regular class is like an employee — it has information but it also performs actions. A record is more like a filled-out paper form — it is purely the information, sitting still, and its whole identity is the values written on it."
+    },
+    {
+      "p": "The very first lines of the file declare the head of the family as an __abstract record__:"
+    },
+    {
+      "code": "public abstract record AprsPacket(\n    string RawLine,\n    string SourceCallsign,\n    int? SourceSsid,\n    string Destination,\n    IReadOnlyList<string> Path,\n    string Information,\n    DateTimeOffset ReceivedAtUtc,\n    bool IsValid,\n    IReadOnlyList<string> ValidationErrors);"
+    },
+    {
+      "p": "That short block does a surprising amount. The word `abstract` means \"this is a category, not a thing you can create directly\" — you never make a bare `AprsPacket`, only one of its concrete subtypes, just as you never buy \"a vehicle\" at a dealership, you buy a specific car or truck. The list in parentheses is called a __positional record__: it declares, in one breath, nine pieces of data the packet carries *and* the constructor that accepts them *and* read-only properties to read them back. Written as an old-style class, the same thing would be roughly fifty lines of boilerplate."
+    },
+    {
+      "p": "Each field is named in plain domain terms. `RawLine` is the original text exactly as received. `SourceCallsign` is the operator's call sign (like `KE4CON`), and `SourceSsid` is the optional number after a dash that distinguishes that operator's several stations (a home base versus a truck). `Path` is the list of relay stations the packet hopped through. `Information` is the payload — the part whose meaning depends on the packet type. `ReceivedAtUtc` stamps when the app saw it. `IsValid` and `ValidationErrors` record whether the line parsed cleanly and, if not, what went wrong."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why int? and not int",
+        "text": "The question mark in `int? SourceSsid` means \"nullable\" — the value is allowed to be absent. Not every station has an SSID, so the type itself says \"this may be missing,\" forcing later code to handle the empty case instead of guessing a fake default like 0."
+      }
+    },
+    {
+      "h2": "Why records instead of ordinary mutable classes?"
+    },
+    {
+      "p": "A packet describes a moment that already happened: a specific radio said a specific thing at a specific time. That fact never changes afterward. Modeling it as an __immutable__ value — one that cannot be altered after it is created — matches reality and closes off a large family of bugs."
+    },
+    {
+      "p": "The properties a positional record generates are __init-only__: they can be set when the object is built and never again. Consider what that prevents. Suppose the map, the log window, and a message service all hold a reference to the same received packet. With a normal mutable class, if the log window \"cleaned up\" the callsign in place, the map would silently see the changed value too — a spooky action-at-a-distance bug that is miserable to track down. Because the packet is frozen, sharing it is completely safe: nobody can change what everybody else is looking at."
+    },
+    {
+      "p": "The second gift records bring is __value-equality__. A normal class compares by *identity* — two objects are \"equal\" only if they are literally the same object in memory, like two people being the same person only if they are one body. A record instead compares by *content* — two records are equal when all their fields are equal, the way two filled-out forms are \"the same form\" if every box matches. That is exactly what you want for de-duplicating packets: the same beacon heard twice should be recognized as the same information without any hand-written comparison code."
+    },
+    {
+      "code": "// Illustrative — value-equality is generated for you:\nvar a = new UnknownAprsPacket(raw, \"KE4CON\", 9, \"APRS\", path, info, when, true, errors, qc);\nvar b = new UnknownAprsPacket(raw, \"KE4CON\", 9, \"APRS\", path, info, when, true, errors, qc);\nbool same = a == b;   // true — because every field matches, not because they are one object"
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The design decision in one line",
+        "text": "Packets are frozen facts. Records give you free construction, free read-only properties, free content-based equality, and a compiler guarantee that a received packet can never be quietly mutated out from under the code holding it. That is why the author reached for records over classes here."
+      }
+    },
+    {
+      "h2": "Why a hierarchy, and why the base fields repeat"
+    },
+    {
+      "p": "Every packet, regardless of kind, has a source call sign, a path, a receive time, and a validity flag. Those nine fields belong to *all* of them, so they live on the abstract base `AprsPacket`. What differs is the meaning packed into the `Information` payload — and that is what each subtype adds on top."
+    },
+    {
+      "p": "Look at how a concrete subtype is declared. It restates the nine base fields, adds its own, and then hands the nine base values back up to the base with the `: AprsPacket(...)` call at the bottom:"
+    },
+    {
+      "code": "public sealed record PositionAprsPacket(\n    string RawLine, string SourceCallsign, int? SourceSsid, string Destination,\n    IReadOnlyList<string> Path, string Information, DateTimeOffset ReceivedAtUtc,\n    bool IsValid, IReadOnlyList<string> ValidationErrors,\n    string? QConstruct,           // added: how an internet gateway tagged the packet\n    char PositionType,            // added: which position format was used\n    string? Timestamp,\n    double? Latitude, double? Longitude,\n    char? SymbolTableIdentifier, char? SymbolCode,   // which map icon to draw\n    string Comment,\n    int? CourseDegrees, int? SpeedKnots, int? AltitudeFeet,\n    int PositionAmbiguity)\n    : AprsPacket(\n        RawLine, SourceCallsign, SourceSsid, Destination,\n        Path, Information, ReceivedAtUtc, IsValid, ValidationErrors);"
+    },
+    {
+      "p": "The keyword `sealed` means \"nothing may inherit from this\" — `PositionAprsPacket` is a leaf, a final concrete kind, not a category to be extended further. That keeps the family flat and knowable: one abstract root, and a fixed set of sealed leaves. Anyone reading the file can see the *entire* set of packet types the program recognizes in one place, which is a real gift for a project meant to outlive its author."
+    },
+    {
+      "p": "You may notice `QConstruct` repeats on nearly every subtype rather than sitting on the base. That is a deliberate line-drawing: `QConstruct` is an APRS-Internet-System detail (a marker showing how a gateway injected the packet), meaningful for real decoded packets but not conceptually part of the universal \"every packet has a source and a time\" core. It rides along on the concrete types that can carry it."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A little repetition is the price of clarity",
+        "text": "Positional records cannot inherit a constructor's parameter list, so each subtype restates the base fields. It looks repetitive, but the payoff is that each record reads as a complete, self-contained description of one packet kind — no hunting up a chain of parent classes to learn what fields exist."
+      }
+    },
+    {
+      "h2": "The thirteen real subtypes"
+    },
+    {
+      "p": "Here is the full family as it actually appears in the file, in the order it is written. Each is a `sealed record` deriving from `AprsPacket`."
+    },
+    {
+      "table": {
+        "headers": [
+          "Subtype",
+          "What it represents",
+          "A few of its own fields"
+        ],
+        "rows": [
+          [
+            "RawAprsPacket",
+            "A packet decoded down to the common fields but not yet interpreted by type — the starting point every richer type is built from",
+            "QConstruct"
+          ],
+          [
+            "PositionAprsPacket",
+            "A station reporting where it is (and possibly heading/speed/altitude)",
+            "Latitude, Longitude, CourseDegrees, SpeedKnots, AltitudeFeet, PositionAmbiguity"
+          ],
+          [
+            "StatusAprsPacket",
+            "A short human status line, optionally with a grid locator and beam info",
+            "StatusText, MaidenheadLocator, BeamHeadingDegrees, EffectiveRadiatedPowerWatts"
+          ],
+          [
+            "TelemetryAprsPacket",
+            "Numeric sensor readings — five analog channels plus eight on/off bits",
+            "SequenceNumber, AnalogValues, DigitalValues"
+          ],
+          [
+            "TelemetryMetadataAprsPacket",
+            "The labels/units/equations that give a telemetry stream meaning",
+            "MetadataKind, Values, BitValues, ProjectTitle"
+          ],
+          [
+            "CapabilityAprsPacket",
+            "A station announcing what services/features it offers",
+            "CapabilityText"
+          ],
+          [
+            "UserDefinedAprsPacket",
+            "A developer-private format the spec reserves but does not define",
+            "UserId, Content"
+          ],
+          [
+            "UnknownAprsPacket",
+            "A line that parsed structurally but matched no known type",
+            "(base fields + QConstruct only)"
+          ],
+          [
+            "MessageAprsPacket",
+            "A directed text message, bulletin, announcement, ack, or query",
+            "Addressee, MessageBody, MessageId, IsBulletin, BulletinGroup, IsAnnouncement, IsQuery"
+          ],
+          [
+            "QueryAprsPacket",
+            "A request asking stations to respond (position, weather, ping, etc.)",
+            "QueryType, QueryKeyword, QueryTarget"
+          ],
+          [
+            "ObjectAprsPacket",
+            "A point one station places on the map on behalf of something else, with a live/killed state",
+            "ObjectName, IsAlive, IsKilled, Latitude, Longitude"
+          ],
+          [
+            "ItemAprsPacket",
+            "Like an object but simpler, with no timestamp/kill lifecycle",
+            "ItemName, Latitude, Longitude"
+          ],
+          [
+            "WeatherAprsPacket",
+            "A full weather observation",
+            "WindSpeedMph, TemperatureFahrenheit, HumidityPercent, BarometricPressureMillibars, RainLastHourHundredthsInch"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "A few of these deserve a note. **UnknownAprsPacket** is not a failure — it is a deliberate, first-class outcome. When a line does not match any known type, the app still returns a real, valid `AprsPacket` object carrying the raw text, rather than throwing an error or returning nothing. That is a quiet but important robustness decision: the radio world is full of odd and future formats, and the app is designed to shrug them off gracefully rather than crash on the unexpected."
+    },
+    {
+      "p": "**UserDefinedAprsPacket** makes the same philosophy explicit in its own doc comment: the APRS spec reserves a `{` format for developer-private data with no standard meaning, so the app recognizes it as its own type purely so it is *not* misclassified as Unknown — captured and labeled, but honestly left uninterpreted."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Objects vs. Items",
+        "text": "ObjectAprsPacket carries a timestamp and an IsAlive/IsKilled lifecycle — it can be placed and later 'killed' off the map. ItemAprsPacket is the lighter cousin with no timestamp and no kill state. Same idea (put a point on the map for something that isn't a station), two spec formats, two honest record types."
+      }
+    },
+    {
+      "h2": "A small helper enum: AprsQueryType"
+    },
+    {
+      "p": "Tucked between the message and query records is a plain enumeration that classifies what a query is asking for:"
+    },
+    {
+      "code": "public enum AprsQueryType\n{\n    General,   // ?APRS? and the ?APRSx station-data variants\n    IGate,     // ?IGATE?\n    Weather,   // ?WX?\n    Ping,      // ?PING?\n    Unknown    // an unrecognized keyword (still captured in QueryKeyword)\n}"
+    },
+    {
+      "p": "An __enum__ (enumeration) is simply a fixed, named set of choices — like the settings on a light switch that can only be Off, Low, or High. Storing the query kind as `AprsQueryType.Weather` instead of the raw string `\"?WX?\"` means later code branches on a clean, spell-checked value the compiler understands, and the raw keyword is still preserved in `QueryKeyword` for anything that needs the original text. Note the same forgiving pattern again: even an unrecognized query gets a home (`Unknown`) rather than being dropped."
+    },
+    {
+      "h2": "How a rich packet gets built"
+    },
+    {
+      "p": "The records are just the shapes; the parsers fill them. The flow is always: decode the line into a bare **RawAprsPacket** first, then, once the type is known, build the specific subtype by copying the raw packet's common fields forward and adding the interpreted ones. You can see this exact move in `AprsPositionParser.cs`:"
+    },
+    {
+      "code": "return new PositionAprsPacket(\n    rawPacket.RawLine,\n    rawPacket.SourceCallsign,\n    rawPacket.SourceSsid,\n    rawPacket.Destination,\n    rawPacket.Path,\n    rawPacket.Information,\n    rawPacket.ReceivedAtUtc,\n    rawPacket.IsValid && validationErrors.Count == 0,\n    validationErrors,\n    rawPacket.QConstruct,\n    positionType, timestamp,\n    parsedPosition.Latitude, parsedPosition.Longitude,\n    parsedPosition.SymbolTableIdentifier, parsedPosition.SymbolCode,\n    parsedPosition.Comment,\n    courseDegrees, speedKnots, altitudeFeet,\n    parsedPosition.PositionAmbiguity);"
+    },
+    {
+      "p": "The nine base fields are handed straight through from `rawPacket`, and the position-specific values (latitude, longitude, course, speed, symbol) are the newly interpreted additions. One detail worth catching: `IsValid` is recomputed as `rawPacket.IsValid && validationErrors.Count == 0` — the position stage can *demote* an otherwise-valid raw packet if it finds its own problems. Validity is cumulative, tightened as more is understood, never loosened."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The same shape from many sources",
+        "text": "PositionAprsPacket is constructed in at least three parsers — the standard position parser, the Mic-E parser, and the NMEA parser. Because they all target one record type, everything downstream sees a single uniform 'position' shape no matter which on-air format it arrived in."
+      }
+    },
+    {
+      "h2": "How the rest of the app tells the types apart"
+    },
+    {
+      "p": "Once packets are a sealed family, code that needs to react differently by type uses __pattern matching__ — asking \"which kind is this?\" in a way the compiler can check. `AprsBulletinService` does exactly this with a `switch` expression:"
+    },
+    {
+      "code": "return packet switch\n{\n    MessageAprsPacket messagePacket when messagePacket.IsAnnouncement => StoreAnnouncement(messagePacket, source),\n    MessageAprsPacket messagePacket when messagePacket.IsBulletin     => StoreBulletin(messagePacket, source),\n    MessageAprsPacket messagePacket when messagePacket.IsQuery        => StoreMessageQuery(messagePacket, source),\n    QueryAprsPacket queryPacket                                       => StoreDirectQuery(queryPacket, source),\n    _ => AprsBulletinAcceptResult.NotHandled\n};"
+    },
+    {
+      "p": "Read it top to bottom: if the packet is a `MessageAprsPacket` *and* its `IsAnnouncement` flag is set, store it as an announcement; a bulletin flag routes it as a bulletin; and so on. The final `_` is the catch-all — anything this service does not care about is politely declined with `NotHandled` rather than mishandled. Because the packet family is sealed and known, this kind of branching is safe and exhaustive: there are no surprise subtypes lurking outside the file to break the assumptions."
+    },
+    {
+      "p": "This is the payoff of the whole design. The parser's job is to *classify once*, turning a fuzzy line of text into a precise typed record. From then on, every other layer trusts the type. A weather panel asks for `WeatherAprsPacket` and gets fields like `TemperatureFahrenheit` already parsed; it never re-parses raw text or guesses. The type system carries the knowledge forward for free."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "**Records because packets are frozen facts.** A received packet describes something that already happened and must never change. Immutable records enforce that at the compiler level, make packets safe to share across the map, the log, and services simultaneously, and hand you free value-equality for de-duplication. This is the single most important reason the file is written the way it is — preserve it."
+    },
+    {
+      "p": "**One sealed family, all visible in one file.** A future maintainer can open `AprsPacket.cs` and see the complete, closed set of packet kinds the app understands — thirteen leaves under one abstract root. The mild repetition of base fields is the deliberate cost of that clarity and of positional records; do not 'clean it up' into a deep inheritance chain that hides what each type contains."
+    },
+    {
+      "p": "**Unknown and UserDefined are features, not gaps.** The design chooses to always produce a valid packet object, even for lines it cannot interpret, so the radio firehose of odd and future formats degrades gracefully instead of crashing. Keep that forgiving posture: classify what you can, capture what you cannot, never drop or throw on the merely unfamiliar."
+    },
+    {
+      "p": "**Classify once, trust the type forever after.** Parsers do the hard interpretive work up front and encode the result as a specific subtype. Every layer above then uses pattern matching to branch safely and exhaustively, never re-parsing raw text. If you add a new packet kind, add a sealed record here first — the type system will then guide you to every place that must learn to handle it."
+    }
+  ]
+}

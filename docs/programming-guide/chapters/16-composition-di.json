@@ -1,0 +1,306 @@
+{
+  "order": 16,
+  "title": "Composition and Startup: Dependency Injection",
+  "subtitle": "How APRS-Command assembles every service in one place at launch, and hands each object exactly the collaborators it needs.",
+  "in_this_chapter": [
+    "What dependency injection means in plain words, and why the app builds everything in one place instead of scattering `new` all over the code",
+    "The two-phase build inside `DesktopRuntime.Create()`: register the container first, then hand-wire the live runtime objects on top",
+    "How the shared transmit-safety authority reaches every path that can key up a radio, so no path can transmit while inhibited",
+    "The deferred-client and settable-delegate tricks that break circular dependencies at startup",
+    "How `App.axaml.cs` wires live event streams (packets, GPS, weather) onto the UI after the runtime is built",
+    "The startup sequence from `Program.Main` through first-run setup to `runtime.Start()`",
+    "Orderly shutdown: `DisposeAsync` tearing the runtime down in the reverse order it was built"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "When APRS-Command launches, dozens of separate pieces have to come to life and find each other: the thing that reads radio packets off the internet, the thing that draws stations on a map, the thing that decides whether it is safe to key up a transmitter, the message center, the GPS reader, the weather poller, and many more. Something has to build all of those, in the right order, and connect each one to the exact helpers it depends on. That job is called __composition__, and the single place where it happens is called the __composition root__."
+    },
+    {
+      "p": "In APRS-Command that composition root is one file: `DesktopRuntime.cs`. It is the workshop where the whole application is assembled before the first window ever appears. A second file, `App.axaml.cs`, then takes the assembled runtime and connects its live data streams to the on-screen UI. This chapter walks through both, in plain language first and real code second."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The one-sentence version",
+        "text": "DesktopRuntime.Create() builds every service and hands each object the collaborators it needs; App.axaml.cs plugs the resulting live data into the windows the operator sees."
+      }
+    },
+    {
+      "h2": "Dependency injection, in plain words"
+    },
+    {
+      "p": "__Dependency injection__ (DI) sounds technical but the idea is simple. A __dependency__ is just something a class needs in order to do its job — a helper object it calls. __Injection__ means the class is *handed* that helper from outside, instead of building the helper itself."
+    },
+    {
+      "p": "A real-world analogy: think of a coffee machine. A badly designed machine would grow its own coffee beans and drill its own water well every morning — it would be tangled up with where those things come from. A well-designed machine has a bean hopper and a water inlet: you pour beans and water *in*, and the machine just brews. It does not care where they came from. Dependency injection is the water inlet. A class declares 'I need an `IStationDatabase` and an `IAprsParser`,' and whoever builds it pours those in through the constructor."
+    },
+    {
+      "p": "The opposite — a class reaching out and building its own helpers with `new` scattered through the codebase — creates two problems. First, you can never swap a helper for a test double or a different implementation, because the choice is welded inside the class. Second, nobody can see the whole wiring diagram; it is smeared across a hundred files. Centralizing construction in one composition root fixes both: every wiring decision lives in one readable place, and every class stays ignorant of where its collaborators came from."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why one wiring place beats scattered new",
+        "text": "With a single composition root you can read the app's entire dependency graph top to bottom, change one wire without hunting through feature code, and substitute fakes for tests. Classes that build their own dependencies can do none of this."
+      }
+    },
+    {
+      "h2": "The container: registering the recipe book"
+    },
+    {
+      "p": "APRS-Command uses the standard .NET DI container, `Microsoft.Extensions.DependencyInjection`. A __container__ is a registry that maps 'when someone asks for interface X, build it like this.' You fill it with recipes, then ask it for finished objects and it constructs them — and everything they transitively depend on — for you."
+    },
+    {
+      "p": "The build begins by creating an empty `ServiceCollection` (the recipe book) and adding recipes to it:"
+    },
+    {
+      "code": "public static DesktopRuntime Create()\n{\n    var services = new ServiceCollection();\n\n    // --- Core + services (real implementations) ---\n    services.AddSingleton<IAprsParser, AprsParser>();\n    services.AddSingleton<IStationDatabase>(_ => new Persistence.SqliteStationDatabase());\n    services.AddSingleton<StationDatabase>(_ => new StationDatabase());\n    services.AddSingleton<IRawPacketLogService>(\n        sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>()));"
+    },
+    {
+      "p": "Line by meaningful line. `AddSingleton<IAprsParser, AprsParser>()` says: whenever any object asks for an `IAprsParser` (the interface — the *promise* of a packet parser), give it one shared `AprsParser` (the concrete implementation). __Singleton__ means 'build exactly one and share it everywhere' — as opposed to building a fresh copy per request. Because a parser holds no per-caller state and is expensive to think about twice, one shared instance is correct."
+    },
+    {
+      "p": "The next lines show the two ways to register. `IStationDatabase` uses a __factory lambda__ — `_ => new Persistence.SqliteStationDatabase()` — a little recipe that says exactly how to build the object. The underscore is the container itself, ignored here because this constructor needs no other services. `IRawPacketLogService` uses the same lambda form but this time reaches back into the container: `sp => new RawPacketLogService(sp.GetRequiredService<IAprsParser>())`. Here `sp` is the __service provider__, and `GetRequiredService<IAprsParser>()` means 'go fetch the parser I registered a moment ago and hand it in.' That is dependency injection happening by hand, inside a recipe."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why explicit factories here",
+        "text": "A comment in the source explains it: `SqliteStationDatabase` and `RawPacketLogService` have constructor parameters the container cannot supply on its own, so they are built with explicit factory lambdas rather than letting the container guess a constructor it cannot fully satisfy."
+      }
+    },
+    {
+      "h2": "The heart of the app: the ingestion service"
+    },
+    {
+      "p": "A little further down, the recipe that ties the receive side together shows the injection pattern at full strength:"
+    },
+    {
+      "code": "services.AddSingleton<AprsIngestionService>(sp => new AprsIngestionService(\n    sp.GetRequiredService<IAprsParser>(),\n    sp.GetRequiredService<IStationDatabase>(),\n    sp.GetRequiredService<IRawPacketLogService>(),\n    sp.GetRequiredService<StationDatabase>()));"
+    },
+    {
+      "p": "The `AprsIngestionService` is the pipeline that takes a raw line of text off the air and turns it into a known station on the map. It needs four collaborators: a parser to decode the text, the real station database to remember stations, the raw-packet log to keep an audit trail, and a separate in-memory `StationDatabase` used only for isolated replay. Notice that `AprsIngestionService` does not build any of these — it is *handed* all four through its constructor. That is the whole philosophy in one statement: a class lists what it needs and stays ignorant of where those things come from."
+    },
+    {
+      "h2": "The transmit-safety authority: one guard shared everywhere"
+    },
+    {
+      "p": "The single most important thing the composition root does correctly is share one __transmit-safety authority__ across every path that can key up a radio. In plain terms: transmitting on the air is the one action in this app that can break the law or interfere with other operators, so there is a single guard object that every transmit path must ask 'am I allowed to send right now?' — and the composition root's job is to make sure they all ask the *same* guard."
+    },
+    {
+      "p": "Three registrations set this up:"
+    },
+    {
+      "code": "services.AddSingleton<IAprsPortManager, AprsPortManager>();\nservices.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();\nservices.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();"
+    },
+    {
+      "p": "Because all three are singletons, there is exactly one `TransmitSafetyAuthority` in the whole process. It owns a master switch — the __global inhibit__ — that exercise and training modes flip to hard-block every transmission at once. The interface makes its job explicit:"
+    },
+    {
+      "code": "public interface ITransmitSafetyAuthority\n{\n    bool IsInhibited { get; }\n    string? InhibitReason { get; }\n    void Inhibit(string reason);\n    void Release();\n    TransmitDecision Evaluate(TransmitRequest request);\n}"
+    },
+    {
+      "p": "`Evaluate` is the gate every transmit path calls. Its implementation checks four things in priority order: the global inhibit first (exercise mode blocks everything), then that a real callsign is set (never transmit as a placeholder like N0CALL), then that APRS-IS has a valid passcode, then the per-port rules. Putting all four checks in one method means no caller can accidentally transmit by a side path that forgot a check."
+    },
+    {
+      "h2": "How the guard reaches the lowest-level transmit code"
+    },
+    {
+      "p": "There is a subtlety worth understanding. The safety authority lives in the `Aprs.Services` layer, but the code that actually pushes bytes onto a KISS radio port lives lower, in `Aprs.Transport` — and a lower layer must never depend upward on a higher one. The solution is a tiny second interface, `ITransmitInhibitGate`, that lives down in the transport layer:"
+    },
+    {
+      "code": "public interface ITransmitInhibitGate\n{\n    bool IsTransmitInhibited { get; }\n    string? InhibitReason { get; }\n}"
+    },
+    {
+      "p": "The `TransmitSafetyAuthority` class implements *both* interfaces. To the high-level services it looks like a full `ITransmitSafetyAuthority`; to the low-level radio code it looks like a minimal `ITransmitInhibitGate` — the same single object wearing two faces. The composition root is what connects the low-level radio client to that shared object:"
+    },
+    {
+      "code": "var transmitAuthority = provider.GetRequiredService<ITransmitSafetyAuthority>();\nvar inhibitGate = (ITransmitInhibitGate)transmitAuthority;\nrfTransmitClient.InhibitGate = inhibitGate;\n\nvar beaconService = BeaconService.CreateFromSettings(\n    provider.GetRequiredService<IAppSettingsStore>().Load(),\n    rfBeaconClient: rfTransmitClient,\n    inhibitGate: inhibitGate);"
+    },
+    {
+      "p": "Line by line: it fetches the one authority from the container, casts it to its narrow inhibit-gate face, and hands that gate to the RF transmit client. Then it builds the beacon service with the *same* gate. The object-transmit service, the message-ACK coordinator, and the weather-beacon scheduler all get handed the same shared client and authority a few lines later. Because it is one object shared by construction, flipping exercise mode once silences every path at the same instant."
+    },
+    {
+      "code": "// Inside KissRfBeaconTransmitClient.SendBeaconAsync — the low-level check:\nvar gate = InhibitGate;\nif (gate is not null && gate.IsTransmitInhibited)\n    return Fail(gate.InhibitReason ?? \"Transmit is globally inhibited (exercise mode).\", rawPacket);"
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Why this matters",
+        "text": "Sharing one authority by construction is a safety guarantee, not a convenience. If each transmit path built its own guard, exercise mode might silence some paths and miss others. One object, injected everywhere, means the master switch is truly master."
+      }
+    },
+    {
+      "h2": "Breaking startup cycles: the deferred client"
+    },
+    {
+      "p": "Assembly is rarely a clean straight line. Sometimes object A needs object B, but B cannot exist until A is partly built — a __circular dependency__, like needing your house keys to get into the garage where you keep your house keys. APRS-Command solves this in two ways, both visible in the composition root."
+    },
+    {
+      "p": "The first is the __deferred proxy__. The internet-gateway (iGate) service needs an APRS-IS client at the moment it is registered, but the real client only comes to life later, after the beacon service is built. So the root registers a stand-in:"
+    },
+    {
+      "code": "var deferredIGateClient = new DeferredAprsIsClient();\nservices.AddSingleton<IIGateService>(_ => new IGateService(\n    deferredIGateClient, IGateConfiguration.Default, null));\n\n// ...much later, once the real client exists:\ndeferredIGateClient.InnerClient = beaconService.AprsIsClient;"
+    },
+    {
+      "p": "`DeferredAprsIsClient` is an empty vessel that implements the full client interface. Until its `InnerClient` is set, every call is a harmless no-op that reports 'disconnected.' Once the real client exists, one assignment slots it in and all calls pass through. The iGate never knows the difference — it was handed a promise, and the promise was quietly fulfilled."
+    },
+    {
+      "h2": "Breaking cycles: settable delegates"
+    },
+    {
+      "p": "The second technique is the __settable delegate__. The RF transmit client needs to know which radio connections are open, but those connection coordinators are not built until later in `Create()`. Rather than force an ordering that cannot exist, the client exposes function-shaped hooks that default to 'nothing,' then get filled in once the coordinators are ready:"
+    },
+    {
+      "code": "public Func<IReadOnlyList<TcpKissClient>> GetTcpClients { get; set; }\n    = static () => Array.Empty<TcpKissClient>();\n\n// ...after the coordinators are built:\nrfTransmitClient.GetTcpClients    = () => kissTcpCoordinator.GetTransmitClients();\nrfTransmitClient.GetSerialClients = () => serialKissCoordinator.GetTransmitClients();"
+    },
+    {
+      "p": "The delegate starts as a function that returns an empty list, so the client is safe to use even before wiring. After the coordinators exist, the root replaces those functions with ones that fetch the live clients. This keeps the DI graph acyclic while still letting late-built pieces feed early-built ones."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Two phases, one method",
+        "text": "Create() is deliberately split in half. The first half registers recipes into the container and calls BuildServiceProvider(). The second half pulls key objects back out and hand-wires the runtime-only connections — RF delegates, the deferred client, the coordinators — that a pure container cannot express."
+      }
+    },
+    {
+      "h2": "Assembling the main viewmodel"
+    },
+    {
+      "p": "Once the container is built, the root constructs the __MainWindowViewModel__ — the single object the main window binds to, holding a live viewmodel for every feature panel. Each is fed real services pulled from the container. A representative slice:"
+    },
+    {
+      "code": "var mainViewModel = new MainWindowViewModel(\n    map,\n    GpsStatusViewModel.FromGpsService(new Aprs.Services.GpsService(), DateTimeOffset.UtcNow),\n    rawPacketLog,                                   // LIVE\n    new DecodedEventLogViewModel(provider.GetRequiredService<IDecodedEventLogService>()),\n    new EventMonitorViewModel(provider.GetRequiredService<IAprsEventBus>()),\n    provider.GetRequiredService<MessageCenterViewModel>(),\n    // ...roughly thirty feature viewmodels, each handed its live service...\n    new SmartBeaconingViewModel(provider.GetRequiredService<IAppSettingsStore>()));"
+    },
+    {
+      "p": "Every `LIVE` comment marks a panel wired to a real service rather than sample data. The pattern is uniform: build a viewmodel, hand it the service it needs from the container. A couple of viewmodels — like the GPS status and the simulation panel — are given a neutral initial state here and then connected to their live event source afterward, because their data arrives as a stream of events rather than a single fetch."
+    },
+    {
+      "h2": "From Create to Start"
+    },
+    {
+      "p": "`Create()` finishes by packing the assembled objects into a `DesktopRuntime` instance via its private constructor and returning it. Construction and *running* are kept separate: nothing has connected to a network or started a timer yet. That happens in a distinct `Start()` method:"
+    },
+    {
+      "code": "public void Start()\n{\n    Coordinator.Start();\n    BeaconService.Start();\n    GpsCoordinator.Start();\n    MessageAckCoordinator.Start();\n    KissTcpCoordinator.Start();\n    SerialKissCoordinator.Start();\n    // ...\n    Coordinator.ConnectAprsIsReceiveOnly(\n        settings.Callsign, serverHost: serverHost,\n        serverPort: serverPort, filter: filter);\n}"
+    },
+    {
+      "p": "Separating build from start means the object graph can be fully assembled and inspected before anything with side effects runs. It also gives a clean, deliberate moment where the app opens its receive-only connection to the APRS-IS network so live stations appear on launch — using the operator's own configured server and filter, not hardcoded defaults."
+    },
+    {
+      "h2": "The other half: App.axaml.cs wires the UI"
+    },
+    {
+      "p": "The composition root builds services and viewmodels, but something still has to connect live event streams to the screen — turn an incoming packet into a toast notification, a GPS fix into a status readout, a weather packet into the weather panel. That is the job of `App.axaml.cs`, Avalonia's application entry class, and specifically its `OnFrameworkInitializationCompleted` method."
+    },
+    {
+      "p": "It first decides between two paths based on whether the operator has ever set up a station:"
+    },
+    {
+      "code": "if (StationProfile.Load().IsConfigured)\n{\n    runtime = DesktopRuntime.Create();\n    var mainWindow = new MainWindow { DataContext = runtime.MainViewModel };\n    // ...restore saved window size/position...\n    desktop.MainWindow = mainWindow;\n    runtime.Start();\n    WireSoundAlerts(runtime);\n    WireMessageToast(runtime);\n    WireGpsWriteback(runtime);\n    // ...roughly twenty Wire* calls...\n}\nelse\n{\n    var setup = new SetupWindow();\n    setup.SetupCompleted += () => { /* build runtime, then wire */ };\n    desktop.MainWindow = setup;\n}"
+    },
+    {
+      "p": "On a configured install it builds the runtime, binds the main window to `runtime.MainViewModel`, calls `runtime.Start()`, then runs a long list of `Wire*` helper methods. On first-ever run it instead shows a setup window and defers all of that until the operator finishes. Each `Wire*` method is a small, single-purpose connector. For example:"
+    },
+    {
+      "code": "private static void WireWeather(DesktopRuntime rt)\n{\n    rt.Coordinator.PacketParsed += (_, e) =>\n    {\n        if (e.Packet is Aprs.Core.WeatherAprsPacket wp)\n            Avalonia.Threading.Dispatcher.UIThread.Post(() =>\n                rt.MainViewModel.Weather.AcceptWeatherPacket(wp, e.Source));\n    };\n}"
+    },
+    {
+      "p": "It subscribes to the coordinator's `PacketParsed` event, filters for weather packets, and pushes each one to the weather panel. The `Dispatcher.UIThread.Post` wrapper is essential: packets arrive on background threads, but UI objects may only be touched on the UI thread, so the update is marshaled onto it. Every `Wire*` method that touches the screen follows this same discipline."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "A real division of labor",
+        "text": "Keeping event-to-UI wiring in App.axaml.cs rather than DesktopRuntime keeps the composition root free of Avalonia and threading concerns. The root knows about services; App.axaml.cs knows about the screen. Mixing them would make the service graph impossible to test without a UI."
+      }
+    },
+    {
+      "h2": "Startup, end to end"
+    },
+    {
+      "p": "Pulling the whole sequence together, here is the path from the operating system launching the process to a running window:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Step",
+          "Where",
+          "What happens"
+        ],
+        "rows": [
+          [
+            "1",
+            "Program.Main",
+            "Velopack update hook runs; global exception handlers are installed; the Avalonia app is built and started."
+          ],
+          [
+            "2",
+            "App.OnFrameworkInitializationCompleted",
+            "Persisted dark-mode theme is applied before any window opens."
+          ],
+          [
+            "3",
+            "App (branch)",
+            "If a station profile exists, build the runtime; otherwise show the setup window first."
+          ],
+          [
+            "4",
+            "DesktopRuntime.Create",
+            "Register all services into the container, build the provider, then hand-wire coordinators, the transmit authority, and the main viewmodel."
+          ],
+          [
+            "5",
+            "App",
+            "Bind MainWindow to runtime.MainViewModel; restore saved window size and position."
+          ],
+          [
+            "6",
+            "runtime.Start",
+            "Start every coordinator and open the receive-only APRS-IS connection."
+          ],
+          [
+            "7",
+            "App Wire* methods",
+            "Connect live event streams (packets, GPS, weather, alerts) to the on-screen viewmodels."
+          ]
+        ]
+      }
+    },
+    {
+      "code": "// Program.cs — the true entry point\npublic static void Main(string[] args)\n{\n    VelopackApp.Build().Run();\n    AppDomain.CurrentDomain.UnhandledException += /* write a fatal-error log */;\n    BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);\n}"
+    },
+    {
+      "h2": "Shutdown: tearing down in reverse"
+    },
+    {
+      "p": "A composition root that builds things carefully must also tear them down carefully. `DesktopRuntime` implements `IAsyncDisposable`, and its `DisposeAsync` disposes objects in roughly the reverse order they were created — later, dependent pieces first, foundational pieces last:"
+    },
+    {
+      "code": "public async ValueTask DisposeAsync()\n{\n    await LocalRestApiService.StopAsync().ConfigureAwait(false);\n    await AgwpeCoordinator.DisposeAsync().ConfigureAwait(false);\n    // ...coordinators, watchdog, GPS, beacon...\n    await Coordinator.DisposeAsync().ConfigureAwait(false);\n    if (provider.GetService<IStationDatabase>() is IDisposable db)\n        db.Dispose();\n    await provider.DisposeAsync().ConfigureAwait(false);\n}"
+    },
+    {
+      "p": "Reverse order matters: you close the coordinators that *use* the database before you close the database itself, exactly as you would unplug appliances before shutting off the power at the panel. The final `provider.DisposeAsync()` disposes the container and, with it, every singleton it built. `App.axaml.cs` calls this from its `OnShutdownRequested` handler, so a clean exit always releases sockets, serial ports, and the SQLite connection."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The composition root is the one place in APRS-Command where you can see the entire application as a single wiring diagram. Everything else is a component that declares its needs and stays ignorant of the rest. That separation is what lets the app grow to dozens of features without collapsing into a tangle."
+    },
+    {
+      "p": "The design rests on a few deliberate choices worth carrying forward. Build in one place, so the dependency graph is readable and changeable. Inject dependencies rather than construct them, so classes stay testable and swappable. Share the one object that must be shared — the transmit-safety authority — by construction, so a safety guarantee cannot be defeated by a forgotten wire. Break startup cycles with deferred proxies and settable delegates rather than contorting the object graph. Keep building separate from running, and running separate from UI wiring, so each concern can be reasoned about and tested on its own. And tear down in reverse, so a clean shutdown is as deliberate as a clean startup."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "For the next maintainer",
+        "text": "When you add a feature, add its service registration to DesktopRuntime.Create(), inject its dependencies through the constructor, and — if it needs live data on screen — add a small single-purpose Wire* method in App.axaml.cs. Follow the existing grain and the wiring diagram stays legible."
+      }
+    }
+  ]
+}

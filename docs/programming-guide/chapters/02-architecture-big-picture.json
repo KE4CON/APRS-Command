@@ -1,0 +1,267 @@
+{
+  "order": 2,
+  "title": "The Big Picture: Architecture at 10,000 Feet",
+  "subtitle": "How a single radio packet travels from the airwaves or the internet, through parsing and services, and finally becomes a dot on the map.",
+  "in_this_chapter": [
+    "The end-to-end journey of one packet, start to finish",
+    "Why the app is built in strict layers, and what each layer may touch",
+    "The receive-first philosophy: why listening is the default and transmitting is fenced off",
+    "The one central pipeline every transport feeds, no matter the source",
+    "How the map stays smooth under a flood of incoming packets",
+    "The parallel event bus that powers the log, the developer API, and replay",
+    "Where App.axaml.cs wires dozens of features onto a single stream of packets"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command is, at its heart, a listening station. Somewhere out there a ham radio operator's tracker transmits a tiny burst of text saying \"here I am, at this latitude and longitude, and here's a short note.\" That burst can reach this program two completely different ways: over the air as a radio signal, or over the internet through a worldwide relay network. This chapter follows one of those bursts on its entire journey — from the moment it arrives as a meaningless line of characters to the moment it appears as a labeled icon on your map — and explains why the road it travels is shaped the way it is."
+    },
+    {
+      "p": "If you understand this one journey, you understand the spine of the whole application. Almost every feature in APRS-Command — the message center, weather display, net-control roster, geofence alerts, station trails, the developer API — is a branch hanging off this single trunk. Learn the trunk first and every branch makes sense."
+    },
+    {
+      "p": "The key idea to hold onto: __no matter where a packet comes from__ — radio, internet, a file being replayed, a training simulation — it is funneled into __one__ shared pipeline and treated identically from there on. That single funnel is the most important design decision in the program, and most of this chapter is about why it exists and how it works."
+    },
+    {
+      "h2": "The journey in one breath"
+    },
+    {
+      "p": "Before the details, here is the whole trip as a numbered walk. Each step is a real class in the source; later sections open each one up."
+    },
+    {
+      "steps": [
+        "A __transport client__ (for example `AprsIsClient` for the internet, or `KissTcpCoordinator` for radio-over-network) receives a raw text line and stamps it with where it came from.",
+        "The `LiveDataCoordinator` catches that raw line and hands it to the pipeline, making sure it lands on the correct thread first.",
+        "The `AprsIngestionService` — the single funnel — records the raw line, asks the parser to make sense of it, and files the result.",
+        "The `AprsParser` inspects the line's structure and turns it into a strongly-typed __domain object__ like a `PositionAprsPacket` or `WeatherAprsPacket`.",
+        "The `StationDatabase` folds that object into what it already knows about that station — updating position, counting packets, spotting duplicates, recording a trail point.",
+        "The ingestion service raises two events — `PacketParsed` and `PacketIngested` — announcing that a packet just went through.",
+        "On a gentle timer, the `LiveDataCoordinator` copies the current station list into the `MapViewModel`, which turns each station into a map marker you can see."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Two outputs, not one",
+        "text": "A packet produces two results at the end: it updates the station database (which drives the map and station list), AND it fires an event that dozens of independent features listen to. The map is just the most visible consumer. Hold this dual nature in mind — it is why one packet can simultaneously move a dot, pop a message toast, speak an alert aloud, and forward data to an external service."
+      }
+    },
+    {
+      "h2": "Why the app is built in layers"
+    },
+    {
+      "p": "APRS-Command is split into separate projects that are stacked like floors of a building, and the building code forbids reaching down through the floor. In plain terms: the code that talks to the internet is not allowed to know anything about buttons and maps, and the code that draws the map is not allowed to open a network socket. Each floor may only call the floor directly below it."
+    },
+    {
+      "p": "The reason is not tidiness for its own sake — it is testability and longevity. The parser and station database live in projects (`Aprs.Core` and `Aprs.Services`) that have __no idea a user interface exists__. That means you can feed them ten thousand test packets in a fraction of a second with no window ever opening. It also means that if the desktop UI framework is someday replaced, the entire brain of the application survives untouched. An __interface__ here works like a wall socket: `AprsIngestionService` accepts anything shaped like an `IAprsParser`, and does not care whether that's the real parser or a fake one wired up for a test."
+    },
+    {
+      "table": {
+        "headers": [
+          "Layer (project)",
+          "Plain-language job",
+          "What it is allowed to touch"
+        ],
+        "rows": [
+          [
+            "Aprs.Transport",
+            "Talk to the outside world — internet servers, radio modems — and hand back raw text lines",
+            "Sockets and streams only; no domain meaning"
+          ],
+          [
+            "Aprs.Core",
+            "Understand APRS grammar: turn a raw line into a typed packet object",
+            "Nothing else — pure logic, zero dependencies"
+          ],
+          [
+            "Aprs.Services",
+            "Hold the state and rules: station database, ingestion, event bus, alerts",
+            "Aprs.Core only; never the UI or a socket"
+          ],
+          [
+            "Aprs.Desktop",
+            "The visible app: windows, view models, and the wiring that connects everything",
+            "Everything below it, through interfaces"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The boundaries are compiler-enforced",
+        "text": "These are not polite suggestions in a style guide. Each layer is a separate .csproj that only references the layers it is permitted to see. If someone tries to call a map view model from inside the parser, the code simply will not compile. The architecture defends itself."
+      }
+    },
+    {
+      "h2": "Receive-first: why listening is the default and talking is fenced off"
+    },
+    {
+      "p": "APRS-Command boots up already listening, and it will happily run forever without ever transmitting a single packet. This is deliberate, and it is baked into how the app connects. Look at how the startup opens its internet connection in `DesktopRuntime.Start()` — it calls `ConnectAprsIsReceiveOnly`."
+    },
+    {
+      "code": "// LiveDataCoordinator.ConnectAprsIsReceiveOnly(...)\nvar config = defaults with\n{\n    Callsign = string.IsNullOrWhiteSpace(callsign) ? \"N0CALL\" : callsign.Trim(),\n    // ... server, port, filter ...\n    ReceiveOnly = true,\n    TransmitEnabled = false,\n};"
+    },
+    {
+      "p": "A receive-only connection to the APRS internet network logs in with the special passcode `-1`, which the network recognizes as \"this station may listen but may never send.\" The connection is physically incapable of transmitting. Why go to this trouble? Because on a shared radio band and a global network, an accidental or buggy transmission is rude at best and disruptive at worst. Making reception the safe, always-on default means the app is useful and harmless the instant it launches — you can watch the world without ever keying up."
+    },
+    {
+      "p": "Transmitting, by contrast, is treated as a privileged act that must pass through a guard. Every code path that could send — beacons, messages, objects, digipeating — consults a single `ITransmitSafetyAuthority` before keying up. That authority also doubles as a global \"inhibit\" switch used by training and exercise modes, so an instructor can freeze all transmission with one flag while the receive side keeps running normally. Listening is free; talking is gated."
+    },
+    {
+      "h2": "The single funnel: AprsIngestionService"
+    },
+    {
+      "p": "This is the pinch point the whole architecture is built around. Every transport — internet, radio-over-TCP, serial radio, the AGWPE/BPQ32 packet engine, the bundled Direwolf software modem, replayed history, and the training simulator — ends up calling the same one method: `IngestReceivedLine`. Here is the entire core of it."
+    },
+    {
+      "code": "public void IngestReceivedLine(string rawLine, AprsPacketSource source, DateTimeOffset receivedAtUtc)\n{\n    if (string.IsNullOrWhiteSpace(rawLine)) return;\n\n    rawPacketLog.AddReceivedRawPacket(rawLine, source, timestampUtc: receivedAtUtc);\n\n    AprsPacket? packet = null;\n    if (parser.TryParse(rawLine, receivedAtUtc, out packet, out _) && packet is not null)\n    {\n        var target = source == AprsPacketSource.Replay && replayStationDatabase is not null\n            ? replayStationDatabase\n            : stationDatabase;\n        target.ProcessPacket(packet, source);\n    }\n\n    PacketParsed?.Invoke(this, new ParsedPacketEventArgs(packet, source));\n    PacketIngested?.Invoke(this, EventArgs.Empty);\n}"
+    },
+    {
+      "p": "Read it top to bottom and you have the pipeline in miniature. First it drops empty lines. Then it logs the raw text verbatim (so the exact bytes are always recoverable, even if parsing later fails). Then it asks the parser to decode the line; `TryParse` follows the .NET convention of returning `true`/`false` instead of throwing, because a malformed packet off the air is normal, not an error. If a packet came out, it is filed into the station database — with one clever twist: replayed packets go to a __separate__ database so reviewing history never disturbs your live picture. Finally it announces the packet to any listeners."
+    },
+    {
+      "p": "Notice the second argument to every call: an `AprsPacketSource`. This is a small tag — `AprsIs`, `TcpKiss`, `SerialKiss`, `Direwolf`, `Agwpe`, `Replay`, `Simulation`, and a few more — that rides along with the packet so downstream features can tell where it came from. The RF diagnostics screen, for instance, only pays attention to packets tagged as arriving over radio."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why one funnel matters",
+        "text": "Because every source converges here, a feature written once — say, geofence alerting — automatically works for internet packets, radio packets, and replayed history alike, with zero extra code. Add a brand-new transport tomorrow and every existing feature lights up for it for free. That is the entire payoff of the single-funnel design."
+      }
+    },
+    {
+      "p": "Every transport looks the same at the point it feeds in. Here is the radio-over-TCP coordinator doing exactly what the internet client does, just with a different source tag:"
+    },
+    {
+      "code": "// KissTcpCoordinator.OnRawPacketReceived\nif (!string.IsNullOrWhiteSpace(e.RawPacketLine))\n{\n    ingestion.IngestReceivedLine(e.RawPacketLine, AprsPacketSource.TcpKiss, e.ReceivedAtUtc);\n}"
+    },
+    {
+      "h2": "The parser: from a line of characters to a real object"
+    },
+    {
+      "p": "The `AprsParser` is the translator. APRS packets are a terse, decades-old text format; a raw line looks like `W1AW-9>APRS,WIDE1-1:=4123.45N/07234.56W>Mobile test`. The parser's job is to break that apart and hand back a tidy C# object whose meaning is obvious to the rest of the program. It works in two stages: first it splits the universal envelope, then it identifies the specific message type."
+    },
+    {
+      "p": "The envelope split keys off two characters. The `>` separates the sender from the routing path; the `:` separates that header from the actual __information__ payload. From the header it pulls the source callsign and its __SSID__ (a number 0–15 that lets one operator run several stations, like `W1AW-9` for a vehicle), the destination, and the digipeater path the packet hopped through."
+    },
+    {
+      "p": "Then comes the type dispatch — a waterfall of checks, in a deliberate order, because some APRS type-markers are ambiguous and order resolves the ambiguity."
+    },
+    {
+      "code": "if (weatherParser.CanParse(rawPacket.Information))\n    return weatherParser.Parse(rawPacket);\n\nif (IsPositionInformation(rawPacket.Information))\n    return positionParser.Parse(rawPacket);\n\n// MIC-E encodes position in the destination field; its markers don't\n// collide with anything else, so it is safe to dispatch here.\nif (micEParser.CanParse(rawPacket.Information))\n    return micEParser.Parse(rawPacket);\n\n// ... status, telemetry, message, object/item, query ..."
+    },
+    {
+      "p": "Each specialized sub-parser (`positionParser`, `weatherParser`, `micEParser`, and the rest) owns the fiddly rules of one format, so no single method becomes a thousand-line monster. One case is worth calling out because it shows real defensive thinking: __third-party traffic__. On the internet, a gateway station often wraps a packet it heard on the radio inside its own packet, marked with a `}`. The parser unwraps it and re-parses the inner packet so the __original__ station surfaces, not the gateway — but it carries a depth counter and refuses to unwrap more than three times, so a maliciously or accidentally looping chain can never spin the program into an infinite recursion."
+    },
+    {
+      "code": "if (rawPacket.Information.StartsWith('}') && thirdPartyDepth < 3)\n{\n    var inner = rawPacket.Information.Length > 1 ? rawPacket.Information[1..] : string.Empty;\n    return Parse(inner, receivedAtUtc, thirdPartyDepth + 1);\n}"
+    },
+    {
+      "p": "The output of all this is one of a family of __record__ types — `PositionAprsPacket`, `WeatherAprsPacket`, `MessageAprsPacket`, and so on, all sharing the base `AprsPacket`. A record is an immutable data object: once created it never changes, which makes it safe to hand around the app without fear that some distant piece of code will quietly alter it. If a line is gibberish the parser still returns an object — an `UnknownAprsPacket` or a raw packet flagged with validation errors — so the pipeline never crashes on bad input; it simply marks the packet invalid and moves on."
+    },
+    {
+      "h2": "The station database: turning packets into a living picture"
+    },
+    {
+      "p": "A single position packet is a snapshot; the `StationDatabase` is the movie. Its job is to remember every station it has heard and fold each new packet into what it already knows. Stations are kept in a dictionary keyed by callsign-and-SSID, compared case-insensitively, so `w1aw-9` and `W1AW-9` are the same station. When a packet arrives for a known station, the database creates an updated `StationSnapshot` that carries forward the old details and overlays whatever the new packet provides."
+    },
+    {
+      "code": "// ApplyPacketSpecificFields — a position packet overlays only what it carries,\n// keeping prior values where the new packet is silent.\nPositionAprsPacket position => station with\n{\n    Latitude  = position.Latitude  ?? station.Latitude,\n    Longitude = position.Longitude ?? station.Longitude,\n    Comment   = string.IsNullOrEmpty(position.Comment) ? station.Comment : position.Comment,\n    CourseDegrees = position.CourseDegrees ?? station.CourseDegrees,\n    // ... speed, altitude, symbol ...\n},"
+    },
+    {
+      "p": "The `?? station.Latitude` reads as \"use the new latitude, but if the packet didn't include one, keep the latitude we already had.\" This is why a station whose latest packet is a plain status message doesn't suddenly lose its position on the map — the database is additive, layering new facts over old ones rather than wiping the slate each time."
+    },
+    {
+      "p": "The database also quietly does three housekeeping jobs that matter enormously in the field. It __detects duplicates__: APRS packets frequently arrive two or three times via different paths, so the database hashes each packet's payload and, if it saw the same content within thirty seconds, counts it as a duplicate instead of pretending it's fresh news. It __records trails__: successive positions for a moving station are stitched into a breadcrumb path, with rules to skip near-identical points and cap how many are kept. And it __ages stations__: every station has a lifecycle — Active, Stale, Expired, Hidden — computed from how long since it was last heard, so a station that went quiet an hour ago fades rather than lingering forever as if still present."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Objects and items get names, not callsigns",
+        "text": "Most packets are keyed by the sender's callsign. But APRS \"objects\" (a flagged hazard, an aid station) and \"items\" are keyed by the object's own name instead, because the point is the thing on the map, not who reported it. The database's GetStationKey handles this switch, which is why a placed object shows under its label rather than the callsign of whoever announced it."
+      }
+    },
+    {
+      "h2": "Keeping the map smooth: the coalescing refresh"
+    },
+    {
+      "p": "Here is a problem the naive design would trip over. During a busy net or a big event, packets can pour in dozens per second. If the map redrew itself on every single packet, the interface would stutter and thrash. The `LiveDataCoordinator` solves this with a technique worth understanding: it __coalesces__ updates. Instead of refreshing on every packet, each packet just flips a flag."
+    },
+    {
+      "code": "// In the constructor:\nthis.ingestion.PacketIngested += (_, _) => dirty = true;\n\n// Started once, runs forever:\nrefreshTimer = new DispatcherTimer(\n    TimeSpan.FromMilliseconds(500),\n    DispatcherPriority.Background,\n    (_, _) => RefreshIfDirty());\n\nprivate void RefreshIfDirty()\n{\n    if (!dirty) return;\n    dirty = false;\n    var source = ActiveStationDatabase;\n    source.UpdateAgeStates(DateTimeOffset.UtcNow);\n    map.UpdateStations(source.GetVisibleStations());\n    rawPacketLog.Refresh();\n}"
+    },
+    {
+      "p": "A thousand packets arriving in half a second set the same `dirty` flag a thousand times, but the map redraws just __once__, on the next timer tick. Whether one packet or a hundred arrived, the cost of redrawing is paid at most twice a second. This is a classic trade: the map may lag reality by up to half a second, which no human notices, in exchange for staying perfectly smooth under any load."
+    },
+    {
+      "p": "There's a threading subtlety here too. Packets arrive on background threads (network and radio don't wait politely for the UI). But user-interface objects in this framework may only be touched from one special thread. So the internet client marshals each raw line onto that UI thread before ingesting it — `Dispatcher.UIThread.Post(...)` — which keeps the entire station database and log single-threaded and therefore free of the subtle bugs that plague shared-across-threads data. The whole receive spine runs on one thread by design."
+    },
+    {
+      "code": "aprsIsClient.RawPacketReceived += (_, e) =>\n    Dispatcher.UIThread.Post(() =>\n        ingestion.IngestReceivedLine(e.RawPacketLine, AprsPacketSource.AprsIs, e.ReceivedAtUtc));"
+    },
+    {
+      "h2": "The last mile: from station snapshot to map marker"
+    },
+    {
+      "p": "The final hop is short. When the refresh timer fires, it asks the database for the currently-visible stations and hands them to `MapViewModel.UpdateStations`, which turns each `StationSnapshot` into a `StationMarkerViewModel` the map can draw."
+    },
+    {
+      "code": "public void UpdateStations(IEnumerable<StationSnapshot> stations)\n{\n    var markers = stations\n        .Select(station => StationMarker.TryCreate(station, out var marker) ? marker : null)\n        .OfType<StationMarker>()\n        .ToList();\n\n    Markers.Clear();\n    foreach (var marker in markers)\n        Markers.Add(new StationMarkerViewModel(marker));\n}"
+    },
+    {
+      "p": "`StationMarker.TryCreate` quietly filters out any station that has no usable position — you cannot pin a dot with no coordinates — so a station heard only via a status message stays in the list but doesn't clutter the map. `Markers` is an __observable collection__: a list that announces its own changes, so the map view is subscribed and repaints automatically the instant markers are swapped in. The view model never reaches out to touch the map; it just changes its data, and the UI follows. The packet's journey is complete."
+    },
+    {
+      "h2": "The parallel channel: the event bus"
+    },
+    {
+      "p": "There is a second nervous system running alongside the station-database path, and it's easy to miss. The `AprsEventBus` is a publish-and-subscribe hub: components announce typed events (\"a station updated,\" \"weather came in,\" \"a transmit was blocked\") without knowing or caring who is listening. Think of it as a radio station broadcasting on labeled channels — the `DecodedEventLogService`, the on-screen event monitor, the file-hook system, and the developer-facing REST and WebSocket APIs all tune in to the channels they care about."
+    },
+    {
+      "p": "Why have this in addition to the direct ingestion events? Because it __decouples__ the parts of the app that don't belong together. The parser and station database should not know that a WebSocket server exists. The event bus lets those distant, optional features subscribe to the packet flow without the core ever holding a reference to them. It also keeps a rolling history of recent events (so a screen opened late can still show what just happened) and safely isolates subscribers — if one handler throws an exception, the bus catches it and the others still run."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Two paths, one purpose",
+        "text": "The direct path (ingestion → station database → map) is the tight, ordered, single-threaded spine that must be fast and correct. The event bus is the loose, optional, extensible fabric for everything else. Simulation and replay publish onto the same bus, which is exactly why a replayed session lights up the event log and developer API just like live traffic."
+      }
+    },
+    {
+      "h2": "Where it all gets wired: App.axaml.cs and DesktopRuntime"
+    },
+    {
+      "p": "Two files hold the assembly instructions for the whole machine. `DesktopRuntime.Create()` is the __composition root__ — the one place where every real service is constructed and handed its dependencies. It builds the dependency-injection container, creates the ingestion service, the station databases, the coordinator, the map view model, and the transports, and threads them together. Concentrating this in one method means there is exactly one place to look to understand what the live app is made of, and exactly one place to change a wiring decision."
+    },
+    {
+      "p": "Then `App.axaml.cs` performs the __fan-out__: a series of small `Wire...` methods that each subscribe one feature to the packet stream. This is where the trunk sprouts its branches, and reading them is the fastest way to grasp the app's breadth. Each does one job:"
+    },
+    {
+      "code": "// Every parsed position packet updates the net-control roster:\nrt.Coordinator.PacketParsed += (_, e) =>\n{\n    if (e.Packet is not PositionAprsPacket pos) return;\n    Dispatcher.UIThread.Post(() =>\n        rt.MainViewModel.NetControl.ProcessHeardStation(\n            pos.SourceCallsign, pos.Latitude, pos.Longitude, pos.Comment, pos.ReceivedAtUtc));\n};"
+    },
+    {
+      "p": "That same `PacketParsed` event is the tap that feeds weather to the weather window, telemetry to the telemetry monitor, positions to station trails and geofence checks, statistics to the counters, and packets to the CalTopo forwarder — each in its own tidy `Wire...` method. Because they all filter by packet type (\"is this a `WeatherAprsPacket`?\") and by source tag, each feature quietly ignores everything that isn't its business. This is the whole architecture in action: one stream in, many independent listeners, each doing one thing well."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "If you preserve nothing else about this design, preserve the __single funnel__. Every transport converging on `AprsIngestionService.IngestReceivedLine` is what lets the app treat radio, internet, replay, and simulation as interchangeable, and it is why every feature works across every source without special cases. Resist any temptation to let a new transport shortcut into the map or a feature directly — route it through the funnel and it inherits the entire app for free."
+    },
+    {
+      "p": "Preserve the __layer boundaries__. The parser and station database knowing nothing of the UI is not academic purity; it is what makes the brain of the app fast to test and cheap to keep alive across UI changes. The compiler enforces this today. Keep it that way — the moment a service reaches up into a view model, the wall has a hole in it."
+    },
+    {
+      "p": "Preserve __receive-first safety__. The app listens by default and treats transmission as a privileged act behind a single safety authority. On shared airwaves that is not a convenience, it is a responsibility. New transmit paths must go through the same gate, no exceptions."
+    },
+    {
+      "p": "Preserve the __coalesced refresh__ and the __single-threaded spine__. The half-second, dirty-flag redraw is what keeps the map calm during a packet storm, and marshaling every packet onto the UI thread before ingestion is what keeps the shared station data free of concurrency bugs. These are quiet decisions that only reveal their value under load — don't optimize them away without understanding what they buy."
+    },
+    {
+      "p": "Finally, understand the __two channels__: the tight ingestion spine that must be correct and fast, and the loose event bus that makes the app endlessly extensible. New features almost always belong on the bus or on a `PacketParsed` subscription in `App.axaml.cs` — a new branch on the trunk — not surgery on the trunk itself. Keep the trunk boring and let the branches be where the app grows."
+    }
+  ]
+}

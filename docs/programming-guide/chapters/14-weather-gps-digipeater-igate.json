@@ -1,0 +1,233 @@
+{
+  "order": 14,
+  "title": "Weather, GPS, Digipeater & iGate",
+  "subtitle": "A tour of APRS-Command's four outward-facing services — and how each one earns the right to transmit.",
+  "in_this_chapter": [
+    "The single TransmitSafetyAuthority that every transmit path must clear, and its fixed priority order",
+    "Weather done as two divorced halves — harmless ingest from many vendors versus opt-in, twice-guarded beaconing",
+    "GPS as a merge-not-replace position tracker fed by either a serial NMEA puck or a GPSD daemon",
+    "The digipeater's loop-prevention, path-independent duplicate fingerprint, and WIDEn-N discipline",
+    "The iGate's mandatory NOGATE/RFONLY/q-construct blocks that no user setting can override",
+    "Why all four ship off by default and separate read-only observation from anything that transmits"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command is fundamentally a listening station: it hears amateur-radio packets over the air and shows them on a map. But four of its feature services can also __talk back__ — either onto the radio, onto the internet, or both. This chapter walks through those four: the **weather** services (reading a backyard weather station and, optionally, broadcasting its readings), **GPS/location** (knowing where the station physically is), the **digipeater** (a radio relay that repeats other people's packets so they travel farther), and the **iGate** (a bridge that copies packets between the radio world and the internet). They are the app's outward-facing muscle."
+    },
+    {
+      "p": "They are grouped together here for one reason above all others: each one can key a transmitter or push data onto a shared public network, and every single one of them ships __off__. Nothing beacons, repeats, or gates until a human deliberately turns it on and the central safety checks all pass. The rest of the chapter shows what each service does, why it was built the way it was, and exactly where its transmit path bends the knee to the app's single transmit-safety authority."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A note on the two identities",
+        "text": "The repository on disk is APRS-Command. The CLAUDE.md project file in this workspace describes a sibling project (Activation Planner) that shares an author and house style but no code. Everything in this chapter is verified against the real APRS-Command source under src/Aprs.Services and src/Aprs.Desktop/Runtime."
+      }
+    },
+    {
+      "h2": "The vocabulary, in plain words"
+    },
+    {
+      "p": "A few terms recur throughout. Reading them once here makes the rest effortless."
+    },
+    {
+      "table": {
+        "headers": [
+          "Term",
+          "Plain-language meaning"
+        ],
+        "rows": [
+          [
+            "__APRS__",
+            "Automatic Packet Reporting System — a ham-radio convention where stations broadcast short text bursts (their location, weather, a message) that any nearby receiver can decode."
+          ],
+          [
+            "__Packet__",
+            "One of those short bursts. It has a sender (source callsign), a destination, a __path__ (the list of relays it's allowed to hop through), and a payload (the actual information)."
+          ],
+          [
+            "__RF__",
+            "Radio frequency — i.e. the packet arrived or left over the actual radio, as opposed to over a wire or the internet."
+          ],
+          [
+            "__APRS-IS__",
+            "APRS Internet Service — a worldwide network of servers that carries the same packets over the internet, so a station in Georgia can be seen from Germany."
+          ],
+          [
+            "__Callsign__",
+            "A ham operator's government-issued ID (e.g. KE4CON). Transmitting without a real one is both illegal and, here, blocked."
+          ],
+          [
+            "__Beacon__",
+            "To transmit your own information on a timer (your position, your weather) without being asked."
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "The safety spine every transmit path leans on"
+    },
+    {
+      "p": "__What it does:__ `TransmitSafetyAuthority` is a single gatekeeper object that every would-be transmission must ask permission from. It answers one question — \"is it safe and legal to send this, right now, on this port?\" — and returns either Allow or a specific Deny reason."
+    },
+    {
+      "p": "__Why it exists:__ Without a central authority, each feature would re-implement its own \"am I allowed?\" logic, and the day one of them forgot a check is the day the app transmits as a placeholder callsign or during a training exercise. Centralizing the decision means a single, testable place holds the rules, and a single global \"stop\" switch can hard-block every path at once. The class documents its own priority order, highest first."
+    },
+    {
+      "code": "// TransmitSafetyAuthority.Evaluate — evaluation order, highest priority first\n// 1) Master inhibit wins over everything.\nif (isInhibited)\n    return TransmitDecision.Deny(TransmitDenyReason.GlobalInhibit, reason ?? \"Transmit is inhibited.\");\n\n// 2) Identity: never transmit without a real callsign.\nif (!policy.HasValidStationCallsign)\n    return TransmitDecision.Deny(TransmitDenyReason.NoValidCallsign,\n        \"No valid station callsign is set. Transmit is blocked until a real callsign replaces the placeholder.\");\n\n// 3) Destination policy: APRS-IS transmit needs a real passcode.\nif (request.Destination == TransmitDestination.AprsIs && !policy.HasValidAprsIsPasscode)\n    return TransmitDecision.Deny(TransmitDenyReason.AprsIsPasscodeRequired, ...);\n\n// 4) Per-port checks (enabled / transmit-enabled / connected / not receive-only).\nvar portResult = portManager.CheckTransmitSafety(request.PortId, globalTransmitSafetyEnabled: true);\nif (!portResult.IsSafe)\n    return TransmitDecision.Deny(TransmitDenyReason.Port, ...);\n\nreturn TransmitDecision.Allow();"
+    },
+    {
+      "p": "Line by line: the __global inhibit__ (set when the operator enters an exercise or training mode) is checked first and blocks unconditionally — a drill must never leak real packets onto the air. Next, __identity__: a real callsign must be present, so the app can never key up as `N0CALL` or a blank placeholder. Third, a __destination rule__: sending to APRS-IS requires a valid passcode, because the internet side is receive-only without one. Only after all three does it delegate to the __per-port__ check, which confirms that specific port is enabled, transmit-enabled, connected, and not receive-only. The inhibit flag is read under a `lock` so a mode toggle on the UI thread is seen consistently by an evaluation running on a background thread."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "One gate, also a choke-point",
+        "text": "TransmitSafetyAuthority also implements ITransmitInhibitGate, the minimal contract the low-level transport code consults directly. So even a transmit path that forgot to call Evaluate() still hits the global inhibit at the wire. Belt and suspenders — the drill-mode block cannot be routed around."
+      }
+    },
+    {
+      "h1": "Weather: reading the sky, and optionally telling the world"
+    },
+    {
+      "p": "__What it does:__ The weather feature has two halves that never blur together. The __ingest__ half reads observations from a physical or software weather station and displays them. The __beacon__ half, if switched on, formats the newest reading into an APRS weather packet and transmits it on a timer."
+    },
+    {
+      "p": "__Why split this way:__ Reading weather is harmless — it touches no transmitter. Broadcasting it is a transmission with your callsign on it. Keeping ingest and beaconing in separate services means you can watch your weather station all day with zero risk of ever sending anything, and the transmit half stays small, auditable, and off by default."
+    },
+    {
+      "h2": "Ingest: many stations, one common shape"
+    },
+    {
+      "p": "APRS-Command speaks to a surprising range of weather hardware and software — WeatherFlow Tempest, Davis WeatherLink, Ambient Weather, Ecowitt/Fine Offset, Peet Bros Ultimeter, plus file imports from CumulusMX, WeeWX, and Weather Display, and a manual-entry path. Each has its own __driver__ (a small adapter that knows one device's quirks). `WeatherInputDriverManager` registers these drivers and subscribes to a single event they all raise."
+    },
+    {
+      "code": "// WeatherInputDriverManager.OnObservationReceived — every driver funnels through here\nvar observation = ApplyStaleState(args.Observation, args.ReceivedAtUtc, ...StaleDataThreshold);\nvar validator   = new WeatherObservationValidator(...StaleDataThreshold);\nvar validationResult = validator.Validate(observation, args.ReceivedAtUtc);\nregistration.LastObservation     = observation;\nregistration.LastValidationResult = validationResult;\n// ...\nif (!validationResult.IsValid)\n    return;                     // bad reading never reaches the map\nweatherDisplayService.UpsertWeatherStation(ToDisplayRecord(observation, args.DriverId, args.ReceivedAtUtc));"
+    },
+    {
+      "p": "Every driver, no matter the vendor, hands its reading to the same funnel. The reading is normalized into a `CommonWeatherObservation` (a vendor-neutral record — wind, temperature, rain, pressure, humidity, and more), stamped __stale__ if it is older than the driver's threshold, and validated. Only a valid reading is pushed to the display. This \"many drivers, one common observation\" design means the rest of the app — the map, the graphs, the beacon formatter — never has to know or care which brand of station produced a number."
+    },
+    {
+      "h2": "Beaconing: the transmit half, guarded twice"
+    },
+    {
+      "p": "`WeatherBeaconScheduler` owns the outbound side. Its configuration ships fully off — `WeatherBeaconEnabled: false`, `AprsIsWeatherTransmitEnabled: false`, `RfWeatherTransmitEnabled: false` — with a default 30-minute interval and a hard 5-minute floor (`MinimumAllowedTransmitInterval`) so an operator cannot accidentally flood the network. Before any transmission it builds a preview, checks the reading is not stale (if `RejectStaleData` is set), validates the packet looks well-formed, and confirms the local station profile permits the chosen transport."
+    },
+    {
+      "code": "// WeatherBeaconScheduler.TransmitWeatherNowAsync — the two-transport fork\nif (destinationTransport == WeatherBeaconTransmitTransport.AprsIs)\n{\n    var aprsIsResult = await aprsIsClient.SendRawPacketAsync(\n        preview.Packet,\n        configuration.RequireConfirmationBeforeTransmit,   // explicit opt-in gate\n        cancellationToken).ConfigureAwait(false);\n    // ...\n}\nelse\n{\n    var rfResult = await rfTransmitClient!.SendBeaconAsync(preview.Packet, cancellationToken)...;\n}"
+    },
+    {
+      "p": "The eligibility checks (`IsAprsIsEligible` / `IsRfEligible`) require the local profile to be valid, `TransmitEnabled` to be true, the specific transport (APRS-IS or RF) to be individually enabled, and — for APRS-IS — the client to actually be connected. The `RequireConfirmationBeforeTransmit` flag is threaded down into the send call as an explicit opt-in. So a weather packet clears both the scheduler's own eligibility wall and the underlying transmit client's safety before a single byte leaves. `TickAsync` is the timer heartbeat: it only fires when the scheduler is enabled and the clock has passed the next scheduled time, and it picks APRS-IS first, then RF, then reports a block if neither transport is on."
+    },
+    {
+      "h1": "GPS / location: knowing where you are"
+    },
+    {
+      "p": "__What it does:__ The GPS service turns a stream of position sentences from a receiver into a single, always-current answer to \"where is this station?\" It never transmits anything — it only knows."
+    },
+    {
+      "p": "__Why it matters and how it's shaped:__ A mobile station's position feeds beacons, the map's \"me\" marker, and dead-reckoning. But GPS data arrives piecemeal — one sentence carries latitude and longitude, the next carries altitude, another carries satellite count. If the service simply replaced its state with each sentence, a message that lacked altitude would erase the altitude it already knew. The fix is a __merge__: each new field overwrites only if present, otherwise the previous value survives."
+    },
+    {
+      "code": "// GpsService.Merge — new field wins only if it has a value, else keep the old one\nreturn new GpsPosition(\n    update.Latitude     ?? current.Latitude,\n    update.Longitude    ?? current.Longitude,\n    update.AltitudeMeters ?? current.AltitudeMeters,\n    update.SpeedKnots   ?? current.SpeedKnots,\n    // ... every field follows the same ?? pattern\n    update.FixValid,                              // fix validity always taken fresh\n    ...);"
+    },
+    {
+      "p": "The `??` is C#'s __null-coalescing operator__: \"use the left value, but if it's null, fall back to the right.\" So a satellites-only update refreshes the satellite count and leaves your coordinates intact. `HasValidFix` is deliberately strict — it demands `FixValid == true` __and__ a non-null latitude and longitude — so the rest of the app never trusts a position that the receiver itself hasn't confirmed."
+    },
+    {
+      "h2": "Two sources, one background loop"
+    },
+    {
+      "p": "`GpsCoordinator` (in the desktop Runtime layer) wires the service to hardware. It supports two mutually exclusive sources: a __serial NMEA__ source (a USB or serial GPS puck speaking the standard NMEA sentence format) or a __GPSD__ client (a TCP connection to the Linux `gpsd` daemon, common on Raspberry Pi). It runs one background read loop, feeds each incoming reading through the service, and raises `PositionUpdated` for the UI."
+    },
+    {
+      "code": "// GpsCoordinator.Start — pick exactly one source, GPSD taking priority\npublic void Start()\n{\n    if (gpsdClient is not null)     StartGpsd();\n    else if (serialSource is not null) StartSerial();\n}"
+    },
+    {
+      "p": "Only one source runs. The GPSD path even routes its already-parsed positions through a __synthetic__ `GpsdParseResult` so they flow through the exact same `AcceptGpsdReport` code as real GPSD traffic — one update path, not two. On shutdown, `DisposeAsync` cancels the loop, awaits it, and disposes the client, so the background task never outlives the coordinator."
+    },
+    {
+      "h1": "The digipeater: a disciplined radio relay"
+    },
+    {
+      "p": "__What it does:__ A __digipeater__ (digital repeater) listens for packets on the air and re-transmits them so they reach farther than the original sender's radio could. It's how a low-power handheld in a valley still gets heard across a county."
+    },
+    {
+      "p": "__Why it's the most safety-critical service:__ A digipeater keys your transmitter automatically, in response to other people's traffic, with no human in the loop for each repeat. Done carelessly it becomes a menace — repeating packets endlessly, echoing its own output, or amplifying interference. `DigipeaterService` is therefore built as a long gauntlet of blocking checks, and it repeats a packet only if __every__ check passes."
+    },
+    {
+      "code": "// DigipeaterService.EvaluateBlocked — the opening gates (each returns a block reason)\nif (!runtimeEnabled)                 return (TransmitDisabled, \"Digipeater is disabled.\", ...);\nif (!configuration.DigipeaterEnabled) return (TransmitDisabled, \"Digipeater mode is disabled.\", ...);\nif (!configuration.RfTransmitEnabled) return (TransmitDisabled, \"RF transmit is disabled ...\", ...);\nif (string.IsNullOrWhiteSpace(configuration.RfTransmitPort))\n                                     return (TransmitDisabled, \"No RF transmit port is selected.\", ...);\n\nvar portSafety = portManager.CheckTransmitSafety(configuration.RfTransmitPort, ...);\nif (!portSafety.IsSafe)              return (TransmitDisabled, portSafety.FailureReason ..., ...);\n\n// Central transmit authority (when wired): global inhibit + identity gate on top of the port check.\nif (transmitSafety is not null)\n{\n    var decision = transmitSafety.Evaluate(new TransmitRequest(configuration.RfTransmitPort, TransmitDestination.Rf));\n    if (!decision.IsAllowed) return (TransmitDisabled, decision.Explanation, [decision.Explanation]);\n}"
+    },
+    {
+      "p": "Notice the layering: the service checks its own enable flags and the per-port safety, and __then__ consults the shared `TransmitSafetyAuthority` from the previous section. That's how the exercise-mode global inhibit and the never-transmit-as-a-placeholder identity rule reach the digipeater without it re-implementing them. The defaults in `DigipeaterConfiguration.Default` are all conservative: `DigipeaterEnabled: false`, `RfTransmitEnabled: false`, duplicate suppression on, at most 10 repeats per minute and 3 per station."
+    },
+    {
+      "h2": "The two rules that stop a relay from destroying itself"
+    },
+    {
+      "p": "Beyond the enable gates, two checks matter most. The first is __loop prevention__: a digipeater must never repeat a packet that already carries its own callsign as a used hop, or it would echo its own transmissions forever."
+    },
+    {
+      "code": "// AlreadyRepeatedByUs — refuse anything already stamped with our own callsign\nreturn packet.Path.Any(component =>\n    IsUsed(component)                                        // hop marked used (ends with '*')\n    && string.Equals(StripUsedMarker(component), mine, StringComparison.OrdinalIgnoreCase));"
+    },
+    {
+      "p": "The second is __duplicate suppression__. The same packet often reaches a digi from several neighbors at once. The fingerprint used to spot a repeat deliberately __excludes the path__ — because the path is exactly what changes as different relays stamp it — and keys on source + destination + payload instead, matching the standard APRS dupe-detection basis. Within the 30-minute window, a packet already repeated once is dropped."
+    },
+    {
+      "code": "// BuildFingerprint — identity of a packet, independent of who relayed it\nreturn string.Join(\"|\", source.ToUpperInvariant(), destination.ToUpperInvariant(), information);"
+    },
+    {
+      "p": "The path-rewriting logic (`EvaluatePath`) also honors the APRS __WIDEn-N__ convention: a `WIDE2-2` alias means \"repeat me up to two more hops.\" The digi consumes one hop, decrements the counter to `WIDE2-1`, and stamps itself in — and it explicitly traps the malformed `remaining > total` case (e.g. `WIDE2-3`), a known abuse pattern, by refusing to propagate it."
+    },
+    {
+      "h1": "The iGate: a one-way bridge with hard rules"
+    },
+    {
+      "p": "__What it does:__ An __iGate__ (internet gateway) copies packets it hears on the radio up onto APRS-IS, so RF-only stations become visible on the global internet map. `IGateService` handles that RF-to-internet direction."
+    },
+    {
+      "p": "__Why its rules are non-negotiable:__ Gating is powerful and easy to abuse — gate the wrong packet and you create an internet feedback loop, or you republish a packet whose sender explicitly asked to stay off the internet. So alongside the user-tunable filters, the iGate enforces a set of __mandatory__ blocks that no setting can switch off."
+    },
+    {
+      "code": "// IGateService.MandatoryNoGateReason — always-on \"do not gate\" rules\nif (!string.IsNullOrEmpty(candidate.QConstruct))\n    return \"Packet carries a q-construct, so it originated on APRS-IS (loop prevention).\";\n\nforeach (var component in candidate.Path)\n{\n    var element = component.Trim().TrimEnd('*');\n    if (element.Equals(\"NOGATE\", ...)) return \"Path contains NOGATE — the sender opted this packet out ...\";\n    if (element.Equals(\"RFONLY\", ...)) return \"Path contains RFONLY — the sender restricted this packet to RF.\";\n    if (element.StartsWith(\"TCPIP\", ...) || element.StartsWith(\"TCPXX\", ...))\n        return \"Path shows the packet already traversed APRS-IS (loop prevention).\";\n}"
+    },
+    {
+      "p": "Reading these: a __q-construct__ is a marker APRS-IS servers add to show a packet came from the internet; seeing one means gating it back would loop. `NOGATE` and `RFONLY` are the sender's own written instructions to keep the packet off the internet — the iGate obeys them absolutely. `TCPIP`/`TCPXX` in the path mean the packet already crossed APRS-IS. These four are checked before any user filter, so a misconfigured allow-list can never override them."
+    },
+    {
+      "h2": "Then the tunable layer, then the transmit"
+    },
+    {
+      "p": "After the mandatory blocks come the adjustable ones: source-port allow-lists, packet validity, per-type toggles (`IGateConfiguration.Default` gates position, weather, object/item, and message packets, but leaves third-party and telemetry off), duplicate suppression, path allow/block patterns, and rate limits (10/minute overall, 3 per station). Only when all of that passes does it hand the raw packet to the APRS-IS client — carrying the same `RequireExplicitConfirmationBeforeEnabling` opt-in flag seen elsewhere."
+    },
+    {
+      "code": "// IGateService.EvaluateAndGateAsync — the actual gate, after every check has passed\nvar transmitResult = await aprsIsClient.SendRawPacketAsync(\n    candidate.RawPacket,\n    configuration.RequireExplicitConfirmationBeforeEnabling,\n    cancellationToken).ConfigureAwait(false);"
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Sibling: the iGate monitor",
+        "text": "IGateMonitorService is the read-only companion. It watches both the RF and APRS-IS sides, remembers which packets it has already seen on the internet, and marks RF packets that were also seen on APRS-IS — feeding the duplicate detection above. It decides nothing and transmits nothing; it only observes, which is why it needs no safety authority at all."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "These four services are where APRS-Command stops being a passive viewer and starts affecting the shared radio and internet networks — which is precisely why they are engineered to be timid. Read-only is always separated from transmit (weather ingest from weather beaconing; the iGate monitor from the iGate). Every configuration default is off. Every transmit path, no matter which feature owns it, ultimately answers to the one `TransmitSafetyAuthority`, so the global exercise-mode inhibit and the real-callsign requirement can never be bypassed by a forgetful feature."
+    },
+    {
+      "bullets": [
+        "__Off by default, everywhere.__ Digipeater, iGate, and weather-beacon configs all ship with their enable flags false and explicit-confirmation flags true — silence until a human opts in.",
+        "__One safety authority, consulted by all.__ The digipeater and every beacon route through TransmitSafetyAuthority.Evaluate, which enforces global inhibit, real-callsign identity, passcode, and per-port checks in a fixed priority order.",
+        "__Read is divorced from transmit.__ You can ingest weather and monitor the iGate indefinitely with zero transmit risk, because those halves live in separate services.",
+        "__Mandatory rules outrank user settings.__ The iGate's NOGATE/RFONLY/q-construct/TCPIP blocks and the digipeater's loop-prevention run before any tunable filter and cannot be switched off.",
+        "__Normalize early, decide simply.__ Many weather vendors collapse into one CommonWeatherObservation, and piecemeal GPS sentences merge field-by-field, so downstream code stays vendor- and protocol-agnostic.",
+        "__Rate limits and duplicate windows are built in.__ Both the digipeater and iGate cap repeats per minute and per station and suppress duplicates over a 30-minute window, so a single busy channel can't turn the station into a firehose."
+      ]
+    }
+  ]
+}

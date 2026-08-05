@@ -1,0 +1,245 @@
+{
+  "order": 17,
+  "title": "MVVM with Avalonia",
+  "subtitle": "How the screens are wired: Views, ViewModels, bindings, and the map ViewModel that drives the main map page.",
+  "in_this_chapter": [
+    "What the three letters M-V-VM mean, in plain words, with a real-world analogy for each part",
+    "What a data binding is and how Avalonia keeps the screen and the ViewModel in sync automatically",
+    "How APRS-Command hand-rolls MVVM with INotifyPropertyChanged and ICommand instead of using CommunityToolkit.Mvvm source generators, and why that trade-off was made",
+    "How MapViewModel exposes state (properties), actions (commands), and one-shot requests (events) to the map page",
+    "How the MapView code-behind attaches to the ViewModel through DataContextChanged and listens for changes",
+    "How live station data flows from the network into an ObservableCollection and onto the map without the ViewModel ever touching Avalonia",
+    "The design payoff: testable UI logic, a clean layer boundary, and why the map control is the one place code-behind is unavoidable"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Every window and panel you see in APRS-Command is built with a pattern called __MVVM__ — short for Model-View-ViewModel. This chapter explains what that pattern is in everyday terms, why the project uses it, and how it plays out in the real code that drives the map page. If you have never written a line of desktop-UI code, you should finish this chapter able to read any screen in the app and know where its logic lives."
+    },
+    {
+      "p": "The short version: MVVM is a way of keeping the *look* of a screen (buttons, text, colors) completely separate from the *logic* behind it (what happens when you click, what the numbers mean, when things turn red). Keeping them apart means you can test the logic without opening a window, and you can restyle the window without touching the logic."
+    },
+    {
+      "h2": "The three parts, in plain words"
+    },
+    {
+      "p": "__Model__ — the raw facts. In this app the Models are things like a heard station's callsign, position, and age. They come from the lower layers (the packet decoder, the station database) and know nothing about screens. Think of the Model as the ingredients in the pantry: real, but not yet a meal."
+    },
+    {
+      "p": "__View__ — the screen itself: the actual buttons, text blocks, and map control the operator looks at and clicks. In Avalonia a View is written in a markup file ending in `.axaml` (an XML-like layout language), such as **MapView.axaml**. The View is the plated dish — what gets served — but it does no cooking of its own."
+    },
+    {
+      "p": "__ViewModel__ — the cook in between. It takes the raw Model facts, shapes them into exactly what the screen needs to show (a formatted label, a tooltip string, an on/off flag), and it holds the actions the screen can trigger (a click becomes a __command__). The ViewModel is plain C# with no mention of buttons or pixels, which is precisely what makes it testable. **MapViewModel.cs** is the ViewModel for the map page and the star of this chapter."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why the ViewModel exists at all",
+        "text": "You could put logic directly behind the window (the \"code-behind\" file). The problem: code-behind can only run when a real window is open, so you cannot unit-test it on a build server with no screen. The ViewModel pulls that logic into a plain class a test can create, poke, and inspect in memory — no window required. That single benefit is the whole reason the pattern exists."
+      }
+    },
+    {
+      "h2": "What a binding is"
+    },
+    {
+      "p": "A __binding__ is a live wire between a spot on the screen and a property on the ViewModel. Instead of the View reaching into the ViewModel to read a value once, the binding subscribes: when the ViewModel's value changes, the screen updates itself; when the user types or clicks, the change flows back. You declare the wire in markup and never write the wiring code by hand."
+    },
+    {
+      "p": "Here is a real menu item from **MapView.axaml**. The `{Binding ...}` expressions are the wires:"
+    },
+    {
+      "code": "<MenuItem Header=\"Assign tactical callsign…\"\n          Command=\"{Binding AssignTacticalCommand}\"\n          IsEnabled=\"{Binding HasSelectedStation}\" />"
+    },
+    {
+      "p": "Two wires are declared here. `Command=\"{Binding AssignTacticalCommand}\"` connects the menu click to the **AssignTacticalCommand** property on the ViewModel — clicking runs that command. `IsEnabled=\"{Binding HasSelectedStation}\"` connects the item's greyed-out/clickable state to the **HasSelectedStation** property — when no station is selected, the menu item disables itself automatically. Nobody wrote \"if selection changed, grey out the menu\"; the binding does it."
+    },
+    {
+      "p": "The View also declares *which* ViewModel it is bound to, at the top of the file:"
+    },
+    {
+      "code": "<UserControl xmlns=\"https://github.com/avaloniaui\"\n             x:Class=\"Aprs.Desktop.Views.MapView\"\n             x:DataType=\"vm:MapViewModel\">"
+    },
+    {
+      "p": "`x:DataType=\"vm:MapViewModel\"` tells Avalonia's compiler \"every binding on this screen targets a **MapViewModel**.\" This turns bindings into *compiled* bindings: if you mistype a property name, the build fails instead of silently doing nothing at runtime. It is a spell-checker for your wires."
+    },
+    {
+      "h2": "How the app implements MVVM: hand-rolled, on purpose"
+    },
+    {
+      "p": "For MVVM to work, two mechanical things must happen: (1) when a ViewModel property changes, it must announce the change so bindings can react; (2) a click must be turnable into a callable action. The standard machinery for these is an interface called `INotifyPropertyChanged` (the \"announce a change\" contract) and an interface called `ICommand` (the \"a click I can run\" contract)."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "This project does NOT use CommunityToolkit.Mvvm",
+        "text": "A popular library, CommunityToolkit.Mvvm, auto-writes this machinery for you with attributes like [ObservableProperty] and [RelayCommand] — a \"source generator\" fills in the boilerplate at compile time. APRS-Command deliberately does not reference that package (it is absent from Aprs.Desktop.csproj). Every ViewModel here writes the machinery by hand. Understanding the hand-rolled version is essential, because it is what the app actually ships — and it is exactly the boilerplate the toolkit would have generated, so you also learn what the toolkit does under the hood."
+      }
+    },
+    {
+      "p": "The \"announce a change\" contract shows up at the bottom of every ViewModel as one small helper. This is the real one from **MapViewModel.cs**:"
+    },
+    {
+      "code": "public event PropertyChangedEventHandler? PropertyChanged;\n\nprivate void OnPropertyChanged([CallerMemberName] string? propertyName = null)\n{\n    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));\n}"
+    },
+    {
+      "p": "`PropertyChanged` is the loudspeaker: bindings quietly subscribe to it. `OnPropertyChanged(...)` is the announcement. The clever part is `[CallerMemberName]` — a compiler feature that fills in the name of whatever property called it, so you never have to type the property's name as a string. Call it from inside the **ShowTrails** setter and it announces \"ShowTrails changed\" for free."
+    },
+    {
+      "p": "You can see the full pattern in a single property. This is **ShowTrails**, which controls whether station movement trails are drawn:"
+    },
+    {
+      "code": "private bool showTrails;\npublic bool ShowTrails\n{\n    get => showTrails;\n    private set\n    {\n        if (showTrails != value)\n        {\n            showTrails = value;\n            OnPropertyChanged();\n            OnPropertyChanged(nameof(TrailsButtonTooltip));\n        }\n    }\n}\n\npublic string TrailsButtonTooltip => ShowTrails\n    ? \"Station trails ON — click to hide\"\n    : \"Station trails OFF — click to show\";"
+    },
+    {
+      "p": "Read it line by line. `private bool showTrails;` is the actual stored value (the \"backing field\"). The `get` hands it out. The `set` first checks `if (showTrails != value)` — only proceed if it truly changed, so you do not fire pointless updates. It stores the new value, then announces two changes: its own (`OnPropertyChanged()` with the name filled in automatically) *and* **TrailsButtonTooltip**. That second announcement matters: the tooltip is a *computed* property with no stored value of its own — it derives its text from **ShowTrails**. Since the binding cannot know the tooltip depends on the flag, the code tells it explicitly. Miss that line and the button's on/off state would flip while its tooltip stayed stale."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "This one-line-per-property tax is exactly what the toolkit removes",
+        "text": "With CommunityToolkit you would write `[ObservableProperty] private bool showTrails;` and a generator would produce the entire block above. The cost of hand-rolling is more typing and the risk of forgetting a change announcement (the classic MVVM bug: a value updates but the screen does not). The benefit is zero external dependency and total visibility — nothing is hidden inside a generator. This project chose visibility."
+      }
+    },
+    {
+      "h2": "Commands: turning a click into a callable action"
+    },
+    {
+      "p": "The second contract, `ICommand`, is how a button or menu item becomes something the ViewModel can run. APRS-Command has its own tiny implementation, **DesktopCommand**, so it needs no library for this either. Here it is in full:"
+    },
+    {
+      "code": "public sealed class DesktopCommand : ICommand\n{\n    private readonly Action? execute;\n    private readonly Func<bool>? canExecute;\n\n    public DesktopCommand(Action execute, Func<bool>? canExecute = null)\n    {\n        this.execute = execute;\n        this.canExecute = canExecute;\n    }\n\n    public bool CanExecute(object? parameter) => canExecute?.Invoke() ?? true;\n    public void Execute(object? parameter) { /* … runs the action … */ }\n}"
+    },
+    {
+      "p": "A **DesktopCommand** wraps two things: `execute` (the code to run when clicked) and an optional `canExecute` (a yes/no test for whether the button should be enabled). Avalonia calls `CanExecute` to decide whether to grey the control out, and `Execute` when the user actually clicks. Its sibling **RelayCommand** is the same idea but passes the clicked item along, for commands that act on \"the selected row.\""
+    },
+    {
+      "p": "The ViewModel builds its commands once, in its constructor. A few real lines from **MapViewModel**:"
+    },
+    {
+      "code": "ToggleTrailsCommand = new DesktopCommand(() => ShowTrails = !ShowTrails);\n\nSetRingsHereCommand = new DesktopCommand(\n    SetRingsAtSelectedStation,\n    () => SelectedStation?.Latitude is not null);"
+    },
+    {
+      "p": "**ToggleTrailsCommand** is the simplest possible case: run one line that flips **ShowTrails**. The XAML button bound to it needs no code-behind at all. **SetRingsHereCommand** shows the `canExecute` half in action: its second argument, `() => SelectedStation?.Latitude is not null`, means \"only enable this when a station with a known position is selected.\" Bind a menu item's `Command` to it and the item enables and disables itself as the selection changes — the same self-managing behavior you saw with `IsEnabled` earlier, but driven by the command instead of a separate flag."
+    },
+    {
+      "h2": "MapViewModel: state, actions, and one-shot requests"
+    },
+    {
+      "p": "**MapViewModel** is the largest ViewModel in the app because the map page does the most. It cleanly separates three kinds of things a screen needs, and recognizing them makes any other ViewModel easy to read."
+    },
+    {
+      "table": {
+        "headers": [
+          "Kind",
+          "Example",
+          "How the View uses it"
+        ],
+        "rows": [
+          [
+            "State (property)",
+            "ShowRadar, DrawMode, SelectedStationDetails",
+            "Bound for display; the screen re-renders when it changes"
+          ],
+          [
+            "Action (command)",
+            "ToggleRadarCommand, DrawLineCommand, HomeCommand",
+            "Bound to a button/menu; a click runs it"
+          ],
+          [
+            "One-shot request (event)",
+            "NavigationRequested, FindStationRequested, DrawModeChanged",
+            "The code-behind subscribes and performs an imperative action on the map control"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The first two you have met. The third — __events__ — solves a specific problem. Some actions cannot be expressed as \"a value changed\"; they are momentary requests like \"jump the map to the home view *now*.\" You cannot bind a map's camera to a property cleanly, so the ViewModel raises an event and lets the View carry it out. Look at the **HomeCommand**:"
+    },
+    {
+      "code": "HomeCommand = new DesktopCommand(\n    () => NavigationRequested?.Invoke(this, MapNavigationRequest.Home));"
+    },
+    {
+      "p": "Clicking Home does not move the map itself — the ViewModel has no idea how to drive the Mapsui map control, and keeping it that way is the whole point. Instead it fires **NavigationRequested** with a \"go home\" request. The View is listening and does the actual camera work. The ViewModel stays pure C# that a test can exercise by subscribing to the event and asserting it fired."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why events and not just more commands",
+        "text": "A command answers \"what happens when clicked.\" An event answers \"tell whoever is watching that something needs doing.\" The map camera, file-open dialogs, and the color picker all live in the View's world (they need real UI objects), so the ViewModel requests them by event rather than reaching across the layer boundary. This is how the app keeps the rule from CLAUDE.md — no UI code in the wrong layer — even for actions that are inherently visual."
+      }
+    },
+    {
+      "h2": "How the View attaches to the ViewModel"
+    },
+    {
+      "p": "A View and its ViewModel are introduced by a single connection point called the __DataContext__ — think of it as the ViewModel the whole screen is pointed at. Every `{Binding X}` on the page resolves `X` against the DataContext. The map page's code-behind, **MapView.axaml.cs**, hooks the moment that connection is (re)made:"
+    },
+    {
+      "code": "public MapView()\n{\n    InitializeComponent();\n    Loaded += (_, _) => InitializeMap();\n    DataContextChanged += (_, _) => AttachViewModel();\n}"
+    },
+    {
+      "p": "When the DataContext is set to a **MapViewModel**, `AttachViewModel()` runs. Because bindings handle all the *display* wiring automatically, this method only has to wire up the *event* side — the one-shot requests bindings cannot cover:"
+    },
+    {
+      "code": "currentViewModel = DataContext as MapViewModel;\nif (currentViewModel is not null)\n{\n    currentViewModel.PropertyChanged += ViewModel_PropertyChanged;\n    currentViewModel.Markers.CollectionChanged += Markers_CollectionChanged;\n    currentViewModel.NavigationRequested += OnNavigationRequested;\n    currentViewModel.DrawModeChanged += OnDrawModeChanged;\n    // …and the rest of the one-shot requests\n}"
+    },
+    {
+      "p": "Each `+=` subscribes a code-behind handler to a ViewModel event. **NavigationRequested** drives the camera, **DrawModeChanged** switches the drawing tool, and so on. The matching block just above these lines detaches the *previous* ViewModel first (a mirror set of `-=` lines) so that when the DataContext is swapped, the old subscriptions are removed. Forgetting that half is a classic memory leak — the old ViewModel would be kept alive forever by the still-attached View — so the symmetry is deliberate."
+    },
+    {
+      "h2": "The live-data path: how new stations reach the screen"
+    },
+    {
+      "p": "The most important collection on the ViewModel is **Markers**, the list of stations drawn on the map. Its type is an __ObservableCollection__ — a list that announces its own additions and removals, the collection-level cousin of `INotifyPropertyChanged`. When something is added or removed, anyone bound to it (or subscribed to its `CollectionChanged` event) hears about it."
+    },
+    {
+      "code": "public ObservableCollection<StationMarkerViewModel> Markers { get; }"
+    },
+    {
+      "p": "New packets arrive off the network on background threads, but Avalonia — like every desktop UI toolkit — insists the screen be touched only from the single UI thread. The **LiveDataCoordinator** enforces this: it collects fresh data and, on the UI thread, calls one method on the ViewModel:"
+    },
+    {
+      "code": "map.UpdateStations(source.GetVisibleStations());"
+    },
+    {
+      "p": "Inside **UpdateStations**, the ViewModel rebuilds **Markers** by wrapping each raw **StationMarker** Model in a **StationMarkerViewModel**:"
+    },
+    {
+      "code": "Markers.Clear();\nforeach (var marker in markers)\n{\n    Markers.Add(new StationMarkerViewModel(marker));\n}"
+    },
+    {
+      "p": "**StationMarkerViewModel** is the smallest, purest example of the whole pattern: a read-only wrapper that takes a raw Model and exposes display-ready values. It turns a bare course and speed into `MovementLabel` (\"Stationary\" when both are missing, \"045 deg / 12 kt\" otherwise) and identifies the sending radio's make from its tocall. It holds no changing state and no commands — it exists purely so the screen never has to reason about raw packet fields."
+    },
+    {
+      "p": "Each `Markers.Add(...)` fires `CollectionChanged`, which the code-behind's **Markers_CollectionChanged** handler catches to rebuild the actual map features. That handler is careful to *coalesce* a burst of adds — a replay load can add 175 stations at once — into a single map rebuild per UI cycle, rather than redrawing the whole map 175 times. The ViewModel stays blissfully unaware of Mapsui; it just fills a list and announces the change."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The UI-thread rule is not optional",
+        "text": "ObservableCollection and INotifyPropertyChanged assume every change happens on the UI thread. That is why LiveDataCoordinator marshals network data onto the UI thread before calling UpdateStations. Touch Markers from a background thread and you get intermittent, hard-to-reproduce crashes. The single call site is the safeguard: all screen-bound state changes funnel through the one thread that is allowed to make them."
+      }
+    },
+    {
+      "h2": "Design-time preview: a ViewModel with no app running"
+    },
+    {
+      "p": "Because a ViewModel is plain C#, you can hand it fake data and see the screen without launching the whole app. **MapViewModel.CreateDesignTime()** builds a ViewModel pre-loaded with three invented stations (Net Control, a mobile W1AW-9, a weather station) so the visual designer renders a realistic map page at author time. **MainWindowViewModel** does the same for the whole window. This is a direct dividend of the separation: the View has no idea whether its data is real or a rehearsal."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "MVVM is the load-bearing wall of the entire UI layer, and APRS-Command applies it with a specific, deliberate stance: implement the machinery by hand rather than pull in a code-generation library. That choice trades a little repetitive typing for zero UI-framework-adjacent dependencies and complete visibility — every property change and every command is right there in the file, nothing hidden inside a generator."
+    },
+    {
+      "p": "The payoff is concrete. **MapViewModel** holds real logic — which tool is active, what the tooltip says, whether a menu item is enabled, how raw stations become display labels — and every bit of it can be tested in memory with no window open. The View (**MapView.axaml** plus its code-behind) is left with only two jobs: declare bindings, and carry out the visual one-shot requests the ViewModel raises as events. That is why the map control, which genuinely cannot be bound (a camera is not a property), is the one place imperative code-behind survives — and even there the ViewModel only *asks*, never *acts*."
+    },
+    {
+      "p": "If you take three things from this chapter: bindings are self-maintaining wires you declare once; every ViewModel property that others depend on must announce its change or the screen goes stale; and the layer boundary is kept honest by pushing anything genuinely visual out through events. Learn to spot the three kinds of member — property, command, event — and any ViewModel in the app becomes readable at a glance."
+    }
+  ]
+}

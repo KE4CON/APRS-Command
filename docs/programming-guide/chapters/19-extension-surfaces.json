@@ -1,0 +1,271 @@
+{
+  "order": 19,
+  "title": "Extension Surfaces",
+  "subtitle": "The four developer-facing doorways into APRS-Command — REST API, WebSocket streams, file hooks, and plugins — and the single rule that none of them can bypass transmit safety.",
+  "in_this_chapter": [
+    "The four extension surfaces and why each ships disabled by default",
+    "The shared foundation: public DTO contracts, unforgeable source tags, and a notification-only event bus",
+    "The local REST API's fail-closed token check and constant-time comparison",
+    "The transmit-queue placeholder that returns 501 even after every permission passes",
+    "How WebSocket streams observe the event bus but structurally cannot command the app",
+    "File import/export hooks, schema validation, and the blocked transmit-requests folder",
+    "The plugin/driver framework, seen through the live weather input drivers",
+    "The central transmit-safety rule that every path must pass through"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command spends most of its life talking to radios, weather stations, and the APRS-IS network. This chapter is about the *other* doorways: the deliberately built ways for **outside programs** to look inside APRS-Command and, in tightly controlled cases, hand it data. Those doorways are called __extension surfaces__ — an \"extension surface\" is simply any point where code that Jim did not write (a dashboard, a script, a plugin, a weather bridge) is allowed to interact with the app."
+    },
+    {
+      "p": "There are four such surfaces, and they were built as a numbered sequence of phases so each one could rest on the last. In plain terms they are: a **local REST API** (a web-style request/response endpoint), **WebSocket event streams** (a live firehose of \"something just happened\" notifications), **file import/export hooks** (drop a file in a folder, or read one the app wrote), and a **plugin/driver framework** (a slot future add-ons plug into). The weather input drivers already in the app are the first real, shipping example of that last surface."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one rule that governs all four",
+        "text": "No extension surface can make the radio transmit. A REST request, a WebSocket message, an imported file, and a plugin event are all treated as untrusted data that must pass through APRS-Command's central transmit safety before anything ever goes on the air — and today, all four are wired to refuse transmit outright. Everything else in this chapter is detail hanging off that rule."
+      }
+    },
+    {
+      "h2": "Where this lives in the code"
+    },
+    {
+      "p": "The extension surfaces are physically separated from the rest of the app into their own project, **AprsCommand.Api**, and they speak a shared vocabulary defined in a second project, **AprsCommand.Contracts**. Keeping them in separate projects is not decoration: in .NET, a project can only use another project it explicitly references, so this split is *compiler-enforced*. The internal station database and messaging code cannot accidentally reach into the API layer, and the API layer can only touch the internal app through narrow, agreed-upon interfaces."
+    },
+    {
+      "table": {
+        "headers": [
+          "Surface",
+          "Main source file",
+          "Phase",
+          "On by default?"
+        ],
+        "rows": [
+          [
+            "Local REST API",
+            "AprsCommand.Api/LocalRestApiService.cs",
+            "14.8",
+            "No"
+          ],
+          [
+            "WebSocket event streams",
+            "AprsCommand.Api/WebSocketEventStreamService.cs",
+            "14.9",
+            "No"
+          ],
+          [
+            "File import/export hooks",
+            "AprsCommand.Api/FileHookService.cs",
+            "14.10",
+            "No"
+          ],
+          [
+            "Plugin/driver framework",
+            "docs/PLUGIN_DRIVER_FRAMEWORK.md (foundation); Aprs.Services weather drivers are the live example",
+            "14.11",
+            "No"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Notice the last column: every single one is __off by default__. That is the safe-defaults model, and it is worth understanding before any of the mechanics, because it is the reason a fresh install of APRS-Command opens no network ports and watches no folders until the operator deliberately turns something on."
+    },
+    {
+      "h2": "The shared foundation: contracts, source tags, and the event bus"
+    },
+    {
+      "p": "Before looking at any one surface, three shared pieces make the whole thing hang together. The architecture document, `docs/EXTENSION_ARCHITECTURE.md`, lays them out as layers, and the code follows it faithfully."
+    },
+    {
+      "p": "First, __DTOs__ (short for \"data transfer objects\" — plain data containers with no behavior, meant only to be serialized to and from JSON). The app's real internal models change as the app grows; the DTOs in **AprsCommand.Contracts** are the *stable public shape* the outside world sees. A station going out over the API is a `StationUpdateDto`, not the mutable internal station object. This is the classic \"don't hand strangers the keys to your house — hand them a photocopy of the floor plan\" move. Every DTO carries a `schemaVersion` so a future format change can be detected instead of silently misread."
+    },
+    {
+      "p": "Second, __source tagging__. Every piece of data that enters or leaves carries an `ExternalSourceMetadata` record that answers: where did this come from, and how much do we trust it? The trust and origin values are fixed enums so they cannot be fudged. The `ExternalSourceType` enum alone distinguishes sixteen origins — `AprsIs`, `Rf`, `Replay`, `Simulation`, `WeatherDriver`, `FileImport`, `LocalApi`, `Plugin`, and more — so the app never confuses a real over-the-air packet with something a script pushed in through a folder."
+    },
+    {
+      "code": "public enum ExternalSourceType\n{\n    Unknown, AprsIs, Rf, TcpKiss, SerialKiss, Direwolf, Agwpe,\n    Replay, Simulation, Training, WeatherDriver, Gps,\n    ManualEntry, FileImport, LocalApi, Plugin\n}"
+    },
+    {
+      "p": "From `AprsCommand.Contracts/ExternalSourceType.cs`. Because a REST submission gets stamped `LocalApi` and a file import gets stamped `FileImport`, the rest of the app can always tell externally-injected data apart from data it heard itself — which matters enormously when deciding what is safe to act on."
+    },
+    {
+      "p": "Third, the __internal event bus__. This is a notification system — think of it as a building-wide PA that announces \"a station just updated,\" \"a weather reading arrived,\" \"an API request was rejected.\" The crucial design decision, stated flatly in the architecture doc, is that it is **notification-only**: \"It is not a command bus and not a transmit path.\" Extensions can *listen* to it (that is exactly how WebSocket streams work) but nothing they hear or say through it can *command* the app to do something dangerous."
+    },
+    {
+      "h2": "Surface 1: the local REST API"
+    },
+    {
+      "p": "__REST API__ means a set of web-style addresses (like `/api/stations`) that a program can send an HTTP request to and get JSON back — the same style of interface most web services use. In APRS-Command it is meant for local dashboards, scripts, and future tools that want to *read* what the app knows, and in carefully fenced cases hand it local data. The service lives in `LocalRestApiService.cs`."
+    },
+    {
+      "p": "The heart of its safety story is the configuration record. Read the defaults slowly, because each one is a locked door:"
+    },
+    {
+      "code": "public sealed record LocalRestApiConfiguration\n{\n    public bool ApiEnabled { get; init; }                 // false\n    public string BindAddress { get; init; } = \"127.0.0.1\";\n    public int Port { get; init; } = 8765;\n    public bool LocalhostOnly { get; init; } = true;\n    public bool RequireToken { get; init; } = true;\n    public string? ApiTokenReference { get; init; }       // null\n    public bool ReadOnlyMode { get; init; } = true;\n    public bool AllowExternalDataSubmit { get; init; }    // false\n    public bool AllowTransmitRequest { get; init; }       // false\n    public int MaximumRequestsPerMinute { get; init; } = 60;\n}"
+    },
+    {
+      "p": "`ApiEnabled` is false, so `StartAsync` refuses to run and records \"Local REST API is disabled.\" `BindAddress` is `127.0.0.1` (\"localhost\" — the machine talking only to itself, never the wider network) and `LocalhostOnly` enforces it. `RequireToken` is true, meaning every request must carry a secret key. `ReadOnlyMode` is true, so even if enabled, it will only read. `AllowExternalDataSubmit` and `AllowTransmitRequest` are both false. An operator has to consciously flip several of these before the API can do anything beyond serve read-only data to the same computer."
+    },
+    {
+      "p": "When a request does arrive, `HandleAsync` runs it through a gauntlet in a fixed order: is the API even running, then `Authorize`, then route by method and path. The `Authorize` step is where a subtle but important hardening decision lives — it __fails closed__:"
+    },
+    {
+      "code": "if (configuration.RequireToken)\n{\n    // Fail closed: if a token is required but the server has none configured,\n    // there is nothing to authenticate against, so every request must be rejected.\n    if (string.IsNullOrWhiteSpace(configuration.ApiTokenReference))\n        return LocalRestApiResponse.ErrorResponse(\n            401, \"API access requires a token, but no token is configured on the server.\");\n\n    if (string.IsNullOrWhiteSpace(request.Token))\n        return LocalRestApiResponse.ErrorResponse(401, \"API token is required.\");\n\n    if (!FixedTimeTokenEquals(request.Token, configuration.ApiTokenReference))\n        return LocalRestApiResponse.ErrorResponse(401, \"API token is invalid.\");\n}"
+    },
+    {
+      "p": "\"Fail closed\" means: when in doubt, deny. The comment records a real bug that was fixed — previously, if a token was required but none had been configured on the server, the check was skipped and *any* non-empty token got in. Now a missing server token rejects everyone. The final comparison uses `FixedTimeTokenEquals`, which wraps `CryptographicOperations.FixedTimeEquals` — a __constant-time comparison__ that always takes the same amount of time whether the token is wrong at the first character or the last. Ordinary string comparison bails out early on the first mismatch, and an attacker can measure those tiny timing differences to guess a secret one character at a time. Constant-time comparison closes that leak."
+    },
+    {
+      "p": "The read endpoints (`GET /api/stations`, `/api/weather`, `/api/alerts`, and so on) simply return DTOs from a data provider. The write endpoints are where the layered permission model shows up. `CheckExternalSubmit` refuses unless external submit is enabled, read-only mode is off, and the caller holds the right permission — `CreateLocalObjects` for objects, `SubmitLocalData` for everything else. Any accepted submission is then re-stamped by `EnsureLocalApiSource` so it can never masquerade as trusted internal data."
+    },
+    {
+      "h2": "The transmit-queue placeholder: a door with no handle"
+    },
+    {
+      "p": "There is one endpoint that exists purely to demonstrate the safety model: `POST /api/transmit/queue`. It is the one place an outside program might *ask* APRS-Command to put a packet on the air. Follow what `CheckTransmitRequest` actually does with such a request:"
+    },
+    {
+      "code": "private LocalRestApiResponse CheckTransmitRequest(LocalRestApiRequest request)\n{\n    if (!configuration.AllowTransmitRequest)\n        return LocalRestApiResponse.ErrorResponse(403, \"Transmit queue endpoint is disabled.\");\n\n    if (!HasPermission(request, ExtensionPermission.QueuePackets))\n        return LocalRestApiResponse.ErrorResponse(403, \"Missing required permission: QueuePackets.\");\n\n    if (!HasAnyPermission(request, ExtensionPermission.TransmitAprsIs,\n            ExtensionPermission.TransmitRf, ExtensionPermission.Admin))\n        return LocalRestApiResponse.ErrorResponse(403, \"Missing explicit transmit permission.\");\n\n    return LocalRestApiResponse.ErrorResponse(\n        501, \"Transmit queue endpoint is not implemented and remains blocked by policy.\");\n}"
+    },
+    {
+      "p": "Read the ending carefully. Even a caller who passes *every* check — the feature enabled, the `QueuePackets` permission, and an explicit transmit permission — still gets a `501` refusal. The endpoint is built as a permanently-locked door precisely so the safety wiring exists, is tested, and is visible, long before any real transmit path is ever contemplated. And notice the order: the request is rejected at the *policy* layer before it could ever reach the actual radio, so the central transmit safety is never even asked. A permission is a *ticket to be considered*, never an authorization to transmit."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why permissions are a list, not a single level",
+        "text": "The seven permissions — ReadOnly, SubmitLocalData, CreateLocalObjects, QueuePackets, TransmitAprsIs, TransmitRf, Admin — are separate capabilities a caller either holds or doesn't, defaulting to just ReadOnly. This lets a weather bridge get SubmitLocalData without ever touching transmit, and keeps the high-risk transmit permissions as distinct, deliberately-granted items rather than a side effect of ‘more access.’"
+      }
+    },
+    {
+      "h2": "Surface 2: WebSocket event streams"
+    },
+    {
+      "p": "A __WebSocket__ is a network connection that, once opened, stays open so the server can push messages to the client the instant they happen — unlike the REST API, where the client must keep asking. This surface (`WebSocketEventStreamService.cs`) is for live dashboards and wall displays that want to *watch* APRS-Command in real time. It carries the same conservative defaults — disabled, localhost-only, token required, read-only — plus a `MaximumConnectedClients` cap so one runaway dashboard cannot exhaust the app."
+    },
+    {
+      "p": "The mechanism is elegant precisely because it reuses the notification-only event bus. When the stream service starts, it subscribes to *every* internal event and, for each one, broadcasts it to connected clients:"
+    },
+    {
+      "code": "subscription ??= eventBus?.SubscribeAll(async (evt, token) =>\n{\n    await BroadcastAsync(evt, token).ConfigureAwait(false);\n    return AprsEventHandlerResult.Handled;\n});"
+    },
+    {
+      "p": "Because it can only *subscribe* — the event bus offers no way to inject a command — the WebSocket surface is structurally incapable of doing anything but observe. That is the design paying off: the safety property comes from the shape of the plumbing, not from a check that could be forgotten."
+    },
+    {
+      "p": "Every outbound message is wrapped in a stable envelope built by `ToEnvelope`: a `schemaVersion`, a timestamp, the stream name, the event type and category, the source metadata, and a typed payload. The `MapPayload` method translates each internal event into the matching public DTO — a `StationUpdated` event becomes a `StationUpdateDto`, a weather event a `WeatherObservationDto`, and anything without a richer mapping falls back to a generic `DecodedEventDto` so no event is ever un-representable."
+    },
+    {
+      "p": "Clients can narrow what they receive. Dedicated endpoints like `/ws/stations` and `/ws/weather` apply a default category filter, and a client can send a `subscribe` or `filter` message to refine it further — by category, event type, callsign, minimum severity, or whether to include raw packets. Critically, inbound messages from clients are limited to a tiny safe vocabulary. Anything else is rejected:"
+    },
+    {
+      "code": "switch (command)\n{\n    case \"ping\":        return WebSocketInboundMessageResult.Accepted(\"pong\");\n    case \"subscribe\":\n    case \"filter\":      client.Filter = message.Filter ?? WebSocketEventStreamClientFilter.Default;\n                        return WebSocketInboundMessageResult.Accepted(\"subscribed\");\n    case \"unsubscribe\":\n    case \"close\":       /* disconnect */ return WebSocketInboundMessageResult.Accepted(\"closed\");\n    default:            return WebSocketInboundMessageResult.Rejected(\"Unknown WebSocket command...\");\n}"
+    },
+    {
+      "p": "The only things a client may say are `ping`, `subscribe`, `filter`, `unsubscribe`, and `close` — all of which control the client's *own view* and nothing else. There is deliberately no command that changes app state. And if a client's connection breaks mid-broadcast, `BroadcastAsync` quietly drops it (via `SafeDisconnectAsync`, which swallows the failure) so one dead dashboard can never crash the stream for everyone else."
+    },
+    {
+      "h2": "Surface 3: file import/export hooks"
+    },
+    {
+      "p": "Not every integration wants to open a network socket. The file-hook surface (`FileHookService.cs`) lets external tools cooperate through plain files: APRS-Command *writes* export files describing its state, and *reads* import files that a script has dropped into a watched folder. The safe defaults follow the same pattern — hooks, import, and export are all off, invalid imports are rejected, and there are conservative file-size limits."
+    },
+    {
+      "p": "Exports are straightforward and offered in formats each consumer would actually want: `stations.json` and `weather.json` as DTO arrays wrapped in an envelope, `objects.geojson` as GeoJSON (the standard mapping format, so the objects drop straight onto a map tool), `messages.csv` for spreadsheets, and `raw-packets.log` as timestamped text. Each export checks its size against `MaximumExportFileSizeBytes` before writing, so a runaway dataset cannot fill the disk."
+    },
+    {
+      "p": "Imports are where the caution concentrates. Every imported record runs through `RequireSchema` (the `schemaVersion` must be present *and* match the current version exactly), a type-specific validator, and — for raw packets — a check that rejects embedded line breaks, a classic trick for smuggling a second packet inside one line. Accepted data is then re-stamped by `TagFileImport`:"
+    },
+    {
+      "code": "var metadata = dto.SourceMetadata with\n{\n    SourceName = ... ?? \"File Import\",\n    SourceType = ExternalSourceType.FileImport,\n    SourceId   = ... ?? \"file-import\",\n    Origin     = ContractDataOrigin.Imported,\n    TrustLevel = ExternalTrustLevel.External\n};"
+    },
+    {
+      "p": "Whatever the file *claimed* about its own trust, the import forces it to `FileImport` / `Imported` / `External`. A malicious file cannot label itself as trusted internal data. When the folder scanner (`ScanImportFolderAsync`) is used, accepted files are moved to a `processed/` folder and rejected ones to `rejected/` — the doc's guidance is explicit that APRS-Command \"should not silently repair unsafe imports,\" leaving a human paper trail."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The transmit-requests folder is bait, not a feature",
+        "text": "The import layout includes an incoming/transmit-requests/ folder, and it is a deliberate dead end. In ImportAsync, the TransmitRequests kind is intercepted before any parsing: it publishes a PacketTransmitBlocked event and returns a rejection, ‘Imported transmit requests are disabled and blocked by policy.’ Just like the REST transmit endpoint, the door is framed but has no handle."
+      }
+    },
+    {
+      "h2": "Surface 4: the plugin / driver framework"
+    },
+    {
+      "p": "The fourth surface is the most forward-looking. A __plugin__ is add-on code that snaps into an app to extend it; a __driver__ is a plugin specialized for feeding in data from one kind of device or source. The framework itself (Phase 14.11) is currently a *foundation and a set of rules* — `docs/PLUGIN_DRIVER_FRAMEWORK.md` states plainly that \"runtime plugin loading remains disabled by default,\" and unsigned plugins are rejected, operator approval is required, and transmit permissions are denied."
+    },
+    {
+      "p": "But the *pattern* is already alive and shipping in the weather input drivers, which is the best way to see what a future plugin looks like. The `IWeatherInputDriver` interface is the contract every weather source obeys — Davis, Ecowitt, Ambient, Tempest, PeetBros, a manual entry, and a file-import bridge each implement it:"
+    },
+    {
+      "code": "public interface IWeatherInputDriver\n{\n    string DriverId { get; }\n    string DriverName { get; }\n    WeatherInputDriverType DriverType { get; }\n    bool Enabled { get; }\n    WeatherInputDriverStatus Status { get; }\n    CommonWeatherObservation? LastObservation { get; }\n    Exception? LastError { get; }\n    event EventHandler<WeatherObservationReceivedEventArgs>? ObservationReceived;\n    Task StartAsync(CancellationToken cancellationToken = default);\n    Task StopAsync(CancellationToken cancellationToken = default);\n}"
+    },
+    {
+      "p": "Every driver reports an identity, an enabled flag, a status, its last observation, its last error, and raises an `ObservationReceived` event when new data arrives — it *provides observations*, it does not command anything. That is exactly the shape the plugin framework generalizes: a plugin declares a manifest (id, publisher, capabilities, requested permissions, signature), the operator approves it, it starts in a restricted context, it reports health, and it publishes notification events through approved abstractions. The framework doc's \"What Plugins Must Not Do\" list is blunt: no direct transmit, no bypassing central transmit safety, no starting hidden transports, no hardcoded secrets, no touching internal models directly, no depending on the Avalonia UI."
+    },
+    {
+      "h2": "The security model, in one place"
+    },
+    {
+      "p": "All four surfaces answer to a single security posture, spelled out in `docs/EXTENSION_SECURITY_MODEL.md` and `docs/EXTENSION_SAFETY_RULES.md`: extensions are untrusted until the operator configures them, default to `ReadOnly`, default to unknown/untrusted source metadata, and — the load-bearing sentence — \"No extension can transmit by default.\""
+    },
+    {
+      "p": "The transmit rule is worth stating in full because it is the project's central safety claim. Every transmit-capable action — APRS-IS, RF, iGate, digipeater, beaconing, weather beaconing, object transmit, message transmit, and any *future* API-queued or plugin-requested or file-imported packet — must pass one centralized safety check. And a permission, the doc stresses, \"is not enough by itself\": the central policy still weighs current operator settings, station profile, port state, training/replay lockout, stale-data checks, and rate limits before anything could go on the air. The extension surfaces don't get their own private path to the radio; there is exactly one path, and it is guarded in one place."
+    },
+    {
+      "table": {
+        "headers": [
+          "Concern",
+          "How every surface handles it"
+        ],
+        "rows": [
+          [
+            "Default state",
+            "Disabled — must be explicitly enabled by the operator"
+          ],
+          [
+            "Network exposure",
+            "Localhost-only bind address, enforced at start"
+          ],
+          [
+            "Authentication",
+            "Token required by default; REST uses constant-time comparison and fails closed"
+          ],
+          [
+            "Incoming data trust",
+            "Re-stamped with a source tag it cannot forge (LocalApi / FileImport / Plugin)"
+          ],
+          [
+            "Transmit",
+            "Structurally blocked; only the one central safety gate may ever authorize it"
+          ],
+          [
+            "Failure isolation",
+            "A failing client or import cannot crash the service or the app"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "For a maintainer adding a fifth surface",
+        "text": "Follow the four existing ones exactly: put the contract in AprsCommand.Contracts, put the service in AprsCommand.Api, default every enable flag to false, bind localhost-only, require a token, re-stamp all inbound data with a fresh source tag, publish notifications through the event bus rather than reaching into internal services, and route any transmit ambition through the central safety gate — never around it."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "APRS-Command is amateur-radio software, and an accidental or malicious transmission is a real-world harm, not a cosmetic bug. The extension surfaces are designed so that opening the app up to outside tools never widens that risk. They do it through a small set of repeated moves: a compiler-enforced project boundary between public contracts and internal models; safe defaults that leave everything off until an operator opts in; unforgeable source tags on every byte that crosses the line; a notification-only event bus that observers cannot turn into a command channel; and a single central transmit gate that every path — present and future — must pass through."
+    },
+    {
+      "p": "The recurring \"door with no handle\" motif — the `501` transmit endpoint, the blocked `transmit-requests` folder, the plugin framework that ships disabled — is the deepest design lesson here. The safety machinery is built, wired, and tested *before* the feature it guards exists. When a real transmit path is finally added, the fences it must pass are already standing, already exercised, and already the only way through."
+    }
+  ]
+}

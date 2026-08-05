@@ -1,0 +1,174 @@
+{
+  "order": 22,
+  "title": "How This Book Is Maintained (Amendments Register)",
+  "subtitle": "The stable-numbering, dated-amendment discipline that lets this guide grow and stay correct for years without ever being reprinted — and the living Amendments Register that records its state.",
+  "in_this_chapter": [
+    "Why a living program needs a book that can be updated without a full reprint",
+    "Rule one: section numbers are permanent and never shift",
+    "Rule two: dated amendments, tagged AMENDS (revise) or ADDS (add)",
+    "Rule three: the Amendments Register as the record of the book's state",
+    "The starter register with the v1.0 baseline row and how to add real rows",
+    "Why three output formats (Markdown, PDF, Word) don't complicate the model",
+    "The one rule — never renumber — and why everything depends on it"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This is the chapter about the book itself — the one that explains how the very document you are reading stays alive and accurate for years without ever being reprinted from scratch. Every other chapter explains a piece of the program. This one explains the *housekeeping rules* that let the whole book grow, get corrected, and gain new chapters over time while never once breaking a reference someone wrote in the past."
+    },
+    {
+      "p": "The short version: __section numbers are permanent__, changes ship as small __dated amendments__ instead of silent rewrites, and a single running table — the __Amendments Register__ — records exactly what state the book is in. If you are the next person to touch this guide, this chapter is your rulebook. Follow it and the book keeps its integrity; ignore it and cross-references start pointing at the wrong things."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where this discipline is defined",
+        "text": "The rules in this chapter are the plan-of-record recorded in docs/DOCUMENTATION_PLAN.md (the \"Amendment / supplement model\" section) and the locked outline in docs/programming-guide/OUTLINE.md. This chapter, §22, is the authoritative home of the Amendments Register; §1 introduces the idea, but the live register lives here."
+      }
+    },
+    {
+      "h2": "The problem this solves: books that die because they can't be updated"
+    },
+    {
+      "p": "__WHAT it does.__ The maintenance model lets the guide be improved a little at a time — fix a paragraph here, add a chapter there — without republishing the entire book and without invalidating anything already written. __Jargon check:__ to __invalidate a reference__ means to make an old pointer wrong; if someone wrote \"see §11\" in an email last year and §11 now means something different, their pointer has been invalidated. The whole model exists to make that impossible."
+    },
+    {
+      "p": "__WHY it was built this way.__ A program under active development changes constantly. A book that must be reprinted cover-to-cover every time one sentence goes stale is a book nobody keeps current — the effort is too large, so updates never happen, and the documentation quietly rots away from the code. The author put it plainly in the plan: the goal is to improve the book \"without reprinting the whole book\" — in his words, \"we won't kill so many trees.\" The rejected alternative is the obvious one: edit the master document freely and re-issue it. That feels simpler but it has a fatal flaw — every edit can silently shift section numbers, and once numbers shift, every reference ever written to this book becomes a small landmine."
+    },
+    {
+      "p": "This is not a new invention. It is borrowed from how technical standards bodies and legal codes stay current. A law is not rewritten from page one every time a clause changes; an __amendment__ is published, dated, and appended, and the section numbers of the original stand untouched forever. This guide uses that exact discipline."
+    },
+    {
+      "h2": "Rule one: section numbers are permanent"
+    },
+    {
+      "p": "__WHAT it does.__ Once a section number is assigned a meaning, it keeps that meaning forever. Once §11 means the Transmit-Safety Authority, §11 means the Transmit-Safety Authority for the life of the book. New material is *added* with a fresh, never-before-used number; it is never *inserted* between existing sections in a way that pushes the later numbers up by one."
+    },
+    {
+      "p": "__WHY.__ Permanence is the single property that makes every other convenience possible. Because numbers never move, a cross-reference written today — in the code, in another document, in someone's notes — still points at the same place a decade from now. The instant you allow renumbering, you lose that guarantee entirely, and no reader can ever again be sure the \"§14\" they were told about is the \"§14\" they are now reading. There is no partial version of this rule; it is all-or-nothing, which is why it is stated as an absolute."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The one rule you cannot break",
+        "text": "Never renumber an existing section — not to \"tidy up,\" not to make the order read better, not for any reason. To revise a section, issue an AMENDS for its existing number. To add material, issue an ADDS with the next unused number. This single rule is the mechanism that keeps every reference anyone has ever written valid. Everything else in this chapter is bookkeeping around it."
+      }
+    },
+    {
+      "h2": "Rule two: changes ship as dated amendments with two tags"
+    },
+    {
+      "p": "__WHAT it does.__ When something needs to change, the change does not get buried as a silent edit inside a fresh reprint. It ships as its own short, dated, standalone __amendment__ — a small document that can be printed on its own and appended to the book. __Jargon check:__ an __amendment__ here is exactly like a legal amendment — a self-contained, dated note that says \"as of this date, this part of the book now reads differently\" (or \"there is now a new part\")."
+    },
+    {
+      "p": "Every amendment carries one of exactly two tags, so its nature is obvious at a single glance:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Tag",
+          "Meaning",
+          "Effect on existing numbers"
+        ],
+        "rows": [
+          [
+            "AMENDS §X.Y",
+            "Revises existing material within section X.Y — the new text supersedes the old text for that subsection.",
+            "None. §X.Y keeps its number; only its contents are updated."
+          ],
+          [
+            "ADDS §Z",
+            "Adds an entirely new section, numbered §Z after the last one currently in use.",
+            "None. All existing sections keep their numbers; the book simply gains a new one."
+          ]
+        ]
+      }
+    },
+    {
+      "code": "AMENDS §11.3   // revises existing material within section 11.3\nADDS   §23     // adds an entirely new section, numbered after the last one\n\n// An amendment is dated, printable on its own, and appended to the book.\n// Existing section numbers are never renumbered to make room — only extended.",
+      "language": "text"
+    },
+    {
+      "p": "__HOW it works in practice.__ Suppose the Transmit-Safety Authority (documented in §11) gains a new confirmation step and the explanation in §11.3 is now slightly wrong. You do not edit §11.3 in place and quietly re-release the book. You write an amendment tagged __`AMENDS §11.3`__, date it, state what the subsection now says, and log one row in the Amendments Register. Anyone holding an older printing keeps their book and simply appends your amendment page; anyone reading the living Markdown sees the register row telling them the change exists. Now suppose instead you want to document a brand-new subsystem that has no home yet. You write it as a new section tagged __`ADDS §23`__ (assuming §22 was the last section), and again log one row. Nothing that already existed moves."
+    },
+    {
+      "h2": "Rule three: the Amendments Register records the book's state"
+    },
+    {
+      "p": "__WHAT it does.__ The __Amendments Register__ is a single running table — kept here, in §22 — that lists every amendment ever issued, with its date, its tag, and a one-line summary. It is the book's index of its own changes. A reader can glance at it and know two things instantly: exactly what state the book is in, and which loose amendment pages, if any, belong appended to their copy."
+    },
+    {
+      "p": "__WHY a register at all?__ Because amendments are standalone and dated, they could otherwise scatter — someone could hold three amendment pages and have no way to know a fourth exists. The register is the authoritative checklist. If it is not in the register, it did not officially happen; if it is in the register, every copy of the book should carry it. The register is what turns a pile of loose dated notes into a coherent, verifiable edition."
+    },
+    {
+      "h2": "The starter Amendments Register (v1.0 baseline)"
+    },
+    {
+      "p": "At first publication the register is essentially empty — there is nothing to amend yet, because the book has just been written. It carries a single __baseline row__ marking the v1.0 publication, followed here by two greyed template rows that show future contributors the exact shape their entries must take. The template rows are illustrations, not real amendments; delete-and-replace them with real ones as changes are issued."
+    },
+    {
+      "table": {
+        "headers": [
+          "Date",
+          "Tag",
+          "Section",
+          "Summary"
+        ],
+        "rows": [
+          [
+            "2026-08-05",
+            "BASELINE",
+            "— (all)",
+            "v1.0 — first publication of the APRS-Command Programming Guide Book. All sections §1–§22 established at their permanent numbers. No amendments issued."
+          ],
+          [
+            "(future)",
+            "AMENDS §X.Y",
+            "§X.Y",
+            "Example row — revises the named subsection; the new text supersedes the prior text. Existing numbers unchanged."
+          ],
+          [
+            "(future)",
+            "ADDS §Z",
+            "§Z",
+            "Example row — adds a new section at the next unused number. Existing numbers unchanged."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "How to add a real row",
+        "text": "When you issue an amendment: (1) pick the tag — AMENDS to revise, ADDS to add; (2) for ADDS, use the next section number not yet in use (never reuse or insert); (3) add one row here with today's date, the tag, the section, and a one-line summary; (4) ship the amendment as its own dated page. Keep rows in date order, newest at the bottom, so the register reads as a timeline."
+      }
+    },
+    {
+      "h2": "Why three formats don't complicate the model"
+    },
+    {
+      "p": "The book is produced in three formats, and understanding which one you edit keeps the discipline clean. The __Markdown__ files in the repository are the __living source of truth__ — they sit beside the code, travel with it through version control, and are the only thing you hand-edit. The polished __PDF__ and __Word__ editions are *generated* from that Markdown for reading, printing, and sharing; they are never edited by hand. So an amendment is always, at bottom, an edit to the Markdown source plus a new register row — the PDF and Word simply get regenerated."
+    },
+    {
+      "p": "There is one more safeguard worth naming: the __freshness manifest__, a mapping from each chapter to the specific source files it describes. __Jargon check:__ a __manifest__ is just a listing — here, a table that says \"chapter §11 describes TransmitSafetyAuthority.cs,\" and so on. Its purpose is honesty: when the code changes, a single `git diff` can flag exactly which chapters might now be stale, so the person maintaining the book knows precisely where to look instead of guessing. The manifest tells you *what* might need an amendment; this chapter's rules tell you *how* to issue one."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "This book was written for the same reason the program was: so that a tool a community depends on cannot quietly be lost, and so the *reasoning* behind it — not just the code — survives its author. A book that cannot be safely updated fails that mission as surely as code with no documentation at all. The maintenance discipline in this chapter is what makes the guide durable rather than merely well-written."
+    },
+    {
+      "p": "Hold three ideas and you have the whole model. First, __numbers are permanent__ — never renumber, because that one rule is what keeps every reference ever written valid. Second, __changes are dated amendments__, tagged AMENDS to revise or ADDS to add, shipped as small standalone pages instead of silent rewrites. Third, __the register is the truth of the book's state__ — if a change is not logged there, it did not officially happen. Follow those three and the book, like the program it documents, stays alive long after the people who started it have moved on."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "For the next maintainer",
+        "text": "You do not need permission to improve this book — you need only to follow the discipline. Fix a paragraph with an AMENDS; document something new with an ADDS at the next free number; log every one in the Amendments Register above with today's date. The only thing you must never do is renumber an existing section. That restraint is not bureaucracy — it is the single promise this book makes to everyone who will ever cite it."
+      }
+    }
+  ]
+}

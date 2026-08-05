@@ -1,0 +1,218 @@
+{
+  "order": 3,
+  "title": "The Solution Layout: Projects and Boundaries",
+  "subtitle": "How APRS-Command is split into nine projects, what each owns, and the inward-pointing dependency rule that keeps the core clean.",
+  "in_this_chapter": [
+    "The nine projects and what each one owns",
+    "Why Aprs.Core and Contracts depend on absolutely nothing",
+    "How IAprsTransport hides radios and the internet behind one plug",
+    "Where the app's brain lives (Services) and why it has no UI",
+    "Aprs.Desktop as the composition root that wires it all together",
+    "The one rule: references point inward, enforced by the compiler",
+    "Why tests and the fuzz harness are allowed to reference broadly"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command is not one big program. It is nine smaller programs (in .NET these are called __projects__ — a project is one unit of code that compiles into one file, like one chapter that gets bound into a book) that are stitched together at the very end. This chapter is the map of those nine pieces: what each one owns, which ones are allowed to know about which others, and the single rule that keeps the whole thing from turning into spaghetti."
+    },
+    {
+      "p": "Why should a future maintainer care about the layout before touching any real code? Because the boundaries between projects are the load-bearing walls of the building. If you understand where a wall is and why it is there, you will not accidentally knock it down — and knocking one down is how a clean codebase slowly rots into one where every change breaks three unrelated things. The project split is the author's way of writing the architecture rules into a form the compiler itself will enforce, so the rules cannot quietly be forgotten."
+    },
+    {
+      "h2": "The nine projects at a glance"
+    },
+    {
+      "p": "Everything lives in one __solution__ (a solution is just the container that holds all the projects together — the file is `CrossPlatformAprs.sln`). Source projects sit under `src\\`, test projects under `tests\\`. Here is the whole roster, with who owns what and who each one is allowed to reference."
+    },
+    {
+      "table": {
+        "headers": [
+          "Project",
+          "Plain-language job",
+          "References (may use)"
+        ],
+        "rows": [
+          [
+            "Aprs.Core",
+            "The pure rules of the APRS radio language — packet models and the parsers that turn raw text into objects.",
+            "Nothing. Zero dependencies."
+          ],
+          [
+            "Aprs.Transport",
+            "The wires to the outside world — talking to radios (KISS/AGWPE/Direwolf over serial) and to the internet APRS-IS servers.",
+            "Aprs.Core"
+          ],
+          [
+            "AprsCommand.Contracts",
+            "A frozen, versioned vocabulary of plain data shapes (DTOs) used at the app's outer edges — API and extensions.",
+            "Nothing. Zero dependencies."
+          ],
+          [
+            "Aprs.Services",
+            "Where the app actually thinks — alerts, beacons, weather, the event bus, folder setup. ~300 files.",
+            "Aprs.Core, Aprs.Transport, AprsCommand.Contracts"
+          ],
+          [
+            "AprsCommand.Api",
+            "The outward-facing doors — a local REST API, a WebSocket event stream, and file import/export hooks for extensions.",
+            "AprsCommand.Contracts, Aprs.Services"
+          ],
+          [
+            "Aprs.Mapping",
+            "Everything map-related — tiles, symbols, markers, Maidenhead grid math.",
+            "Aprs.Core, Aprs.Services"
+          ],
+          [
+            "Aprs.Desktop",
+            "The screen you actually see — the Avalonia UI, and the place where all the pieces are wired together and the program starts.",
+            "Core, Transport, Services, Mapping, Api (+ UI packages)"
+          ],
+          [
+            "Aprs.Tests",
+            "Automated tests that check the real behavior of every layer.",
+            "All source projects"
+          ],
+          [
+            "Aprs.FuzzHarness",
+            "A stress-tester that fires live internet traffic at the parser to hunt for crashes. Run by hand.",
+            "Aprs.Core, Aprs.Transport"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A note on the CLAUDE.md mismatch",
+        "text": "The project guidance file describes a different program (an 'Activation Planner' on Avalonia 12 / a ProcessEngine–PropagationModel–Services–UI stack). The real APRS-Command source does not match that. This chapter describes what is actually in the source: nine projects targeting `net10.0`, a UI built on Avalonia 11.3.7, and the layer names shown above. When the guidance file and the source disagree, the source wins."
+      }
+    },
+    {
+      "h2": "Aprs.Core — the pure heart"
+    },
+    {
+      "p": "__What it does:__ Core holds the knowledge of the APRS language itself — what a position report looks like, how a Mic-E compressed packet is decoded, what fields a weather or telemetry packet carries — and nothing else. Its 15 files are all parsers and data models (`AprsParser.cs`, `AprsMicEParser.cs`, `AprsPacket.cs`, `AprsConstants.cs`, and so on)."
+    },
+    {
+      "p": "__Why it is built this way:__ Core is deliberately kept __pure__ — meaning it depends on absolutely nothing. Look at its entire project file:"
+    },
+    {
+      "code": "<Project Sdk=\"Microsoft.NET.Sdk\">\n  <PropertyGroup>\n    <TargetFramework>net10.0</TargetFramework>\n    <Nullable>enable</Nullable>\n    <ImplicitUsings>enable</ImplicitUsings>\n  </PropertyGroup>\n</Project>"
+    },
+    {
+      "p": "Notice what is missing: there is not a single `<ProjectReference>` and not a single `<PackageReference>`. Core knows nothing about radios, nothing about the network, nothing about screens, nothing about databases. That is the point. Parsing radio text is the trickiest, most bug-prone code in the whole app (which is exactly why the fuzz harness exists to attack it). Keeping it dependency-free means it can be tested in complete isolation — you can throw ten thousand malformed packets at it in a plain test loop without ever starting a UI, opening a serial port, or touching the internet. The `IAprsParser` interface even promises it will never throw on bad input; it returns a `bool` and hands back an error string instead. A component with no dependencies is the one you can reason about, test, and trust the most, so the most dangerous logic lives exactly there."
+    },
+    {
+      "h2": "Aprs.Transport — the wires to the outside"
+    },
+    {
+      "p": "__What it does:__ Transport is everything that carries raw APRS text between the app and the physical/network world: the AGWPE/Direwolf client, the APRS-IS internet client, KISS-over-serial, and AX.25 frame encoding/decoding. It is the one place that is allowed to do messy real-world I/O."
+    },
+    {
+      "p": "__Why it is built this way:__ Transport references Core (it produces the raw text that Core parses) and pulls in exactly one outside package — `System.IO.Ports` — because talking to a serial radio needs it:"
+    },
+    {
+      "code": "<ItemGroup>\n  <PackageReference Include=\"System.IO.Ports\" Version=\"9.0.0\" />\n  <ProjectReference Include=\"..\\Aprs.Core\\Aprs.Core.csproj\" />\n</ItemGroup>"
+    },
+    {
+      "p": "The key design move is the `IAprsTransport` interface — a tiny contract that every kind of connection (radio or internet) satisfies. An __interface__ is like a wall socket: any device with the right plug works, and the socket does not care what the device is. Here every transport promises the same three things:"
+    },
+    {
+      "code": "public interface IAprsTransport : IAsyncDisposable\n{\n    string Name { get; }\n    IAsyncEnumerable<string> ReadPacketsAsync(CancellationToken cancellationToken);\n    Task SendPacketAsync(string packet, CancellationToken cancellationToken);\n}"
+    },
+    {
+      "p": "Because a serial radio and an internet server both present themselves as an `IAprsTransport`, the layers above (Services, UI) can read and send packets without knowing or caring which one is plugged in. Swapping a USB radio for an internet feed changes nothing upstream — that is the payoff of putting all the I/O behind one small, stable seam."
+    },
+    {
+      "h2": "AprsCommand.Contracts — the frozen vocabulary"
+    },
+    {
+      "p": "__What it does:__ Contracts is a set of plain data shapes — `MessageDto`, `StationUpdateDto`, `WeatherObservationDto`, `RawPacketDto`, and friends. A __DTO__ (Data Transfer Object) is a simple container whose only job is to carry values across a boundary, like a shipping box that holds goods but has no machinery of its own. Contracts also owns the versioning and JSON-serialization rules for those boxes (`ContractSchemaVersion.cs`, `ContractJsonSerializerOptions.cs`)."
+    },
+    {
+      "p": "__Why it is built this way:__ Like Core, Contracts depends on nothing — its project file has no references at all. That is intentional: these shapes are the language spoken at the app's outer doors (the local API and any third-party extensions). If they had dependencies, changing an internal detail could ripple out and break an extension somebody else wrote. By being tiny, self-contained, and versioned, Contracts can stay stable for the outside world even as the guts of the app churn. It is a separate project precisely so the compiler forbids the internal code from smuggling private types into a public promise."
+    },
+    {
+      "h2": "Aprs.Services — where the app thinks"
+    },
+    {
+      "p": "__What it does:__ Services is the biggest project by far (~300 files) and holds the application's brain: alert rules and triggers, beacon formatting, the weather ingestion pipeline, the internal event bus, application-folder setup, bulletins, announcements, and much more. It coordinates Core (parsing) and Transport (I/O) into features."
+    },
+    {
+      "p": "__Why it is built this way:__ Services is allowed to reference the three lower building blocks and nothing above it:"
+    },
+    {
+      "code": "<ItemGroup>\n  <ProjectReference Include=\"..\\Aprs.Core\\Aprs.Core.csproj\" />\n  <ProjectReference Include=\"..\\Aprs.Transport\\Aprs.Transport.csproj\" />\n  <ProjectReference Include=\"..\\AprsCommand.Contracts\\AprsCommand.Contracts.csproj\" />\n</ItemGroup>\n\n<ItemGroup>\n  <!-- APRS device-ID (tocall) database snapshot, bundled so device\n       identification works offline. -->\n  <EmbeddedResource Include=\"DeviceId\\tocalls.dense.json\" />\n</ItemGroup>"
+    },
+    {
+      "p": "Two things stand out. First, Services depends only downward — on Core, Transport, and Contracts. It never references the UI, so all this logic can run and be tested with no screen attached. Second, the tocall device-ID database is __embedded__ (baked straight into the compiled file) so that identifying which radio model sent a packet works offline, with no separate data file to lose. The deliberate choice to keep the thinking here — and out of the UI — is what lets the same logic be reused by the API and covered by tests."
+    },
+    {
+      "h2": "AprsCommand.Api and Aprs.Mapping — the feature satellites"
+    },
+    {
+      "p": "__Aprs.Mapping__ owns everything map-shaped: tile downloading and caching, APRS symbol lookup, map markers (station/object/weather), and Maidenhead grid-square math. It references Core and Services — it is a feature layer sitting on top of the brain, kept in its own project so the heavy map machinery does not bloat the rest."
+    },
+    {
+      "p": "__AprsCommand.Api__ owns the app's outward doors: a local REST API, a WebSocket event stream, and file import/export hooks that let extensions plug in. It references Contracts (the frozen vocabulary it speaks) and Services (the brain it exposes). Keeping the API in its own project means the risky, outside-facing surface is walled off from the core logic; the app can function completely even if nobody ever opens those doors."
+    },
+    {
+      "h2": "Aprs.Desktop — the composition root"
+    },
+    {
+      "p": "__What it does:__ Desktop is the program you see and run. It is the only project marked `OutputType=Exe` among the app proper, it carries the version and copyright, and it holds the Avalonia views, the viewmodels, the converters, the persistence and audio and runtime folders — and, crucially, the wiring that connects everything else together and starts it up."
+    },
+    {
+      "p": "__Why it is built this way:__ Desktop sits at the top and is allowed to reference every other source project, because it is the __composition root__ — the single place where all the parts are assembled into a running whole (like the final assembly line where the engine, wheels, and body finally meet):"
+    },
+    {
+      "code": "<ItemGroup>\n  <ProjectReference Include=\"..\\Aprs.Core\\Aprs.Core.csproj\" />\n  <ProjectReference Include=\"..\\Aprs.Transport\\Aprs.Transport.csproj\" />\n  <ProjectReference Include=\"..\\Aprs.Services\\Aprs.Services.csproj\" />\n  <ProjectReference Include=\"..\\Aprs.Mapping\\Aprs.Mapping.csproj\" />\n  <ProjectReference Include=\"..\\AprsCommand.Api\\AprsCommand.Api.csproj\" />\n</ItemGroup>"
+    },
+    {
+      "p": "This is also the only project that carries the heavy UI packages — Avalonia 11.3.7, Mapsui (the map control), Microsoft.Data.Sqlite, the Microsoft dependency-injection container, Velopack for updates. That concentration is deliberate: because those packages live only in Desktop, none of the lower layers get contaminated by UI concerns. A quick check of the source confirms it — there is not a single `using Avalonia` anywhere in Core, Transport, or Services. The screen framework stops at the top floor."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Why the composition root can reference everything",
+        "text": "It looks like Desktop 'breaks the rules' by depending on all five projects. It does not — being the assembly point is its whole job. The rule being protected is that the lower layers must NOT depend on Desktop. Wiring flows down from one top; knowledge never flows up. One project references many is fine; many projects referencing one at the top would be the disaster."
+      }
+    },
+    {
+      "h2": "The test projects"
+    },
+    {
+      "p": "__Aprs.Tests__ is the automated safety net (xUnit). Its project file references every source project — Core, Transport, Services, Mapping, Desktop, Contracts, and Api — because tests need to reach into every layer to check real behavior. Tests are the one place where referencing everything is expected and healthy: a test's job is to observe, not to be observed."
+    },
+    {
+      "p": "__Aprs.FuzzHarness__ is a separate, hand-run stress tool (its own `Exe`). It references only Core and Transport, because its single mission is to connect to live APRS-IS and fire a firehose of real-world packets through the parser to surface crashes and misdecodes. Its own project description says it is deliberately kept out of the automated CI suite — it is a hunting tool, not a pass/fail gate. Giving it the minimum two references keeps it lean and focused on the parser it is trying to break."
+    },
+    {
+      "h2": "The one rule: dependencies point inward"
+    },
+    {
+      "p": "Strip away the details and every reference edge in the whole solution obeys one direction. Draw it and the arrows only ever point toward the pure, dependency-free heart:"
+    },
+    {
+      "code": "Aprs.Desktop  (the exe — references everything below)\n   │  ├── AprsCommand.Api ── Contracts, Services\n   │  ├── Aprs.Mapping ───── Core, Services\n   │  ├── Aprs.Services ──── Core, Transport, Contracts\n   │  ├── Aprs.Transport ─── Core\n   │  └── Aprs.Core ──────── (nothing)\n   │\n   └── Contracts ─────────── (nothing)\n\nArrows only point DOWN/INWARD. Nothing points up at Desktop\nexcept the test projects, whose job is to watch everything."
+    },
+    {
+      "p": "Because these references are declared in the `.csproj` files, the compiler enforces the rule for you. If someone tries to make Core reach up into Services, or sneak an Avalonia UI type into Transport, the build simply fails — there is no reference edge that would allow it. The architecture is not a diagram in a wiki that drifts out of date; it is compiled reality. The nesting in the solution file (`src` and `tests` folders) is cosmetic grouping for the IDE, but the reference edges are the real, enforced law."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The whole layout expresses one idea: the more dangerous or valuable a piece of code is, the fewer things it should depend on. So the trickiest logic — parsing the APRS language — lives in Core with zero dependencies, and the outward-facing promises live in Contracts with zero dependencies. Everything else is arranged in rings around those two hearts, each ring allowed to know only about the rings closer to the center."
+    },
+    {
+      "p": "For a future maintainer, three things must be preserved. First, never add an upward reference: a lower layer must never reference a higher one, and nothing but the tests may reference Desktop. Second, keep Core and Contracts dependency-free — the moment either grows a reference, its whole reason for existing (isolation and stability) is gone. Third, keep UI, database, and networking packages confined to the projects that own them (Desktop for UI, Transport for radio/network) so the brain in Services stays testable with no screen and no wires attached."
+    },
+    {
+      "p": "If you honor those three rules, the project split keeps doing its quiet job: making the illegal shortcuts literally impossible to compile, so the design survives long after anyone remembers why it was drawn this way."
+    }
+  ]
+}

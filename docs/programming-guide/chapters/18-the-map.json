@@ -1,0 +1,297 @@
+{
+  "order": 18,
+  "title": "The Map: Mapsui, Layers & Drawing",
+  "subtitle": "How APRS-Command renders a live world map, stacks its overlays, and lets operators draw on it — all grounded in one coordinate language, Web Mercator.",
+  "in_this_chapter": [
+    "The four libraries that draw the map — Mapsui, BruTile, NetTopologySuite, and Skia — and who does what",
+    "Web Mercator (EPSG:3857) in plain terms, and why every position is stored and reprojected as meters",
+    "The bottom-to-top layer stack, base-map tile caching, and how offline maps come for free",
+    "How station markers crop real APRS symbols out of bundled sprite sheets",
+    "The freehand drawing engine: tunnel-routed input, world-space shapes, and live previews",
+    "Honest ground measurements — undoing Mercator's stretch with a cosine correction"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The map is the beating heart of APRS-Command. Everything the program hears over the air — other stations, weather reports, objects someone dropped on the map, the trail a moving vehicle leaves behind — ends up as a colored dot, a line, or a symbol on a scrollable, zoomable map of the world. This chapter explains how that map is actually drawn, how it knows where north is, and how the operator can scribble their own lines, circles, and labels on top of it."
+    },
+    {
+      "p": "Two files do almost all of the heavy lifting. **MapView.axaml** (246 lines) is the visual shell — the map control plus the floating panels that overlay it. **MapView.axaml.cs** (2,111 lines) is the engine room: it builds the layers, converts coordinates, paints every marker, and runs the entire freehand drawing tool. A smaller helper project, **Aprs.Mapping**, holds the pieces that need no user interface — coordinate math, tile-URL building, and the offline-download planner."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Where to read along",
+        "text": "Main view: src/Aprs.Desktop/Views/MapView.axaml.cs and MapView.axaml. Supporting types: src/Aprs.Desktop/Mapping/DrawingShape.cs, ShapeMeasurements.cs, WmsRadarUrlBuilder.cs, and the Aprs.Mapping project (PlaceholderMapCoordinateConverter.cs, MapTileCalculationService.cs, TemplateMapTileProvider.cs)."
+      }
+    },
+    {
+      "h2": "The cast of characters: which library does what"
+    },
+    {
+      "p": "APRS-Command does not draw a map from scratch. Drawing a slippy map — one you can drag and zoom smoothly — is a genuinely hard problem, so the app stands on four well-worn open-source libraries. Understanding who does what makes the rest of the code readable."
+    },
+    {
+      "table": {
+        "headers": [
+          "Library",
+          "Plain-English job",
+          "Real-world analogy"
+        ],
+        "rows": [
+          [
+            "__Mapsui__",
+            "The map engine. Holds the layers, the viewport (what you're looking at), handles pan/zoom, and asks each layer to draw itself.",
+            "The stage manager who decides what's on stage and where the audience is looking."
+          ],
+          [
+            "__BruTile__",
+            "Fetches and caches the little square map images (\"tiles\") over HTTP.",
+            "The runner who fetches numbered puzzle pieces and keeps a box of ones you've used before."
+          ],
+          [
+            "__NetTopologySuite (NTS)__",
+            "Pure geometry math: points, lines, polygons, circles, distances, and hit-testing.",
+            "The draftsman's compass and ruler — it knows shapes, not pixels."
+          ],
+          [
+            "__Skia__ (via Mapsui.Rendering.Skia)",
+            "The actual pixel painter that turns styles into colored pixels on screen.",
+            "The brush that finally puts paint on the canvas."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "You will see all four named in the `using` block at the top of **MapView.axaml.cs**. The division of labor is deliberate: geometry (NTS) is kept separate from painting (Skia) which is kept separate from the map's bookkeeping (Mapsui). When the code builds a circle, it builds an abstract NTS ring of coordinates; only later does Mapsui hand it to Skia to become blue pixels."
+    },
+    {
+      "h2": "Web Mercator (EPSG:3857): the flat map every web map uses"
+    },
+    {
+      "p": "__WHAT it is:__ Web Mercator is a specific recipe for flattening the round Earth onto a square sheet of paper, and it is the same recipe used by Google Maps, OpenStreetMap, and essentially every web map you have ever scrolled. Its official codename is __EPSG:3857__ — think of that as the map projection's model number."
+    },
+    {
+      "p": "__WHY it matters here:__ A GPS position is given in __latitude and longitude__ — degrees north and degrees east, like \"35.6 N, 82.5 W.\" Those are angles on a globe, not positions on a flat screen. To draw a dot on a flat rectangle of pixels you must first decide how the globe was unrolled. Mapsui, the tile servers, and APRS-Command all agree to use Web Mercator, so a marker placed by one is in the exact spot expected by the others. In Web Mercator, positions are measured not in degrees but in __meters east and north of the point where the equator meets the prime meridian__ (a spot in the Atlantic off West Africa)."
+    },
+    {
+      "p": "__The catch (worth understanding):__ Mercator lies about size. To keep angles and shapes correct, it stretches everything horizontally and vertically the farther you get from the equator — which is why Greenland looks as big as Africa on a wall map even though Africa is fourteen times larger. This stretch is not cosmetic; it means a \"meter\" in Web Mercator near the poles represents far less than a real ground meter. The app corrects for this every time it measures a drawn shape (covered below)."
+    },
+    {
+      "p": "Here is the single most important line for converting a real coordinate into map space, from the `CreateCircle` helper that draws the operator's range rings:"
+    },
+    {
+      "code": "// From CreateCircle(...) — turn a real lat/lon into Web Mercator meters:\nvar (cx, cy) = Mapsui.Projections.SphericalMercator.FromLonLat(lonDeg, latDeg);\n\n// ...then a circle is 64 points swept around that center, in meters:\nfor (int i = 0; i < segments; i++)\n{\n    var angle = 2 * Math.PI * i / segments;\n    coords[i] = new Coordinate(\n        cx + radiusMeters * Math.Cos(angle),   // east/west offset in meters\n        cy + radiusMeters * Math.Sin(angle));  // north/south offset in meters\n}\ncoords[segments] = coords[0];                    // close the ring back to the start"
+    },
+    {
+      "p": "`SphericalMercator.FromLonLat` is Mapsui's built-in translator: hand it longitude and latitude, it returns the `(x, y)` pair in Web Mercator meters. Because the result is in meters, a circle of a given radius is trivial — just step a compass around the center point. The loop walks 64 steps around a full circle (`2 * Math.PI` radians), and the final line snaps the last point back onto the first so the ring is closed. The opposite translator, `SphericalMercator.ToLonLat`, appears wherever the app needs to go the other way — from a screen click back to a real coordinate."
+    },
+    {
+      "h2": "An oddity worth explaining: why positions travel as percentages"
+    },
+    {
+      "p": "There is a quirk in this codebase that will confuse anyone reading it cold. Station positions do not travel through the app as latitude/longitude. Instead the view models expose two numbers — `MapLeftPercent` and `MapTopPercent` — that describe a position as a __percentage across the whole planet__: 0% left is the far west edge (−180 longitude), 100% is the far east; 0% top is the North Pole, 100% is the South. This is a holdover from an earlier, simpler map that was literally an image with markers positioned by CSS-style percentages."
+    },
+    {
+      "p": "Rather than rip that out, the map view treats percentages as a stable interchange format and converts at the boundary. The `PlaceholderMapCoordinateConverter` in Aprs.Mapping documents the exact formula, and `MakeFeature` in the map view reverses it and immediately projects to Web Mercator:"
+    },
+    {
+      "code": "private static PointFeature MakeFeature(double leftPercent, double topPercent)\n{\n    // Undo the whole-planet percentage encoding back to real degrees:\n    var longitude = (leftPercent / 100.0 * 360.0) - 180.0;   // 0..100%  ->  -180..+180\n    var latitude  = 90.0 - (topPercent  / 100.0 * 180.0);    // 0..100%  ->   +90..-90\n\n    // Then project degrees into Web Mercator meters for Mapsui:\n    var (mercatorX, mercatorY) = SphericalMercator.FromLonLat(longitude, latitude);\n    return new PointFeature(new MPoint(mercatorX, mercatorY));\n}"
+    },
+    {
+      "p": "An `MPoint` is simply Mapsui's word for \"a point on the map\" (map-point). A `PointFeature` is that point plus the ability to carry styles and data. Notice the two-step dance: percentages → degrees → meters. It looks redundant, but it means the messy legacy format lives in exactly one place, and everything downstream speaks clean Web Mercator. The reverse trip appears in `OnMapInfo`, where a click's world position is turned back into percentages before being handed to the view model — the two ends of the pipe stay symmetric."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Design lesson",
+        "text": "When a legacy data format cannot be removed cheaply, quarantine it at a single conversion boundary rather than letting it leak through the whole system. Here, percentages exist only at the view-model edge; the entire rendering core is pure Web Mercator meters."
+      }
+    },
+    {
+      "h2": "The layer stack: order is everything"
+    },
+    {
+      "p": "__WHAT a layer is:__ A map is built from stacked transparent sheets, exactly like the acetate overlays an old-school cartographer would lay on a lightbox. The bottom sheet is the map itself; on top go trails, then rings, then drawings, then weather radar, then the station markers. Whatever is added last sits on top and can hide what's below it. Getting this order right is why markers are never buried under a rain cloud."
+    },
+    {
+      "p": "`InitializeMap` builds the stack once, in a fixed order, right after the control loads:"
+    },
+    {
+      "code": "var map = MapControl.Map;\ncurrentBaseLayer = CreateBaseLayer(BaseMapKind.OpenStreetMap);\nmap.Layers.Add(currentBaseLayer);                 // 1. base map (bottom)\n\ntrailLayer = new WritableLayer { Name = \"Station trails\" };\nmap.Layers.Add(trailLayer);                       // 2. movement trails\n\nringsLayer = new WritableLayer { Name = \"Range rings\" };\nmap.Layers.Add(ringsLayer);                       // 3. distance rings\n\ndrawingLayer = new WritableLayer { Name = \"Draw tools\", Style = null };\nmap.Layers.Add(drawingLayer);                     // 4. operator drawings\n\n// ... radar layer built here ...\nmap.Layers.Add(radarLayer);                       // 5. weather radar\n\nmarkerLayer = new GenericCollectionLayer<List<IFeature>> { Name = \"APRS markers\" };\nmap.Layers.Add(markerLayer);                      // 6. station icons (top)"
+    },
+    {
+      "table": {
+        "headers": [
+          "Layer",
+          "Type",
+          "Holds",
+          "Why it sits where it does"
+        ],
+        "rows": [
+          [
+            "Base map",
+            "TileLayer",
+            "The street/topo/aerial map",
+            "Bottom — everything is drawn over it"
+          ],
+          [
+            "Station trails",
+            "WritableLayer",
+            "Faint indigo breadcrumb lines",
+            "Above the map, under everything meaningful"
+          ],
+          [
+            "Range rings",
+            "WritableLayer",
+            "Distance circles around your station",
+            "Above trails, still a background reference"
+          ],
+          [
+            "Draw tools",
+            "WritableLayer",
+            "Operator's lines, polygons, text",
+            "Above rings so annotations read clearly"
+          ],
+          [
+            "Radar",
+            "TileLayer",
+            "NEXRAD weather imagery",
+            "Semi-transparent, above drawings"
+          ],
+          [
+            "APRS markers",
+            "GenericCollectionLayer",
+            "Every station/object/weather icon",
+            "Top — the icons must always be clickable"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Two layer types appear. A __WritableLayer__ is a scratchpad you clear and refill by hand — perfect for things the code redraws constantly (trails, rings, drawings). A __TileLayer__ is fed by a tile source and manages its own fetching and caching — used for the base map and radar. The `Style = null` on the drawing layer is a small but important detail: it tells Mapsui \"this layer has no default look; every shape carries its own style,\" which is exactly how the drawing engine works."
+    },
+    {
+      "h2": "Base maps and the quiet art of tile caching"
+    },
+    {
+      "p": "__WHAT a tile is:__ A slippy map is not one giant image; it is a mosaic of 256×256-pixel squares called __tiles__, arranged in a grid at each zoom level. Zoom in and the server hands over a finer grid of more tiles. Pan and it fetches the new squares scrolling into view. BruTile is the errand-runner that fetches them by URL."
+    },
+    {
+      "p": "The operator can choose among four base maps — OpenStreetMap (global streets) and three USGS layers (topographic, aerial imagery, and imagery-plus-topo, all US-only). `CreateBaseLayer` builds any of them from a table of URL templates and, crucially, gives each its own on-disk cache folder:"
+    },
+    {
+      "code": "var cacheDirectory = Path.Combine(\n    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),\n    \"AprsCommand\", \"tile-cache\", cacheFolder);      // e.g. .../tile-cache/osm\nDirectory.CreateDirectory(cacheDirectory);\n\nvar tileSource = new HttpTileSource(\n    new GlobalSphericalMercator(0, maxZoom),        // the Web Mercator tile grid\n    urlTemplate,                                    // \"https://tile.openstreetmap.org/{z}/{x}/{y}.png\"\n    name: name,\n    persistentCache: new FileCache(cacheDirectory, \"png\"),   // remember tiles on disk\n    attribution: new Attribution(attributionText, attributionUrl),\n    configureHttpRequestMessage: request => request.Headers.UserAgent.ParseAdd(\n        \"AprsCommand/1.0 (+https://github.com/KE4CON/CrossPlatformAPRS)\"));"
+    },
+    {
+      "p": "The `{z}/{x}/{y}` placeholders in the URL are the tile's zoom level and its column and row in the grid — BruTile fills them in for each square it needs. The `FileCache` is the payoff: every tile fetched while online is written to disk and reused later, even with no internet. That is what makes a map area you have already viewed work in the field, offline, with no extra step. Because each base map caches to its own folder, switching maps never mixes topo tiles with aerial ones, and switching back is instant."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Being a good tile citizen",
+        "text": "The code caches only tiles the operator actually looks at and never bulk pre-fetches, which respects each provider's usage policy. It also sends a descriptive User-Agent identifying the app — OpenStreetMap's tile policy requires this, and anonymous scrapers get blocked. These are not optional niceties; they are the terms of using free tiles."
+      }
+    },
+    {
+      "p": "For deliberate offline saving, a separate planner in Aprs.Mapping — `MapTileCalculationService` — does the arithmetic of \"how many tiles cover this rectangle at these zoom levels.\" Its `ToTile` method is the canonical Web Mercator formula that turns a corner's latitude/longitude into a tile column and row, clamping latitude to ±85.05° because Mercator stretches to infinity at the true poles and simply cannot represent them. If the count tops 10,000 tiles it raises a warning so a giant download requires explicit confirmation."
+    },
+    {
+      "h2": "Station markers: painting APRS symbols from a sprite sheet"
+    },
+    {
+      "p": "Every station broadcasts a two-character __APRS symbol__ code — a canoe, a car, a repeater tower, a house. APRS-Command draws the real symbols, not generic dots, by cropping them out of three bundled __sprite sheets__: single PNG images that pack hundreds of 64-pixel icons into a 16-column grid. `RefreshFeatures` rebuilds the whole marker layer, and `AddStationStyles` decides how each station is painted. The core trick is turning a symbol character into a rectangle to crop:"
+    },
+    {
+      "code": "private static bool TryRegion(char code, out BitmapRegion region)\n{\n    region = null!;\n    if (code < '!' || code > '~') return false;    // only printable symbol codes\n\n    var index = code - '!';                          // 0-based position in the sheet\n    region = new BitmapRegion(\n        (index % 16) * CellSize,                     // column -> x pixel  (16 per row)\n        (index / 16) * CellSize,                     // row    -> y pixel\n        CellSize, CellSize);                         // 64 x 64 crop\n    return true;\n}"
+    },
+    {
+      "p": "The math is pure grid bookkeeping: subtract the first printable character to get a zero-based index, then `% 16` gives the column and `/ 16` gives the row, each multiplied by the 64-pixel `CellSize` to get the pixel corner of that icon. That `BitmapRegion` is handed to an `ImageStyle`, which tells Skia \"draw only this 64-pixel square of that big image at this map point.\" A station's symbol table character (`/` or `\\`) selects which sheet — primary or secondary — and a third overlay sheet stamps an extra glyph on top for overlay symbols."
+    },
+    {
+      "p": "If a station has no usable symbol, `AddStationStyles` falls back to a colored dot from `DotStyle`, tinted by category (blue for home, green for vehicles, purple for digipeaters) via `StationColor`. Selection is shown by fattening the outline and scaling the icon up. Age is shown through transparency: `StationOpacity` fades a station from fully opaque when Active, to half when Stale, to a quarter when Expired — so a glance at the map tells you who is live and who was heard an hour ago."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A subtle loading gotcha",
+        "text": "Mapsui only pulls image sources into its cache during a viewport-change fetch, so marker updates alone would leave every station as a placeholder circle on first paint. PreloadSymbolSheetsAsync deliberately constructs each sheet as an Image and calls FetchAllImageDataAsync up front to force the symbols into the render cache before the first draw. This is the kind of framework-specific knowledge that is invisible until it bites."
+      }
+    },
+    {
+      "h2": "The drawing engine: freehand annotation on a moving map"
+    },
+    {
+      "p": "The most involved part of the map is the __drawing engine__ — the tools that let an operator sketch lines, polygons, circles, and text labels directly onto the map, for briefing routes, marking search sectors, or circling an area of interest. A drawn shape is stored as a plain data object, `DrawingShape`, whose points live in Web Mercator meters just like everything else:"
+    },
+    {
+      "code": "public sealed class DrawingShape\n{\n    public DrawShapeType ShapeType { get; init; }        // Line, Polygon, Circle, Text\n    public string Color { get; set; } = \"#FF0000\";\n    public double StrokeWidth { get; set; } = 3.0;\n    public DrawFillStyle FillStyle { get; set; } = DrawFillStyle.Solid;\n\n    // Points in world coordinates (Mapsui units = EPSG:3857 meters)\n    public List<(double X, double Y)> Points { get; } = [];\n    public (double X, double Y) Centre { get; set; }     // circles\n    public double RadiusMetres { get; set; }             // circles\n    // ...text-specific fields: Label, GroundHeightMetres, BackgroundColorHex\n}"
+    },
+    {
+      "p": "Storing drawings in meters (not screen pixels) is the whole reason a drawn line stays glued to the ground when you pan and zoom — the shape is anchored to the world, and only its on-screen appearance is recomputed each frame. `IsCompletable` on the same class encodes what makes a shape \"real\": a line needs 2+ points, a polygon 3+, a circle a radius above a minimum. That single rule prevents a stray click from leaving an empty ghost behind."
+    },
+    {
+      "p": "The tricky part is capturing mouse input __without__ the map panning underneath the cursor. The solution is Avalonia's __tunnel__ event routing, which lets the view intercept pointer events before Mapsui's own pan/zoom handling sees them:"
+    },
+    {
+      "code": "MapControl.AddHandler(InputElement.PointerPressedEvent, OnDrawPointerPressed,\n    RoutingStrategies.Tunnel);   // fire on the way DOWN to the map, before Mapsui\n// ...same for PointerMoved and PointerReleased\n\nprivate void OnDrawPointerPressed(object? sender, PointerPressedEventArgs e)\n{\n    if (currentDrawMode == DrawMode.None || drawingLayer is null) return;\n    e.Handled = true;   // <-- mark handled: Mapsui never pans while a tool is active\n    var world = ScreenToWorld(e.GetPosition(MapControl));\n    // ...dispatch on currentDrawMode: add a vertex, start a circle drag, etc.\n}"
+    },
+    {
+      "p": "__Tunnel routing__ means the event travels top-down from the parent to the child — so the view gets first refusal. Setting `e.Handled = true` stops the event there, so when a drawing tool is active the map itself never moves. When no tool is active (`DrawMode.None`) the handler bows out immediately and Mapsui pans normally. `ScreenToWorld` bridges the two worlds, asking the current viewport to convert a pixel position into Web Mercator meters."
+    },
+    {
+      "p": "Different tools use different gestures, all coordinated through a small set of state flags. A line or polygon adds a vertex per click and finishes on a double-click, showing a live \"rubber-band\" segment to the cursor (`drawHoverWorld`) so you preview the next segment before committing. A circle is press-drag: the press sets the center, the drag sets the radius live. Text is placed by dragging to set its size, then a dialog asks for the words. Every gesture ends by calling `RedrawAllShapes`, which clears the drawing layer and rebuilds every shape's Skia feature from scratch — simple, and fast enough for the handful of shapes an operator draws."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "A real Mapsui trap, documented in the code",
+        "text": "In BuildShapeFeature a comment warns: line-strings draw their color from VectorStyle.Line, but polygons and circles draw their border from VectorStyle.Outline. Set Line on a polygon and the border silently falls back to a thin gray default. This asymmetry is invisible until a polygon renders with the wrong outline — exactly the kind of hard-won knowledge worth preserving in a comment."
+      }
+    },
+    {
+      "h2": "Honest measurements: undoing Mercator's lie with a cosine"
+    },
+    {
+      "p": "When the operator turns on measurements, each shape gets a label with its true ground length, area, or diameter. This is where Mercator's distortion must be paid back. A raw distance between two Web Mercator points is stretched by roughly one over the cosine of the latitude; area, being two-dimensional, is stretched by the square of that. `ShapeMeasurements` corrects for exactly this:"
+    },
+    {
+      "code": "public static double GroundLengthMetres(IReadOnlyList<(double X, double Y)> points)\n{\n    double total = 0;\n    for (int i = 0; i < points.Count - 1; i++)\n    {\n        var a = points[i]; var b = points[i + 1];\n        var merc = Math.Sqrt((a.X-b.X)*(a.X-b.X) + (a.Y-b.Y)*(a.Y-b.Y));  // stretched\n        var (_, lat) = SphericalMercator.ToLonLat((a.X+b.X)/2, (a.Y+b.Y)/2); // segment midpoint\n        total += merc * Math.Cos(lat * Math.PI / 180.0);                    // corrected\n    }\n    return total;\n}"
+    },
+    {
+      "p": "For each segment it measures the raw Mercator distance, finds the latitude at the segment's midpoint, and multiplies by the cosine of that latitude to recover the true ground meters. The area routine does the same with `cos²`, and the circle radius routine corrects at the circle's center. This is why a circle drawn in Nashville and one drawn in Anchorage report honest, comparable radii even though their Mercator meters differ. The results then flow through `FormatLength` and `FormatArea`, which pick sensible units — feet vs. miles, acres vs. square miles, meters vs. kilometers — based on the operator's imperial/metric preference and the shape's size."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why a midpoint and not something fancier",
+        "text": "The correction uses one representative latitude (segment midpoint, polygon centroid) rather than integrating across the shape. The comment is candid that this is accurate for the small shapes an operator draws on a map — a pragmatic simplification that is correct in practice and cheap to compute, rather than a textbook geodesic that would be overkill here."
+      }
+    },
+    {
+      "h2": "Radar and coverage: the same layer idea, different sources"
+    },
+    {
+      "p": "Two more overlays reuse the layer machinery. Weather radar comes from NOAA's public NEXRAD service, fetched through `WmsRadarUrlBuilder`, which formats requests to a __WMS__ (Web Map Service) endpoint — a standard where you ask for a map image of a specific bounding box rather than pre-cut tiles. The builder plugs into BruTile's `HttpTileSource`, and its own comment records a nonobvious constraint: Mapsui's `TileLayer` only accepts an `HttpTileSource` or an internal local source, so a hand-rolled tile source would be silently ignored. Radar also supports an animation mode — one `TileLayer` per time frame, cycled by a timer to show weather moving. `ApplyCoverageOverlays` reuses NTS circle geometry to draw predicted station coverage rings, proving the layer-plus-geometry pattern generalizes cleanly to new features."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The map looks like one thing but is really a careful stack of separated concerns: libraries for the hard parts, a single coordinate language spoken everywhere inside, and a thin conversion skin at the edges where legacy formats and user input arrive."
+    },
+    {
+      "bullets": [
+        "__One coordinate language wins.__ Everything inside the map speaks Web Mercator meters — markers, trails, rings, drawings, radar. The messy percentage format is converted away at exactly one boundary, so the core never has to think about it. When you extend the map, work in meters.",
+        "__Layer order is a feature, not an accident.__ The fixed bottom-to-top stack (base → trails → rings → drawings → radar → markers) is what keeps station icons clickable and rain from hiding your annotations. Add new overlays with their z-order in mind.",
+        "__Cache like a good citizen.__ Per-map on-disk tile caches give free offline maps for viewed areas, while never bulk-fetching and always sending a real User-Agent — respecting the providers whose free tiles make the app possible.",
+        "__Store drawings in world space, render in screen space.__ Because DrawingShape keeps points in meters, annotations stay pinned to the ground through any pan or zoom; only their appearance is recomputed each frame.",
+        "__Mercator's distortion is real and must be repaid.__ Every ground measurement multiplies by cos(latitude) (or its square for area) so lengths and areas are honest no matter where on Earth the shape sits.",
+        "__Tunnel routing plus e.Handled is how you steal input politely.__ Intercepting pointer events before Mapsui, and only when a tool is active, lets drawing and map-navigation coexist without fighting.",
+        "__Comments preserve hard-won framework knowledge.__ The notes about Line vs. Outline, symbol-sheet preloading, and HttpTileSource requirements are load-bearing documentation — the traps that would otherwise be rediscovered painfully."
+      ]
+    }
+  ]
+}

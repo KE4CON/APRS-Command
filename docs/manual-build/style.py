@@ -116,7 +116,9 @@ def add_runs(p, parts):
             p.add_run(part)
 
 # ---- document setup -------------------------------------------------------
-def new_document():
+def new_document(header_title="APRS Command — User Manual",
+                 header_sub="Situational awareness for amateur radio  ·  Receive-first, transmit-safe",
+                 footer_left="APRS Command  ·  Open-source (GPL v3)  ·  73 de KE4CON"):
     doc = Document()
     sec = doc.sections[0]
     sec.top_margin = Inches(1.0); sec.bottom_margin = Inches(1.0)
@@ -137,10 +139,10 @@ def new_document():
     # running header: centered title + subtitle, gold rule beneath (non-title pages)
     hp = sec.header.paragraphs[0]; hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     hp.paragraph_format.space_after = Pt(2)
-    hr = hp.add_run("APRS Command — User Manual")
+    hr = hp.add_run(header_title)
     hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(9.5); hr.font.color.rgb = NAVY
     hp.add_run().add_break()
-    hs = hp.add_run("Situational awareness for amateur radio  ·  Receive-first, transmit-safe")
+    hs = hp.add_run(header_sub)
     hs.font.name = 'Segoe UI'; hs.font.size = Pt(8); hs.font.color.rgb = MUTED
     par_border(hp, 'bottom', sz=12, color=GOLD_HEX, space=6)
 
@@ -153,7 +155,7 @@ def new_document():
     rc = ftbl.cell(0, 1); rc.width = Inches(2.0)
     _no_borders(lc); _no_borders(rc)
     lp = lc.paragraphs[0]; lp.paragraph_format.space_after = Pt(0)
-    lr = lp.add_run("APRS Command  ·  Open-source (GPL v3)  ·  73 de KE4CON")
+    lr = lp.add_run(footer_left)
     lr.font.name = 'Segoe UI'; lr.font.size = Pt(8); lr.font.color.rgb = MUTED
     rp = rc.paragraphs[0]; rp.alignment = WD_ALIGN_PARAGRAPH.RIGHT; rp.paragraph_format.space_after = Pt(0)
     r1 = rp.add_run("Page "); r1.font.name = 'Segoe UI'; r1.font.size = Pt(8); r1.font.color.rgb = MUTED
@@ -467,6 +469,8 @@ def render_chapter(doc, ch, number):
             callout(doc, kind, str(c.get('label', kind.upper())), parse_inline(c.get('text', '')))
         elif 'screenshot' in blk:
             screenshot(doc, str(blk['screenshot']))
+        elif 'code' in blk:
+            code_block(doc, blk['code'])
         elif 'table' in blk:
             t = blk['table'] if isinstance(blk['table'], dict) else {}
             headers = [str(h) for h in t.get('headers', [])]

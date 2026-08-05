@@ -1,0 +1,250 @@
+{
+  "order": 11,
+  "title": "The Transmit-Safety Authority",
+  "subtitle": "The single locked door every outgoing transmission must pass through, closed by default so nothing keys the radio unless every safety condition is explicitly satisfied.",
+  "in_this_chapter": [
+    "Why one central gate beats safety checks scattered across the code",
+    "The receive-first philosophy: listening is free, transmitting must be earned",
+    "The four things the authority checks, in strict priority order",
+    "The two-layer defense: a rich Evaluate() plus a minimal always-on inhibit gate",
+    "How beacons, messages, objects, digipeat, and iGate are all forced through it",
+    "What closed by default really means in the source",
+    "How exercise mode flips one switch and silences every path at once"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "__APRS-Command__ talks to the world over ham radio. It can push small digital packets out over the air through an RF (radio-frequency) port, and it can push them across the internet through a network called __APRS-IS__. In ham radio, sending anything is a serious act: you must identify yourself with a real callsign, you must not jam a shared frequency, and during a training drill you must be able to guarantee that nothing you do leaks onto the real air. `TransmitSafetyAuthority.cs` is the one place in the entire program that decides whether a transmission is allowed to happen."
+    },
+    {
+      "p": "Picture it as a single locked door between the whole application and the antenna. Every outgoing packet — a position __beacon__, a text message, an APRS __object__, a relayed __digipeat__, an __iGate__ gate-in — has to walk through this one door and get a yes. There is no side door. That is the whole point of the design. This chapter explains what the door checks, why it was built as one central door instead of a dozen scattered checks, and how the code physically forces every path through it."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one-sentence version",
+        "text": "TransmitSafetyAuthority is a closed-by-default gate: a transmission is denied unless every safety condition is explicitly satisfied, and the code is arranged so no transmit path — not even a future one someone forgets to wire up — can key the radio while a global inhibit is on."
+      }
+    },
+    {
+      "h2": "Why receive-first, and why a central authority"
+    },
+    {
+      "p": "The design starts from a philosophy: __receive-first__. Listening to the air costs nothing and breaks no rules, so the app receives freely by default. Transmitting is the opposite — it has to be earned. Every condition that would make a transmission legal or safe defaults to \"no,\" and only an explicit, correct configuration turns it to \"yes.\" A blank callsign is no. The placeholder callsign __N0CALL__ is no. An APRS-IS __passcode__ of `-1` (the receive-only sentinel) is no. A port that has not been explicitly transmit-enabled is no. You cannot accidentally transmit; you can only deliberately transmit."
+    },
+    {
+      "p": "The tempting way to enforce that is to sprinkle `if` statements everywhere: the beacon code checks for a callsign, the message code checks for a passcode, the digipeater checks the port. That approach breaks the instant someone adds a seventh transmit path and forgets one check — and the failure stays invisible until a drill accidentally beacons on a live frequency. Scattered checks mean the safety rules live in seven heads and seven files; a __central authority__ means they live in exactly one, are tested in exactly one place, and every path is physically routed through them."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Jargon, in plain words",
+        "text": "An interface is a contract — a wall socket. Any class that implements it fits, and callers use the socket without caring what is plugged in. A record is an immutable little data holder: once built, its fields never change. An enum is a fixed menu of named choices. Dependency injection just means a class is handed the collaborators it needs from outside, rather than building them itself — so tests can hand it fakes."
+      }
+    },
+    {
+      "h2": "What the door actually checks"
+    },
+    {
+      "p": "The public face is one interface, `ITransmitSafetyAuthority`. It exposes the global inhibit state, lets code turn the inhibit on and off, and — the heart of it — offers one method, `Evaluate`, that answers a single transmit request with a precise yes or no. The comment on the interface states the mission directly: it is the authority \"every transmit path consults before keying up... so no caller can transmit by a side path that forgot a check.\""
+    },
+    {
+      "code": "public interface ITransmitSafetyAuthority\n{\n    bool IsInhibited { get; }\n    string? InhibitReason { get; }\n    void Inhibit(string reason);   // globally block all transmit (e.g. exercise mode)\n    void Release();                // lift the global inhibit\n    TransmitDecision Evaluate(TransmitRequest request);\n}"
+    },
+    {
+      "p": "A `TransmitRequest` is a tiny immutable record — just the port to transmit on and where the packet is bound (`Rf` over the air, or `AprsIs` to the internet). The answer is a `TransmitDecision` record carrying three things: whether it is allowed, a machine-readable `TransmitDenyReason` enum (so callers can react to the *category* of refusal), and a human-readable explanation string (so the operator sees exactly why). The record even hands you two named constructors so the intent reads cleanly at the call site:"
+    },
+    {
+      "code": "public sealed record TransmitDecision(bool IsAllowed, TransmitDenyReason Reason, string Explanation)\n{\n    public static TransmitDecision Allow() => new(true, TransmitDenyReason.None, \"Transmit allowed.\");\n    public static TransmitDecision Deny(TransmitDenyReason reason, string explanation) =>\n        new(false, reason, explanation);\n}"
+    },
+    {
+      "p": "Splitting the reason into a machine enum *and* a human string is a deliberate two-audience move. Code branches on the enum (\"was this a passcode problem?\") without brittly parsing English, while the operator reads a sentence that tells them what to fix. Neither audience is served by the other's format, so the design serves both."
+    },
+    {
+      "h2": "The evaluation order — highest stakes first"
+    },
+    {
+      "p": "`Evaluate` walks four gates in a fixed priority order, and returns a denial the moment any one fails. The order is not cosmetic: the most sweeping, safety-critical condition is checked first, so a drill can never be overridden by a lower-level detail."
+    },
+    {
+      "table": {
+        "headers": [
+          "Order",
+          "Gate",
+          "Denies when",
+          "Why it ranks here"
+        ],
+        "rows": [
+          [
+            "1",
+            "Global inhibit",
+            "Exercise / training mode is on",
+            "A drill must hard-block everything, unconditionally, before any other logic runs"
+          ],
+          [
+            "2",
+            "Identity",
+            "No real callsign (blank or N0CALL)",
+            "Transmitting without your callsign is illegal; nothing else matters if you have no ID"
+          ],
+          [
+            "3",
+            "Destination",
+            "APRS-IS bound but no valid passcode",
+            "The internet uplink is receive-only until a real numeric passcode proves you may post"
+          ],
+          [
+            "4",
+            "Per-port",
+            "Port disabled, not transmit-enabled, disconnected, or receive-only",
+            "The concrete port opt-in — the last, most specific check"
+          ]
+        ]
+      }
+    },
+    {
+      "code": "public TransmitDecision Evaluate(TransmitRequest request)\n{\n    ArgumentNullException.ThrowIfNull(request);\n\n    // 1) Master inhibit wins over everything.\n    bool isInhibited; string? reason;\n    lock (gate) { isInhibited = inhibited; reason = inhibitReason; }\n    if (isInhibited)\n        return TransmitDecision.Deny(TransmitDenyReason.GlobalInhibit, reason ?? \"Transmit is inhibited.\");\n\n    // 2) Identity: never transmit without a real callsign.\n    if (!policy.HasValidStationCallsign)\n        return TransmitDecision.Deny(TransmitDenyReason.NoValidCallsign,\n            \"No valid station callsign is set. Transmit is blocked until a real callsign replaces the placeholder.\");\n\n    // 3) Destination policy: APRS-IS transmit needs a real passcode.\n    if (request.Destination == TransmitDestination.AprsIs && !policy.HasValidAprsIsPasscode)\n        return TransmitDecision.Deny(TransmitDenyReason.AprsIsPasscodeRequired,\n            \"A valid APRS-IS passcode is required to transmit to the internet (the connection is receive-only).\");\n\n    // 4) Per-port checks.\n    var portResult = portManager.CheckTransmitSafety(request.PortId, globalTransmitSafetyEnabled: true);\n    if (!portResult.IsSafe)\n        return TransmitDecision.Deny(TransmitDenyReason.Port,\n            portResult.FailureReason ?? \"The port is not ready to transmit.\");\n\n    return TransmitDecision.Allow();\n}"
+    },
+    {
+      "p": "Read it top to bottom and the closed-by-default nature is literally visible: there is exactly one `return TransmitDecision.Allow()`, and it sits at the very bottom, reachable only after all four gates have been passed. Every other exit is a denial. The default answer of this method — the answer you get unless you clear every hurdle — is no."
+    },
+    {
+      "p": "Notice too where the identity and passcode facts come from. The authority does not read settings files or know where a callsign is stored. It asks a second small interface, `ITransmitPolicyContext`, for two boolean facts: `HasValidStationCallsign` and `HasValidAprsIsPasscode`. The real implementation, `SettingsTransmitPolicyContext`, reads the live persisted settings on each query (so a callsign typed into the UI takes effect immediately) and lives up in the composition layer. This keeps the engine-side authority ignorant of *where* settings live — it just consumes facts. That is a clean layering boundary: the rule lives in the authority, the data source is pluggable."
+    },
+    {
+      "h2": "Two layers of defense: Evaluate() and the inhibit gate"
+    },
+    {
+      "p": "Here is the subtle, crucial part. Calling `Evaluate` is voluntary — a transmit path has to remember to call it. Voluntary safety is exactly the weakness the whole design set out to kill. So the authority carries a second, non-negotiable layer. It implements a second interface as well, `ITransmitInhibitGate`, which lives down in the low-level transport layer and exposes just one fact: `IsTransmitInhibited`."
+    },
+    {
+      "code": "public sealed class TransmitSafetyAuthority\n    : ITransmitSafetyAuthority, Aprs.Transport.ITransmitInhibitGate\n{\n    // The minimal contract the transport transmit chokepoints consult so the global inhibit\n    // hard-blocks every path, not just the ones that remember to call Evaluate().\n    bool Aprs.Transport.ITransmitInhibitGate.IsTransmitInhibited => IsInhibited;"
+    },
+    {
+      "p": "The two interfaces are two views of the same object. `Evaluate` is the rich, per-request checkpoint the higher-level services use. `IsTransmitInhibited` is the dumb, always-on tripwire that the lowest-level code — the actual byte-writing transmit methods — consults right before touching the wire. The tripwire exists specifically because the rich checkpoint can be skipped, and the tripwire cannot. It is the backstop for human forgetfulness. Keeping it in the transport layer is what lets the lowest-level code check it without an upward dependency on the Services layer — the dependency arrow only ever points down."
+    },
+    {
+      "p": "You can see the tripwire fire at the real chokepoints. Inside the APRS-IS client's `SendRawPacketAsync`, before any validation or any network I/O, the gate is checked first:"
+    },
+    {
+      "code": "// AprsIsClient.SendRawPacketAsync\n// Global inhibit (exercise/training mode) wins over everything and is checked before any\n// other validation so a drill can never key up APRS-IS by any path.\nvar gate = InhibitGate;\nif (gate is not null && gate.IsTransmitInhibited)\n    return AprsIsTransmitResult.Failed(timestamp, normalizedPacket, stateAtRequest,\n        gate.InhibitReason ?? \"Transmit is globally inhibited (exercise mode).\");"
+    },
+    {
+      "p": "The RF side does exactly the same in `KissRfBeaconTransmitClient.SendBeaconAsync`, and a test proves it blocks before it ever queries an RF port at all (`Assert.False(anyClientQueried)`). Those two methods are the only two places in the program where bytes actually leave for the internet or the radio. Guarding both means the inhibit is enforced at the true perimeter, not merely on the polite paths."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Why the double check is not redundant",
+        "text": "Higher-level services also call Evaluate (which checks inhibit as gate #1), so during exercise mode an inhibited transmit is often caught early with a friendly message — ObjectTransmitService, for instance, checks IsInhibited up front to avoid a misleading 'sent' attempt. But 'often' is not 'always.' The transport-layer tripwire is what turns 'often' into 'always': even a path that skipped Evaluate entirely still dies at the wire. Belt and suspenders, on purpose."
+      }
+    },
+    {
+      "h2": "How every path is forced through the one door"
+    },
+    {
+      "p": "A central authority only works if every path is genuinely wired to it, and that wiring happens in the composition root, `DesktopRuntime`. First the authority and its policy context are registered as __singletons__ — meaning the whole app shares exactly one instance, so an inhibit toggled anywhere is seen everywhere:"
+    },
+    {
+      "code": "services.AddSingleton<IAprsPortManager, AprsPortManager>();\nservices.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();\nservices.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();"
+    },
+    {
+      "p": "Then that single authority is cast to its inhibit-gate face and physically handed to each transmit client, so the low-level tripwire and the high-level checkpoint are the same object:"
+    },
+    {
+      "code": "// The transmit-safety authority doubles as the global inhibit gate (exercise/training mode).\n// Hand it to every transmit chokepoint so no path can key up while inhibited.\nvar transmitAuthority = provider.GetRequiredService<ITransmitSafetyAuthority>();\nvar inhibitGate = (ITransmitInhibitGate)transmitAuthority;\nrfTransmitClient.InhibitGate = inhibitGate;"
+    },
+    {
+      "p": "The digipeater is wired to the full authority and calls `Evaluate` before repeating anyone's packet — layering the global inhibit and the identity gate on top of its own per-port check (\"never digipeat as a placeholder callsign\"). The beacon pipeline threads the same inhibit gate into every APRS-IS client it builds, even after a settings change rebuilds the client, so \"exercise mode blocks it even after a settings-triggered rebuild.\" The object transmitter checks `IsInhibited` up front. Different paths, one shared brain."
+    },
+    {
+      "table": {
+        "headers": [
+          "Transmit path",
+          "How it reaches the authority",
+          "Layer"
+        ],
+        "rows": [
+          [
+            "Position beacons (scheduled & Beacon Now)",
+            "APRS-IS / RF client carries the shared InhibitGate",
+            "Transport tripwire"
+          ],
+          [
+            "APRS objects",
+            "ObjectTransmitService checks IsInhibited, then client tripwire",
+            "Both"
+          ],
+          [
+            "Digipeat (relaying others)",
+            "DigipeaterService calls Evaluate() before transmit",
+            "Rich checkpoint"
+          ],
+          [
+            "iGate gate-in & messages",
+            "Go out via the same APRS-IS client chokepoint",
+            "Transport tripwire"
+          ],
+          [
+            "Any future RF transmit",
+            "Same KissRfBeaconTransmitClient chokepoint",
+            "Transport tripwire"
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "Exercise mode: one switch, total silence"
+    },
+    {
+      "p": "All of this pays off in one operator gesture. When a ham runs a training __exercise__, they must be certain the software cannot leak real traffic onto the air. The main window's TX badge toggles exercise mode, and it does so by flipping the single shared authority — nothing else:"
+    },
+    {
+      "code": "if (authority.IsInhibited)\n{\n    authority.Release();                 // back to normal (identity/port checks still apply)\n    TxBadgeText.Text = \"TX Enabled\";\n}\nelse\n{\n    authority.Inhibit(\"Exercise mode — all transmit inhibited\");\n    TxBadgeText.Text = \"EXERCISE — TX INHIBITED\";\n}"
+    },
+    {
+      "p": "Because that one object is the gate #1 of every `Evaluate` call *and* the tripwire in both wire-level chokepoints, a single `Inhibit(...)` silences beacons, objects, messages, digipeat, and iGate at once — and `Release()` restores normal operation while leaving the identity, destination, and per-port checks fully in force. One switch, provably total, precisely because the safety logic was centralized rather than scattered."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Thread safety, quietly handled",
+        "text": "The inhibit flag is guarded by a lock (the private 'gate' object). A background beacon timer on one thread and an operator toggling exercise mode on the UI thread are different threads; the lock guarantees the toggle is seen consistently, with no half-updated state. Evaluate snapshots the flag and reason together inside the lock, so it always acts on a coherent view."
+      }
+    },
+    {
+      "h1": "Practice vs. a Real On-Air Exercise"
+    },
+    {
+      "p": "Because the global inhibit is labeled **Exercise Mode** in the interface, it is easy to assume it is the mode you would run a real drill in. It is the opposite. Exercise Mode is a guarantee that *nothing* transmits — it exists so an operator can rehearse the whole application safely. While it is on, a station communicates with no one: every attempted send is recorded in the log as `TransmitBlocked` and dies at the gate. The lifelike \"other stations\" seen during practice are fabricated locally by __Simulation__, __Replay__, or __Training__, not received from anyone."
+    },
+    {
+      "p": "A real multi-operator drill — where stations genuinely exchange traffic — is the other case, and it runs with transmit **enabled** (the deliberate step this authority forces). To keep drill traffic off the live nationwide network, operators isolate it onto a dedicated exercise or simplex RF frequency, and/or a private APRS-IS server on their own network. In the terms of this chapter: Exercise Mode means the global inhibit is **on**; a communicating drill means the inhibit is **off** and the normal per-request checks (identity, destination, per-port) do their job."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Exercise Mode is not \"the mode you run an exercise in\"",
+        "text": "Its name describes what it protects, not what it enables. Exercise Mode = a hard guarantee of no transmission, for safe solo rehearsal. A drill where operators actually talk to each other runs with Exercise Mode OFF and transmit turned on, ideally on an isolated frequency or private server."
+      }
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "If a future maintainer preserves only one thing about this file, preserve the shape: one object, two interfaces, four ordered gates, closed by default. The rich `Evaluate` checkpoint and the minimal `IsTransmitInhibited` tripwire are two faces of the same shared singleton precisely so that convenience and guarantee do not have to compete — services get friendly, specific denials, while the wire-level chokepoints get an unskippable hard stop."
+    },
+    {
+      "p": "The rules that must never erode: transmitting is earned, not assumed (receive-first); the single `Allow()` stays at the bottom, reachable only after every gate passes (closed by default); new transmit paths route through the shared client chokepoints so the inhibit reaches them for free; and the authority stays ignorant of where settings live, consuming facts through `ITransmitPolicyContext` rather than reading files itself. Add a transmit feature someday and the safe move is not to write new checks — it is to send it through the door that already exists."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The maintainer's rule",
+        "text": "If you ever find yourself writing a fresh 'can I transmit?' check outside TransmitSafetyAuthority, stop. That is the exact scattering this design was built to prevent. Route the new path through the existing authority and the existing transport chokepoints instead — one door, always, closed until proven open."
+      }
+    }
+  ]
+}

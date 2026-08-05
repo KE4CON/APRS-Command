@@ -1,0 +1,253 @@
+{
+  "order": 20,
+  "title": "Testing: the xUnit Suite and How to Add to It",
+  "subtitle": "How APRS-Command stays correct: the xUnit suite, its exact-string and round-trip assertions, the framework-free fake pattern for testing radio code, and how to add a test.",
+  "in_this_chapter": [
+    "How xUnit runs the 1,300+ test suite and the Arrange-Act-Assert shape of every test",
+    "Why exact-string assertions on fixed-column packet formats guarantee on-air correctness",
+    "Theory and InlineData: testing one rule across many inputs in a single method",
+    "The three coverage clusters — parsing, formatting/round-trip, and transmit safety — and why round-trip tests catch drift",
+    "The hand-built mocking pattern: fakes that implement real interfaces, with no mocking framework",
+    "Using a call-counting spy to prove the app did NOT transmit, and a fake clock to skip real waiting",
+    "A step-by-step worked example of adding a new test the right way"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command is software that a ham radio operator trusts to put real signals on a real antenna. When it beacons your position, it is transmitting on a public radio frequency under your callsign and license. A bug in the code is not a cosmetic glitch — it can send a malformed packet, transmit when you told it not to, or garble your coordinates so badly that other stations plot you in the wrong state. The __test suite__ is the safety net that catches those mistakes before they ever reach the air."
+    },
+    {
+      "p": "A __test suite__ is simply a large collection of small programs, each of which runs one piece of the real code and then checks that it did the right thing. If the check passes, the test is silent. If the check fails, the test shouts. Run the whole suite and you get a single verdict in seconds: is the code still doing what we promised, or did a recent change quietly break something?"
+    },
+    {
+      "p": "This chapter explains the suite that lives in `tests/Aprs.Tests` — what it covers, the one clever trick it uses to test radio code without touching a radio, and exactly how you add a new test when you change something. Everything here is drawn from the real files in the repository."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Scale",
+        "text": "As of this writing the main test project holds 123 test classes and roughly 1,300+ individual test cases (1,186 `[Fact]` methods plus dozens of `[Theory]` methods that each run several input rows). That is the living proof that the app behaves — and the thing you must keep green."
+      }
+    },
+    {
+      "h2": "What tool runs the tests: xUnit"
+    },
+    {
+      "p": "__xUnit__ is the testing framework the project uses. A __testing framework__ is a library that knows how to find your test methods, run every one of them, and report which passed and which failed — you write the checks, it does the bookkeeping. There are several such frameworks in the .NET world; APRS-Command standardized on xUnit, which is the modern mainstream choice."
+    },
+    {
+      "p": "The whole toolchain is declared in one small project file. Here is the real `tests/Aprs.Tests/Aprs.Tests.csproj`, trimmed to the parts that matter:"
+    },
+    {
+      "code": "<PackageReference Include=\"Microsoft.NET.Test.Sdk\" Version=\"18.6.0\" />\n<PackageReference Include=\"xunit\" Version=\"2.9.3\" />\n<PackageReference Include=\"xunit.runner.visualstudio\" Version=\"3.1.5\" />\n<ProjectReference Include=\"..\\..\\src\\Aprs.Core\\Aprs.Core.csproj\" />\n<ProjectReference Include=\"..\\..\\src\\Aprs.Services\\Aprs.Services.csproj\" />\n<ProjectReference Include=\"..\\..\\src\\Aprs.Transport\\Aprs.Transport.csproj\" />",
+      "description": "The test project references xUnit and every source project it exercises"
+    },
+    {
+      "p": "Reading it top to bottom: `xunit` is the framework itself. `xunit.runner.visualstudio` and `Microsoft.NET.Test.Sdk` are the plumbing that lets both Visual Studio and the command line `dotnet test` discover and launch the tests. The `ProjectReference` lines are the important part — the test project references the actual production projects (`Aprs.Core`, `Aprs.Services`, `Aprs.Transport`, and more). That means the tests run the __real__ code, not a copy. There is no separate 'test version' of the parser to drift out of sync."
+    },
+    {
+      "p": "To run everything, you type one command at the repository root:"
+    },
+    {
+      "code": "dotnet test tests/Aprs.Tests/Aprs.Tests.csproj",
+      "description": "Build the code and run every test; a non-zero exit code means something failed"
+    },
+    {
+      "h2": "The anatomy of a single test"
+    },
+    {
+      "p": "Every test follows the same three-beat rhythm, universally called __Arrange, Act, Assert__: set up the situation, do the one thing you are testing, then check the outcome. Here is a complete real test from `AprsBeaconFormatterTests.cs`. It is the single most important kind of test in this app — proof that when we format a position beacon, the exact characters we put on the air are correct:"
+    },
+    {
+      "code": "[Fact]\npublic void FormatFixedPositionBeacon_FormatsExpectedPacket()\n{\n    var formatter = new AprsBeaconFormatter();                    // Arrange\n\n    var result = formatter.FormatFixedPositionBeacon(CreateInput( // Act\n        source: \"N0CALL\",\n        latitude: 39.058333,\n        longitude: -84.508333,\n        comment: \"Test beacon\"));\n\n    Assert.True(result.IsSuccess);                                // Assert\n    Assert.Equal(\n        \"N0CALL>APCMD0,WIDE1-1:!3903.50N/08430.50W-Test beacon\",\n        result.Packet);\n}",
+      "description": "A fixed-format formatting test: the expected packet is spelled out to the exact character"
+    },
+    {
+      "p": "Line by line: `[Fact]` is xUnit's marker meaning 'this method is a test — run it.' A __Fact__ is a test with no inputs; it always does the same thing. The method name, `FormatFixedPositionBeacon_FormatsExpectedPacket`, is deliberately a sentence: the method under test, an underscore, and the expected behavior. When it fails, the failure report reads like plain English."
+    },
+    {
+      "p": "The __Assert__ lines are where the judgment happens. `Assert.True(result.IsSuccess)` demands the formatter reported success. `Assert.Equal(...)` demands the produced packet string equals the expected string __character for character__. That expected string, `!3903.50N/08430.50W`, is APRS's fixed-column position format — the `N`/`W` hemispheres and the decimal point all sit in exact positions the specification dictates. One stray digit and the assert fails. This is why the app can be confident the bytes it transmits are spec-legal."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The exact-string assertion is the whole point",
+        "text": "Radio formats are unforgiving fixed-column layouts — a receiver counts characters by position, not by looking for labels. Tests that assert the literal output string are how APRS-Command guarantees interoperability with every other APRS station on the planet. Never loosen one of these into a 'contains' check."
+      }
+    },
+    {
+      "h2": "Testing many inputs at once: Theory and InlineData"
+    },
+    {
+      "p": "Sometimes one rule must hold across many inputs — northern latitudes print `N`, southern ones print `S`. Writing a separate `[Fact]` for each would be tedious and easy to under-cover. xUnit's answer is the __Theory__: a test that runs once per row of data you hand it. Each row is an `[InlineData]` line. Here is a real one, also from the formatter tests:"
+    },
+    {
+      "code": "[Theory]\n[InlineData(39.058333, \"3903.50N\")]\n[InlineData(-39.058333, \"3903.50S\")]\npublic void FormatLatitude_FormatsHemispheres(double latitude, string expected)\n{\n    Assert.Equal(expected, AprsCoordinateFormatter.FormatLatitude(latitude));\n}",
+      "description": "One test body, run twice with different inputs — north and south hemispheres"
+    },
+    {
+      "p": "The `[Theory]` marker says 'this is a data-driven test.' Each `[InlineData]` supplies the arguments for one run: the first passes `39.058333` and expects `3903.50N`; the second passes the negative (southern) value and expects `3903.50S`. xUnit runs the body twice and reports two results. If someone breaks the sign handling, exactly the affected row lights up red while the other stays green — the failure points straight at the bug. The parser tests in `AprsParserTests.cs` use the same technique to feed whole raw packet lines through `TryParse` and check every field that comes back out."
+    },
+    {
+      "h2": "What the suite actually covers"
+    },
+    {
+      "p": "The tests are not spread evenly — they cluster where mistakes are most dangerous or most likely. Three clusters dominate."
+    },
+    {
+      "table": {
+        "headers": [
+          "Cluster",
+          "Representative test files",
+          "What it guards"
+        ],
+        "rows": [
+          [
+            "Packet parsing",
+            "AprsParserTests, AprsMicEParserTests, AprsSpec101ConformanceTests",
+            "That every legal APRS format is decoded correctly and malformed input is rejected, not misread"
+          ],
+          [
+            "Formatting & round-trip",
+            "AprsBeaconFormatterTests, AprsRoundTripTests, AprsWeatherRoundTripTests",
+            "That what we transmit is spec-legal to the exact character"
+          ],
+          [
+            "Transmit safety",
+            "TransmitSafetyAuthorityTests, TransmitInhibitGateTests, BeaconSchedulerTests",
+            "That the app never keys the radio when policy, identity, or the operator says it must not"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The __round-trip__ tests deserve special mention because they catch a whole category of bug the other two miss. A round-trip test formats a packet, then immediately parses that packet back with the app's own parser, and checks the values survived the trip unchanged. From `AprsRoundTripTests.cs`:"
+    },
+    {
+      "code": "var result = formatter.FormatFixedPositionBeacon(formatter.CreateInputFromProfile(profile));\nAssert.True(result.IsSuccess);\n\nvar parsed = new AprsParser().Parse(result.Packet!, Now);\n\nvar pos = Assert.IsType<PositionAprsPacket>(parsed);\nAssert.Equal(\"KD8ABC\", pos.SourceCallsign);\nAssert.Equal(39.0583, pos.Latitude!.Value, 4);   // format carries ~60 ft resolution",
+      "description": "Format a beacon, parse it back, confirm the station identity and coordinates are intact"
+    },
+    {
+      "p": "The file's own comment says it best: it 'guards against the generate and parse sides drifting apart.' If someone changes the formatter but forgets the parser (or vice versa), a plain formatting test might still pass while real-world interoperability silently breaks. The round-trip test fails, because the two halves no longer agree. Note the fourth argument `4` on the coordinate assert — that is xUnit's precision tolerance, telling it to compare to four decimal places, because the APRS uncompressed format only carries about 60 feet of resolution and demanding exact floating-point equality would be wrong."
+    },
+    {
+      "h1": "The mocking pattern: testing radio code without a radio"
+    },
+    {
+      "p": "Here is the central problem. Much of the code that most needs testing is code that talks to the outside world — it sends packets to an APRS-IS internet server, or waits for a clock to tick, or asks a port manager whether a transmitter is connected. You cannot let a test actually transmit to the internet, and you cannot make a test wait 30 real minutes for a beacon timer. So how do you test code that depends on those things?"
+    },
+    {
+      "p": "The answer is the __mock__ (also called a __fake__ or __stub__): a stand-in object that looks exactly like the real thing to the code being tested, but is simple, instant, and completely under the test's control. Think of it as a crash-test dummy — the same shape and weight as a person, safe to slam into a wall a thousand times. APRS-Command builds these by hand; it uses __no mocking framework__ at all (no Moq, no NSubstitute). The trick that makes hand-built fakes possible is that the real code depends on __interfaces__, not concrete classes."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "What an interface is",
+        "text": "An __interface__ is a contract that lists what an object can do (its methods) without saying how. `IAprsIsClient` promises 'I can connect, send a packet, and read packets' — but the promise says nothing about whether a real network is behind it. Production code plugs in the real network client; a test plugs in a fake that records what it was asked to do. Neither can tell the difference."
+      }
+    },
+    {
+      "p": "Here is the real fake from `BeaconSchedulerTests.cs`, trimmed to its essence. It implements `IAprsIsClient` — the same interface the real internet client implements:"
+    },
+    {
+      "code": "private sealed class FakeAprsIsClient : IAprsIsClient\n{\n    public AprsIsConnectionState State { get; set; } = AprsIsConnectionState.Disconnected;\n    public int SendCallCount { get; private set; }\n    public Func<string, AprsIsTransmitResult>? SendResultFactory { get; set; }\n\n    public Task<AprsIsTransmitResult> SendRawPacketAsync(\n        string rawPacketLine, bool transmitConfirmed, CancellationToken cancellationToken)\n    {\n        SendCallCount++;                       // record that a send was attempted\n        var result = SendResultFactory?.Invoke(rawPacketLine)\n            ?? AprsIsTransmitResult.Succeeded(TestNow, rawPacketLine, State);\n        return Task.FromResult(result);        // hand back an instant, canned answer\n    }\n}",
+      "description": "A hand-written fake internet client: it counts sends and returns a scripted result — no network"
+    },
+    {
+      "p": "Two design touches make this fake powerful. First, `SendCallCount` is a __spy__: every time the code under test asks to transmit, the counter goes up. A test can then assert `Assert.Equal(0, client.SendCallCount)` to prove the code did __not__ transmit — which is exactly how transmit-safety is verified. Second, `SendResultFactory` is a scripting hook: a test can hand the fake a function that makes it 'fail' with a receive-only error, so the failure-handling path can be exercised on demand without ever needing the real error to occur."
+    },
+    {
+      "p": "You can see both in action. This real test proves that when transmit is disabled, the scheduler blocks the beacon __without even calling the client__:"
+    },
+    {
+      "code": "[Fact]\npublic async Task BeaconNow_WhenTransmitDisabled_BlocksWithoutCallingAprsIsClient()\n{\n    var (profileService, client, scheduler, _) = CreateScheduler(aprsIsBeaconEnabled: true);\n    profileService.UpdateProfile(CreateValidProfile(transmitEnabled: false, ...), TestNow);\n    scheduler.Start();\n\n    var result = await scheduler.BeaconNowAsync(CancellationToken.None);\n\n    Assert.True(result.Blocked);\n    Assert.Equal(0, client.SendCallCount);   // the smoking gun: zero transmit attempts\n}",
+      "description": "Transmit-disabled means the send method is never reached — proven by the call counter staying at zero"
+    },
+    {
+      "p": "The `CreateScheduler(...)` call is a __factory helper__ — a private method at the bottom of the test class that assembles a scheduler wired to fakes and returns all the pieces as a tuple. It exists so that dozens of tests share one consistent setup instead of each rebuilding the object graph by hand. Note also `IBeaconSchedulerClock`: the fake clock lets a test say 'the time is now exactly 12:00' and later 'now it is 12:31,' so a 30-minute beacon interval can be tested in microseconds. This is why the CLAUDE.md rule forbids `Thread.Sleep` — real waiting has no place in a test."
+    },
+    {
+      "h2": "The same pattern guards the transmit-safety authority"
+    },
+    {
+      "p": "The most safety-critical class in the app is the __TransmitSafetyAuthority__ — the single gate every transmit request must pass through. Its tests use a fake for the policy context. From `TransmitSafetyAuthorityTests.cs`:"
+    },
+    {
+      "code": "private sealed class FakePolicy : ITransmitPolicyContext\n{\n    public bool HasValidStationCallsign { get; set; } = true;\n    public bool HasValidAprsIsPasscode { get; set; } = true;\n}",
+      "description": "A trivial fake policy whose two flags the test flips to simulate any identity/credential state"
+    },
+    {
+      "p": "By flipping those two booleans, a test can conjure any station-identity situation — valid callsign, placeholder callsign, good passcode, bad passcode — and confirm the authority reaches the right verdict. The tests then check both halves of the decision object: whether transmit is allowed, and the specific reason it was denied."
+    },
+    {
+      "code": "[Fact]\npublic void Inhibit_BlocksEverything_EvenWhenEverythingElseIsValid()\n{\n    var authority = Authority(out _);\n\n    authority.Inhibit(\"Exercise mode\");\n    var decision = authority.Evaluate(new TransmitRequest(PortId, TransmitDestination.Rf));\n\n    Assert.False(decision.IsAllowed);\n    Assert.Equal(TransmitDenyReason.GlobalInhibit, decision.Reason);\n}",
+      "description": "The global inhibit overrides everything — even a fully valid station is denied, with the reason reported"
+    },
+    {
+      "p": "This encodes a real operational rule: during a training exercise or drill, the operator can throw a global __inhibit__ that blocks all transmission regardless of how valid everything else is. Other tests in the same file prove inhibit takes __priority__ over identity and port failures — that when several things are wrong at once, the authority reports them in a fixed, predictable order. Getting that priority right is subtle, and the tests pin it down permanently."
+    },
+    {
+      "h1": "A worked example: adding a new test"
+    },
+    {
+      "p": "Suppose you add a feature: position beacons in the eastern hemisphere. You want to prove the formatter prints `E` for a positive longitude the same way it already prints `W` for a negative one. Here is the full, real workflow."
+    },
+    {
+      "steps": [
+        "Find the right file. Formatting tests live in tests/Aprs.Tests/AprsBeaconFormatterTests.cs — the file is named after the class it tests. This naming convention (SomethingTests.cs for the Something class) holds across all 123 test classes, so the right file is always predictable.",
+        "Decide Fact or Theory. Because you are checking one rule across two inputs (west and east), a [Theory] is the natural fit — and one already exists: FormatLongitude_FormatsHemispheres. You are extending coverage, so you add an [InlineData] row rather than writing a whole new method.",
+        "Write the assertion first, in your head: FormatLongitude(84.508333) should return the string \"08430.50E\". That expected string is the fixed-column APRS longitude with an E hemisphere.",
+        "Add the row. The real file already contains both rows, which is the finished result of exactly this exercise:",
+        "Run just this test to confirm: dotnet test --filter FullyQualifiedName~FormatLongitude. A green result means the new input is covered and correct.",
+        "Run the whole suite once before committing: dotnet test. A new test must never turn an existing one red — if it does, your change had a side effect you did not expect."
+      ]
+    },
+    {
+      "code": "[Theory]\n[InlineData(-84.508333, \"08430.50W\")]\n[InlineData(84.508333, \"08430.50E\")]\npublic void FormatLongitude_FormatsHemispheres(double longitude, string expected)\n{\n    Assert.Equal(expected, AprsCoordinateFormatter.FormatLongitude(longitude));\n}",
+      "description": "The finished Theory with both hemispheres covered — adding a case is a one-line change"
+    },
+    {
+      "p": "If instead you were testing brand-new behavior with an external dependency — say a new kind of beacon that talks to the APRS-IS client — you would follow the mocking pattern above: reuse or extend `FakeAprsIsClient`, wire it through a factory helper like `CreateScheduler`, and assert on `SendCallCount` and the returned result. You would never reach for a real network connection, and you would never add a mocking-framework package, because the project deliberately does neither."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The one rule from the Bug-Hunting Playbook",
+        "text": "Every bug found gets a regression test before you move on. A __regression test__ is a test that reproduces a bug you just fixed, so the same bug can never silently return. When you fix something, first write the test that fails because of the bug, then apply the fix and watch it go green. That failing-then-passing moment is your proof the fix actually works."
+      }
+    },
+    {
+      "h2": "A quietly clever category: testing the documentation itself"
+    },
+    {
+      "p": "One test file, `DeveloperDocumentationExamplesTests.cs`, does something unusual and worth copying: it tests that the example files shipped in the repository's `examples/` folder are actually valid. If a developer copies the sample station-import JSON from the docs, it must work — so a test parses that very file and checks its contents:"
+    },
+    {
+      "code": "[Fact]\npublic void ExampleStationImportJsonParses()\n{\n    using var document = ParseExample(\"examples/file-hooks/station-import.example.json\");\n    Assert.Equal(\"1.0\", document.RootElement.GetProperty(\"schemaVersion\").GetString());\n    Assert.Equal(\"SIM001\", document.RootElement.GetProperty(\"callsign\").GetString());\n}",
+      "description": "A test that keeps the shipped example files honest — documentation that cannot go stale"
+    },
+    {
+      "p": "This closes a gap that plagues most projects: documentation that slowly rots because nothing checks it. Here, if someone changes the import schema and forgets to update the example file, this test fails and forces the fix. It is a small idea with an outsized payoff, and a good template when you add new example files of your own."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The APRS-Command test suite is the mechanism that lets one person maintain a program complex enough to transmit on licensed radio spectrum without living in fear of every change. It is worth internalizing the handful of decisions that make it work."
+    },
+    {
+      "bullets": [
+        "Tests run the real code. The test project references the production projects directly, so there is no parallel 'test implementation' to drift out of sync — every test exercises exactly what ships.",
+        "Exact-string assertions are the backbone. Radio formats are fixed-column and unforgiving; asserting the literal transmitted bytes is what guarantees interoperability. Never soften these into loose contains-checks.",
+        "Round-trip tests catch drift the single-sided tests miss. Format-then-parse proves the two halves of the codec still agree, which is where subtle interop bugs hide.",
+        "Fakes, not frameworks. The project hand-writes small fakes that implement the same interfaces as the real network client, clock, and policy — no Moq, no NSubstitute. This keeps tests instant, deterministic, and free of hidden magic.",
+        "Spies prove the negative. A call-counter on the fake (SendCallCount == 0) is how the app proves it did NOT transmit — the single most important assertion in a transmit-safety test.",
+        "Fake clocks replace real waiting. A controllable IBeaconSchedulerClock tests a 30-minute interval in microseconds, which is why Thread.Sleep is banned from the codebase.",
+        "Names are sentences and files mirror classes. Method_Scenario_ExpectedResult naming and SomethingTests.cs file naming mean failures read like English and the right file is always obvious.",
+        "Every bug gets a regression test. The playbook's one non-negotiable rule: reproduce the bug in a failing test first, then fix it. That is how a fixed bug stays fixed for the life of the project."
+      ]
+    }
+  ]
+}

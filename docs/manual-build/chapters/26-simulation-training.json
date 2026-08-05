@@ -187,6 +187,25 @@
       "p": "In short: reach for **Simulation** when you just want lifelike activity to practice against, and **Replay** when you want to step back through a real recording. **Training** can use either one behind a guided checklist."
     },
     {
+      "h1": "Practice vs. a Real On-Air Exercise"
+    },
+    {
+      "p": "It is natural to assume **Exercise Mode** (on the **Tools** menu) is what you switch on to run a drill with other operators. It is actually the opposite, and the difference is worth understanding."
+    },
+    {
+      "p": "**Exercise Mode means nothing transmits.** It is a safety lock for *rehearsing*: you can watch stations, send a message, place an object, and run a whole net, and none of it reaches the air. Everything you \"send\" appears in your own Raw Packet Monitor marked **Blocked**, so you can confirm you did it correctly — but no other station receives it. The lifelike traffic you practice against comes from **Simulation**, **Replay**, or **Training**; the app is generating those stations for you, not hearing them from other operators."
+    },
+    {
+      "p": "**To actually communicate with other stations in a drill, leave Exercise Mode off and enable transmit.** Talking to another station means putting a signal out, by definition. To keep your practice traffic from cluttering the live nationwide network or being mistaken for a real emergency, run the drill on a dedicated exercise or simplex frequency, or point everyone's APRS-IS connection at a private server, and note \"drill\" or \"exercise\" in your beacon comment."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The name is the trap",
+        "text": "\"Exercise Mode\" guarantees you will NOT transmit — it is for safe practice, not for a drill where people talk to each other. For a real communicating exercise, turn Exercise Mode off, enable transmit, and use an exercise frequency or a private APRS-IS server."
+      }
+    },
+    {
       "h1": "Troubleshooting"
     },
     {

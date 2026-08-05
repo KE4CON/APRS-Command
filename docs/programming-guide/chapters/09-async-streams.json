@@ -1,0 +1,260 @@
+{
+  "order": 9,
+  "title": "Async, Streams & Back-pressure",
+  "subtitle": "How APRS-Command stays responsive while waiting on slow radios and network feeds, and how packets flow from a socket to the screen without anyone blocking.",
+  "in_this_chapter": [
+    "What 'async' really means: waiting without freezing",
+    "How ConnectAsync opens a radio or network link without stalling the app",
+    "The receive loop: a background reader that never touches the UI",
+    "Channel<T> as the pipe between the reader and the rest of the app",
+    "ReadPacketsAsync: draining the pipe one packet at a time",
+    "Back-pressure, and why this app deliberately chooses an unbounded pipe",
+    "How packets cross safely onto the UI thread and get coalesced"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS-Command spends almost all of its life __waiting__. It waits for a packet to arrive over the internet from the APRS-IS network. It waits for bytes to trickle in over a USB cable from a radio modem. It waits for a TCP connection to a Direwolf software modem to complete. Waiting is the normal state of a radio-monitoring program, because radio traffic is sporadic — a burst of packets, then thirty seconds of silence, then another burst."
+    },
+    {
+      "p": "The whole challenge of this chapter is a single question: __how does the app wait for slow things without freezing?__ If the program simply sat and stared at the network socket until a packet showed up, the map would stop responding, buttons would stop clicking, and the window would go gray with 'Not Responding.' The machinery in this chapter is what lets the app wait patiently in the background while the user keeps panning the map and clicking around, perfectly smoothly."
+    },
+    {
+      "p": "Three ideas do all the work, and this chapter defines each in plain language: __async/await__ (waiting without blocking), the __Channel__ (a conveyor belt between the part that reads packets and the part that displays them), and __back-pressure__ (what happens when packets arrive faster than they can be handled). The real code lives in three nearly-identical transport clients — `AprsIsClient`, `TcpKissClient`, and `SerialKissClient` in the **Aprs.Transport** project — plus the `LiveDataCoordinator` that hands their output to the screen."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The three transports, one shape",
+        "text": "APRS-Command talks to the outside world three ways: the internet APRS-IS feed (AprsIsClient), a TCP link to a software modem like Direwolf (TcpKissClient), and a serial/USB cable to a hardware TNC (SerialKissClient). All three follow the exact same async + Channel pattern, so once you understand one, you understand all three. This chapter uses AprsIsClient as the main example and notes where the others differ."
+      }
+    },
+    {
+      "h2": "Async in plain words: a waiter, not a wall"
+    },
+    {
+      "p": "__Async__ (short for asynchronous) is a way of writing code that says 'start this slow thing, and let me do other work until it finishes' instead of 'do this slow thing and make everyone stand still until it's done.' The everyday analogy is a good restaurant waiter. A __blocking__ waiter would take your order, walk to the kitchen, and stand frozen at the pass until your food is cooked — serving no one else the whole time. An __async__ waiter takes your order, hands it to the kitchen, and immediately goes to serve other tables; when your food is ready, they come back and deliver it. Same waiter, vastly more gets done, and nobody sits staring at a motionless employee."
+    },
+    {
+      "p": "In C#, the two keywords that express this are `async` and `await`. Marking a method `async` means 'this method contains waiting points.' Writing `await` in front of a slow operation means 'pause here __without__ holding anyone hostage — release the thread to do other work, and resume this exact spot when the result is ready.' The critical word is __release__. A blocking wait keeps its thread; an `await` gives the thread back."
+    },
+    {
+      "p": "You can see this in the very first line of real network work in the app. When the APRS-IS client opens a connection to a server, it writes:"
+    },
+    {
+      "code": "private static async Task<Stream> CreateTcpStreamAsync(\n    AprsIsClientConfiguration configuration,\n    CancellationToken cancellationToken)\n{\n    var tcpClient = new TcpClient();\n    await tcpClient.ConnectAsync(configuration.ServerHost, configuration.ServerPort, cancellationToken)\n        .ConfigureAwait(false);\n\n    return tcpClient.GetStream();\n}"
+    },
+    {
+      "p": "Line by line: a `TcpClient` is .NET's helper for a network connection. `ConnectAsync` reaches across the internet to the APRS-IS server — an operation that can take a fraction of a second or, on a bad connection, several seconds. The `await` in front of it means the app does not freeze during that reach-out; the thread is free to do anything else, and execution resumes at `return tcpClient.GetStream()` only once the handshake completes. A `Stream` is .NET's generic word for 'a pipe of bytes you can read from and write to' — here, the open socket to the server."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Why every await ends in .ConfigureAwait(false)",
+        "text": "You will see .ConfigureAwait(false) on nearly every await in the transport layer. In plain terms it says: 'when this finishes, resume on any available background thread — you do NOT need to come back to the special UI thread.' Library and background code adds it as a discipline: it avoids needlessly dragging work back onto the UI thread and sidesteps a classic freeze-the-app deadlock. The UI-facing code (like AsyncDesktopCommand) deliberately does the opposite with ConfigureAwait(true), because it DOES need to be back on the UI thread afterward."
+      }
+    },
+    {
+      "h2": "ConnectAsync: opening the link without stalling"
+    },
+    {
+      "p": "__What it does:__ `ConnectAsync` opens the connection to a radio or network feed and, once open, kicks off a background reader that will listen for incoming packets forever. __Why it is built this way:__ opening a connection and then reading from it are both slow, waiting-heavy jobs, so both are async, and the never-ending read loop is pushed onto a background task so it can run for hours without ever touching the responsive part of the app."
+    },
+    {
+      "p": "Here is the heart of `AprsIsClient.ConnectAsync`:"
+    },
+    {
+      "code": "connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);\nlock (sync) { lastError = null; state = AprsIsConnectionState.Connecting; }\n\ntry\n{\n    var opened = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);\n    SetStream(opened);\n    await WriteLoginLineAsync(opened, connectionCancellation.Token).ConfigureAwait(false);\n\n    // Wait for the server's logresp line before marking Connected.\n    await WaitForLogrespAsync(opened, connectionCancellation.Token).ConfigureAwait(false);\n\n    SetState(AprsIsConnectionState.Connected);\n    receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);\n}\ncatch (Exception exception) when (exception is not OperationCanceledException)\n{\n    Fault(exception);\n    throw;\n}"
+    },
+    {
+      "p": "This reads almost like a checklist. First it opens the byte-pipe (`streamFactory` is the `CreateTcpStreamAsync` shown earlier — passed in as a plug-in so tests can substitute a fake stream). Then it writes the APRS-IS login line and __waits for the server to acknowledge it__ (`WaitForLogrespAsync`) — a real-world detail, because APRS-IS silently throws away anything you send before it says 'you're verified.' Only after the acknowledgment does the client flip its state to `Connected`."
+    },
+    {
+      "p": "The pivotal line is the last one inside the `try`:"
+    },
+    {
+      "code": "receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);"
+    },
+    {
+      "p": "`Task.Run` says 'start this running on a background thread and __don't wait for it.__' `ReceiveLoopAsync` is an infinite loop that reads packets until the connection closes — if the code had written `await ReceiveLoopAsync(...)`, then `ConnectAsync` would never return, because the loop never ends. Instead it hands the loop off to the background and stores a handle to it (`receiveTask`) so it can be cleanly shut down later. This is the seam between 'connecting' (a one-time job that finishes) and 'receiving' (a forever job that runs quietly underneath everything)."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "CancellationToken: the shared 'stop' button",
+        "text": "A CancellationToken is a small object threaded through every async call so a single request to stop can ripple through all of them at once. Think of it as a whistle everyone is listening for: when DisconnectAsync blows it (connectionCancellation.Cancel()), the in-flight network read, the reconnect delay, and the receive loop all hear it and unwind together. Every async method in this layer accepts one, exactly as the project's coding standards require."
+      }
+    },
+    {
+      "h2": "The receive loop: a tireless background reader"
+    },
+    {
+      "p": "__What it does:__ `ReceiveLoopAsync` is the background worker that sits on the open connection, reads incoming text line by line, throws away the server's chatter, and publishes real APRS packets. __Why it is built this way:__ reading from a network or radio is the single most 'waiting-heavy' thing the app does, so it is isolated on its own background task where it can block on reads all day without the user ever noticing."
+    },
+    {
+      "p": "The APRS-IS version reads whole lines of text:"
+    },
+    {
+      "code": "while (!cancellationToken.IsCancellationRequested)\n{\n    var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);\n    if (line is null)\n    {\n        break;\n    }\n\n    if (line.StartsWith('#'))\n    {\n        continue;\n    }\n\n    PublishPacket(line);\n}"
+    },
+    {
+      "p": "`await reader.ReadLineAsync(...)` is the key waiting point: it pauses here, releasing the thread, until a full line of text arrives from the server. A `null` line means the server hung up, so the loop breaks out (and, if reconnection is enabled, tries to reopen the connection after a delay). A line starting with `#` is an APRS-IS server comment — status chatter, not a real packet — so it is skipped. Everything else is a genuine packet and goes to `PublishPacket`."
+    },
+    {
+      "p": "The TCP-modem and serial versions differ only in the shape of the data. Because a KISS modem sends raw binary frames rather than tidy text lines, their loops read into a byte buffer and stitch fragments together until a complete frame boundary is found:"
+    },
+    {
+      "code": "var bytesRead = await active.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);\nif (bytesRead == 0) { /* connection closed → reconnect or stop */ }\n\npending.AddRange(readBuffer.Take(bytesRead));\nvar lastCompleteEnd = KissFrameCodec.FindLastCompleteFrameEnd(pending);\nif (lastCompleteEnd < 0)\n{\n    continue;   // haven't received a whole frame yet — wait for more bytes\n}"
+    },
+    {
+      "p": "The idea is the same — `await ...ReadAsync` waits for bytes without freezing — but here the loop keeps a `pending` buffer of leftover bytes, because a single network read might contain half a packet, or two-and-a-half packets. It only pulls out __complete__ frames and leaves the fragment behind for the next read to finish. This is the reality of stream I/O: bytes arrive in whatever chunks the network feels like delivering, and the reader is responsible for finding the real boundaries."
+    },
+    {
+      "h2": "Channel<T>: the conveyor belt in the middle"
+    },
+    {
+      "p": "__What it does:__ a `Channel<T>` is a thread-safe pipe — one part of the program drops items in at one end (the __writer__), and another part takes them out at the other end (the __reader__), and the two never have to know about each other or run at the same speed. __Why it is built this way:__ the background receive loop and the on-screen consumer live on different threads running at different rhythms; a Channel is the safe, purpose-built handoff between them, so neither one has to reach into the other's world."
+    },
+    {
+      "p": "The real-world picture is a conveyor belt in a kitchen. The cook (the receive loop) plates dishes and sets them on the belt whenever they're ready. The server (the consumer) picks them off the belt whenever they're free. Neither has to stand and wait for the other; the belt absorbs the difference in pace. Each transport client declares one at the top of the class:"
+    },
+    {
+      "code": "private readonly Channel<AprsIsRawPacketReceivedEventArgs> receivedPackets\n    = Channel.CreateUnbounded<AprsIsRawPacketReceivedEventArgs>();"
+    },
+    {
+      "p": "`Channel.CreateUnbounded` makes a belt with __no length limit__ — it will hold as many items as are dropped on it. (We will come back to why 'unbounded' is a deliberate and slightly risky choice, in the back-pressure section.) The `<AprsIsRawPacketReceivedEventArgs>` part says what rides on the belt: in this case, one received APRS packet plus the moment it arrived."
+    },
+    {
+      "p": "The receive loop puts packets on the belt in `PublishPacket`:"
+    },
+    {
+      "code": "private void PublishPacket(string line)\n{\n    var packet = new AprsIsRawPacketReceivedEventArgs(line, DateTimeOffset.UtcNow);\n    receivedPackets.Writer.TryWrite(packet);\n    RawPacketReceived?.Invoke(this, packet);\n}"
+    },
+    {
+      "p": "`receivedPackets.Writer.TryWrite(packet)` drops one packet onto the belt. It is called `TryWrite` because in the general case a bounded belt could be full and reject the item — but with an unbounded belt it always succeeds instantly and never blocks the receive loop. Notice the belt is not the only way out: the same method also fires a plain C# `event` (`RawPacketReceived`). The app therefore offers two ways to consume the same packets — a classic event for fire-and-forget subscribers, and the Channel for anyone who wants to pull packets in a controlled, awaitable loop. The `LiveDataCoordinator` uses the event; other consumers use the Channel."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Why a Channel and not just the event?",
+        "text": "An event calls its subscribers immediately, on whatever thread raised it — the background receive thread. That is fine for a quick hand-off, but it means the receiver runs inside the reader's thread and can slow the reader down. A Channel decouples them completely: the reader drops the packet and moves on instantly, and the consumer processes it later, on its own schedule and its own thread. The Channel is the tool that lets the fast reader and a possibly-slower consumer coexist without either one dragging on the other."
+      }
+    },
+    {
+      "h2": "ReadPacketsAsync: taking packets off the belt"
+    },
+    {
+      "p": "__What it does:__ `ReadPacketsAsync` is the reader end of the belt, exposed as a stream of packets that a consumer can loop over with `await foreach`. __Why it is built this way:__ it turns 'packets arriving unpredictably over time' into something as easy to consume as reading a list — the consumer just loops, and the loop naturally pauses when the belt is empty and resumes when something shows up."
+    },
+    {
+      "code": "public async IAsyncEnumerable<AprsIsRawPacketReceivedEventArgs> ReadPacketsAsync(\n    [EnumeratorCancellation] CancellationToken cancellationToken)\n{\n    while (await receivedPackets.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))\n    {\n        while (receivedPackets.Reader.TryRead(out var packet))\n        {\n            yield return packet;\n        }\n    }\n}"
+    },
+    {
+      "p": "This tiny method carries a lot of meaning. The return type `IAsyncEnumerable<...>` is C#'s term for __an asynchronous stream__ — a sequence you can walk through with `await foreach`, where each step may involve waiting. The outer `await ...WaitToReadAsync` is the patient part: it pauses, releasing the thread, until at least one packet is available on the belt — no busy-spinning, no wasted CPU. When packets are present, the inner `while (...TryRead(...))` drains __every__ item currently waiting, one by one, before looping back to wait again. `yield return` hands each packet to the consumer as it comes."
+    },
+    {
+      "p": "The two-loop shape is a small efficiency: rather than wake up, take one packet, and go back to sleep, it wakes up once and empties the whole belt in a tight loop, only sleeping again when the belt is truly empty. Under a burst of traffic this drains the backlog quickly; under silence it costs nothing. A consumer's use of it is disarmingly simple:"
+    },
+    {
+      "code": "await foreach (var packet in client.ReadPacketsAsync(token))\n{\n    // handle one packet\n}"
+    },
+    {
+      "p": "That loop looks like ordinary iteration over a collection, but it is really 'for each packet that ever arrives, whenever it arrives, until cancelled.' The complexity of waiting, threading, and buffering is entirely hidden behind those four words, `await foreach ... in`."
+    },
+    {
+      "h2": "Back-pressure, and the deliberate unbounded choice"
+    },
+    {
+      "p": "__Back-pressure__ is what happens when items arrive faster than they can be consumed — the pressure of a backlog pushing back on the producer. The plumbing analogy is exact: if water pours into a pipe faster than it drains out the far end, pressure builds; if the pipe has a fixed size, eventually it is full and the source must slow down or overflow. In software, a __bounded__ Channel (one with a maximum length) creates back-pressure on purpose: when it fills, the writer's `WriteAsync` waits until the reader catches up, which throttles the producer to the consumer's pace."
+    },
+    {
+      "p": "APRS-Command makes the opposite choice, and it is worth understanding why. Every transport uses `Channel.CreateUnbounded` — a pipe with no size limit and therefore __no__ back-pressure. The writer never waits, never throttles, never rejects a packet. This is a considered trade-off, not an oversight:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Consideration",
+          "Why unbounded is the right call here"
+        ],
+        "rows": [
+          [
+            "The producer must never stall",
+            "The receive loop is reading a live radio/network feed. If a full pipe forced it to wait, incoming bytes would pile up in the OS socket buffer and packets could be lost. A radio feed cannot be told 'please resend' — a dropped packet is gone. Keeping the writer non-blocking protects the capture."
+          ],
+          [
+            "The volume is genuinely small",
+            "APRS is low-bandwidth by design — packets are short text bursts, and even a busy feed is a trickle by modern standards. The belt is drained continuously by a consumer that is far faster than the feed, so in practice the backlog stays near zero and memory growth is a non-issue."
+          ],
+          [
+            "The consumer is fast and coalesced",
+            "The UI side does not process packets one-at-a-time on screen; it batches and refreshes on a timer (see below). So the pipe empties in quick bursts, and there is nothing to push back against."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "The honest downside of unbounded",
+        "text": "An unbounded pipe trades a throttle for a risk: if a consumer ever stopped draining while packets kept arriving, the belt would grow without limit and memory would climb. The design is safe here only because the feed is low-volume and the consumer is always running and always faster than the feed. If APRS-Command ever ingested a genuinely high-rate firehose, this is the first place that would need a bounded channel with an explicit full-pipe policy — that is the standard fix, and the TryWrite/WaitToReadAsync shape is already the right shape to switch to it."
+      }
+    },
+    {
+      "h2": "Crossing to the UI thread — safely and without thrash"
+    },
+    {
+      "p": "Reading packets in the background is only half the story. The map, the packet log, and every visible control live on one special thread — the __UI thread__ — and a rule of every desktop UI framework, Avalonia included, is that __only that thread may touch the screen.__ A background reader that tried to update the map directly would corrupt it or crash. So there must be a safe border crossing from the background world to the UI world."
+    },
+    {
+      "p": "The `LiveDataCoordinator` is that crossing. When it wires up a receive-only APRS-IS connection, it subscribes to the client's event and immediately marshals each packet onto the UI thread:"
+    },
+    {
+      "code": "aprsIsClient.RawPacketReceived += (_, e) =>\n    Dispatcher.UIThread.Post(() =>\n        ingestion.IngestReceivedLine(e.RawPacketLine, AprsPacketSource.AprsIs, e.ReceivedAtUtc));"
+    },
+    {
+      "p": "`Dispatcher.UIThread.Post(...)` means 'schedule this small piece of work to run on the UI thread as soon as it's free.' It is the official, thread-safe doorway. The packet arrives on a background thread, but the actual work of feeding it into the station database happens on the UI thread — which, as the code's own comment notes, keeps all database and log access single-threaded and therefore free of the subtle bugs that plague shared multi-threaded data."
+    },
+    {
+      "p": "There is one more piece of responsiveness engineering here, and it is a direct back-pressure-adjacent idea applied to the screen. Even though packets are ingested one at a time, the map is __not__ redrawn on every single packet — that would be visual thrash under a busy feed, repainting dozens of times a second for no benefit. Instead the coordinator sets a `dirty` flag on each packet and repaints on a gentle timer:"
+    },
+    {
+      "code": "this.ingestion.PacketIngested += (_, _) => dirty = true;\n\n// ...in Start():\nrefreshTimer = new DispatcherTimer(\n    TimeSpan.FromMilliseconds(500),\n    DispatcherPriority.Background,\n    (_, _) => RefreshIfDirty());"
+    },
+    {
+      "p": "Every ingested packet just flips `dirty = true` — cheap, instant. A separate timer fires twice a second and, only if something actually changed, redraws the map and refreshes the log. This __coalescing__ (collapsing many small updates into one periodic refresh) is the display-side echo of back-pressure thinking: the input can burst as fast as it likes, but the expensive downstream work is paced to a rate a human eye and a GPU are comfortable with. A hundred packets in half a second cost exactly one repaint, not a hundred."
+    },
+    {
+      "h2": "The UI command wrapper: awaiting without freezing a click"
+    },
+    {
+      "p": "One last small but telling piece rounds out the async story on the UI side. When a user clicks a button that starts slow async work — connecting, exporting, downloading — that work must not freeze the click. `AsyncDesktopCommand` is the wrapper that makes an async handler behave like a normal button command:"
+    },
+    {
+      "code": "public async void Execute(object? parameter)\n{\n    if (isRunning) return;\n    isRunning = true;\n    RaiseCanExecuteChanged();\n    try\n    {\n        await executeAsync().ConfigureAwait(true);\n    }\n    finally\n    {\n        isRunning = false;\n        RaiseCanExecuteChanged();\n    }\n}"
+    },
+    {
+      "p": "Two things are worth naming. First, the `if (isRunning) return` guard plus the `isRunning` flag mean a double-click cannot start the same slow job twice — the button effectively disables itself while its work is in flight, then re-enables in the `finally`. Second, note `ConfigureAwait(true)` — the exact opposite of the transport layer's `ConfigureAwait(false)`. This is deliberate: a button command __wants__ to resume on the UI thread when its work finishes, so it can safely re-enable itself and update the screen. The same keyword, tuned in opposite directions in the two layers, is a compact illustration of the whole chapter's discipline: know which thread you are on, and only ever touch the UI from the UI thread."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "Responsiveness in APRS-Command is not luck — it is the payoff of a consistent pattern applied in three transport clients and one coordinator. Grasping this pattern explains why the app can monitor a live feed for hours while remaining perfectly fluid, and it tells a future maintainer exactly where to look when something stalls or a packet goes missing."
+    },
+    {
+      "bullets": [
+        "__Async is waiting-without-blocking.__ Every slow operation — connect, read, write — is awaited, which releases the thread instead of freezing it. That single discipline is what keeps the window alive while the app waits on the world.",
+        "__The receive loop is isolated on a background task__ via Task.Run, because it never ends. Separating the one-time 'connect' from the forever 'receive' is what lets ConnectAsync return while reading continues underneath.",
+        "__The Channel is the safe seam between threads.__ It lets a fast background reader hand packets to a possibly-slower consumer with neither one dragging on the other — the conveyor belt that absorbs differences in pace.",
+        "__Unbounded is a deliberate trade-off, not neglect.__ The app chooses no back-pressure so the live radio/network reader can never stall and drop an unrecoverable packet — safe precisely because APRS is low-volume and the consumer is always faster than the feed.",
+        "__Coalescing paces the expensive work.__ On the display side, a dirty flag plus a 500 ms timer collapse a burst of packets into a single repaint — back-pressure thinking applied to the screen, so a busy feed never thrashes the UI.",
+        "__Thread awareness is enforced by convention.__ ConfigureAwait(false) everywhere in the background layer, ConfigureAwait(true) and Dispatcher.UIThread.Post at the UI border, and single-threaded database access — together they make the multi-threaded reality safe and boring, which is exactly what you want."
+      ]
+    },
+    {
+      "p": "If you remember one sentence: __packets flow socket → receive loop → Channel → consumer → (UI thread) → coalesced repaint,__ and every arrow in that chain is an await or a thread-safe handoff designed so no link can ever freeze the one behind it."
+    }
+  ]
+}

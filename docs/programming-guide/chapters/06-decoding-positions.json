@@ -1,0 +1,233 @@
+{
+  "order": 6,
+  "title": "Decoding Positions — Compressed and Uncompressed",
+  "subtitle": "How APRS-Command pulls a latitude and longitude out of a packet, in both the human-readable form and the packed base-91 compressed form, without letting a single miscounted character corrupt the map.",
+  "in_this_chapter": [
+    "Why a position on a map is really just characters at fixed offsets",
+    "The two on-air formats: readable DDMM.mm and packed base-91",
+    "How the code tells them apart from one character",
+    "The base-91 number system explained from scratch",
+    "Why fixed-column parsing is a bug magnet and how the code guards it",
+    "Course, speed, altitude, and radio-range riding in two extra bytes",
+    "The !DAO! precision touch-up applied to both forms"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Every dot APRS-Command draws on its map begins life as a short line of text that arrived over the radio. Somewhere inside that text are the two numbers that matter most: a __latitude__ (how far north or south) and a __longitude__ (how far east or west). This chapter is about the two files that dig those numbers back out of the packet: **AprsPositionParser.cs**, which handles the layout of a position report, and **AprsCompressedPositionDecoder.cs**, which unpacks the dense, space-saving encoding that many stations use."
+    },
+    {
+      "p": "The reason this deserves its own chapter is that APRS gives you the same information in two very different disguises. One is meant for a human to read at a glance. The other is squeezed down to save precious airtime, at the cost of being unreadable to anyone without a decoder ring. APRS-Command has to accept both, tell them apart instantly, and never confuse one for the other — because a position that is off by even one character puts a station in the wrong ocean."
+    },
+    {
+      "p": "A __packet__ here just means one received message. The part we care about is its __information field__ — the payload after the addressing header — which the code holds in a plain string called `information`. Parsing is the act of walking through that string and turning raw characters into real numbers and labels."
+    },
+    {
+      "h2": "The two ways a position is written"
+    },
+    {
+      "p": "The __uncompressed__ (human-readable) form spells the coordinate out in degrees and minutes, the same way a paper chart does. A latitude looks like `4903.50N` — that is 49 degrees, 03.50 minutes, North. A longitude looks like `07201.75W`. It is legible, but it eats characters: 8 for latitude, 9 for longitude, 19 in total once you add the symbol characters between them."
+    },
+    {
+      "p": "The __compressed__ form encodes the exact same coordinate in just 13 characters total, including the map symbol and a bonus field for speed or altitude. It does this by turning each coordinate into one big whole number and then writing that number in an unusual counting system called __base-91__. It is not human-readable at all — `/5L!!<*e7>{?!` is a real, valid compressed position (it decodes to 49.5 North, 72.75 West) — but it is far shorter on the air."
+    },
+    {
+      "table": {
+        "headers": [
+          "",
+          "Uncompressed",
+          "Compressed"
+        ],
+        "rows": [
+          [
+            "Looks like",
+            "4903.50N/07201.75W-",
+            "/5L!!<*e7>{?!"
+          ],
+          [
+            "Readable by a human?",
+            "Yes",
+            "No"
+          ],
+          [
+            "Latitude size",
+            "8 characters",
+            "4 characters (base-91)"
+          ],
+          [
+            "Longitude size",
+            "9 characters",
+            "4 characters (base-91)"
+          ],
+          [
+            "Extra data (speed/altitude)",
+            "Optional, in the comment text",
+            "Built into 2 dedicated bytes"
+          ],
+          [
+            "Position ambiguity allowed?",
+            "Yes (blanks blur precision)",
+            "No — always full precision"
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "Telling the two apart from a single character"
+    },
+    {
+      "p": "Before it can decode anything, the parser must decide which of the two forms it is looking at. The trick APRS relies on is elegant: the two formats begin with characters that can never collide. A normal latitude always starts with a __digit__ (the tens-of-degrees digit, `0`–`9`). A compressed position always starts with a __Symbol Table Identifier__ — the single character `/` or `\\` that selects which set of map icons to use. Those are different characters, so one look at the first position settles it."
+    },
+    {
+      "code": "public static bool IsCompressed(string information, int offset)\n{\n    if (offset >= information.Length) return false;\n    var c = information[offset];\n    // Compressed format leads with the Symbol Table Identifier (/ or \\).\n    // Normal lat/long leads with digit characters (degree digits).\n    return c is '/' or '\\\\';\n}"
+    },
+    {
+      "p": "Line by line: `offset` is the index in the string where the coordinate is supposed to begin. The first `if` is a guard — if the packet is too short to even reach that spot, we cannot be looking at compressed data, so we answer `false` rather than crash. Then we read the one character at that offset and ask a single question: is it `/` or `\\`? The odd-looking `'\\\\'` is how C# writes a single backslash (the first backslash is an escape character). If yes, it is compressed; if it is a digit or anything else, it is not."
+    },
+    {
+      "important": {
+        "kind": "important",
+        "label": "One character decides everything",
+        "text": "The whole compressed-versus-uncompressed decision rests on this one test. It works only because the APRS specification deliberately made the two formats begin with non-overlapping character sets. This is a design pattern worth remembering: when two formats must coexist, make their first byte self-identifying so no guessing is ever required."
+      }
+    },
+    {
+      "h2": "Finding where the coordinate starts"
+    },
+    {
+      "p": "The parser cannot assume the coordinate is at the very front of the information field, because some position reports carry a __timestamp__ first. **AprsPositionParser** works this out before anything else."
+    },
+    {
+      "code": "var positionType = information.Length > 0 ? information[0] : '\\0';\nvar hasTimestamp = positionType is '/' or '@';\nvar latitudeStart = hasTimestamp ? 8 : 1;\nvar timestamp = hasTimestamp && information.Length >= 8\n    ? information.Substring(1, 7)\n    : null;"
+    },
+    {
+      "p": "The very first character of the information field is a __Data Type Indicator__ — a one-character tag that announces what kind of packet this is. The characters `!` and `=` mean a plain position with no time; `/` and `@` mean a position that carries a timestamp. When there is a timestamp, it occupies 7 characters right after the type indicator, so the coordinate does not begin until index `8`. When there is no timestamp, the coordinate begins at index `1`, right after the type indicator. That computed `latitudeStart` value is then handed to every downstream step."
+    },
+    {
+      "note": {
+        "kind": "note",
+        "label": "Same character, different job",
+        "text": "Notice that `/` appears in two unrelated roles: as a Data Type Indicator at the very front of the packet (meaning \"position with timestamp\"), and later as a Symbol Table Identifier at the start of a compressed coordinate. The code never confuses them because it only ever tests each one at the specific offset where it is meaningful. Position matters as much as the character itself."
+      }
+    },
+    {
+      "h2": "Reading the human-readable form"
+    },
+    {
+      "p": "For the uncompressed form the work lives in **AprsPositionComponents.Parse**, which slices the fixed-width fields out by position and converts degrees-and-minutes into a single decimal number. Here is the heart of the latitude conversion:"
+    },
+    {
+      "code": "var hemisphere = latitudeText[7];\nif (hemisphere is not ('N' or 'S'))\n{\n    validationErrors.Add($\"{errorPrefix} latitude hemisphere is invalid.\");\n    return null;\n}\n\nvar normalized = latitudeText[..7].Replace(' ', '0');\nif (!int.TryParse(normalized[..2], ... out var degrees)\n    || !double.TryParse(normalized[2..], ... out var minutes)\n    || degrees > 90\n    || minutes >= 60)\n{\n    validationErrors.Add($\"{errorPrefix} latitude is invalid.\");\n    return null;\n}\n\nvar decimalDegrees = degrees + minutes / 60;\nreturn hemisphere == 'S' ? -decimalDegrees : decimalDegrees;"
+    },
+    {
+      "p": "The 8-character latitude field is `DDMM.mmH`: two degree digits, then minutes with a decimal point, then a hemisphere letter. The code reads the hemisphere from the last slot, splits the first two characters as whole degrees and the rest as minutes, then combines them with the standard rule that 60 minutes make one degree (`degrees + minutes / 60`). South and West coordinates are stored as negative numbers so the rest of the program never has to think about hemispheres again — a decimal latitude of `-49.5` simply means 49.5 degrees south."
+    },
+    {
+      "p": "Two guards earn their keep here. The bounds checks `degrees > 90` and `minutes >= 60` reject impossible coordinates that would otherwise sail through as valid-looking garbage. And `.Replace(' ', '0')` implements APRS __position ambiguity__: a sender can blank out trailing digits with spaces to say \"I am being deliberately vague about my exact spot.\" Turning those spaces into zeros keeps the math working, while a separate routine, `CountPositionAmbiguity`, counts how many were blanked so the map can show the reduced precision honestly rather than pretending to a fake exactness."
+    },
+    {
+      "h2": "Base-91, explained from zero"
+    },
+    {
+      "p": "To understand the compressed form you need base-91, and the friendliest way in is to remember how ordinary numbers work. Our everyday numbers are __base-10__: ten digits, `0` through `9`, and each position to the left is worth ten times more than the one to its right (ones, tens, hundreds, thousands). Base-91 is the same idea with 91 \"digits\" instead of ten, so each position to the left is worth 91 times more (ones, 91s, 8281s, and 753571s)."
+    },
+    {
+      "p": "Where do you find 91 different digit symbols? APRS uses 91 consecutive printable ASCII characters, starting at `!` (ASCII code 33) and running up. To turn one of those characters into its numeric value, you simply subtract 33. So `!` is 0, `\"` is 1, and so on up to 90. That subtraction is the entire secret, and it is exactly one small function:"
+    },
+    {
+      "code": "private static int Base91Value(char c)\n{\n    var v = (int)c - 33;\n    return v is >= 0 and <= 90 ? v : -1;\n}"
+    },
+    {
+      "p": "`(int)c` gets the character's numeric ASCII code; subtracting 33 shifts `!`-and-up down to `0`-and-up. The range check is a quiet but crucial safety net: any character outside the legal 33-to-124 window returns `-1`, a clearly-impossible \"digit\" value. Callers test for that negative sentinel and reject the whole coordinate rather than compute a nonsense position from a corrupted byte. A __sentinel__ is just an agreed-upon impossible value used to signal \"this failed\" — like a thermometer reading of -999 that everyone understands to mean \"broken,\" not \"very cold.\""
+    },
+    {
+      "h2": "Turning four characters back into a latitude"
+    },
+    {
+      "p": "The compressed latitude is four base-91 characters. The decoder reads all four, checks none of them came back as the -1 sentinel, and then assembles them the way you would read a four-digit number — leftmost character is the most significant:"
+    },
+    {
+      "code": "var y1 = Base91Value(information[offset + 1]);\nvar y2 = Base91Value(information[offset + 2]);\nvar y3 = Base91Value(information[offset + 3]);\nvar y4 = Base91Value(information[offset + 4]);\n\nif (y1 < 0 || y2 < 0 || y3 < 0 || y4 < 0)\n{\n    validationErrors.Add($\"{errorPrefix} compressed latitude contains invalid base-91 character.\");\n    return AprsCompressedPosition.Invalid;\n}\n\n// Spec §9 p.38: Lat = 90 - ((y1×91³ + y2×91² + y3×91 + y4) / 380926)\nvar latValue = (y1 * 91.0 * 91.0 * 91.0)\n             + (y2 * 91.0 * 91.0)\n             + (y3 * 91.0)\n             +  y4;\nvar latitude = 90.0 - (latValue / LatMultiplier);"
+    },
+    {
+      "p": "The four `91.0` multiplications are the base-91 place values (91-cubed, 91-squared, 91, and 1) — the direct analog of thousands, hundreds, tens, and ones. That produces one large whole number, `latValue`. The APRS specification then defines a fixed rule for converting that number to degrees: divide by the magic constant `380926` and subtract the result from 90. The constant and the \"subtract from 90\" both come straight from the protocol's §9 (page 38); they are the exact inverse of how a transmitting station compressed the coordinate in the first place. Longitude works identically, but with its own constant `190463` and a `-180 +` framing instead of `90 -`."
+    },
+    {
+      "tip": {
+        "kind": "tip",
+        "label": "Why the constants are named, not typed inline",
+        "text": "The two multipliers live as named constants — `LatMultiplier = 380926.0` and `LonMultiplier = 190463.0` — each carrying a comment citing the exact page of the specification it came from. That is not decoration. Anyone auditing the math against the protocol document can confirm the number in seconds, and nobody can \"tidy up\" a bare `380926.0` buried in an expression without realizing it is load-bearing spec data."
+      }
+    },
+    {
+      "h2": "The two bonus bytes: speed, altitude, or range"
+    },
+    {
+      "p": "After the eight coordinate characters and the symbol code, the compressed format spends two more characters — nicknamed the __cs bytes__ — on whatever movement or elevation data the station chose to send, with a final __T byte__ (compression type) that says how to interpret them. One field cleverly means three different things depending on context, and the decoder untangles which."
+    },
+    {
+      "code": "if (cByte != ' ' && cByte != 'V')\n{\n    var cVal = Base91Value(cByte);\n    var sVal = Base91Value(sByte);\n\n    if (cByte == '{')\n    {\n        // Spec §9 p.39: c = { means pre-calculated radio range\n        if (sVal >= 0)\n            radioRangeMiles = (int)Math.Round(2.0 * Math.Pow(1.08, sVal));\n    }\n    else if (IsGgaSentence(tByte))\n    {\n        // T byte says the fix came from a GGA sentence → cs holds altitude\n        var csVal = cVal * 91 + sVal;\n        if (csVal >= 0)\n            altitudeFeet = (int)Math.Round(Math.Pow(1.002, csVal));\n    }\n    else if (cVal >= 0 && cVal <= 89)\n    {\n        // course = c × 4 degrees, speed = 1.08^s − 1 knots\n        courseDegrees = cVal * 4;\n        if (sVal >= 0)\n            speedKnots = (int)Math.Round(Math.Pow(1.08, sVal) - 1.0);\n    }\n}"
+    },
+    {
+      "p": "The first guard skips the whole block when the byte is a space (the spec's way of saying \"no extra data\") — and, pragmatically, also when it is the literal letter `V`, because the specification wrote the space as `V` in its notation and some real transmitters copied the letter by mistake. Accepting both is a small act of defensive compatibility with the messy real world. After that, the value of the first byte selects the meaning: `{` signals a pre-computed radio range; a GGA-sourced fix (detected from bits inside the T byte) means the pair encodes altitude; otherwise it is course and speed. Each branch uses the exact formula from §9 — for example course is the byte's value times 4, giving the compass heading in degrees."
+    },
+    {
+      "p": "**IsGgaSentence** is a nice miniature of bit-level care: it converts the T byte to its base-91 value, shifts the bits right by three, masks off the low two bits, and checks whether they equal binary `10`. That is the specification's flag for \"this position came from a GPS GGA sentence, so the cs bytes are altitude.\" Reading individual bits out of a byte is exactly the kind of operation that is easy to get subtly wrong, which is why it lives in one named, commented helper rather than being smeared inline."
+    },
+    {
+      "h2": "Why fixed-column parsing is a bug magnet"
+    },
+    {
+      "p": "Both formats share a hidden danger: they are __fixed-column__. The meaning of a character depends entirely on its exact position — index 7 is the hemisphere, index 9 is the symbol code, the byte at `offset + 12` is the compression type. There are no commas or labels to keep you oriented. Miscount by one, or reach past the end of a truncated packet, and you either read the wrong field or crash on an index that does not exist. Real over-the-air packets are frequently short, garbled, or truncated, so this is not a rare edge case; it is Tuesday."
+    },
+    {
+      "p": "The code's defense is uniform and deliberate. Every decode begins by proving there is enough length to read before it reads:"
+    },
+    {
+      "code": "const int MinLength = 13; // 1 STI + 4 lat + 4 lon + 1 symbol + 2 cs + 1 T\n\nif (information.Length < offset + MinLength)\n{\n    validationErrors.Add(\n        $\"{errorPrefix} compressed position field is too short \" +\n        $\"(expected ≥ {MinLength} chars from offset {offset}, \" +\n        $\"got {Math.Max(0, information.Length - offset)}).\");\n    return AprsCompressedPosition.Invalid;\n}"
+    },
+    {
+      "p": "The `MinLength` is spelled out with its arithmetic in the comment so the number `13` is auditable, not magical. If the packet is too short, the decoder does not throw and does not guess — it records a specific, human-readable validation error (including how many characters it actually got) and returns the shared `AprsCompressedPosition.Invalid` sentinel, an all-nulls result that downstream code recognizes as \"nothing usable here.\" The uncompressed path mirrors this with `SliceOrEmpty` and `TryGetChar` helpers that clamp every read to the available length, so an incomplete packet yields empty fields and logged errors instead of an exception."
+    },
+    {
+      "warning": {
+        "kind": "warning",
+        "label": "Never crash on bad input",
+        "text": "A ham-radio decoder lives on a diet of corrupted data. The governing rule across both files is: validate length before every fixed-column read, treat any out-of-range base-91 character as fatal to that coordinate, and always fail into a clearly-invalid result with a descriptive error message — never a silent zero and never an unhandled exception. A single malformed packet must degrade to \"could not decode this one,\" not take down the receive pipeline."
+      }
+    },
+    {
+      "h2": "The final precision touch-up: !DAO!"
+    },
+    {
+      "p": "Both paths finish by running the coordinate through **AprsDaoExtension.Apply**. The `!DAO!` extension is an optional token some stations append to the comment to add a little more precision than the base format carries — roughly one to six extra feet. **AprsPositionComponents** applies it to the uncompressed result and **AprsPositionParser.ParseCompressed** applies it to the compressed one, so both forms end up equally precise."
+    },
+    {
+      "p": "The interesting design choice is caution: the extension is only honored when a well-formed `!Dxx!` token sits at the very end of the comment, after trimming trailing spaces. That guard exists so an incidental `!...!` in the middle of someone's free-text comment is never mistaken for a precision directive. When a valid token is found its extra fractions of a minute are added toward the reported hemisphere (so magnitude grows in the correct direction) and the token is stripped from the comment the user sees. It is a small feature, but it shows the same instinct as the rest of the code: accept the optional richness the protocol allows, but only when you are certain that is what you are looking at."
+    },
+    {
+      "h2": "How a real packet flows through"
+    },
+    {
+      "p": "Putting it together with the canonical compressed example `/5L!!<*e7>{?!` (used verbatim as a regression test, where it must decode to 49.5N, 72.75W): the parser sees `!` as the type indicator, computes `latitudeStart = 1`, and finds `/` there — a Symbol Table Identifier, so `IsCompressed` returns true. The decoder confirms 13 characters are available, converts `5L!!` and `<*e7` from base-91 into two big integers, applies the §9 divide-and-offset formulas to get 49.5 and -72.75, reads the symbol and the `>{` cs bytes for course/speed, checks for a `!DAO!` token, and returns a fully-populated position. An uncompressed `4903.50N/07201.75W-` would instead have flowed through the slice-and-convert path in **AprsPositionComponents** to reach the same kind of result."
+    },
+    {
+      "h1": "Why It Matters / Design Takeaways"
+    },
+    {
+      "p": "The reasoning a future maintainer must preserve is that position decoding is where a stream of noisy radio characters becomes a trustworthy dot on a map, and the cost of a quiet mistake here is a station placed in the wrong place with no error to warn anyone. Everything in these two files is built to make that failure mode impossible."
+    },
+    {
+      "bullets": [
+        "**Self-identifying formats.** The compressed/uncompressed choice hinges on one non-overlapping character (`/` or `\\` versus a digit). Never replace this with heuristics or guessing — the protocol guarantees the distinction, so the code should too.",
+        "**Base-91 is just subtract-33 place-value arithmetic.** One tiny `Base91Value` helper is the whole decoder ring; keep it, and keep its out-of-range `-1` sentinel, because that sentinel is what stops corrupted characters from producing plausible-looking wrong coordinates.",
+        "**Spec constants are named and cited.** `380926`, `190463`, the `MinLength` of 13, the course-times-4 rule — each is anchored to a page of APRS Protocol Reference §9. That traceability is the difference between auditable and unmaintainable.",
+        "**Fixed-column parsing is guarded, not trusted.** Length is verified before every positional read, on both paths, so truncated real-world packets fail cleanly into a descriptive validation error and an `Invalid` sentinel instead of crashing or lying.",
+        "**Both paths converge on the same refinements.** Course/speed/altitude extraction and the `!DAO!` precision touch-up are applied consistently, so a compressed and an uncompressed report of the same spot yield equally complete, equally precise results.",
+        "**Every fix is pinned by a test.** Regression tests such as `Spec_CompressedObject_PositionDecoded` and the Dire Wolf-verified compressed-weather case lock in behavior against a real reference decoder — the safety rail that lets this delicate code be changed with confidence."
+      ]
+    }
+  ]
+}
