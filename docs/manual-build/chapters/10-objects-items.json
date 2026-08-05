@@ -1,0 +1,180 @@
+{
+  "title": "Objects & Items",
+  "subtitle": "Create, edit, and manage the named markers you place on the map — and understand why transmitting one is a deliberate, opt-in action.",
+  "in_this_chapter": [
+    "What an APRS object or item is, versus a station",
+    "Opening the Objects window from Operate -> Objects",
+    "The object list and what each column tells you",
+    "Filling in the object editor and choosing a map symbol",
+    "Placing an object by clicking the map",
+    "Killing, deleting, and adopting objects",
+    "How transmit stays off until you turn it on"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "A __station__ on the APRS map is a real transmitter — somebody's radio or tracker announcing where it is. An __object__ is different: it is a named marker that *you* place at a location to point out something that cannot beacon for itself. Think of a shelter, an emergency operations center, a staging area, a water point, a road closure, or a net's meeting spot. You give it a name, a position, a map icon, and a short comment, and it shows up on everyone's map as a labeled dot."
+    },
+    {
+      "p": "An __item__ is the same idea with one small difference: an object carries a timestamp and an item does not. In everyday use they behave the same way — a named marker at a fixed spot — and APRS Command shows both together in one place. This screen is where you build them, edit them, retire them, and (only when you choose to) send them out to the network."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Receive-first by default",
+        "text": "APRS Command starts with transmit turned off. The title bar shows a **TX Disabled** badge, and nothing you do on this screen leaves your computer until you deliberately enable a transmit path. Creating, editing, and saving an object are all local, silent actions."
+      }
+    },
+    {
+      "screenshot": "The Objects window open over the map, showing the object list on the left with several markers and the object editor on the right, with the TX Disabled badge visible in the main window title bar."
+    },
+    {
+      "h1": "Opening the Objects Window"
+    },
+    {
+      "p": "Open the menu bar and choose **Operate -> Objects**. A floating **APRS Objects** window appears. The heading reads **Objects** with the subtitle *APRS objects and items*. A line of help text at the top reminds you what the screen does and that your callsign is filled in as the owner automatically."
+    },
+    {
+      "p": "The window has two panes side by side. The left pane is the __object list__ — every object and item APRS Command currently knows about, whether you made it or heard it from another station. The right pane is the __object editor__, where the details of one object are shown and changed."
+    },
+    {
+      "h1": "Reading the Object List"
+    },
+    {
+      "p": "Each row in the left pane summarizes one object. The columns are:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it shows"
+        ],
+        "rows": [
+          [
+            "Name",
+            "The object's name (up to 9 characters), for example `CHECKPNT1`."
+          ],
+          [
+            "Owner",
+            "The callsign of the station that created it — yours for objects you made, someone else's for objects you heard."
+          ],
+          [
+            "Comment",
+            "The free-text note attached to the object, or `-` if none."
+          ],
+          [
+            "Position",
+            "Latitude and longitude, or `-` if not set."
+          ],
+          [
+            "State",
+            "Whether the object is alive or has been killed (retired)."
+          ],
+          [
+            "Ownership",
+            "`Local` (you own it), `Remote` (another station owns it), or `Adopted` (you took over an object first made elsewhere)."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Click any row to select it. Selecting an object loads its details into the editor on the right so you can look at or change them. Selecting a marker on the map does the same thing — the two stay in sync."
+    },
+    {
+      "h1": "Creating and Editing an Object"
+    },
+    {
+      "p": "To start a fresh object, click **New**. The editor clears to a blank draft with your callsign already filled into **Owner** and your station's default position and symbol pre-loaded. To change an existing object instead, select it in the list and click **Edit**."
+    },
+    {
+      "steps": [
+        "Type a short **Object** name in the top-left field. Names are limited to 9 characters — the app will warn you if you go over.",
+        "Confirm the **Owner** callsign. For a new object this is your own callsign; leave it as is unless you are adopting someone else's object.",
+        "Set **Latitude** and **Longitude**, either by typing decimal degrees or by placing the object on the map (see below).",
+        "Pick a **Symbol** from the icon grid. Click the icon that best fits — shelter, repeater, EOC, and so on. The underlying symbol code is filled in for you, and the box below the grid shows the chosen symbol's description.",
+        "Add a short **Comment** if you want a label or note. Comments cannot contain line breaks.",
+        "Leave the **Alive** box checked. Click **Save**."
+      ]
+    },
+    {
+      "p": "As you edit, the **Packet preview** box at the bottom of the editor shows the exact APRS text the object would produce, along with any validation errors (in red) or notices (in amber). This preview is built locally so you can check your work — seeing a packet preview does not mean anything was sent."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Area objects",
+        "text": "Check **Area Object** in the editor to draw a shape — a rectangle, circle, triangle, or line — instead of a single icon. Choose the **Shape** and **Color**, then set **Width (km)** and **Height (km)**. The shape is encoded into the comment field automatically per the APRS spec."
+      }
+    },
+    {
+      "screenshot": "The object editor pane showing the Object and Owner fields, Alive/Killed checkboxes, Latitude/Longitude, the symbol icon grid with one symbol selected, the Comment field, and the packet preview box at the bottom."
+    },
+    {
+      "h1": "Placing an Object on the Map"
+    },
+    {
+      "p": "Typing coordinates is fine, but it is usually easier to point at the spot. From the map, start object-placement mode, then click the location you want. APRS Command drops a draft object there and fills the editor's latitude and longitude with the clicked point — the status line confirms the coordinates it set. From there you finish the name, symbol, and comment in the editor and click **Save**."
+    },
+    {
+      "p": "To reposition an object you already own, select it and click the new spot on the map. If the object is owned by another station, the app will not move it until you adopt it first — this prevents you from silently overwriting someone else's marker."
+    },
+    {
+      "h1": "Killing, Deleting, and Adopting"
+    },
+    {
+      "p": "Retiring an object and removing it from your screen are two different actions:"
+    },
+    {
+      "bullets": [
+        "**Kill** marks the object as killed — the APRS way of saying \"this is no longer here.\" The object stays in your list with its **State** shown as killed. Killing is the correct way to retire an object you own so that, when transmit is on, other stations learn it is gone.",
+        "**Delete** removes the object from your local list entirely. This only works for objects you own, have adopted, or created locally — you cannot delete another station's remote object out from under it.",
+        "**Cancel** discards the changes in the editor and starts a fresh blank draft. It does not affect saved objects."
+      ]
+    },
+    {
+      "p": "__Adopting__ means taking over an object that another station originally created — for example, keeping a departed operator's shelter marker alive during an event. Check the **Adopted** box in the editor to claim local ownership. Once adopted, you can move, edit, and (with transmit enabled) re-send it to keep it on the network."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Alive or killed, not both",
+        "text": "The editor has separate **Alive** and **Killed** checkboxes, but an object is one or the other. If both — or neither — are checked, the editor flags it and will not save until you pick one."
+      }
+    },
+    {
+      "h1": "Transmitting an Object — Off Until You Say So"
+    },
+    {
+      "p": "Everything above happens locally. Sending an object out to the network is a separate, deliberate step, and APRS Command is built so it never happens by accident."
+    },
+    {
+      "p": "The bottom of the window has a **📡 Transmit Now** button (sends the selected object) and a **Transmit All** button (sends every object you locally own). These buttons are grayed out unless a transmit path is actually available — until then, they do nothing. Even when they are active, an object still has no effect on the network unless you enable a transmit path for it: the editor's **APRS-IS TX** and **RF TX** checkboxes are unchecked by default, and a new object opens with object transmit disabled."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Transmit is a conscious choice",
+        "text": "Nothing on this screen keys a radio or posts to APRS-IS on its own. Sending requires all of: the **TX Disabled** badge cleared by you, a transmit path enabled on the object, and a click on **Transmit Now** or **Transmit All**. If your station is in exercise/training mode, object transmit is inhibited entirely and the status line tells you why."
+      }
+    },
+    {
+      "p": "After you save, the status line reminds you that the object is stored locally and that you would click **Transmit Now** to send it — a prompt, never an automatic action. The current build treats object transmit as a gated feature: if you enable a TX checkbox, the editor may show a notice that object transmit is disabled in this phase. Either way, the safe default holds — no packet leaves your station without your deliberate action."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Transmit Now and Transmit All are grayed out.** No transmit service is connected yet — check your APRS-IS connection. The buttons enable only when a transmit path is available.",
+        "**Save is refused with a red error.** Read the packet preview box. Common causes: the name is blank or longer than 9 characters, latitude/longitude are out of range, no symbol is chosen, or both Alive and Killed (or neither) are checked.",
+        "**I can't move or delete an object.** It is owned by another station. Check the **Adopted** box in the editor to take local ownership first, then move or delete it.",
+        "**I enabled APRS-IS TX but nothing sends.** Object transmit is gated in this build and stays off by default; the editor shows a notice when the box is checked. Confirm the TX Disabled badge is cleared and the object is locally owned before expecting anything to go out.",
+        "**My object isn't on the map.** Make sure a position is set — a row showing `-` in the Position column has no coordinates. Set latitude and longitude, or place it by clicking the map, then Save.",
+        "**The owner shows the wrong callsign.** New objects use your station callsign automatically. If it is wrong, correct it in Settings so future objects are owned correctly."
+      ]
+    }
+  ],
+  "order": 10
+}

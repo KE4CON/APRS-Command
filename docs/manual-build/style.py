@@ -16,18 +16,27 @@ import re
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_BREAK
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT as WD_ALIGN_VERTICAL
 from docx.enum.section import WD_SECTION
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 # ---- palette --------------------------------------------------------------
 INK      = RGBColor(0x22, 0x2B, 0x38)
-ACCENT   = RGBColor(0x1F, 0x4E, 0x79)   # deep blue
-ACCENT2  = RGBColor(0x2E, 0x6D, 0xA4)   # medium blue
+ACCENT   = RGBColor(0x1F, 0x3A, 0x5F)   # navy (primary)
+ACCENT2  = RGBColor(0x2E, 0x6D, 0xA4)   # medium blue (section heads)
 MUTED    = RGBColor(0x64, 0x74, 0x8B)
 WHITE    = RGBColor(0xFF, 0xFF, 0xFF)
-ACCENT_HEX = "1F4E79"
+ACCENT_HEX = "1F3A5F"
+# navy + gold identity (matches the FieldCommand-style design language)
+NAVY      = ACCENT
+NAVY_HEX  = "1F3A5F"
+NAVY_DEEP_HEX = "17314F"                 # slightly darker band
+GOLD      = RGBColor(0xD9, 0xA5, 0x21)   # gold accent (marquee rules)
+GOLD_HEX  = "D9A521"
+PANEL_HEX = "EAF0F6"                      # pale banner fill (chapter title block)
+COVER_MUTE = RGBColor(0xC7, 0xD6, 0xE8)   # muted light text on navy
+COVER_FAINT = RGBColor(0x9F, 0xB3, 0xCC)
 
 CALLOUTS = {
     "important": ("FFF4CC", "E0A800", RGBColor(0x8A, 0x6D, 0x00)),
@@ -81,6 +90,15 @@ def _field(paragraph, instr):
     it = OxmlElement('w:instrText'); it.set(qn('xml:space'), 'preserve'); it.text = instr; run._r.append(it)
     sep = OxmlElement('w:fldChar'); sep.set(qn('w:fldCharType'), 'separate'); run._r.append(sep)
     e = OxmlElement('w:fldChar'); e.set(qn('w:fldCharType'), 'end'); run._r.append(e)
+    return run
+
+def _set_row_height(row, inches, rule='atLeast'):
+    trPr = row._tr.get_or_add_trPr()
+    h = OxmlElement('w:trHeight'); h.set(qn('w:val'), str(int(inches * 1440))); h.set(qn('w:hRule'), rule)
+    trPr.append(h)
+
+def _no_borders(cell):
+    _borders(cell, {e: {'val': 'nil'} for e in ('top', 'left', 'bottom', 'right')})
 
 # ---- run helpers ----------------------------------------------------------
 def add_runs(p, parts):
@@ -116,14 +134,32 @@ def new_document():
     h2.font.name = 'Segoe UI Semibold'; h2.font.size = Pt(13.5); h2.font.color.rgb = ACCENT2; h2.font.bold = False
     h2.paragraph_format.space_before = Pt(14); h2.paragraph_format.space_after = Pt(4)
 
-    # running header (right) + footer page number (center) on non-title pages
-    hp = sec.header.paragraphs[0]; hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    hr = hp.add_run("APRS Command  ·  User Manual"); hr.font.name = 'Segoe UI'; hr.font.size = Pt(8.5); hr.font.color.rgb = MUTED
-    par_border(hp, 'bottom', sz=4, color='D7DEE7', space=4)
-    fp = sec.footer.paragraphs[0]; fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    par_border(fp, 'top', sz=4, color='D7DEE7', space=4)
-    fr = fp.add_run("Page "); fr.font.size = Pt(8.5); fr.font.color.rgb = MUTED
-    _field(fp, ' PAGE ')
+    # running header: centered title + subtitle, gold rule beneath (non-title pages)
+    hp = sec.header.paragraphs[0]; hp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    hp.paragraph_format.space_after = Pt(2)
+    hr = hp.add_run("APRS Command — User Manual")
+    hr.font.name = 'Segoe UI Semibold'; hr.font.size = Pt(9.5); hr.font.color.rgb = NAVY
+    hp.add_run().add_break()
+    hs = hp.add_run("Situational awareness for amateur radio  ·  Receive-first, transmit-safe")
+    hs.font.name = 'Segoe UI'; hs.font.size = Pt(8); hs.font.color.rgb = MUTED
+    par_border(hp, 'bottom', sz=12, color=GOLD_HEX, space=6)
+
+    # footer: navy rule, then attribution (left) + "Page X of Y" (right) via a 2-col table
+    fp = sec.footer.paragraphs[0]; fp.paragraph_format.space_after = Pt(2)
+    par_border(fp, 'bottom', sz=6, color=NAVY_HEX, space=2)
+    ftbl = sec.footer.add_table(rows=1, cols=2, width=Inches(6.5))
+    ftbl.autofit = False; ftbl.allow_autofit = False
+    lc = ftbl.cell(0, 0); lc.width = Inches(4.5)
+    rc = ftbl.cell(0, 1); rc.width = Inches(2.0)
+    _no_borders(lc); _no_borders(rc)
+    lp = lc.paragraphs[0]; lp.paragraph_format.space_after = Pt(0)
+    lr = lp.add_run("APRS Command  ·  Open-source (GPL v3)  ·  73 de KE4CON")
+    lr.font.name = 'Segoe UI'; lr.font.size = Pt(8); lr.font.color.rgb = MUTED
+    rp = rc.paragraphs[0]; rp.alignment = WD_ALIGN_PARAGRAPH.RIGHT; rp.paragraph_format.space_after = Pt(0)
+    r1 = rp.add_run("Page "); r1.font.name = 'Segoe UI'; r1.font.size = Pt(8); r1.font.color.rgb = MUTED
+    pf = _field(rp, ' PAGE '); pf.font.size = Pt(8); pf.font.color.rgb = MUTED
+    r2 = rp.add_run(" of "); r2.font.name = 'Segoe UI'; r2.font.size = Pt(8); r2.font.color.rgb = MUTED
+    nf = _field(rp, ' NUMPAGES '); nf.font.size = Pt(8); nf.font.color.rgb = MUTED
     return doc
 
 # ---- content blocks -------------------------------------------------------
@@ -218,21 +254,77 @@ def code_block(doc, text):
         r = p.add_run(line); r.font.name = 'Consolas'; r.font.size = Pt(9.5); r.font.color.rgb = INK
     doc.add_paragraph().paragraph_format.space_after = Pt(3)
 
+# ---- cover -----------------------------------------------------------------
+def cover(doc, kicker, big_title, subtitle, doc_kind, version, tagline, author, date_str):
+    """Navy title panel with a gold marquee rule — the manual's front cover."""
+    top = doc.add_paragraph(); top.paragraph_format.space_after = Pt(0)
+    par_border(top, 'bottom', sz=26, color=GOLD_HEX, space=1)
+
+    tbl = doc.add_table(rows=1, cols=1)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tbl.autofit = False; tbl.allow_autofit = False
+    cell = tbl.cell(0, 0); cell.width = Inches(6.5)
+    _shade(cell, NAVY_HEX); _no_borders(cell)
+    _set_row_height(tbl.rows[0], 8.0)
+    cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    _margins(cell, top=260, bottom=260, start=320, end=320)
+
+    def line(text, *, size, color, name='Segoe UI', bold=False, before=0, after=6, rule=False):
+        p = cell.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(before); p.paragraph_format.space_after = Pt(after)
+        if rule:
+            par_border(p, 'bottom', sz=12, color=GOLD_HEX, space=6)
+        if text:
+            r = p.add_run(text); r.font.name = name; r.font.size = Pt(size); r.font.color.rgb = color; r.bold = bold
+        return p
+
+    # first paragraph already exists in the cell; use it for the kicker
+    p0 = cell.paragraphs[0]; p0.alignment = WD_ALIGN_PARAGRAPH.CENTER; p0.paragraph_format.space_after = Pt(2)
+    kr = p0.add_run(kicker); kr.font.name = 'Segoe UI Semibold'; kr.font.size = Pt(11); kr.font.color.rgb = GOLD
+
+    line(big_title, size=46, color=WHITE, name='Segoe UI Semibold', bold=True, before=46, after=4)
+    line(subtitle + "   " + version, size=16, color=GOLD, name='Segoe UI Semibold', after=12)
+    line(None, size=1, color=GOLD, rule=True, after=14)
+    line(doc_kind, size=24, color=WHITE, name='Segoe UI Semibold', bold=True, after=6)
+    line(tagline, size=10.5, color=COVER_MUTE, before=26, after=12)
+    line(author, size=12, color=WHITE, name='Segoe UI Semibold', bold=True, before=0, after=2)
+    line(date_str, size=10, color=COVER_FAINT, before=2, after=0)
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(0)
+
 # ---- chapter opener -------------------------------------------------------
 def chapter_open(doc, number, title, subtitle, in_this_chapter=None):
     page_break(doc)
-    kick = doc.add_paragraph(); kick.paragraph_format.space_after = Pt(2)
-    kr = kick.add_run("CHAPTER %d" % number); kr.bold = True; kr.font.size = Pt(10)
-    kr.font.color.rgb = ACCENT2; kr.font.name = 'Segoe UI Semibold'
-    t = doc.add_paragraph(); t.paragraph_format.space_after = Pt(2)
-    tr = t.add_run(title); tr.font.name = 'Segoe UI Semibold'; tr.font.size = Pt(28); tr.font.color.rgb = ACCENT
+    # number block (navy square) + title banner (pale blue), gold rule under
+    tbl = doc.add_table(rows=1, cols=2)
+    tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
+    tbl.autofit = False; tbl.allow_autofit = False
+    numcell = tbl.cell(0, 0); numcell.width = Inches(0.95)
+    titcell = tbl.cell(0, 1); titcell.width = Inches(5.55)
+    _shade(numcell, NAVY_HEX); _shade(titcell, PANEL_HEX)
+    _no_borders(numcell); _no_borders(titcell)
+    numcell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    titcell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+    _set_row_height(tbl.rows[0], 0.72)
+    _margins(numcell, top=40, bottom=40, start=40, end=40)
+    _margins(titcell, top=60, bottom=60, start=220, end=140)
+
+    np = numcell.paragraphs[0]; np.alignment = WD_ALIGN_PARAGRAPH.CENTER; np.paragraph_format.space_after = Pt(0)
+    nr = np.add_run(str(number)); nr.font.name = 'Segoe UI Semibold'; nr.font.size = Pt(30); nr.font.color.rgb = WHITE; nr.bold = True
+
+    t = titcell.paragraphs[0]; t.paragraph_format.space_after = Pt(0)
+    tr = t.add_run(title); tr.font.name = 'Segoe UI Semibold'; tr.font.size = Pt(22); tr.font.color.rgb = NAVY; tr.bold = True
     # register as Heading 1 outline level so it shows in the TOC
     _set_outline_level(t, 0)
     _style_as_toc_entry(t, title, level=1)
+
+    rule = doc.add_paragraph(); rule.paragraph_format.space_before = Pt(3); rule.paragraph_format.space_after = Pt(8)
+    par_border(rule, 'bottom', sz=16, color=GOLD_HEX, space=6)
+
     if subtitle:
         s = doc.add_paragraph()
         sr = s.add_run(subtitle); sr.italic = True; sr.font.size = Pt(11.5); sr.font.color.rgb = MUTED
-        par_border(s, 'bottom', sz=12, color=ACCENT_HEX, space=8)
     if in_this_chapter:
         doc.add_paragraph().paragraph_format.space_after = Pt(0)
         itc = doc.add_paragraph(); itc.paragraph_format.space_after = Pt(2)

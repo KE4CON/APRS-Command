@@ -1,0 +1,238 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **Settings** window is where you set up APRS Command and confirm it is ready to operate. It holds every configuration screen the app has — your callsign, connections, GPS, maps, and more — in one place, arranged as a row of tabs."
+    },
+    {
+      "p": "This chapter covers the window itself: how to open it, the tabs it contains, and how saving works. It then gives the **Readiness** tab full treatment, because that is the tab you check right before an activation to answer one question: __am I good to go?__"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receive-first by design",
+        "text": "Opening Settings and looking around never transmits. APRS Command starts receive-only, and the title bar shows a **TX Disabled** badge. Nothing on any Settings tab puts you on the air until you deliberately enable transmit."
+      }
+    },
+    {
+      "h1": "Opening the Settings window"
+    },
+    {
+      "steps": [
+        "Click **Settings** on the menu bar (it is the first menu, before **View**).",
+        "The Settings window opens as its own floating window titled `APRS Command Settings`, with the heading **Settings** and the subtitle `Connection and safety settings`.",
+        "Pick a tab along the top and make your changes.",
+        "Leave the window open while you work, or close it when you are done — the main map keeps running behind it."
+      ]
+    },
+    {
+      "screenshot": "The Settings window floating over the main map, showing the row of tabs across the top with the Readiness tab selected."
+    },
+    {
+      "p": "The Settings window is separate from the main window, so you can drag it aside and watch the map or the message list while you adjust a setting."
+    },
+    {
+      "h1": "The row of tabs"
+    },
+    {
+      "p": "Across the top of the window is a single row of tabs. They appear in this order:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Tab",
+          "What it covers"
+        ],
+        "rows": [
+          [
+            "Readiness",
+            "Pre-operation go/no-go checklist (covered in detail below)"
+          ],
+          [
+            "First Run",
+            "The guided first-time setup walkthrough"
+          ],
+          [
+            "Station",
+            "Your callsign, symbol, and position"
+          ],
+          [
+            "GPS",
+            "GPS source setup and live fix status"
+          ],
+          [
+            "Offline Maps",
+            "Downloading and managing map tiles for offline use"
+          ],
+          [
+            "Connections",
+            "Your radio, TNC, and APRS-IS connection ports"
+          ],
+          [
+            "Managed Modem",
+            "Software-modem (sound-card TNC) configuration"
+          ],
+          [
+            "Message Templates",
+            "Reusable canned messages"
+          ],
+          [
+            "Smart Beaconing",
+            "Speed- and turn-based beacon timing"
+          ],
+          [
+            "Ports",
+            "Live status of every configured connection port"
+          ],
+          [
+            "iGate",
+            "Internet-gateway setup and status"
+          ],
+          [
+            "Digipeater",
+            "Digipeater setup and status"
+          ],
+          [
+            "Audio",
+            "Sound-card input and output device selection"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Sub-tabs",
+        "text": "The **GPS**, **iGate**, and **Digipeater** tabs each split into their own **Setup** and **Status** sub-tabs. Use **Setup** to change values and **Status** to watch what the feature is actually doing."
+      }
+    },
+    {
+      "h1": "How saving works (Save / Revert)"
+    },
+    {
+      "p": "There is no single window-wide Save button. Each configuration tab saves itself. On tabs where you edit values — for example **GPS**, **Connections**, **iGate**, **Digipeater**, **Managed Modem**, **Smart Beaconing**, and **Audio** — you will find a **Save** button and, on most, a **Revert** button at the bottom."
+    },
+    {
+      "bullets": [
+        "**Save** writes that tab's settings to disk and applies them.",
+        "**Revert** throws away your unsaved edits on that tab and reloads the last saved values.",
+        "Switching tabs does not save for you — click **Save** on a tab before moving on if you changed something there."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Save each tab you change",
+        "text": "Because each tab saves independently, edits you make on one tab are not saved by clicking **Save** on another. If a change did not stick, check that you clicked **Save** on the correct tab."
+      }
+    },
+    {
+      "h1": "The Readiness tab"
+    },
+    {
+      "p": "The **Readiness** tab is a pre-operation checklist for EmComm activations and exercises. It reads the app's current state and shows, at a glance, whether the key pieces you need before operating are in place. It is described in the app as a `Pre-operation checklist for EmComm activations and exercises.`"
+    },
+    {
+      "p": "You do not enter anything on this tab — it is a live status view. It watches the rest of the app and updates on its own."
+    },
+    {
+      "screenshot": "The Readiness tab with a green \"Ready to operate\" summary banner at the top and five check cards below, each with a check-mark or cross icon and a detail line."
+    },
+    {
+      "h2": "The summary banner"
+    },
+    {
+      "p": "At the top is a summary banner. When every check passes it reads **Ready to operate** in green. When any check is failing it reads **Not ready — check items below** in red, telling you to scan the list underneath for the item that is not green."
+    },
+    {
+      "h2": "The check items"
+    },
+    {
+      "p": "Below the banner is one card per check. Each card shows a status icon on the left, the check's name, and a short detail line explaining the current state. A green check mark (`✓`) means that item passes; a red cross (`✗`) means it does not."
+    },
+    {
+      "table": {
+        "headers": [
+          "Check",
+          "Passes when",
+          "Example detail line"
+        ],
+        "rows": [
+          [
+            "Callsign configured",
+            "A real callsign is set (not blank and not `N0CALL`)",
+            "Shows your callsign, or `Not set — open Station Setup`"
+          ],
+          [
+            "APRS-IS connected",
+            "The APRS-IS connection is established",
+            "`Connected to` your server, `Connecting…`, or `Disconnected — check Connections settings`"
+          ],
+          [
+            "GPS fix acquired",
+            "A GPS fix is active",
+            "`GPS fix active`, `GPS enabled but no fix yet`, or `GPS not enabled — using manual position`"
+          ],
+          [
+            "Beacon transmitted",
+            "A beacon went out within the last 30 minutes",
+            "`Last beacon:` with the time, or `No beacon sent yet — click Beacon Now`"
+          ],
+          [
+            "Exercise mode OFF (transmit allowed)",
+            "Exercise mode is off",
+            "`Transmit allowed`, or `Exercise mode ON — all transmit inhibited`"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "\"Ready\" does not mean the app has transmitted on its own",
+        "text": "The last check, **Exercise mode OFF (transmit allowed)**, turns green only to show that transmit is permitted — it does not send anything. Putting a beacon on the air is still a deliberate action you take (for example, **Beacon Now**). If you want the app to stay strictly receive-only, leaving exercise mode ON is a valid state; that single item will simply read red while everything else can still be green."
+      }
+    },
+    {
+      "h2": "Auto-refresh"
+    },
+    {
+      "p": "The Readiness tab refreshes itself. A line at the bottom right reads `Refreshes automatically every 5 seconds.` As you fix each item — set your callsign, connect APRS-IS, get a GPS fix, send a beacon — its card turns green on the next refresh without any action from you. Watch the summary banner flip to **Ready to operate** once all five pass."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Use it as your final pre-flight",
+        "text": "Open **Settings -> Readiness** right before an activation and glance at the banner. Green means every key piece is in place. Red means one card below is still failing — its detail line tells you exactly what to fix and where to go."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Readiness says \"Not ready\" but I can't tell why.** Scan the cards below the banner for the red `✗`. Its detail line names the problem and often the fix (for example, `Not set — open Station Setup`).",
+        "**Callsign check stays red.** It fails while blank or set to the placeholder `N0CALL`. Open the **Station** tab, enter your real callsign, and click **Save**.",
+        "**APRS-IS check is red.** The detail line shows `Disconnected` or `Connecting…`. Open the **Connections** tab and confirm the APRS-IS port is configured and connected.",
+        "**GPS check is red even though I set a position.** Manual position does not count as a GPS fix. This is expected if you operate from a fixed location; the detail line will read `GPS not enabled — using manual position`.",
+        "**Beacon check went from green back to red.** The check only counts a beacon sent within the last 30 minutes. Send another beacon (for example, **Beacon Now**) to make it green again.",
+        "**Exercise-mode check is red.** Exercise mode is currently ON, which inhibits all transmit. That is intentional if you are staying receive-only; turn exercise mode off only when you actually intend to allow transmitting.",
+        "**A change I made didn't save.** Each tab saves on its own. Return to the tab you edited and click its **Save** button; use **Revert** to discard unsaved edits on that tab.",
+        "**I don't see a Save button on a tab.** Status-only tabs (like **Ports**, and the **Status** sub-tabs) have nothing to save — they only display live state."
+      ]
+    }
+  ],
+  "title": "The Settings Window & Readiness",
+  "subtitle": "Open the Settings window, find your way around its tabs, and use the Readiness checklist to confirm you are good to operate.",
+  "in_this_chapter": [
+    "Opening the Settings window from the menu bar",
+    "The full row of Settings tabs, in order",
+    "How per-tab Save and Revert work",
+    "The Readiness go/no-go summary banner",
+    "The five readiness checks and what each one means",
+    "Auto-refresh and using Readiness as a pre-flight"
+  ],
+  "order": 13
+}

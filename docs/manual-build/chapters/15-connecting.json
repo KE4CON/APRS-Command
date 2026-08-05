@@ -1,0 +1,290 @@
+{
+  "title": "Connecting to APRS-IS & Radio",
+  "subtitle": "Bring live APRS data in from the internet, a radio, or both — and confirm packets are actually flowing.",
+  "in_this_chapter": [
+    "APRS-IS vs. RF, and why you can run both",
+    "The Connections tab: adding and editing ports",
+    "Setting up an APRS-IS port (server, passcode, filter)",
+    "Setting up a radio port (serial TNC, network TNC, AGWPE)",
+    "The Managed Modem tab for sound-card interfaces",
+    "The Ports tab and status badges",
+    "Confirming data is flowing with the Raw Packet Monitor"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "__APRS-IS__ is the worldwide internet network that carries APRS traffic, and __RF__ is what your radio hears off the air through a TNC or sound-card modem. This chapter is about getting live data flowing into APRS Command from either one — or both at once. Everything here lives on three tabs inside the Settings window: **Connections**, **Managed Modem**, and **Ports**."
+    },
+    {
+      "p": "Open all three from the menu bar with **Settings**. It opens the Settings window, and the tabs run along the top. **Connections** is where you define each way in and out. **Managed Modem** is a shortcut for people using a USB sound-card interface who want APRS Command to run the modem software for them. **Ports** is the read-only status board that tells you whether anything is actually arriving."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Receive first, transmit off",
+        "text": "APRS Command listens by default and does not transmit until you deliberately turn transmit on. The title bar shows a **TX Disabled** badge whenever transmit is off. Nothing on the Connections or Managed Modem tab starts sending on its own — you can wire up APRS-IS and a radio and still be entirely receive-only."
+      }
+    },
+    {
+      "h2": "APRS-IS vs. RF — which do I want?"
+    },
+    {
+      "p": "You do not have to choose just one. The note at the top of the Connections tab even says so: \"Run more than one at once (for example a radio port and APRS-IS together).\" Here is the short version of what each gives you."
+    },
+    {
+      "table": {
+        "headers": [
+          "",
+          "APRS-IS (internet)",
+          "RF (radio)"
+        ],
+        "rows": [
+          [
+            "What it is",
+            "A connection to an internet APRS server",
+            "Packets your radio hears off the air"
+          ],
+          [
+            "Needs",
+            "Internet and a server name",
+            "A TNC, or a sound-card modem"
+          ],
+          [
+            "Coverage",
+            "The whole network (you filter it down)",
+            "Only stations in radio range of you"
+          ],
+          [
+            "Receive-only?",
+            "Yes — set passcode to `-1`",
+            "Yes — leave the Transmit box unchecked"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "The Connections Tab"
+    },
+    {
+      "p": "Open **Settings** and pick the **Connections** tab. The left side is your list of ports; the right side is the editor for whichever port is selected. A __port__ here just means one way APRS Command talks to the outside world — one APRS-IS server, or one radio interface."
+    },
+    {
+      "steps": [
+        "Below the list, pick a type from the dropdown: **APRS-IS**, **Network TNC (KISS-TCP)**, **AGWPE (TCP)**, **Serial KISS (hardware TNC)**, or **Managed local modem (sound card)**.",
+        "Click **Add**. A new port appears in the list, selected, with the editor showing its fields.",
+        "Fill in the fields on the right (covered below for each type).",
+        "Click **Save** at the bottom. The status line confirms, for example, `Saved 2 port(s).` Use **Revert** to throw away unsaved edits and reload the last saved list."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "New ports start disabled",
+        "text": "A freshly added port has **Enabled** unchecked, **Receive** checked, and **Transmit** unchecked. It will not do anything until you check **Enabled** and Save. This is deliberate — you build the port fully before it goes live."
+      }
+    },
+    {
+      "h2": "The three checkboxes on every port"
+    },
+    {
+      "p": "Every port, whatever its type, has the same three checkboxes near the top of the editor:"
+    },
+    {
+      "bullets": [
+        "**Enabled** — turns the whole port on or off. Off means APRS Command ignores it entirely.",
+        "**Receive** — lets packets come in from this port. Leave this on for normal listening.",
+        "**Transmit** — lets this port send. This stays off until you choose to turn it on. A radio or APRS-IS port with Transmit unchecked is receive-only, no matter what else is set."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Transmit is a deliberate choice",
+        "text": "Checking **Transmit** on a port is the operator action that allows sending on that port. Even then, the app-wide transmit safety still applies — the title bar keeps showing **TX Disabled** until transmit is actually enabled, and Exercise Mode (Tools menu) blocks all transmit regardless. If you only want to watch traffic, leave Transmit unchecked everywhere."
+      }
+    },
+    {
+      "h1": "Setting Up an APRS-IS Port"
+    },
+    {
+      "p": "Add a port of type **APRS-IS** and fill in the editor. The fields are:"
+    },
+    {
+      "bullets": [
+        "**Server** — the APRS-IS server to connect to, for example `rotate.aprs2.net`.",
+        "**Port** — the server's TCP port number (the common APRS-IS filter port is `14580`).",
+        "**Passcode** — your APRS-IS passcode, a number worked out from your callsign. Enter `-1` for receive-only operation. A real passcode is only needed to transmit beacons and messages.",
+        "**Filter (optional)** — leave blank to use the automatic geographic filter from your Station Setup. To override it, enter a custom filter such as `m/100` or `r/41.97/-88.45/200`. The number is always in kilometers, regardless of your unit preference.",
+        "**Failover servers (optional)** — one `host:port` per line. If the primary server is unreachable for three or more minutes, APRS Command tries these in order."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Receive-only APRS-IS",
+        "text": "Set **Passcode** to `-1` and you have a fully working receive-only feed — no callsign transmission, no risk of sending anything. This is the safest way to watch the network while you learn the app."
+      }
+    },
+    {
+      "screenshot": "The Connections tab with an APRS-IS port selected, showing the Server, Port, Passcode, Filter, and Failover servers fields, and the passcode set to -1."
+    },
+    {
+      "h1": "Setting Up a Radio (RF) Port"
+    },
+    {
+      "p": "\"RF\" means packets coming from your radio through a modem or TNC. APRS Command offers three ways to connect to one, plus the Managed Modem shortcut covered in the next section. Pick the type that matches your hardware."
+    },
+    {
+      "table": {
+        "headers": [
+          "Port type",
+          "Use it for",
+          "Key fields"
+        ],
+        "rows": [
+          [
+            "Serial KISS (hardware TNC)",
+            "A hardware TNC on a USB/serial cable",
+            "Serial port, Baud"
+          ],
+          [
+            "Network TNC (KISS-TCP)",
+            "A software modem already running that speaks KISS over TCP",
+            "Host, Port"
+          ],
+          [
+            "AGWPE (TCP)",
+            "An AGWPE / AGW host-mode packet engine",
+            "Host, Port"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "For **Serial KISS**, the **Serial port** field is a dropdown of ports found on this machine, but you can also type one in — the placeholder shows the format (`/dev/tty.usbserial` on Mac/Linux or `COM3` on Windows). Set **Baud** to match your TNC."
+    },
+    {
+      "p": "For **Network TNC (KISS-TCP)** and **AGWPE (TCP)**, enter the **Host** and **Port** where that software is listening. For a modem on the same computer, the host is usually `127.0.0.1`."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receiving over RF needs no transmit",
+        "text": "A radio port with **Enabled** and **Receive** checked will decode everything your radio hears, with **Transmit** left off. You get the full local picture on the map without ever keying the radio."
+      }
+    },
+    {
+      "h1": "The Managed Modem Tab"
+    },
+    {
+      "p": "If your radio connects through a USB sound-card interface — a __DigiRig__, __SignaLink__, or similar — the **Managed Modem** tab lets APRS Command launch and manage a local __Direwolf__ modem process for you, instead of you running it by hand. Open **Settings** and pick the **Managed Modem** tab."
+    },
+    {
+      "steps": [
+        "Check that Direwolf is found. The tab shows a line reporting whether it located Direwolf. If it is installed via Homebrew or apt, leave the **Direwolf path** blank to use the system PATH; otherwise type the full path to the executable.",
+        "Check **Enable managed local modem**.",
+        "Pick **Audio input (from radio)** and **Audio output (to radio)** from the device dropdowns. Click the refresh button (↻) if a device you just plugged in is missing.",
+        "Under **PTT (Push to Talk)**, choose a **PTT method**: **None**, **Rts**, **Dtr**, or **GpioPin**. For Rts/Dtr a **PTT serial port** picker appears; for GpioPin a **GPIO pin (BCM number)** field appears (Raspberry Pi only).",
+        "Leave **Enable RF transmit** unchecked unless you intend to transmit (see the warning below).",
+        "Under **Advanced**, the **KISS TCP port** defaults to `8001` — change it only if something else is using that port.",
+        "Click **Save**."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Enable RF transmit is the transmit switch here",
+        "text": "**Enable RF transmit** on this tab is what allows the managed modem to key your radio. Leave it unchecked to run the sound-card modem purely as a receiver. Even when it is checked, the app-wide transmit safety still applies and Exercise Mode will block transmit."
+      }
+    },
+    {
+      "p": "Once a managed modem is enabled and saved, it also shows up as a port on the **Ports** status board, so you can confirm it connected and is decoding."
+    },
+    {
+      "h1": "Confirming Data Is Flowing"
+    },
+    {
+      "p": "There are three places to check that your connections are actually working: the title-bar badges, the **Ports** tab, and the **Raw Packet Monitor**."
+    },
+    {
+      "h2": "The title-bar badges"
+    },
+    {
+      "p": "Look at the top of the main window. The **APRS-IS** badge reports the state of your internet connection, and the **TX** badge reports your transmit state."
+    },
+    {
+      "table": {
+        "headers": [
+          "Badge text",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "`APRS-IS Offline`",
+            "Not connected to an APRS-IS server"
+          ],
+          [
+            "`APRS-IS Connecting…`",
+            "Attempting to connect"
+          ],
+          [
+            "`APRS-IS Connected`",
+            "Live APRS-IS feed is up"
+          ],
+          [
+            "`APRS-IS Reconnecting…`",
+            "Lost the server, retrying (failover may kick in)"
+          ],
+          [
+            "`APRS-IS Error`",
+            "Connection faulted — check the server and passcode"
+          ],
+          [
+            "`TX Disabled`",
+            "Transmit is off (the normal, safe state)"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The APRS-IS badge is only about the internet feed",
+        "text": "A radio (RF) port does not change the APRS-IS badge. If you are running RF only, the badge can read `APRS-IS Offline` while your radio port is happily receiving. Use the Ports tab to check RF."
+      }
+    },
+    {
+      "h2": "The Ports tab"
+    },
+    {
+      "p": "Open **Settings** and pick the **Ports** tab. It lists every port with its **Type**, **State** (`Connected`, `Connecting`, `Disconnected`, `Reconnecting`, `Faulted`, or `Disabled`), **RX** and **TX** flags, a **Packets** count shown as received / transmitted, the **Last packet** time, and any **Last error**. The summary line at the top reads like `2/3 enabled, 1 connected, 148 RX, 0 TX`. If the received count is climbing, that port is working."
+    },
+    {
+      "h2": "The Raw Packet Monitor"
+    },
+    {
+      "p": "For the most direct proof, open **View → Raw Packets**. This window is described in the app as \"Every packet received on all active ports, in arrival order. If packets appear here, the port is receiving.\" Watch the list — if lines are scrolling in, data is flowing. **Save Log** writes the feed to a file you can reopen later in the Replay window."
+    },
+    {
+      "screenshot": "The Raw Packet Monitor window with recent packets scrolling in, one line per received packet, and the Save Log button."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing shows up on the map after adding a port.** Open the **Ports** tab and check the port's **State**. If it says `Disabled`, go back to **Connections**, check **Enabled** on that port, and Save.",
+        "**APRS-IS badge stays `APRS-IS Offline`.** Confirm the port is enabled, the **Server** name is spelled correctly (for example `rotate.aprs2.net`), and the **Port** number is right. The badge only tracks APRS-IS, not RF.",
+        "**APRS-IS badge shows `APRS-IS Error`.** The server rejected or dropped the connection. Recheck the server, port, and passcode; a wrong passcode for your callsign is a common cause. Add a failover server if the primary is flaky.",
+        "**Connected to APRS-IS but flooded or barely any packets.** The **Filter** is too wide or too narrow. Leave it blank to use your Station Setup radius, or set something like `m/100`. Remember the filter number is in kilometers.",
+        "**Serial TNC port will not connect.** Verify the **Serial port** name matches your adapter (`COM3` on Windows, `/dev/tty.usbserial…` on Mac/Linux) and that **Baud** matches the TNC. Close any other program using that port.",
+        "**Managed modem does not start.** Check the Direwolf-found line on the **Managed Modem** tab. If Direwolf is in a custom location, type its full path; otherwise confirm it is installed and on your PATH. Make sure the **KISS TCP port** (default `8001`) is not already taken.",
+        "**Receiving fine but I want to be sure I am not transmitting.** Confirm the title bar reads **TX Disabled**, leave **Transmit** unchecked on every port and **Enable RF transmit** unchecked on Managed Modem, or turn on Exercise Mode from the **Tools** menu to inhibit all transmit.",
+        "**No packets in the Raw Packet Monitor.** No active port is receiving. Enable at least one port on **Connections**, confirm its **State** is `Connected` on the **Ports** tab, and check the antenna or audio path for RF ports."
+      ]
+    }
+  ],
+  "order": 15
+}

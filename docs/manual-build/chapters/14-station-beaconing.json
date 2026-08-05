@@ -1,0 +1,243 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This is where you tell APRS Command who you are on the air. Your __callsign__, station symbol, position, and how often (and whether) your station announces itself with a __beacon__ all live here. Two tabs cover it: the **Station** tab for identity and beacon timing, and the **Smart Beaconing** tab for speed-aware timing when you are mobile."
+    },
+    {
+      "p": "Both tabs live in **Settings**. Open the **Settings** menu, then pick the **Station** tab or the **Smart Beaconing** tab along the top."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Nothing goes on the air until you say so",
+        "text": "APRS Command starts receive-first. The title bar shows a **TX Disabled** badge, and every transmit switch on the Station tab is off by default. Filling in your callsign and a beacon interval does not put you on the air. Your station stays silent until you check the transmit boxes described below."
+      }
+    },
+    {
+      "screenshot": "The Settings window with the Station tab selected, showing the Callsign / SSID / Latitude / Longitude row at top and the yellow Transmit safety box near the bottom."
+    },
+    {
+      "h2": "The Station tab, top to bottom"
+    },
+    {
+      "h1": "Your identity"
+    },
+    {
+      "p": "The first row holds the four things that identify you: **Callsign**, **SSID**, **Latitude**, and **Longitude**."
+    },
+    {
+      "bullets": [
+        "**Callsign** — your license callsign, for example `KE4CON`. This is the one required field.",
+        "**SSID** — a number from `0` to `15`. Use `0` for your primary home station; `1`–`9` for mobile, portable, or secondary stations. `KE4CON` with SSID `1` appears on the network as `KE4CON-1`.",
+        "**Latitude** / **Longitude** — decimal degrees, for example `39.0583` and `-84.5083`. West longitude is negative. These are used when your station is marked fixed (see below)."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Fixed vs. GPS position",
+        "text": "Check **Fixed station** (in the Transmit safety box) if your station does not move — it beacons the latitude and longitude you typed here. Leave it unchecked to use a live GPS source instead. Most home stations should have Fixed station checked."
+      }
+    },
+    {
+      "h1": "Distance units and receive radius"
+    },
+    {
+      "p": "The blue **Distance units (required)** box sets whether the whole app shows distances in **Miles (US / UK)** or **Kilometers (metric)**. Pick one — it applies everywhere, including the range-ring boxes further down. The app converts to kilometers behind the scenes wherever APRS-IS needs it."
+    },
+    {
+      "p": "Next to it, **APRS-IS receive filter radius** sets how far from your station you want to pull in APRS traffic from the internet. It is entered in your chosen unit and accepts `10` to `5000`. This is a receive setting only — it has nothing to do with transmitting."
+    },
+    {
+      "h1": "Station symbol"
+    },
+    {
+      "p": "The **Station symbol** grid is how other operators see you on the map — a house, a car, a tent, and so on. Click the tile that matches your station type; the underlying APRS symbol code is set for you and shown in the **Selected:** line beneath the grid. Hover any tile for its description."
+    },
+    {
+      "h1": "Comment, beacon path, and intervals"
+    },
+    {
+      "p": "The next row sets what your beacon carries and how often it repeats."
+    },
+    {
+      "bullets": [
+        "**Station comment** — free text that rides along with your beacon, for example `APRS Command`.",
+        "**Beacon path** — controls how digipeaters relay your packet. `WIDE1-1,WIDE2-1` is correct for most US stations. Use no spaces; any you type are removed on save.",
+        "**APRS-IS interval (min)** — how often your position is sent automatically to the APRS-IS internet network. `10`–`15` minutes is typical for a fixed home station.",
+        "**RF interval (min)** — how often your position is sent over the radio. This only does anything when **RF transmit** is enabled and a radio/TNC is connected. RF and APRS-IS beaconing run independently."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Automatic vs. on-demand",
+        "text": "These intervals drive automatic beaconing (once transmit is enabled). The **Beacon Now** button in the left sidebar — the antenna icon, also `Ctrl+B` — transmits your position immediately, ignoring the interval. Like every transmit path, it does nothing while transmit is disabled."
+      }
+    },
+    {
+      "h1": "Range rings"
+    },
+    {
+      "p": "**Range rings** draw distance circles around your station on the map so you can eyeball coverage. Enter three distances in your preferred unit: the inner ring (blue), the middle ring (green), and the outer ring (red). These are a map display aid only; they are not transmitted."
+    },
+    {
+      "h1": "PHG data (optional)"
+    },
+    {
+      "p": "__PHG__ (Power / Height / Gain / Directivity) is an optional code that describes your station's RF coverage inside your beacon. It has four dropdowns: **Power**, **Height HAAT**, **Antenna gain**, and **Directivity**. Set all four to include PHG in your beacon; leave any set to **None** to omit PHG entirely."
+    },
+    {
+      "table": {
+        "headers": [
+          "Field",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "Power",
+            "Transmit power in watts."
+          ],
+          [
+            "Height HAAT",
+            "Antenna height above average terrain, in feet — the biggest factor in range."
+          ],
+          [
+            "Antenna gain",
+            "Gain in dBd; a plain vertical is roughly 0–3 dBd."
+          ],
+          [
+            "Directivity",
+            "Omni for equal coverage, or a compass heading for a directional antenna."
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "The Transmit safety box"
+    },
+    {
+      "p": "This yellow box is the heart of the receive-first design. Everything in it is off until you deliberately turn it on."
+    },
+    {
+      "bullets": [
+        "**Master transmit enabled** — the master on/off switch for all transmission. Nothing — no beacon, no message — can be sent until this is checked. Leave it off to stay receive-only.",
+        "**APRS-IS transmit** — allows beacons and messages to the APRS-IS internet network. Needs a valid passcode in **Settings -> Connections**, and **Master transmit** must also be on.",
+        "**RF transmit** — allows beacons over the radio. Needs a connected TNC or sound-card interface, and **Master transmit** must also be on.",
+        "**Fixed station** — use the typed latitude/longitude instead of GPS. Check this for a station that does not move."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Two switches, on purpose",
+        "text": "To beacon on the air you must enable **Master transmit** first, then the specific destination (**APRS-IS transmit** and/or **RF transmit**). Turning on a destination alone does nothing while master transmit is off. This two-step design exists so you can never key up by accident."
+      }
+    },
+    {
+      "steps": [
+        "Enter your **Callsign** and **SSID**, then your **Latitude** and **Longitude**.",
+        "Pick your **Distance units** and a **Station symbol**.",
+        "Set your **Station comment**, **Beacon path**, and the **APRS-IS interval** / **RF interval** you want.",
+        "Optionally set **Range rings** and **PHG** values.",
+        "When — and only when — you are ready to go on the air, check **Master transmit enabled** plus **APRS-IS transmit** and/or **RF transmit**.",
+        "Click **Save**. The status line confirms the save; **Revert** discards unsaved edits."
+      ]
+    },
+    {
+      "h1": "The Smart Beaconing tab"
+    },
+    {
+      "p": "__Smart beaconing__ varies your beacon rate with how you are moving: beacon often when driving fast or turning, rarely when parked. It needs a live GPS source, so it is aimed at mobile operating, not a fixed home station. It is off by default — check **Enable smart beaconing** to use it."
+    },
+    {
+      "table": {
+        "headers": [
+          "Setting",
+          "Range",
+          "Default",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "Low speed (knots)",
+            "1–20",
+            "5",
+            "Below this speed, use the slow rate."
+          ],
+          [
+            "High speed (knots)",
+            "10–200",
+            "60",
+            "Above this speed, use the fast rate."
+          ],
+          [
+            "Slow rate (minutes)",
+            "5–60",
+            "30",
+            "Interval when stationary or slow."
+          ],
+          [
+            "Fast rate (minutes)",
+            "1–15",
+            "5",
+            "Interval when moving fast."
+          ],
+          [
+            "Minimum turn angle (degrees)",
+            "10–120",
+            "30",
+            "A turn larger than this triggers a beacon (corner pegging)."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Under **Apply smart beaconing to**, choose where it runs: **APRS-IS (internet)** (on by default) and **RF (radio — requires TNC or managed modem)** (off by default). Click **Save** to store your changes, or **Reset defaults** to restore the factory values."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Restart to apply",
+        "text": "After saving on the Smart Beaconing tab, the status line reads that a restart is required for the changes to take effect."
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Still gated by transmit",
+        "text": "Smart beaconing only changes the timing of beacons — it does not bypass the transmit switches. Even with it enabled, nothing leaves your station until **Master transmit** and the matching destination are turned on over on the **Station** tab."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing is being transmitted even though I set an interval.** Expected — transmit is off by default. On the **Station** tab, check **Master transmit enabled** plus **APRS-IS transmit** and/or **RF transmit**, then Save.",
+        "**The title bar still says TX Disabled.** That badge reflects the master switch. It clears only after **Master transmit enabled** is checked and saved.",
+        "**APRS-IS transmit is checked but beacons never appear online.** APRS-IS transmit needs a valid passcode in **Settings -> Connections**, and **Master transmit** must also be on.",
+        "**RF beaconing does nothing.** RF transmit requires a connected TNC or sound-card interface, **RF transmit** checked, and **Master transmit** on. The RF interval is independent of the APRS-IS interval.",
+        "**My beacon path is being rejected.** The path must have no spaces — `WIDE1-1,WIDE2-1`, not `WIDE 1-1`. Spaces are stripped on save.",
+        "**I appear on the network as the wrong callsign, like KE4CON-1.** That is your **SSID**. Set SSID to `0` for a primary home station.",
+        "**Smart beaconing does nothing when I drive.** It needs a live GPS source and must be enabled, and after saving it requires an app restart. Confirm GPS is active on the **GPS** tab.",
+        "**My position on the map is stuck at one spot.** **Fixed station** is checked, so it uses the latitude/longitude you typed. Uncheck it to follow GPS.",
+        "**Distances show in the wrong units.** Change **Distance units** on the **Station** tab; it governs range rings, the receive radius, and every distance in the app."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Setting your callsign, SSID, and position",
+    "Choosing a station symbol and comment",
+    "Beacon path, intervals, and the Beacon Now button",
+    "Range rings and optional PHG coverage data",
+    "The Transmit safety box — everything off by default",
+    "Speed-aware timing on the Smart Beaconing tab"
+  ],
+  "subtitle": "Set your callsign, symbol, position, and beacon timing — with every transmit switch off until you deliberately enable it.",
+  "title": "Station Identity & Beaconing",
+  "order": 14
+}

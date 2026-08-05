@@ -1,0 +1,228 @@
+{
+  "title": "The Telemetry Monitor",
+  "subtitle": "Watch the analog channels and digital bits that stations broadcast as APRS telemetry, live as they arrive.",
+  "in_this_chapter": [
+    "What APRS telemetry is and what the monitor shows",
+    "Opening the Telemetry Monitor from the menu",
+    "Reading a packet row: sequence, A1-A5, and digital bits",
+    "The detail panel on the right",
+    "Filtering by callsign",
+    "What PARM/UNIT/EQNS metadata means",
+    "Clearing the list",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Some APRS stations send more than a position. A weather box, a solar-charged repeater site, a battery monitor, or a balloon payload can broadcast __telemetry__ — a small packet of measured numbers, sent over and over as conditions change. In APRS these packets start with `T#` and carry up to five __analog channels__ (labeled A1 through A5) and eight __digital bits__ (each simply on or off)."
+    },
+    {
+      "p": "The __Telemetry Monitor__ is a floating window that logs those telemetry packets as they come in, newest at the top, so you can watch a station's readings roll in over time. If you have ever wanted to see the raw numbers a station is reporting — a voltage, a temperature count, a door-open bit — this is where they show up."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "RECEIVE-ONLY",
+        "text": "The Telemetry Monitor only listens. Opening it, filtering it, and reading it never puts anything on the air. APRS Command is receive-first and transmit-disabled by default — the title bar shows a **TX Disabled** badge — and nothing in this window changes that."
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "RAW NUMBERS, NOT FINISHED READINGS",
+        "text": "The monitor shows the raw values exactly as sent. A station separately publishes **PARM/UNIT/EQNS** metadata that names each channel and gives the math to turn a raw count into real units (volts, degrees, and so on). The monitor logs the numbers; turning `A1 = 087` into \"13.6 volts\" is done using that metadata, described later in this chapter."
+      }
+    },
+    {
+      "h1": "Opening the Telemetry Monitor"
+    },
+    {
+      "p": "The monitor opens from the menu bar across the top of the map page."
+    },
+    {
+      "steps": [
+        "In the menu bar, click **View**.",
+        "In the menu that drops down, click **Telemetry Monitor**."
+      ]
+    },
+    {
+      "p": "A separate window opens, titled **Telemetry Monitor** (its full title bar reads `APRS Command — Telemetry Monitor`). It is a floating panel, so you can move it, resize it, or set it beside the map page and watch both at once. Closing the window does not stop APRS Command from receiving telemetry — it only hides the view. Reopen it the same way and the log keeps filling."
+    },
+    {
+      "screenshot": "The Telemetry Monitor window open beside the map page, showing several T# packet rows and the detail panel on the right"
+    },
+    {
+      "h1": "Reading the Screen"
+    },
+    {
+      "p": "Across the top is a one-line summary, for example `12 telemetry packets · 3 stations`. It counts how many telemetry packets have been logged this session and how many distinct stations they came from. Watching those numbers climb is a quick sign that telemetry is flowing."
+    },
+    {
+      "p": "Below a filter row is the main list. Each telemetry packet is one row, most recent at the top. A faint note in the filter row reads `Live packets from all active RF and APRS-IS connections.` — meaning the monitor gathers telemetry from every source you have connected, radio and internet alike."
+    },
+    {
+      "h2": "What each column means"
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it tells you"
+        ],
+        "rows": [
+          [
+            "Time",
+            "The local clock time the packet arrived, as hours:minutes:seconds (for example `14:07:32`)."
+          ],
+          [
+            "Callsign",
+            "The sending station, including its SSID (for example `KE4CON-9`)."
+          ],
+          [
+            "Seq",
+            "The sequence number the station stamped on this reading (the number after `T#`). It normally counts up with each packet. A dash `—` means none could be read."
+          ],
+          [
+            "A1",
+            "Analog channel 1 — the first raw measured value."
+          ],
+          [
+            "A2",
+            "Analog channel 2."
+          ],
+          [
+            "A3",
+            "Analog channel 3."
+          ],
+          [
+            "A4",
+            "Analog channel 4."
+          ],
+          [
+            "A5",
+            "Analog channel 5 — the fifth and last analog value."
+          ],
+          [
+            "Digital",
+            "The eight digital bits as a run of 0s and 1s (for example `00000000`), each bit simply off or on."
+          ],
+          [
+            "Raw",
+            "The raw telemetry body exactly as sent, trimmed to fit; the full text is shown in the detail panel."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "A missing value shows as a dash `—`. Not every station fills all five analog channels or sends digital bits, so blanks are normal, not errors. Values are shown in a fixed-width (monospace) font so the columns line up as they scroll."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "WHAT THE NUMBERS MEAN",
+        "text": "A raw analog value is usually a whole number from `0` to `255`. On its own it is just a count. The station's **UNIT** and **EQNS** metadata is what says whether `087` means volts, degrees, or percent — see the metadata section below."
+      }
+    },
+    {
+      "h1": "The Detail Panel"
+    },
+    {
+      "p": "Click any row and the panel on the right fills in under the heading **Packet Detail**. It repeats that one packet's information in a taller, easier-to-read layout: the station **Callsign** in large type, the **Received** time, then a labeled list of **Sequence**, **A1** through **A5**, and **Digital**."
+    },
+    {
+      "p": "At the bottom of the panel, under **Raw packet body:**, is a read-only box holding the exact telemetry text as received (for example `001,087,000,000,000,000,00000000`). You do not need to decode this by hand — it is there so you can confirm precisely what the station sent, character for character."
+    },
+    {
+      "screenshot": "The detail panel showing Packet Detail for one selected station, with Sequence, A1-A5, Digital, and the raw packet body"
+    },
+    {
+      "h1": "Filtering by Callsign"
+    },
+    {
+      "p": "On a busy feed, several stations may be sending telemetry at once. The filter row near the top lets you narrow the list to a single station two ways — use whichever is quicker."
+    },
+    {
+      "bullets": [
+        "**Filter callsign** box — type a callsign (the watermark suggests `e.g. KE4CON-9`). As you type, the list narrows to packets whose callsign contains what you typed. It ignores upper- and lower-case, and a partial entry works, so `ke4con` matches `KE4CON-9`.",
+        "**Select station…** drop-down — instead of typing, pick from the list of callsigns that have actually sent telemetry this session. Choosing one filters the list to that station."
+      ]
+    },
+    {
+      "p": "To see every station again, empty the **Filter callsign** box. The filter only changes what you are looking at; packets from other stations keep arriving in the background and reappear when you clear it."
+    },
+    {
+      "h1": "Understanding PARM, UNIT, and EQNS Metadata"
+    },
+    {
+      "p": "A footnote at the bottom of the window states the rule plainly: `APRS telemetry packets carry up to 5 analog values (A1-A5) and 8 digital bits. Labels and scaling are defined by PARM/UNIT/EQNS metadata packets from the transmitting station.` In other words, the `T#` value packets carry the numbers, and four separate metadata packets explain them:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Metadata packet",
+          "What it defines"
+        ],
+        "rows": [
+          [
+            "PARM",
+            "The name of each channel (for example `Battery`, `Temp`, `Solar`), so A1-A5 and the bits stop being anonymous."
+          ],
+          [
+            "UNIT",
+            "The unit for each channel (for example `Volts`, `degF`, `%`), so a number becomes a real reading."
+          ],
+          [
+            "EQNS",
+            "The equation (scale and offset) used to convert a raw `0`-`255` count into the true value in those units."
+          ],
+          [
+            "BITS",
+            "How to read the eight digital bits, plus an optional project name for the telemetry set."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "A station usually sends these metadata packets only occasionally — every several minutes, or once when it starts up — while it sends `T#` value packets much more often. That is by design in APRS. APRS Command reads and validates all four kinds when they arrive; the Telemetry Monitor itself is focused on logging the live `T#` values as they stream in."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "WHY A1 MIGHT LOOK LIKE A BARE NUMBER",
+        "text": "If you are watching a station whose metadata has not come through yet this session, its channels will just show as raw numbers with no names or units. That is expected — wait for the next round of **PARM/UNIT/EQNS** packets, or check the station's documentation for what each channel represents."
+      }
+    },
+    {
+      "h1": "Clearing the List"
+    },
+    {
+      "p": "The **Clear** button in the top-right corner empties the on-screen list, resets the summary count to zero, and clears the station drop-down. Use it to start fresh — for example, right before you begin watching a particular station, so everything that appears afterward is new."
+    },
+    {
+      "p": "The monitor keeps the most recent packets (up to a few hundred) and drops the oldest as new ones arrive, so a long listening session will not grow without limit. Clearing simply empties it immediately instead of waiting for old rows to age out."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "CLEAR ONLY AFFECTS THE VIEW",
+        "text": "Clearing empties this window's list. It does not stop reception and does not affect the map, the station list, or the raw packet monitor — telemetry keeps coming in and new rows begin appearing again right away."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing appears in the monitor.** No telemetry is being received. Most APRS stations send only positions, so a quiet monitor is common — it does not mean anything is broken. Confirm packets are arriving at all in the raw packet monitor (**View -> Raw Packets**); if those are flowing but none are telemetry, no nearby station is simply sending `T#` packets right now.",
+        "**A station shows numbers but no names or units.** Its **PARM/UNIT/EQNS** metadata has not arrived this session yet. Those packets come only occasionally — leave the monitor open and wait, or look up what the station's channels mean.",
+        "**The list looks emptier than expected.** A callsign filter may still be set. Empty the **Filter callsign** box (and check the **Select station…** drop-down) to see every station again.",
+        "**Some analog cells show a dash.** That station did not include that channel in the packet. Blanks shown as `—` are normal — not every station fills all five analog channels or sends digital bits.",
+        "**The sequence number jumps or resets.** Stations restart their sequence count at times (for example after a power cycle), and packets can arrive out of order over the network. A gap or reset in the **Seq** column is normal and not a fault in APRS Command.",
+        "**Older rows disappeared on their own.** The monitor keeps a rolling window of recent packets and drops the oldest as new ones arrive. To keep a record, note the values you need before they age out; the monitor itself does not save telemetry to a file."
+      ]
+    }
+  ],
+  "order": 11
+}

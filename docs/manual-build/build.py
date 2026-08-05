@@ -18,22 +18,18 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 #  FRONT MATTER
 # ===========================================================================
 def title_page(doc):
-    for _ in range(4):
-        doc.add_paragraph()
-    t = doc.add_paragraph(); t.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = t.add_run("APRS Command"); r.font.name = 'Segoe UI Semibold'; r.font.size = Pt(44); r.font.color.rgb = S.ACCENT
-    st = doc.add_paragraph(); st.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    sr = st.add_run("User Manual"); sr.font.name = 'Segoe UI'; sr.font.size = Pt(22); sr.font.color.rgb = S.ACCENT2
-    rule = doc.add_paragraph(); rule.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    S.par_border(rule, 'bottom', sz=14, color=S.ACCENT_HEX, space=10)
-    tag = doc.add_paragraph(); tag.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    tr = tag.add_run("Situational awareness for amateur radio — receive-first, transmit-safe.")
-    tr.italic = True; tr.font.size = Pt(12); tr.font.color.rgb = S.MUTED
-    for _ in range(8):
-        doc.add_paragraph()
-    foot = doc.add_paragraph(); foot.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    fr = foot.add_run("An open-source APRS client  ·  Licensed under the GNU GPL v3\n73 de KE4CON")
-    fr.font.size = Pt(10); fr.font.color.rgb = S.MUTED
+    import datetime
+    S.cover(
+        doc,
+        kicker="APRS COMMAND  ·  AMATEUR RADIO APRS",
+        big_title="APRS COMMAND",
+        subtitle="Situational Awareness for Amateur Radio",
+        doc_kind="COMPLETE USER MANUAL",
+        version="v1.0",
+        tagline="APRS-IS & RF  ·  Receive-First  ·  Transmit-Safe  ·  EmComm-Ready",
+        author="James Rospopo  ·  KE4CON",
+        date_str=datetime.date.today().strftime("%B %d, %Y"),
+    )
 
 
 def philosophy(doc):
@@ -626,19 +622,60 @@ def ch_drawing(doc, n):
         "Clear deletes your drawings. ✕ Exit keeps them and just leaves draw mode. They sit next to each other on the "
         "toolbar, so click the one you mean. Clear cannot be undone — export first if you might want them later.")
 
-    S.h1(doc, "Importing Shapes from a File (GPX / KML)")
+    S.h1(doc, "Sharing Drawings with Other Apps: GPX & KML Files")
+    S.body(doc, "APRS Command can read and write two standard map-data file formats, so the shapes on your map can come "
+        "from — or go to — other mapping programs. Both are plain-text files that store geographic points, lines, and "
+        "areas. You do not need to understand their insides; you just need to know which is which.")
+    S.table(doc,
+        ["Format", "Where it comes from", "What it is best at"],
+        [
+            ["GPX (.gpx)", "The GPS world — Garmin units, phone GPS apps, fitness watches, geocaching and hiking apps. "
+             "GPX is the common language of GPS receivers.",
+             "Waypoints (single marked points), tracks (a breadcrumb trail of where you actually went), and routes "
+             "(a planned sequence of points)."],
+            ["KML (.kml)", "The mapping/visualization world — it is the native format of Google Earth and Google Maps, "
+             "and is common in ICS and public-safety mapping.",
+             "Styled shapes and filled areas (a coverage zone, a search grid, a flood boundary) with colors, labels, "
+             "and pop-up descriptions — built for displaying an annotated map."],
+        ],
+        [Inches(1.25), Inches(2.75), Inches(2.5)])
+    S.body(doc, ["A quick rule of thumb: ", ("GPX = tracks and points from a GPS", 'b'), "; ",
+        ("KML = annotated shapes for a map viewer", 'b'),
+        ". Most tools read and write both, so for simple points and lines they are interchangeable."])
+    S.callout(doc, "tip", "Real uses on the air.",
+        "A neighboring EOC sends you a KML of the assigned search area — import it and the boundary appears right on your "
+        "APRS map. Draw a coverage polygon yourself and export it as KML to open in Google Earth or hand to another team. "
+        "Load a GPX full of waypoints (shelter sites, repeater locations, a planned drive route) and they show up as "
+        "labeled points you can work against.")
+
+    S.h2(doc, "Importing Shapes from a File")
     S.steps(doc, [
         ["Choose ", ("Map → Draw → Import GPX / KML…", 'b'), "."],
-        ["Pick a ", (".gpx", 'b'), " or ", (".kml", 'b'), " file and open it."],
-        ["Lines, tracks, and areas appear on the map; waypoints show as labeled dots. Imported shapes are added to "
-         "whatever you have already drawn."],
+        ["Pick a ", (".gpx", 'b'), " or ", (".kml", 'b'), " file and open it. (The format is detected from the file "
+         "itself, so a mis-named file still opens correctly.)"],
+        ["The shapes appear on the map, added to whatever you have already drawn:"],
     ])
+    S.bullets(doc, [
+        [("From GPX:", 'b'), " waypoints become labeled points; tracks become blue lines; routes become gold lines."],
+        [("From KML:", 'b'), " points become labeled points; lines become blue lines; filled areas (polygons) come in "
+         "as their outer outline."],
+    ])
+    S.callout(doc, "note", "About imported colors and KMZ files.",
+        "Imported shapes use APRS Command's own default colors (blue for lines/tracks, gold for routes/areas); any colors "
+        "or fill styling saved in the original file are not carried in. And a .kmz file (a zipped .kml, the form Google "
+        "Earth often saves) is not read directly — rename it to .zip, extract it, and open the .kml file inside.")
 
-    S.h1(doc, "Exporting Your Drawings")
+    S.h2(doc, "Exporting Your Drawings")
     S.steps(doc, [
         ["Choose ", ("Map → Draw → Export Drawings…", 'b'), "."],
         ["Pick ", ("GPX", 'b'), " or ", ("KML", 'b'), " and a file name, then Save."],
     ])
+    S.body(doc, ["Your lines and areas are written out in the chosen format — in ", ("GPX", 'b'),
+        ", lines are saved as tracks and areas as routes; in ", ("KML", 'b'),
+        ", they are saved as line and polygon placemarks."])
+    S.callout(doc, "important", "What does not export.",
+        "Circles and text labels are not included in exported files — neither format has a clean equivalent, so they are "
+        "skipped. If you need a circle to travel to another program, trace it with the polygon tool before exporting.")
     S.callout(doc, "important", "Drawings are not saved automatically.",
         "Your drawings live only for the current session and are cleared when you close APRS Command. To keep a set of "
         "drawings, Export them to a GPX or KML file and Import that file next time.")

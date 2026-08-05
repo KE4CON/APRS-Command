@@ -1,0 +1,150 @@
+{
+  "title": "Weather on the Map",
+  "subtitle": "Show live weather stations, National Weather Service alerts, and the NEXRAD radar overlay on your map — all receive-only.",
+  "in_this_chapter": [
+    "What the three weather layers are",
+    "Turning on weather stations, alerts, and radar",
+    "Reading a weather station marker",
+    "Reading and reviewing NWS alerts",
+    "Using the radar overlay and time scrubber",
+    "Weather beaconing is separate and off by default",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS Command can paint three different kinds of weather right on top of your map, so you can see conditions and hazards at a glance instead of switching to another program or a browser. All three are __receive-only__ display layers — they show information the app pulls in, and none of them ever put your station on the air."
+    },
+    {
+      "bullets": [
+        "**Weather stations** — the current conditions reported by nearby APRS weather stations (temperature, wind, and so on).",
+        "**Weather alerts** — official National Weather Service (NWS) watches, warnings, and advisories for your area.",
+        "**Radar overlay** — a live NEXRAD radar image draped over the map, with a scrubber so you can step back through recent frames."
+      ],
+      "p": "You turn each one on separately, so you can show just what you need. This chapter covers reading them on the map. Setting up your own weather-station hardware is a separate topic (see the weather source settings chapter)."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receive-first, transmit-off",
+        "text": "Everything in this chapter is display only. The title bar shows a **TX Disabled** badge, and nothing here changes that. Sending your own weather to the network (weather beaconing) is a separate, deliberately gated feature — covered at the end of this chapter — and stays off until you enable it."
+      }
+    },
+    {
+      "h2": "Where to turn each layer on"
+    },
+    {
+      "p": "All three weather layers live under the **Map -> Weather** submenu. The radar overlay also has a one-click button on the map's left-hand __icon sidebar__."
+    },
+    {
+      "table": {
+        "headers": [
+          "Layer",
+          "How to open it",
+          "What you get"
+        ],
+        "rows": [
+          [
+            "Weather stations",
+            "**Map -> Weather -> Weather Stations**",
+            "A Weather window listing conditions from nearby APRS weather stations; stations also appear as markers on the map"
+          ],
+          [
+            "Weather alerts",
+            "**Map -> Weather -> Weather Alerts**",
+            "A Weather Alerts window with the current NWS alerts and their details"
+          ],
+          [
+            "Radar overlay",
+            "**Map -> Weather -> Radar Overlay** toggle, or the 🌧 button in the map icon sidebar",
+            "A NEXRAD radar image over the map, plus a frame scrubber"
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "Weather stations on the map"
+    },
+    {
+      "p": "When weather stations are active, each reporting station shows on the map as a small marker labeled `WX`. Hover a marker to see a quick tooltip with the station name, temperature in degrees Fahrenheit, and wind (direction in degrees and speed in mph) — for example `KE4CON-13 72 F 180 deg/8 mph`. A station whose data has gone stale is flagged so you know it is no longer current."
+    },
+    {
+      "p": "Open **Map -> Weather -> Weather Stations** for the full list view. The window header reads \"APRS weather station data received from the network. Shows current conditions reported by nearby weather stations,\" which is exactly what it is — conditions other stations have sent, not a forecast."
+    },
+    {
+      "screenshot": "The map with several WX weather-station markers, one hovered to reveal its tooltip showing name, temperature, and wind."
+    },
+    {
+      "h2": "Weather alerts (NWS)"
+    },
+    {
+      "p": "Open **Map -> Weather -> Weather Alerts** to see official National Weather Service alerts. The window has a list on the left and a detail pane on the right. Click any alert to read its full information."
+    },
+    {
+      "bullets": [
+        "The list shows each alert's **Event** (for example, a warning or advisory), its area, and when it expires, color-coded by severity.",
+        "The detail pane shows **Severity**, **Urgency**, **Area**, **Expires**, and the full **Description**, plus the issuing office at the bottom.",
+        "Alerts come from `api.weather.gov` and refresh automatically every 5 minutes."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The alert banner",
+        "text": "When alerts are active for your area, a colored banner appears across the top of the map summarizing them. Click the banner to jump straight into the **Weather Alerts** window — you do not have to go through the menu."
+      }
+    },
+    {
+      "screenshot": "The Weather Alerts window: a color-coded list of NWS alerts on the left and the selected alert's full detail (severity, urgency, area, expiry, description) on the right."
+    },
+    {
+      "h2": "The radar overlay"
+    },
+    {
+      "p": "The radar overlay drapes a live NOAA NEXRAD composite radar image over your map. It is a free public service (no account or key needed) and covers the continental United States."
+    },
+    {
+      "steps": [
+        "Click the 🌧 button in the map's left icon sidebar, or choose the **Radar Overlay** toggle under **Map -> Weather**. The menu item shows the current state (`Radar Overlay: ON 🌧` or `Radar Overlay: OFF 🌧`), and the sidebar button highlights when the overlay is on.",
+        "Wait a moment for the first radar frames to load.",
+        "Once frames are loaded, a small **scrubber** appears at the bottom center of the map.",
+        "Click the same 🌧 button again to hide the overlay."
+      ]
+    },
+    {
+      "p": "The scrubber lets you review recent radar instead of only the latest image. From left to right it has: ◀ to step to the **Previous frame**, a play/pause button (▶ / ⏸) to run or stop the animation, and ▶ to step to the **Next frame**. Next to the buttons it shows the selected frame's time and its position in the loop (for example `3 / 6`). The scrubber only appears while the radar overlay is on and frames have finished loading."
+    },
+    {
+      "screenshot": "The map with the NEXRAD radar overlay showing precipitation, and the radar scrubber (previous / play-pause / next, frame time, and frame counter) docked at the bottom center."
+    },
+    {
+      "h1": "Weather beaconing is separate — and off"
+    },
+    {
+      "p": "Showing weather on your map never transmits anything. __Weather beaconing__ — sending your local weather out as APRS packets — is a completely separate feature with its own safety gates, reached through the weather station setup screens rather than the map menu."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Three gates, all off by default",
+        "text": "In the app's own words: \"Weather beaconing, APRS-IS transmit, and RF transmit are separate safety gates and remain disabled by default.\" The **Transmit APRS-IS** and **Transmit RF** buttons on the Weather Beacon screen only send when you have deliberately turned those gates on. Until then, and while the **TX Disabled** badge is showing, nothing goes out over the air."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**No weather-station markers on the map.** You may not have received any APRS weather packets yet, or you are running receive-only with little local traffic — open **Map -> Weather -> Weather Stations** to confirm whether any have come in.",
+        "**A station shows old numbers.** Its data has gone stale; the app flags stale stations. Wait for a fresh report from that station.",
+        "**Radar overlay turned on but nothing appears.** Give the frames a moment to download, and note that the NEXRAD composite only covers the continental U.S. — outside that coverage there is nothing to draw.",
+        "**The radar scrubber never shows up.** It only appears once the overlay is on *and* frames have loaded. If it stays hidden, the frames have not arrived yet; check your internet connection.",
+        "**No weather alerts listed.** That usually just means there are no active NWS alerts for your area. The list refreshes from `api.weather.gov` every 5 minutes.",
+        "**Worried the app is transmitting weather.** It is not. The map layers are receive-only, and the title bar **TX Disabled** badge confirms transmit is off until you enable it deliberately."
+      ]
+    }
+  ],
+  "order": 12
+}

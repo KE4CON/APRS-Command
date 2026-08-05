@@ -1,0 +1,204 @@
+{
+  "title": "Audio & the Sound-Card Modem (Direwolf)",
+  "subtitle": "Turn a plain USB sound-card interface into a working APRS TNC by letting APRS Command run Direwolf for you — receive first, transmit strictly off until you choose.",
+  "in_this_chapter": [
+    "What the managed sound-card modem is for",
+    "Opening the Managed Modem tab",
+    "Checking that Direwolf is installed",
+    "Picking your radio's input and output audio devices",
+    "Where audio levels are actually set",
+    "PTT methods, and keeping transmit off",
+    "Saving and restarting to start the modem",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Most operators reach APRS through the internet feed or a hardware TNC. But if all you have is a radio and a cheap __USB audio interface__ — a DigiRig, a SignaLink, or any similar sound-card cable — you already own everything you need to get on the air on RF. The missing piece is a __software TNC__: a program that listens to the audio coming out of your radio, decodes the packet tones into data, and (only when you tell it to) turns outgoing packets back into tones for the radio to send."
+    },
+    {
+      "p": "APRS Command uses __Direwolf__ for that job. Direwolf is a well-known, free software TNC. The **Managed Modem** tab lets APRS Command __launch and run Direwolf for you__ against your chosen audio devices, so you never have to hand-edit a Direwolf config file. The tab describes itself plainly at the top: `APRS Command will launch and manage a local Direwolf process using your audio interface. Use this for DigiRig, SignaLink, or any USB audio interface connected to your radio.`"
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "TWO DIFFERENT “AUDIO” SCREENS",
+        "text": "This chapter is about the **Managed Modem** tab, which handles the RF sound-card path. It is not the same as the **Audio** tab, which controls alert beeps and spoken voice readout. If you are looking for notification sounds, that is the separate **Audio** tab."
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "RECEIVE-FIRST, TRANSMIT-OFF",
+        "text": "Setting up the sound-card modem is a listening setup by default. The **Enable RF transmit** box starts unchecked, and the title bar keeps showing the **TX Disabled** badge. APRS Command decodes incoming audio without ever keying your radio. Nothing here transmits until you deliberately turn transmit on — covered plainly further down."
+      }
+    },
+    {
+      "h1": "Opening the Managed Modem Tab"
+    },
+    {
+      "steps": [
+        "In the menu bar, click **Settings**.",
+        "In the Settings window, click the **Managed Modem** tab."
+      ]
+    },
+    {
+      "p": "The tab opens on a page headed **Managed Local Modem**. From top to bottom it is organized into a few cards: a Direwolf status/path card, an enable-and-audio card, a **PTT (Push to Talk)** card, an **Advanced** card, and the **Save** / **Revert** buttons at the bottom."
+    },
+    {
+      "screenshot": "The Settings window with the Managed Modem tab selected, showing the Direwolf status line, the audio input/output device pickers, and the PTT section"
+    },
+    {
+      "h1": "Step 1 — Make Sure Direwolf Is Installed"
+    },
+    {
+      "p": "Because APRS Command runs Direwolf rather than containing it, Direwolf has to be present on your computer. The top card tells you whether it was found. If it is, you will see a green line reading `✓ Direwolf found:` followed by the full path. If it is not, you will see `✗ Direwolf not found. Install it or set the path below.`"
+    },
+    {
+      "p": "Below that message is a field labeled **Direwolf path (leave blank to use system PATH)**. If you installed Direwolf the usual way — through Homebrew on macOS or `apt` on Linux, or with the Windows installer — leave this blank and APRS Command will find it automatically. Only fill it in if Direwolf lives somewhere unusual; the field shows an example: `e.g. /usr/local/bin/direwolf or C:\\Direwolf\\direwolf.exe`."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "CHECK BEFORE YOU GO FURTHER",
+        "text": "Watch the status line change as you type or clear the path. A green check mark means the rest of this tab has something to run. A red X means fix the install or path first — the audio and PTT settings cannot do anything without Direwolf."
+      }
+    },
+    {
+      "h1": "Step 2 — Pick Your Radio's Audio Devices"
+    },
+    {
+      "p": "In the card with the **Enable managed local modem** checkbox are two drop-down pickers that tell Direwolf which sound-card to use:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Picker",
+          "What to choose"
+        ],
+        "rows": [
+          [
+            "**Audio input (from radio)**",
+            "The device that carries audio FROM your radio's speaker or headphone jack INTO the computer. This is what Direwolf listens to and decodes."
+          ],
+          [
+            "**Audio output (to radio)**",
+            "The device that carries audio FROM the computer TO your radio's microphone input. This is only used when you later enable transmit."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Both pickers list the sound devices APRS Command detected. They are editable, so if your interface is not in the list by the exact name you expect, you can type the device name directly. To the right of the two pickers is a refresh button marked **↻** (its tooltip reads `Refresh device list`). Plug in your USB interface first, then click **↻** so it appears in the lists."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "NAME, DON'T GUESS",
+        "text": "A DigiRig or SignaLink usually shows up as a distinct “USB Audio” device, separate from your computer's built-in speakers and microphone. Pick that one for BOTH input and output — not your laptop's internal mic or speakers — or Direwolf will be listening to the wrong thing."
+      }
+    },
+    {
+      "h1": "Where Audio Levels Are Set"
+    },
+    {
+      "p": "A common question: where are the volume or gain sliders? This tab does not have per-device level sliders. Direwolf decodes best when the incoming audio is at a healthy level, but that level is set in your __operating system's sound settings__ (the Windows Sound control panel, macOS Sound settings, or the Linux mixer) for the interface you selected — not inside APRS Command. Set your radio's volume and the input device's recording level there, then come back to this tab."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "AUDIO IS OPTIONAL TO THE APP",
+        "text": "If audio is unavailable, APRS Command keeps running normally and simply logs the problem. It will not crash or lock up because a sound device is missing — you just will not decode RF packets until the device path is sorted out."
+      }
+    },
+    {
+      "h1": "PTT and Keeping Transmit Off"
+    },
+    {
+      "p": "The **PTT (Push to Talk)** card decides how your radio would be keyed to transmit — and, separately, whether transmit is allowed at all. __PTT__ is simply the signal that tells the radio “start transmitting now.” The **PTT method** drop-down offers four choices:"
+    },
+    {
+      "table": {
+        "headers": [
+          "PTT method",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "**None**",
+            "No keying line from the computer. Your radio's own VOX (voice-operated switch) or built-in interface handles keying. This is the simplest choice."
+          ],
+          [
+            "**Rts**",
+            "Key the radio using the RTS pin on a serial port."
+          ],
+          [
+            "**Dtr**",
+            "Key the radio using the DTR pin on a serial port."
+          ],
+          [
+            "**GpioPin**",
+            "Key the radio from a Raspberry Pi GPIO pin — for a headless field server with no serial adapter."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "When you pick **Rts** or **Dtr**, a **PTT serial port** picker appears so you can choose the port whose control pin does the keying (for a DigiRig this is usually its CAT/control port). When you pick **GpioPin**, a **GPIO pin (BCM number)** box appears instead; it defaults to `17` (BCM 17, physical pin 11) and its note reminds you it is `Raspberry Pi only — ignored on other platforms`."
+    },
+    {
+      "p": "None of those keying choices transmit on their own. Transmit is gated by a single checkbox at the bottom of the card: **Enable RF transmit**. It starts __unchecked__. While it is off, the managed modem decodes received audio only and never keys your radio."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "TRANSMIT IS A DELIBERATE, TWO-LAYER CHOICE",
+        "text": "Turning on **Enable RF transmit** puts your station on the air over RF, which means you must be a licensed operator using your own callsign on a band and mode you are authorized to use. Even then, a second safety layer applies: the app's transmit safety authority still governs keying, and exercise mode will block transmit even when this box is checked. The title bar's **TX Disabled** badge is your at-a-glance confirmation of the current state. Leave this box off until you have verified your levels and genuinely intend to transmit."
+      }
+    },
+    {
+      "h1": "Advanced — the KISS Port"
+    },
+    {
+      "p": "The **Advanced** card has one setting: **KISS TCP port**, defaulting to `8001`. This is the local network port Direwolf uses to hand decoded packets to APRS Command. Leave it at `8001` unless another program on your computer already uses that port; change it only to resolve a conflict."
+    },
+    {
+      "h1": "Saving and Starting the Modem"
+    },
+    {
+      "steps": [
+        "Set your Direwolf path (or leave it blank), audio devices, PTT method, and — only if you truly intend to transmit — the transmit checkbox.",
+        "Click **Save**.",
+        "Read the status line to the right of the buttons.",
+        "Restart APRS Command so the managed modem actually starts."
+      ]
+    },
+    {
+      "p": "The status line confirms what happened. With the modem enabled you will see `Saved. Restart APRS Command to start the managed modem.` With it disabled you will see `Saved. Managed modem disabled.` Clicking **Revert** reloads your last saved settings and shows `Loaded.`, throwing away any unsaved edits. Clicking **↻** to rescan devices shows `Devices refreshed.`"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "ALREADY RUN DIREWOLF YOURSELF?",
+        "text": "If you prefer to start and configure Direwolf on your own and just want APRS Command to connect to it over the network, there is a separate Direwolf TCP KISS profile for that (a “Local network TNC profile”). The Managed Modem tab in this chapter is for the opposite case — letting APRS Command run Direwolf for you."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Status shows `✗ Direwolf not found`.** Direwolf is not installed or not on your system PATH. Install it (Homebrew, `apt`, or the Windows installer), or type the full path to the `direwolf` executable into the **Direwolf path** field and watch the line turn to a green check mark.",
+        "**Saved everything but no packets ever decode.** The managed modem only starts after a restart. Close and reopen APRS Command after saving with the modem enabled.",
+        "**Your USB interface is not in the device drop-downs.** Plug it in first, then click the **↻** refresh button beside the pickers. If it still does not appear by name, type the device name directly into the editable picker.",
+        "**Packets are garbled or nothing decodes even though the right device is selected.** Levels are wrong. Set your radio's volume and the input device's recording level in your operating system's sound settings — there are no level sliders on this tab.",
+        "**You want to receive but are worried about accidentally transmitting.** Leave **Enable RF transmit** unchecked and confirm the title bar still reads **TX Disabled**. In that state the modem listens only and never keys the radio.",
+        "**Transmit still will not key even with the box checked.** The transmit safety authority overrides this setting; exercise mode in particular blocks all keying. Confirm you are not in exercise mode, then verify your PTT method and, for RTS/DTR, that the correct serial port is selected.",
+        "**Another app broke after enabling the modem.** A port conflict on `8001` is the likely cause. Change **KISS TCP port** in the Advanced card to a free port, save, and restart."
+      ]
+    }
+  ],
+  "order": 16
+}
