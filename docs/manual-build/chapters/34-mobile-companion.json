@@ -1,0 +1,159 @@
+{
+  "title": "The Mobile Companion Web View",
+  "subtitle": "Put a live, read-only copy of your station's map and traffic on your phone or tablet — no app to install, over your own Wi-Fi.",
+  "in_this_chapter": [
+    "What the Mobile Companion is and when to use it",
+    "Turning it on from the Tools menu",
+    "Finding and copying the URL",
+    "Opening it on your phone's browser",
+    "The five tabs: Map, Stations, Net, Messages, Stats",
+    "The access token and why the link is long",
+    "Limits: read-only, same Wi-Fi, app must stay open",
+    "Troubleshooting connection problems"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The __Mobile Companion Web View__ is a tiny web server built into APRS Command. When you turn it on, your desktop starts serving a phone-friendly web page over your local network. Open the address it gives you in the browser on your phone or tablet, and you get a live, mirror view of what your desktop station is seeing — a map of stations, a station list, the net roster, recent messages, and packet statistics."
+    },
+    {
+      "p": "The point is convenience. Your desktop is the radio: it is doing the actual receiving over RF (and APRS-IS, if connected). The companion just re-serves that same feed to a second screen you can carry around the room — glance at the map from the couch, read the net roster from the kitchen, check who just came up while you stretch your legs. Because the desktop is the radio, everything the desktop hears shows up on the phone, RF included."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Read-only, always",
+        "text": "The companion page shows information. It has no transmit controls, no way to send a message, spot, or beacon, and nothing you tap on the phone touches the air. APRS Command stays receive-first and TX-disabled by default — the badge in the desktop title bar is the authority on transmit, and the phone view cannot change it."
+      }
+    },
+    {
+      "h1": "Turning It On"
+    },
+    {
+      "p": "The server is off until you ask for it. It lives in the **Tools** menu."
+    },
+    {
+      "steps": [
+        "On the desktop, open the **Tools** menu in the menu bar.",
+        "Click **Mobile Companion Web View**.",
+        "A small **Mobile Companion** window appears showing the address to open on your phone.",
+        "Leave APRS Command running. The server only exists while the app is open."
+      ]
+    },
+    {
+      "p": "That single menu click both starts the server and shows you the address. If the server is already running, clicking the item again just re-opens the address window — it does not start a second copy."
+    },
+    {
+      "screenshot": "The Tools menu open with the 'Mobile Companion Web View' item highlighted, and the resulting 'Mobile Companion' address window floating over the map page."
+    },
+    {
+      "h1": "Finding and Copying the Address"
+    },
+    {
+      "p": "The address window reads, in effect: \"The companion web server is running. Open this URL on any device on the same network as this computer.\" The large blue text in the middle is the address itself — something like `http://192.168.1.42:50731/a1b2c3.../`. The exact numbers differ every time; APRS Command picks an open network port automatically and the leading numbers are your computer's address on the local network."
+    },
+    {
+      "steps": [
+        "Read the address off the window, or click **Copy URL** to put it on the clipboard.",
+        "The button briefly changes to **Copied!** to confirm.",
+        "Send it to your phone however is easiest — a self-message, a note, or just type it in.",
+        "If you close the address window, reopen it any time from **Tools > Mobile Companion Web View** to see the address again."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The long random part is a key",
+        "text": "That block of letters and numbers after the port is a per-session access token. It is what keeps a curious neighbor on the same Wi-Fi from reading your traffic just by guessing the address. It is baked into the link, so you never type it separately — but it means the whole URL must be copied intact, and a fresh one is generated each time you start the server."
+      }
+    },
+    {
+      "h1": "Opening It on Your Phone"
+    },
+    {
+      "steps": [
+        "Confirm your phone or tablet is on the same Wi-Fi network as the desktop computer.",
+        "Open any browser on the phone — Safari, Chrome, whatever you use.",
+        "Type or paste the full address, including the long token part and the trailing slash.",
+        "The APRS Command companion page loads. A green dot and your callsign near the top mean the desktop is connected; a red dot means the desktop is offline, but you will still see whatever it has heard."
+      ]
+    },
+    {
+      "p": "The page refreshes itself about every five seconds, so you can leave it open and watch traffic roll in without reloading."
+    },
+    {
+      "h1": "What You See — The Five Tabs"
+    },
+    {
+      "p": "Across the top of the phone page are five tabs. Tap to switch."
+    },
+    {
+      "table": {
+        "headers": [
+          "Tab",
+          "Shows"
+        ],
+        "rows": [
+          [
+            "Map",
+            "A live map with a labeled marker for every station that has a position. Tap a marker for its callsign, comment, and how long ago it was heard."
+          ],
+          [
+            "Stations",
+            "A scrolling list of heard stations, newest first, with comment, age, and speed when moving. Tap a row to jump to that station on the map."
+          ],
+          [
+            "Net",
+            "The current net roster from Net Control — who is checked in, their status, and resource status."
+          ],
+          [
+            "Messages",
+            "Recent messages from this session's inbox, newest first."
+          ],
+          [
+            "Stats",
+            "Packet totals: total packets, unique stations, packets per hour, position count, and a Top Stations bar chart."
+          ]
+        ]
+      }
+    },
+    {
+      "screenshot": "The companion page on a phone showing the Map tab with several labeled station markers, and the five-tab bar (Map, Stations, Net, Messages, Stats) across the top."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "It mirrors the desktop, live",
+        "text": "Everything on these tabs comes straight from the desktop's current data — the same stations, net, messages, and statistics you see on the big screen. Close a station on the desktop or clear the session, and the phone view follows within a few seconds."
+      }
+    },
+    {
+      "h1": "The Limits — Read These"
+    },
+    {
+      "bullets": [
+        "**Read-only.** No transmit, no messaging, no spotting from the phone. Ever.",
+        "**Same network only.** The phone and the desktop must share the same Wi-Fi (or LAN). This is not reachable from the internet, and that is on purpose.",
+        "**Desktop must stay open.** The server lives inside APRS Command. Close the app and the page stops loading.",
+        "**Fresh link each session.** Starting the server generates a new address and a new access token. A link you saved yesterday will not work today.",
+        "**The link is a key.** Anyone you give the full URL to, while you are on the same network, can view your feed. Share it deliberately."
+      ]
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Phone browser says it can't connect or the page won't load.** Confirm the phone is on the exact same Wi-Fi network as the desktop — not a guest network, not cellular data. Re-check the address for typos, and make sure you included the long token part and the trailing slash.",
+        "**It worked earlier, now it's dead.** The address changes every time the server starts, and starting happens fresh each app session. Reopen **Tools > Mobile Companion Web View** on the desktop to get the current address.",
+        "**Page loads but shows a red dot and 'Offline.'** That is the desktop's own connection status, not a phone problem. The desktop is not connected to APRS-IS or its radio source right now; you will still see previously heard stations. Reconnect on the desktop and the dot turns green.",
+        "**No stations, net, or messages appear.** The companion only shows what the desktop has actually heard this session. If the desktop list is empty, the phone will be too — this is expected on a quiet band or right after startup.",
+        "**Map is blank or tiles are gray.** The map draws its background tiles from the internet. If the phone has Wi-Fi to your desktop but no path to the internet, station markers still work but the map backdrop may not fill in.",
+        "**Closed the address window and lost the link.** Nothing broke — the server is still running. Reopen **Tools > Mobile Companion Web View** to display the same address and the **Copy URL** button again."
+      ]
+    }
+  ],
+  "order": 34
+}

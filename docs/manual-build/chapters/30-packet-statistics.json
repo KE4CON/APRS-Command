@@ -1,0 +1,215 @@
+{
+  "title": "The Packet Statistics Dashboard",
+  "subtitle": "A live scoreboard of everything APRS Command has heard this session — how much traffic, what kinds, who is loudest, and when the band was busiest.",
+  "in_this_chapter": [
+    "What the dashboard counts and where the numbers come from",
+    "Opening it from the View menu",
+    "Reading the four headline tiles",
+    "The Packet Types and Most Active Stations panels",
+    "The Hourly Activity chart",
+    "What the Aloha Circle tells you",
+    "Resetting the counts without disconnecting",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "As APRS Command listens, it quietly keeps score. The __Packet Statistics Dashboard__ is where that score is shown: a single window of charts and counts that answer the questions every operator eventually asks — how busy is the channel, what kinds of traffic am I hearing, which stations are the loudest, and when was the peak? It is a health-and-activity readout for your session, not a log of individual packets."
+    },
+    {
+      "p": "Everything on the dashboard is accumulated from the moment APRS Command connected this session. There is no history file behind it — close and reopen it and the same running totals are still there, but reset the counts (or restart the app) and it starts fresh from zero."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "RECEIVE-ONLY",
+        "text": "The dashboard only counts what comes in. Opening it, reading it, and even pressing **Reset Statistics** never puts anything on the air. APRS Command is receive-first and transmit-disabled by default — the title bar shows a **TX Disabled** badge — and nothing in this window changes that."
+      }
+    },
+    {
+      "h1": "Opening the Dashboard"
+    },
+    {
+      "p": "The dashboard opens from the menu bar across the top of the map page."
+    },
+    {
+      "steps": [
+        "In the menu bar, click **View**.",
+        "In the menu that drops down, click **Packet Statistics Dashboard**."
+      ]
+    },
+    {
+      "p": "A separate floating window opens, titled **Packet Statistics Dashboard**. You can move it, resize it, or set it beside the map page and watch both at once. It refreshes itself roughly every couple of seconds, so the numbers climb on their own while you watch — there is no refresh button to press. Closing the window does not stop APRS Command from counting; reopen it the same way and the totals have kept building."
+    },
+    {
+      "screenshot": "The Packet Statistics Dashboard window open beside the map page, showing the four headline tiles across the top, the Packet Types and Most Active Stations panels, the Hourly Activity chart, and the Aloha Circle panel at the bottom"
+    },
+    {
+      "p": "At the very top of the window, a small line reads **Session started:** with the local date and time, followed by **Duration:** and a running clock in hours:minutes:seconds. This tells you how long the counts below have had to build up — a rate is only meaningful next to the time it was measured over."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "HOVER FOR AN EXPLANATION",
+        "text": "Almost every tile, bar, and label on this dashboard has a built-in tooltip. Rest your mouse pointer over any item and a plain-language explanation appears. If a number ever puzzles you, hover first — the answer is usually right there."
+      }
+    },
+    {
+      "h1": "The Four Headline Tiles"
+    },
+    {
+      "p": "Across the top of the window are four large numbers, each with a caption. They are the quick pulse of your session."
+    },
+    {
+      "table": {
+        "headers": [
+          "Tile",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "Total Packets",
+            "Every APRS transmission received this session, counted once each, no matter the type or sender. A position beacon, a message, a weather report — all count as one packet apiece."
+          ],
+          [
+            "Unique Stations",
+            "How many distinct callsigns have been heard. `KE4CON` and `KE4CON-1` count separately, since they are different SSIDs. A station is counted the first time it is heard, however many packets it later sends."
+          ],
+          [
+            "Packets / Hour",
+            "The average reception rate over the whole session, as packets per hour. This is a running average, not the current instant. A quiet rural area might see 20-50; a busy urban net can top 500."
+          ],
+          [
+            "Packets / Minute",
+            "The same average expressed per minute instead of per hour — handier for short sessions or fast events. Divide it by 60 for a rough packets-per-second feel."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "THESE ARE AVERAGES OVER THE SESSION",
+        "text": "Both rate tiles divide total packets by how long you have been connected. Right after connecting — or right after a reset — a few seconds of data can make the rate swing wildly. Give it a minute or two before reading the rate as meaningful."
+      }
+    },
+    {
+      "h1": "The Packet Types Panel"
+    },
+    {
+      "p": "APRS packets carry different kinds of information. The **Packet Types** panel breaks your traffic down by category, each with its own count and a colored bar showing what share of the total it represents. __Position__ is almost always the largest, because most stations beacon their location on a timer."
+    },
+    {
+      "table": {
+        "headers": [
+          "Type",
+          "What these packets carry"
+        ],
+        "rows": [
+          [
+            "Position",
+            "A station's latitude, longitude, symbol, and optional comment. The most common type — this is what fills the map."
+          ],
+          [
+            "Message",
+            "Direct text from one callsign to another, with an acknowledgment mechanism. You send and receive these from the **Messages** menu."
+          ],
+          [
+            "Weather",
+            "Temperature, wind, pressure, rainfall, and humidity from APRS weather stations, sent automatically at intervals."
+          ],
+          [
+            "Object / Item",
+            "Markers placed on the map for a location or resource — an incident, a repeater site, a staging area — rather than a live radio station."
+          ],
+          [
+            "Status",
+            "A short text status line from a station (for example \"On 146.520 simplex\"), with no coordinates attached."
+          ],
+          [
+            "Other / Unknown",
+            "Valid APRS packets outside the main categories — telemetry, third-party traffic, capability announcements, and other less common types."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Below those six categories sits one more line, **Invalid / Malformed**, shown in muted text with a count only (no bar). These are packets that arrived but could not be parsed as valid APRS — often from RF interference corrupting the data. A small number is completely normal; a very high count can hint at interference or a connection problem."
+    },
+    {
+      "h1": "The Most Active Stations Panel"
+    },
+    {
+      "p": "To the right of the packet types is **Most Active Stations** — the top 15 callsigns ranked by how many packets each has sent this session, most active first. Behind each callsign is a bar scaled against the busiest station, so the leader always shows a full-width bar and everyone else is shown relative to it. The raw packet count sits at the right of each row."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "A LOUD STATION IS USUALLY A RELAY",
+        "text": "A very high count at the top of this list is typically a digipeater or iGate relaying many other stations' traffic, not one operator transmitting constantly. A busy mobile station can also climb the list. It is a measure of packets seen, not of who is most talkative."
+      }
+    },
+    {
+      "h1": "The Hourly Activity Chart"
+    },
+    {
+      "p": "The wide chart labeled **Hourly Activity  (last 24 hours)** shows how many packets arrived in each of the last 24 hours, one bar per hour. The tallest bar is the busiest hour. To its right, a **Peak:** label calls out that busiest hour by clock time and packet count — for example `2:00 PM  (431 packets)`. If nothing has come in yet, it reads `No activity yet`."
+    },
+    {
+      "p": "Each bar is labeled underneath with its hour in a compact 12-hour form: `12a` is midnight, `9a` is 9 AM, `12p` is noon, `3p` is 3 PM, and so on. Watching the shape of this chart over a day reveals the rhythm of your area — the morning commute, a lunchtime bump, net times in the evening, and the quiet overnight hours."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "EACH HOUR STARTS OVER",
+        "text": "The bars follow the wall clock. As a new hour begins, that hour's bar starts fresh at zero and builds through the hour. A newly connected session only has bars for the hours it was actually listening — empty hours before you connected simply show nothing."
+      }
+    },
+    {
+      "h1": "The Aloha Circle"
+    },
+    {
+      "p": "At the bottom is the __Aloha Circle__ panel — a classic APRS idea, credited on the panel to Bob Bruninga, `WB4APR`. It estimates the range within which packets can be reliably received given how loaded the channel is. Inside that radius, reception is dependable; beyond it, so many stations are transmitting that their packets collide and reception becomes unreliable."
+    },
+    {
+      "p": "The panel shows two big numbers — **Radius** (a distance, shown in miles or kilometers to match your unit preference) and **Channel load** — followed by a one-line summary that spells out the radius, the packets-per-minute rate, the number of stations, and the channel load as a percentage. It is a rough, physics-based sense of how far your effective APRS neighborhood reaches right now, not a hard boundary."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "IT NEEDS SOME DATA FIRST",
+        "text": "Early in a session the Aloha Circle may show dashes and read \"Insufficient data for Aloha circle calculation.\" That is expected — it needs a little traffic and a few stations before the estimate means anything. Leave the app listening and it fills in."
+      }
+    },
+    {
+      "h1": "Resetting the Counts"
+    },
+    {
+      "p": "In the top-right corner is a **Reset Statistics** button. Pressing it clears every counter — totals, types, station list, and hourly bars — and starts accumulation over from zero, with the session clock restarting too. Use it when you want a clean measurement of a particular window of time, such as the start of a net or an event."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "RESET DOES NOT DISCONNECT",
+        "text": "**Reset Statistics** only zeroes the numbers on this dashboard. It does **not** disconnect you from APRS-IS or your radio, and it does not affect the map, the station list, or the message center. You keep receiving packets the whole time, and the counts simply begin building again immediately."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Every number is zero or the rates look absurd.** No packets have been counted yet, or only a few have over a very short session. Confirm packets are actually arriving in the raw packet monitor (**View -> Raw Packets**); once traffic is flowing, give the dashboard a minute for the averages to settle.",
+        "**The Aloha Circle shows dashes and \"Insufficient data\".** It needs a little traffic and several stations before it can estimate a radius. Leave APRS Command listening and it will fill in on its own.",
+        "**The hourly chart looks mostly empty.** It only has bars for hours you were actually connected. A session started an hour ago cannot show a full 24 hours of history — the empty hours are expected, not a fault.",
+        "**A single callsign dominates Most Active Stations.** That is normal — it is almost always a digipeater or iGate relaying other stations' traffic, not one operator transmitting nonstop.",
+        "**Invalid / Malformed keeps climbing fast.** A high rate of unparseable packets can point to RF interference corrupting data. A small, steady trickle is normal; a flood is worth investigating at your connection or receiver.",
+        "**The numbers stopped changing.** The dashboard refreshes every couple of seconds on its own. If it has gone flat, reception itself may have stopped — check your connection status; the dashboard only reflects what is coming in.",
+        "**I want to keep these totals.** The dashboard is session-only and does not save to a file. Note any figures you need before you reset or close the app, since a reset or restart clears them permanently."
+      ]
+    }
+  ],
+  "order": 30
+}

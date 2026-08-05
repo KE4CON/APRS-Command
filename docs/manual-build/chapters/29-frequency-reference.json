@@ -1,0 +1,159 @@
+{
+  "title": "Frequency Reference",
+  "subtitle": "A built-in, editable table of common APRS and EmComm frequencies for quick lookup in the field.",
+  "in_this_chapter": [
+    "What the frequency reference is for",
+    "Opening it from the Map menu",
+    "What the built-in list includes",
+    "Reading the list and the detail panel",
+    "Adding, editing, and deleting entries",
+    "Copy to clipboard and Reset to defaults",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **Frequency Reference** is a small, always-handy lookup table of the frequencies you actually use when you operate: APRS channels for different parts of the world, plus common EmComm calling frequencies, traffic nets, and the NOAA weather channels. It is a cheat sheet, not a radio control. APRS Command does not tune your rig from this window and it never transmits — the reference just shows you numbers you can read off, copy, and program into your radio by hand."
+    },
+    {
+      "p": "It ships pre-loaded so it is useful the moment you install the app. You can also make it your own: add your club's repeater, your local ARES net, or a park frequency, and those entries are saved and waiting the next time you open the window."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receive-first, always",
+        "text": "Like the rest of APRS Command, nothing here touches the air. The title bar keeps its **TX Disabled** badge whether or not this window is open. The reference only displays frequencies — dialing one in on your radio is a manual step you take yourself."
+      }
+    },
+    {
+      "h1": "Opening the Frequency Reference"
+    },
+    {
+      "steps": [
+        "In the menu bar, click **Map**.",
+        "Choose **Frequency Reference**.",
+        "A floating window titled **Frequency Reference** opens, centered over the main window."
+      ]
+    },
+    {
+      "p": "The window is resizable and floats on top of the map, so you can keep it open beside the map page while you work. Close it any time — your entries are already saved."
+    },
+    {
+      "screenshot": "The Frequency Reference window: a scrolling list of frequencies on the left with column headers MHz, Mode, Name, Notes; a detail and action panel on the right showing the selected frequency in large type with Add, Edit, Delete, Copy, and Reset buttons."
+    },
+    {
+      "h1": "What the List Includes"
+    },
+    {
+      "p": "Every new installation starts with a standard set of APRS and EmComm frequencies. You do not have to type these in — they are there from the first launch. The built-in entries cover:"
+    },
+    {
+      "bullets": [
+        "**APRS voice/packet channels** — `144.390` for North America, `144.800` for Europe, `145.175` for Australia and New Zealand, `144.640` for Japan, and the North American alternate `144.340`, all __FM / 1200 baud__.",
+        "**HF APRS** — `10.151` on 30 meters and `14.105` on 20 meters, both __USB / 300 baud__.",
+        "**EmComm simplex calling** — the national VHF calling frequency `146.520` (2m) and UHF `446.000` (70cm), both __FM Simplex__.",
+        "**HF nets** — SHARES primary `5.1965`, and the National Traffic System nets `7.228` (40m) and `3.995` (80m).",
+        "**NOAA Weather Radio** — the seven WX channels from `162.400` through `162.550`, marked __NFM Receive__ (listen-only)."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Numbers are in MHz",
+        "text": "Every frequency in the list is shown in megahertz, so `144.390` means 144.390 MHz. The large number in the detail panel spells out ` MHz` after it so there is no guessing."
+      }
+    },
+    {
+      "h1": "Reading the List"
+    },
+    {
+      "p": "The list is laid out in four columns, with a header row along the bottom of the list so you always know which is which:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it shows"
+        ],
+        "rows": [
+          [
+            "**MHz**",
+            "The frequency, in megahertz (e.g. `146.520`)."
+          ],
+          [
+            "**Mode**",
+            "How to operate it — for example `FM / 1200 baud`, `USB`, or `NFM Receive`."
+          ],
+          [
+            "**Name**",
+            "A short label, like `ARES/RACES National (2m)`."
+          ],
+          [
+            "**Notes**",
+            "A one-line description; trimmed with an ellipsis if it is long."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Click any row to select it. The panel on the right then shows that entry in full: the name, the frequency in large blue type followed by ` MHz`, the mode, and the complete notes text. If nothing is selected yet, the panel simply reads __Select a frequency to see details.__"
+    },
+    {
+      "h1": "Making It Your Own"
+    },
+    {
+      "p": "The right-hand panel has five buttons for managing entries. To add your own frequency:"
+    },
+    {
+      "steps": [
+        "Click **Add frequency**. The panel switches to an edit form and the status line reads \"Enter details for the new frequency.\"",
+        "Fill in **Name *** (required) — for example `Club Net Repeater`.",
+        "Fill in **Frequency (MHz) *** (required) — for example `146.520`.",
+        "Optionally set **Mode** (it starts at `FM Simplex`) and add a **Notes** description.",
+        "Click **Save**. Your entry is added, selected, and saved to disk. Click **Cancel** instead to back out without saving."
+      ]
+    },
+    {
+      "p": "To change an existing entry, select it and click **Edit selected**, adjust the fields, and click **Save**. To remove one, select it and click **Delete selected**."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Name and frequency are required",
+        "text": "If you leave **Name** or **Frequency (MHz)** blank and click **Save**, the entry is not saved and the status line tells you \"Name and frequency are required.\" Mode and Notes are optional."
+      }
+    },
+    {
+      "h1": "Copying and Resetting"
+    },
+    {
+      "p": "**Copy to clipboard** puts the selected entry onto your clipboard as a single line — frequency, mode, then name (for example `146.520 MHz  FM Simplex  ARES/RACES National (2m)`). Handy for pasting into a net log, an email, or a message."
+    },
+    {
+      "p": "**Reset to defaults** clears the whole list and reloads the original built-in APRS and EmComm frequencies. Use it if your list gets cluttered and you want a clean slate."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Reset replaces everything",
+        "text": "**Reset to defaults** removes every entry you added and restores only the built-in set. There is no undo, so copy anything custom you want to keep before you reset."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**I don't see Frequency Reference in the menu.** It lives under **Map**, not **View** or **Tools**. Open the **Map** menu and look near the bottom, below **Elevation Profile**.",
+        "**My new entry didn't save.** Check that both **Name** and **Frequency (MHz)** are filled in — they are required. If either is blank, the status line reads \"Name and frequency are required\" and nothing is saved.",
+        "**Copy to clipboard did nothing.** You must select an entry in the list first; the button only works with a row selected. After clicking, the status line confirms \"Copied to clipboard.\"",
+        "**I lost my custom frequencies.** They are almost certainly gone because **Reset to defaults** was clicked, which replaces the list with the built-in set. Re-add them manually; there is no undo.",
+        "**The frequency won't tune my radio.** The reference is a lookup table only — it does not control a rig or transmit. Read the number and program it into your radio yourself.",
+        "**Notes look cut off in the list.** Long notes are trimmed with an ellipsis in the list column. Click the row and read the full text in the detail panel on the right."
+      ]
+    }
+  ],
+  "order": 29
+}

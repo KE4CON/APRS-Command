@@ -1,0 +1,198 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS Command puts a small set of keyboard shortcuts and mouse actions on top of the menus, so the things you reach for most — opening __Net Control__, sending a beacon, flipping to dark mode, working a net roster — are one keystroke away instead of a menu dig."
+    },
+    {
+      "p": "This chapter lists every shortcut the app actually recognizes, grouped by where it works. There are three groups: __Global__ keys that work from the main __map page__, __mouse__ actions on the map itself, and a bank of __function keys__ that only work while the __Net Control__ window is focused."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Small on purpose",
+        "text": "APRS Command is menu-driven by design. There are only a handful of shortcuts, and every one of them also has a menu item, so you never have to memorize anything to use the app."
+      }
+    },
+    {
+      "h1": "Opening the shortcuts window"
+    },
+    {
+      "p": "The app carries its own quick-reference card. You can pop it open any time to jog your memory."
+    },
+    {
+      "steps": [
+        "Open the **Help** menu in the menu bar.",
+        "Choose **Keyboard Shortcuts**.",
+        "A floating **Keyboard Shortcuts** window appears, listing the shortcuts grouped by area. Scroll if the list runs past the window.",
+        "Close it when you are done — it floats over the map and does not interrupt anything."
+      ]
+    },
+    {
+      "p": "Faster still: press `Ctrl+/` from the main window to open that same window without touching the menu."
+    },
+    {
+      "screenshot": "The floating Keyboard Shortcuts window, showing the Global and Net Control groups with each key in a monospaced pill on the left and its action on the right."
+    },
+    {
+      "h1": "Global shortcuts (main window)"
+    },
+    {
+      "p": "These work whenever the main APRS Command window has focus. Each one also lives in a menu, shown here so you can find it either way."
+    },
+    {
+      "table": {
+        "headers": [
+          "Shortcut",
+          "What it does",
+          "Also on menu"
+        ],
+        "rows": [
+          [
+            "`Ctrl+N`",
+            "Opens the **Net Control** window",
+            "Operate ▸ Net Control"
+          ],
+          [
+            "`Ctrl+B`",
+            "**Beacon Now** — sends one immediate position beacon",
+            "(sidebar 📡 button)"
+          ],
+          [
+            "`Ctrl+D`",
+            "Toggles **Dark / Light** mode",
+            "View ▸ Toggle Dark Mode"
+          ],
+          [
+            "`Ctrl+/`",
+            "Opens this **Keyboard Shortcuts** window",
+            "Help ▸ Keyboard Shortcuts"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Ctrl+B is a transmit action",
+        "text": "`Ctrl+B` asks the app to send a beacon on the air. That is a deliberate transmit, so treat it like keying up. Out of the box the app is receive-first with the **TX Disabled** badge lit in the title bar, and nothing goes out until you deliberately enable transmit — so a stray `Ctrl+B` before then does not put a signal out."
+      }
+    },
+    {
+      "h1": "Map mouse actions"
+    },
+    {
+      "p": "The map responds to the mouse the way you would expect from any map. These are not typed shortcuts, but they are the fastest way to work the map, so they are worth knowing."
+    },
+    {
+      "table": {
+        "headers": [
+          "Action",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "Scroll wheel",
+            "Zoom the map in and out"
+          ],
+          [
+            "Right-click",
+            "Opens the map context menu: **Assign tactical callsign**, **Draw rings from this station / from my station**, and **Place object here**"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Left-side icon buttons",
+        "text": "The narrow icon strip down the left edge of the map page covers the rest: ⌂ Home / reset view, ◎ Center on my station, 🔍 Find station, 📏 Measure distance, 🗺 Map layer toggle, and 📡 Beacon Now. Hover any icon to see its label."
+      }
+    },
+    {
+      "h1": "Net Control window (function keys)"
+    },
+    {
+      "p": "These keys only do anything while the **Net Control** window is open and focused. Select a station in the roster first, then tap a function key to change its status — no mouse round-trip to a dropdown. They mirror the status buttons in that window."
+    },
+    {
+      "table": {
+        "headers": [
+          "Key",
+          "Sets selected station to"
+        ],
+        "rows": [
+          [
+            "`F1`",
+            "Check In"
+          ],
+          [
+            "`F2`",
+            "Standby"
+          ],
+          [
+            "`F3`",
+            "Departed"
+          ],
+          [
+            "`F4`",
+            "Available"
+          ],
+          [
+            "`F5`",
+            "Assigned"
+          ],
+          [
+            "`F6`",
+            "On Scene"
+          ],
+          [
+            "`F7`",
+            "Returning"
+          ],
+          [
+            "`F8`",
+            "Out of Service"
+          ],
+          [
+            "`Delete`",
+            "Removes the selected station from the roster"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Select first",
+        "text": "Every Net Control key acts on the station currently highlighted in the roster. If nothing is selected, the key has nothing to act on. Click a station to select it before pressing a function key."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**A Global shortcut does nothing.** Make sure the main APRS Command window is the focused window. If a floating window (Messages, Settings, Net Control) is on top and holds focus, click back on the main map page first.",
+        "**`Ctrl+B` did not put a beacon on the air.** That is expected while the title bar shows the **TX Disabled** badge, or while Exercise Mode is on (Tools ▸ Toggle Exercise Mode). Transmit has to be deliberately enabled before any beacon leaves the radio.",
+        "**The F-keys do nothing.** They only work inside the **Net Control** window, and only when it has focus. Open it with `Ctrl+N`, click into the roster, and select a station first.",
+        "**`Delete` did not remove a station.** Confirm a roster row is highlighted in Net Control — `Delete` acts on the selected station only.",
+        "**`Ctrl+/` will not open the shortcuts window.** On some keyboard layouts the `/` sits behind a shifted key; use **Help ▸ Keyboard Shortcuts** from the menu instead, which always works.",
+        "**I want a shortcut that is not listed here.** APRS Command ships only the shortcuts on this page. Everything else is reached through the **Settings, View, Map, Messages, Operate, Tools,** and **Help** menus."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Opening the built-in Keyboard Shortcuts window",
+    "Global keys: Net Control, Beacon Now, dark mode",
+    "Why Ctrl+B respects the TX Disabled safety default",
+    "Map mouse actions: scroll to zoom, right-click menu",
+    "Net Control function keys F1-F8 and Delete",
+    "Where each shortcut also lives on the menus"
+  ],
+  "subtitle": "Every keyboard shortcut and map mouse action APRS Command actually recognizes, grouped by where it works.",
+  "title": "Keyboard Shortcuts",
+  "order": 36
+}

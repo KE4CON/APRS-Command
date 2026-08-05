@@ -1,0 +1,284 @@
+{
+  "title": "The iGate Tab",
+  "subtitle": "Set up and monitor gating APRS packets from the air (RF) to the APRS-IS internet network — and understand why it stays off until you turn it on.",
+  "in_this_chapter": [
+    "What an iGate is, and RX-only versus TX gating",
+    "Opening the iGate tab and its Setup and Status sub-tabs",
+    "The enable toggles and packet-type choices on Setup",
+    "Why gating to APRS-IS is a transmit action that stays off by default",
+    "Reading the Status sub-tab: state cards and the decision log",
+    "What the prerequisites are (passcode, real callsign) and troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "An __iGate__ (internet gateway) listens for APRS packets on the radio and forwards copies of them to __APRS-IS__, the worldwide APRS internet network. That is how a station you hear on `144.390` ends up visible on a website like aprs.fi. The **iGate** tab is where you set that up and watch it work."
+    },
+    {
+      "p": "The app describes it plainly on the Setup screen: \"An iGate listens for APRS packets on RF and forwards them to the APRS-IS internet network.\" This chapter walks through both halves of the tab — **Setup**, where you turn features on and choose what to gate, and **Status**, where you watch every gating decision the app makes."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Gating to APRS-IS is a transmit action, and it is OFF by default",
+        "text": "Forwarding a packet to APRS-IS sends data out over your internet connection on behalf of the stations you hear. APRS Command treats that as a transmit action: every iGate control ships **disabled**, and the title bar keeps its **TX Disabled** badge until you deliberately enable gating here. Nothing on this tab puts anything on the air — or on the internet — until you turn it on yourself."
+      }
+    },
+    {
+      "h1": "RX-only versus TX gating — the important distinction"
+    },
+    {
+      "p": "There are two very different things people mean by \"running an iGate,\" and it matters which one you are doing."
+    },
+    {
+      "table": {
+        "headers": [
+          "Direction",
+          "What happens",
+          "Is it a transmit action?"
+        ],
+        "rows": [
+          [
+            "RF to APRS-IS (\"RX iGate\")",
+            "Packets you hear on the radio are forwarded to the internet.",
+            "Yes — it sends data to the APRS-IS servers on the stations' behalf. Controlled here."
+          ],
+          [
+            "APRS-IS to RF (\"TX iGate\")",
+            "Messages from the internet are transmitted on your radio.",
+            "Yes, and it keys your transmitter. APRS Command's iGate tab does the RF-to-internet direction; it does not transmit internet traffic onto RF."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The iGate tab is about the __RF-to-APRS-IS__ direction. \"Enabling APRS-IS transmit\" here means letting the app send gated packets up to the APRS-IS server — it does not key your radio."
+    },
+    {
+      "h1": "Opening the iGate tab"
+    },
+    {
+      "steps": [
+        "Click **Settings** on the menu bar (the first menu, before **View**).",
+        "Select the **iGate** tab along the top of the Settings window.",
+        "Inside it you will find two sub-tabs: **Setup** and **Status**. **Setup** is where you change values; **Status** is a live, read-only view of what gating is doing."
+      ]
+    },
+    {
+      "screenshot": "The Settings window with the iGate tab selected, showing the Setup and Status sub-tabs, and Setup open with its enable checkboxes."
+    },
+    {
+      "h1": "The Setup sub-tab"
+    },
+    {
+      "p": "Setup is headed **iGate Setup**. It groups into a master enable block, a \"what to gate\" block, a reminder about prerequisites, and **Save** / **Revert** buttons at the bottom."
+    },
+    {
+      "h2": "The enable toggles"
+    },
+    {
+      "p": "The first bordered box holds three checkboxes. All three are unchecked by default, and gating does not happen until the relevant ones are on."
+    },
+    {
+      "table": {
+        "headers": [
+          "Checkbox",
+          "What it does",
+          "Default"
+        ],
+        "rows": [
+          [
+            "**Enable iGating (gate RF packets to APRS-IS)**",
+            "The master switch for the whole iGate feature.",
+            "Off"
+          ],
+          [
+            "**Enable RF → APRS-IS gating**",
+            "Turns on the core function: forwarding packets heard on RF to APRS-IS. The app calls this \"the core iGate function.\"",
+            "Off"
+          ],
+          [
+            "**Enable APRS-IS transmit for iGate**",
+            "Lets the iGate actually send gated packets to the APRS-IS server. Requires a valid passcode on your APRS-IS port.",
+            "Off"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "All three matter",
+        "text": "For a packet to be gated, the master toggle, RF-to-APRS-IS gating, and APRS-IS transmit all have to be on, the APRS-IS connection has to be up, and the packet has to be one you actually heard on RF. If any one of those is missing, the app blocks the packet and records the reason on the Status sub-tab — it never gates \"just in case.\""
+      }
+    },
+    {
+      "h2": "Packet types to gate"
+    },
+    {
+      "p": "The second box, **Packet types to gate**, lets you choose which kinds of packets get forwarded. Its four checkboxes are all **on** by default:"
+    },
+    {
+      "bullets": [
+        "**Position packets** — stations reporting where they are.",
+        "**Weather reports** — weather-station data.",
+        "**Messages** — APRS text messages and queries.",
+        "**Objects and items** — named objects and items placed on the map."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "When in doubt, leave them all on",
+        "text": "The app's own guidance reads: \"When in doubt, leave all enabled — the APRS-IS server handles deduplication.\" You are not creating duplicate spam by leaving everything checked; the network sorts that out."
+      }
+    },
+    {
+      "h2": "The prerequisites reminder"
+    },
+    {
+      "p": "A highlighted box on Setup spells out what has to be true before gating will work. It is worth reading before you check the boxes above, because a missing passcode or a placeholder callsign will silently block every packet."
+    },
+    {
+      "bullets": [
+        "Your APRS-IS port in **Connections** needs a real numeric passcode — not `-1`. A receive-only passcode (`-1`) prevents gating.",
+        "Your callsign in **Station Setup** must be a real callsign. The app's transmit safety authority blocks gating while the callsign is still the placeholder `N0CALL`."
+      ]
+    },
+    {
+      "h2": "Saving"
+    },
+    {
+      "steps": [
+        "Make your changes on the Setup sub-tab.",
+        "Click **Save**. Your settings are written to disk and applied to the running iGate immediately — no restart needed.",
+        "The status line beside the buttons confirms the result: `iGating enabled. RF packets will be gated to APRS-IS.` when you turned it on, or `iGating disabled. No packets will be gated.` when you turned it off.",
+        "Use **Revert** to throw away unsaved edits on this sub-tab and reload the last saved values."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Turning it back off is one click",
+        "text": "Uncheck **Enable iGating** and click **Save** and the app stops gating right away — the status line reads `iGating disabled. No packets will be gated.` You are never locked into gating once you have tried it."
+      }
+    },
+    {
+      "h1": "The Status sub-tab"
+    },
+    {
+      "p": "Status is headed **iGate Monitor and Safety**, with the reminder that \"RF-to-APRS-IS gating remains disabled unless the shared safety service allows it.\" You do not enter anything here — it is a live readout of what the iGate is doing and, just as importantly, what it is refusing to do and why."
+    },
+    {
+      "h2": "The state cards"
+    },
+    {
+      "p": "Across the top are four small cards, each reading **Enabled** or **Disabled**, that mirror the current gate state:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Card",
+          "Means"
+        ],
+        "rows": [
+          [
+            "**iGate**",
+            "Whether the master iGate feature is on."
+          ],
+          [
+            "**RF to APRS-IS**",
+            "Whether RF-to-APRS-IS gating is on."
+          ],
+          [
+            "**APRS-IS TX**",
+            "Whether APRS-IS transmit for the iGate is on."
+          ],
+          [
+            "**APRS-IS TX Required**",
+            "Whether the safety service requires a live APRS-IS connection before gating (this is normally on)."
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "The counters and last-activity lines"
+    },
+    {
+      "p": "Below the cards is a summary panel. **Decisions** tallies the running counts in the form `0 gated, 1 blocked, 0 duplicate, 0 rate limited`. **Validation** reads `No iGate errors recorded.` when clean, or counts invalid and error packets. **Last gated packet** and **Last blocked reason** show the most recent of each, and a line reads `Last decision:` with the local time of the newest decision."
+    },
+    {
+      "h2": "The decision log"
+    },
+    {
+      "p": "The scrolling list underneath is the heart of the monitor: one row per packet the iGate looked at, newest first. Each row shows the time, the source callsign and the RF port it arrived on, the packet type, the __decision__, whether a transmit was attempted (**Yes** / **No**), and a plain-language reason."
+    },
+    {
+      "table": {
+        "headers": [
+          "Decision",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "`Allowed`",
+            "The packet passed every check and was gated to APRS-IS."
+          ],
+          [
+            "`TransmitDisabled`",
+            "Gating is turned off somewhere — e.g. `iGate is disabled.` or `APRS-IS transmit is disabled for iGate.` This is what you see while the tab is at its safe defaults."
+          ],
+          [
+            "`AprsIsDisconnected`",
+            "Gating is on, but the APRS-IS connection is down, so nothing was sent."
+          ],
+          [
+            "`Blocked`",
+            "A rule stopped it — for example the sender marked the packet `NOGATE` or `RFONLY`, or it already traversed the internet (loop prevention)."
+          ],
+          [
+            "`Duplicate`",
+            "The same packet was already gated recently."
+          ],
+          [
+            "`RateLimited`",
+            "Gating this would exceed the per-minute rate limit."
+          ],
+          [
+            "`Invalid`",
+            "The packet or its callsign failed validation."
+          ],
+          [
+            "`Error`",
+            "The APRS-IS transmit itself was attempted but failed."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The log is your proof of what happened",
+        "text": "Because every blocked packet records a reason, the Status sub-tab is where you confirm the app is behaving. While the iGate is off, expect to see `TransmitDisabled` with the reason `iGate is disabled.` — that is the safe, receive-only state, working exactly as intended."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**I enabled everything but nothing gets gated — the log shows `TransmitDisabled`.** Check that all three Setup checkboxes are on: **Enable iGating**, **Enable RF → APRS-IS gating**, and **Enable APRS-IS transmit for iGate**. Missing any one of them blocks gating.",
+        "**The log reason says `APRS-IS client is disconnected.`** Gating needs a live APRS-IS connection. Open the **Connections** tab and confirm your APRS-IS port is configured and connected.",
+        "**Nothing gates even though I am connected — I used passcode `-1`.** `-1` is a receive-only passcode and cannot gate. Enter your real numeric APRS-IS passcode on the APRS-IS port in **Connections**, then **Save**.",
+        "**Gating is blocked and my callsign is still `N0CALL`.** The transmit safety authority blocks gating under the placeholder callsign. Set your real callsign on the **Station** tab and **Save**.",
+        "**Packets I expected are blocked with `Path contains NOGATE` or `RFONLY`.** That is correct behavior — the sending station asked that those packets not be put on the internet, and the app honors it. There is no override.",
+        "**A change I made didn't stick.** Each sub-tab saves on its own. Return to **iGate → Setup** and click **Save**; use **Revert** to discard unsaved edits there.",
+        "**The Status sub-tab has no Save button.** Status is a read-only monitor — there is nothing to save. Make changes on **Setup**.",
+        "**I want to be sure the app isn't gating.** Leave the Setup checkboxes unchecked (their default). The **iGate** state card on Status reads **Disabled**, the decision log shows `TransmitDisabled`, and the title bar keeps its **TX Disabled** badge."
+      ]
+    }
+  ],
+  "order": 19
+}

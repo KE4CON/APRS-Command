@@ -1,0 +1,177 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS Command is __free software__ — free as in freedom, not just free of charge. It is released under the **GNU General Public License, version 3** (GPL v3). That license is a promise: the source code is open, anyone can read it, improve it, and pass it on, and no one can ever lock it away or take it closed."
+    },
+    {
+      "p": "This chapter explains that license in plain language, credits the author and the amateur radio community the program stands on, and lists the major open-source components APRS Command is built from — along with where to find their full license texts on your own machine. You do not need to read any of it to use the app. It is here so you know exactly what you are running and what your rights are."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "The short version",
+        "text": "APRS Command is open source under GPL v3. You may use it, share it, and modify it freely, as long as anything you pass on stays under the same open license. Full legal texts ship inside the app folder."
+      }
+    },
+    {
+      "h2": "Why GPL v3 specifically"
+    },
+    {
+      "p": "The choice of license is not an accident. APRS Command was inspired in part by __UI-View32__, a widely used APRS client written by Roger Barker G4IDE. When Roger passed in 2004, the source code was destroyed at his request, and the program could never again be updated, fixed, or ported to a new operating system. A tool many operators relied on was left behind by the systems it ran on — because it was closed."
+    },
+    {
+      "p": "GPL v3 makes that impossible here. Because the source is open and must stay open, APRS Command can be carried forward by any operator in the world if the original author is ever gone. That is the point of the license, not a technicality."
+    },
+    {
+      "h1": "Author and Credits"
+    },
+    {
+      "table": {
+        "headers": [
+          "Who",
+          "For what"
+        ],
+        "rows": [
+          [
+            "**James Rospopo — KE4CON**",
+            "Developer and author of APRS Command."
+          ],
+          [
+            "**Bob Bruninga — WB4APR** (SK)",
+            "Father of APRS. Designed it in the early 1980s as a situational-awareness tool for amateur radio. His vision guides the program."
+          ],
+          [
+            "**Roger Barker — G4IDE** (SK)",
+            "Author of UI-View32, the client that inspired both this program's approach and its open-source license."
+          ],
+          [
+            "**The APRS Foundation & community**",
+            "Maintainers of the APRS protocol and the shared device-ID database the app uses to name stations."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "APRS itself — the Automatic Packet Reporting System — is an open protocol developed and stewarded by the amateur radio community. APRS Command speaks that protocol; it does not own it. Copyright for the program's own code is held by James Rospopo (KE4CON), 2026."
+    },
+    {
+      "h1": "Major Third-Party Components"
+    },
+    {
+      "p": "APRS Command stands on the shoulders of several excellent open-source libraries. They are listed here with their licenses. Every one of these licenses is permissive or compatible with GPL v3 — none of them restrict your use of the app."
+    },
+    {
+      "table": {
+        "headers": [
+          "Component",
+          "What it does",
+          "License"
+        ],
+        "rows": [
+          [
+            "**Avalonia UI** (with Fluent theme, ColorPicker, Inter font)",
+            "The cross-platform windowing and controls framework the whole interface is drawn with.",
+            "MIT (Inter font: SIL Open Font License)"
+          ],
+          [
+            "**Mapsui** (Avalonia, Tiling, Nts)",
+            "Draws the interactive map, tile layers, and station markers.",
+            "MIT"
+          ],
+          [
+            "**NetTopologySuite**",
+            "Geometry engine used by the map layer (comes in with Mapsui.Nts).",
+            "BSD 3-Clause"
+          ],
+          [
+            "**BruTile** (incl. MbTiles)",
+            "Fetches and caches map tiles for offline field use.",
+            "Apache 2.0"
+          ],
+          [
+            "**SQLite** — via `Microsoft.Data.Sqlite` and `SQLitePCLRaw`",
+            "Local database for cached tiles and stored data.",
+            "Microsoft.Data.Sqlite: MIT · SQLitePCLRaw: Apache 2.0 · SQLite engine: public domain"
+          ],
+          [
+            "**Microsoft.Extensions.DependencyInjection**",
+            "Wires the app's internal components together at startup.",
+            "MIT"
+          ],
+          [
+            "**System.IO.Ports / System.Device.Gpio**",
+            "Talks to serial TNCs, GPS receivers, and Raspberry Pi hardware.",
+            "MIT"
+          ],
+          [
+            "**Tmds.DBus.Protocol**",
+            "Desktop integration on Linux.",
+            "MIT"
+          ],
+          [
+            "**Velopack**",
+            "Handles the built-in \"Check for updates\" installer/updater.",
+            "MIT"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Bundled data",
+        "text": "The app ships an offline snapshot of the __APRS device-ID (tocalls) database__ maintained by Heikki Hannikainen (OH7LZB) and contributors for the APRS Foundation. It is redistributed unmodified under the **Creative Commons Attribution-ShareAlike 2.0 (CC BY-SA 2.0)** license, so station radios and software can be identified offline."
+      }
+    },
+    {
+      "p": "This list names the components APRS Command deliberately bundles. Each of these libraries may in turn use other open-source packages; the complete dependency tree and full license texts are included with the app rather than reproduced here."
+    },
+    {
+      "h1": "Where the Full License Texts Live"
+    },
+    {
+      "p": "Nothing here is a substitute for the actual license files, and APRS Command ships all of them. You do not have to hunt online."
+    },
+    {
+      "bullets": [
+        "The complete **GPL v3** text is in the `LICENSE` file at the root of the program's folder (and in the source repository).",
+        "Attributions and license notices for bundled third-party material are in `docs/THIRD_PARTY_NOTICES.md`, which is copied into the installed app.",
+        "The **About APRS Command** window (menu bar: **Help ▸ About APRS Command**) shows the version, your callsign, the runtime and platform, the `GPL v3` license line, a link to the source at `github.com/KE4CON/APRS-Command`, and a short credit line naming Avalonia, Mapsui, and BruTile."
+      ]
+    },
+    {
+      "screenshot": "The About APRS Command window opened from the Help menu, showing the version, Operator callsign, Runtime, Platform, a Source link to github.com/KE4CON/APRS-Command, the License line reading GPL v3, and the credit paragraph naming Avalonia, Mapsui, BruTile, Bob Bruninga WB4APR, and Roger Barker G4IDE."
+    },
+    {
+      "h2": "Your rights in one paragraph"
+    },
+    {
+      "p": "Under GPL v3 you may run APRS Command for any purpose, study how it works, change it, and share it — original or modified. The only real condition: if you distribute a modified version, you must pass along the same freedoms and make your source available under GPL v3 too. The program comes with no warranty; see the `LICENSE` file for the exact terms."
+    },
+    {
+      "h1": "Where to Learn More"
+    },
+    {
+      "bullets": [
+        "**Want the exact legal terms?** Open the `LICENSE` file in the program folder, or read GPL v3 at `https://www.gnu.org/licenses/`.",
+        "**Want to see who wrote what?** Open **Help ▸ About APRS Command** for the credit and source-link summary.",
+        "**Want to contribute or fork it?** The full source is public at `github.com/KE4CON/APRS-Command`. Contributions must be GPL v3 compatible.",
+        "**Curious about a specific bundled library's terms?** See `docs/THIRD_PARTY_NOTICES.md` in the app folder for the attributions, and each library's own project page for its full license."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Why APRS Command is open source under GPL v3",
+    "The author — James Rospopo, KE4CON — and who else is credited",
+    "The APRS protocol and community behind the program",
+    "The major open-source libraries it is built from, and their licenses",
+    "Where the full license texts ship inside the app",
+    "Your rights as a user, in plain language"
+  ],
+  "subtitle": "APRS Command is free, open-source software under the GNU GPL v3 — here is what that means, who built it, and the open-source components it stands on.",
+  "title": "Third-Party Licenses & Credits",
+  "order": 41
+}

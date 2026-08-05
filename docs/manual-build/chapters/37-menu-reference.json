@@ -1,0 +1,384 @@
+{
+  "title": "Menu Reference",
+  "subtitle": "Every item on the APRS Command menu bar — Settings, View, Map, Messages, Operate, Tools, and Help — and what each one opens.",
+  "in_this_chapter": [
+    "How to read the menu bar",
+    "The Settings menu",
+    "The View menu",
+    "The Map menu (Draw and Weather submenus)",
+    "The Messages menu",
+    "The Operate menu",
+    "The Tools menu (including Exercise Mode)",
+    "The Help menu"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The menu bar runs across the top of the __map page__, just under the title bar. It is your master index to every window and dashboard in APRS Command. If you are hunting for a feature and don't remember where it lives, start here."
+    },
+    {
+      "p": "There are seven menus, left to right: **Settings**, **View**, **Map**, **Messages**, **Operate**, **Tools**, and **Help**. This chapter lists every item under each one, says in a sentence what it does, and points you to the chapter that covers it in full."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Reading this chapter",
+        "text": "Menu names shown in **bold** are exactly what you see on screen. A menu item marked with a trailing ellipsis (like **Import GPX / KML…**) opens a dialog that asks you for more before it acts. Items with a small right-arrow are submenus that open a further list."
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Nothing here transmits on its own",
+        "text": "Opening a window from a menu never puts your station on the air. APRS Command is receive-first and starts with the **TX Disabled** badge lit in the title bar. Transmitting always takes a separate, deliberate action inside the relevant window."
+      }
+    },
+    {
+      "h1": "Settings"
+    },
+    {
+      "p": "**Settings** is a single item, not a drop-down. Clicking it opens the main Settings window, where your callsign, station identity, connections, map behavior, and audio all live."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Settings",
+            "Opens the Settings window — station identity, connections, map, audio, and app preferences.",
+            "Settings"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "View"
+    },
+    {
+      "p": "**View** collects the read-only monitors and dashboards — the windows you open to watch what is coming in — plus the light/dark theme toggle."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Station List",
+            "Opens the Station List window — every station APRS Command has heard.",
+            "Station List"
+          ],
+          [
+            "Raw Packets",
+            "Opens the raw packet monitor — the unparsed text of each received packet.",
+            "Raw Packets"
+          ],
+          [
+            "Telemetry Monitor",
+            "Opens the telemetry monitor — decoded telemetry values from stations that send them.",
+            "Telemetry"
+          ],
+          [
+            "Events",
+            "Opens the events window — the running log of application and network events.",
+            "Events & Event Log"
+          ],
+          [
+            "Packet Statistics Dashboard",
+            "Opens the packet statistics dashboard — counts and rates for received traffic.",
+            "Packet Statistics"
+          ],
+          [
+            "Toggle Dark Mode",
+            "Switches the whole app between light and dark themes.",
+            "Appearance"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Separator lines",
+        "text": "A faint horizontal line inside a menu just groups related items. In **View**, it sets **Toggle Dark Mode** apart from the monitor windows above it."
+      }
+    },
+    {
+      "h1": "Map"
+    },
+    {
+      "p": "**Map** holds everything that acts on the map itself — drawing tools, weather layers, offline tiles, and the coverage and terrain tools. Two of its entries, **Draw** and **Weather**, are submenus that open a further list."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Draw ▸ Drawing Toolbar",
+            "Opens the on-map drawing toolbar — tools, color, fill, width, and measurements.",
+            "Drawing on the Map"
+          ],
+          [
+            "Draw ▸ Import GPX / KML…",
+            "Loads lines, tracks, and waypoints from a GPX or KML file onto the map.",
+            "Drawing on the Map"
+          ],
+          [
+            "Draw ▸ Export Drawings…",
+            "Saves your drawn shapes to a GPX or KML file.",
+            "Drawing on the Map"
+          ],
+          [
+            "Weather ▸ Weather Stations",
+            "Opens the weather window — reports from weather stations on the network.",
+            "Weather"
+          ],
+          [
+            "Weather ▸ Weather Alerts",
+            "Opens the National Weather Service alerts window.",
+            "Weather Alerts"
+          ],
+          [
+            "Weather ▸ (radar toggle)",
+            "Turns the animated weather-radar overlay on the map on or off. The label shows the current state.",
+            "Weather"
+          ],
+          [
+            "Offline Map Download",
+            "Opens the offline map download window — save map tiles for use without internet.",
+            "Offline Maps"
+          ],
+          [
+            "Coverage Prediction",
+            "Opens the coverage prediction window — estimated RF reach from a location.",
+            "Coverage Prediction"
+          ],
+          [
+            "Elevation Profile",
+            "Opens the elevation profile window — terrain cross-section between two points.",
+            "Elevation Profile"
+          ],
+          [
+            "Frequency Reference",
+            "Opens the frequency reference window — a quick band and frequency lookup.",
+            "Frequency Reference"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "Messages"
+    },
+    {
+      "p": "**Messages** gathers the tools for sending, scheduling, and tracking APRS text messages. Composing or scheduling a message stages it; it only leaves your station when you send it and transmit is enabled."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Messages",
+            "Opens the Message Center — read and compose APRS messages.",
+            "Messages"
+          ],
+          [
+            "Message Broadcast",
+            "Opens the broadcast window — send one message to a group of recipients.",
+            "Message Broadcast"
+          ],
+          [
+            "Scheduled Messages",
+            "Opens the scheduled-messages window — messages set to go out at a future time.",
+            "Scheduled Messages"
+          ],
+          [
+            "Message Receipts Dashboard",
+            "Opens the receipts dashboard — delivery and acknowledgment status of sent messages.",
+            "Message Receipts"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "Operate"
+    },
+    {
+      "p": "**Operate** is the on-air toolkit for running a net or activation — net control, objects you place on the map, and beacons. A separator sets the beacon and alert tools apart from the net tools above them."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Net Control",
+            "Opens the Net Control window — run a check-in net with a roster.",
+            "Net Control"
+          ],
+          [
+            "Net Script Editor",
+            "Opens the net script editor — write and edit the spoken script for a net.",
+            "Net Control"
+          ],
+          [
+            "Objects",
+            "Opens the object manager — place and manage APRS objects and items on the map.",
+            "Objects"
+          ],
+          [
+            "Session Templates",
+            "Opens the session templates window — saved configurations for common operating sessions.",
+            "Session Templates"
+          ],
+          [
+            "Scheduled Beacons",
+            "Opens the scheduled-beacons window — position or status beacons set to repeat.",
+            "Beaconing"
+          ],
+          [
+            "Shadow Beacon",
+            "Opens the shadow beacon window — beacon on behalf of another station.",
+            "Beaconing"
+          ],
+          [
+            "Alerts",
+            "Opens the alerts window — proximity, geofence, and rule-based alerts.",
+            "Alerts"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Beacons put you on the air",
+        "text": "Everything under the beacon items in **Operate** is designed to transmit on a schedule. They still obey the master transmit setting — nothing goes out while the title bar reads **TX Disabled** — but review any beacon before you enable transmit."
+      }
+    },
+    {
+      "h1": "Tools"
+    },
+    {
+      "p": "**Tools** holds the utilities that don't fit the other menus — the internal event bus, session replay, RF diagnostics, reporting, the phone companion, and the exercise-mode switch."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Event Bus",
+            "Opens the event bus window — a live view of internal application events.",
+            "Event Bus"
+          ],
+          [
+            "Replay",
+            "Opens the replay window — play back a recorded session of received traffic.",
+            "Replay"
+          ],
+          [
+            "RF Diagnostics",
+            "Opens the RF diagnostics window — signal, decode, and modem health readouts.",
+            "RF Diagnostics"
+          ],
+          [
+            "After-Action Report",
+            "Opens the after-action report exporter — summarize an operating session for the record.",
+            "After-Action Reports"
+          ],
+          [
+            "Mobile Companion Web View",
+            "Opens the mobile companion window — a URL and QR code for viewing on a phone.",
+            "Mobile Companion"
+          ],
+          [
+            "Toggle Exercise Mode (inhibit all transmit)",
+            "Turns Exercise Mode on or off. While on, every transmit path is blocked for drills.",
+            "Exercise Mode"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Exercise Mode is a safety belt",
+        "text": "**Toggle Exercise Mode (inhibit all transmit)** is the switch to throw before a training net or drill. It hard-blocks all transmit so nothing you practice with reaches the air, on top of the normal transmit setting."
+      }
+    },
+    {
+      "h1": "Help"
+    },
+    {
+      "p": "**Help** is where the built-in help, the keyboard-shortcut list, and version information live."
+    },
+    {
+      "table": {
+        "headers": [
+          "Item",
+          "What it does",
+          "Shortcut",
+          "See chapter"
+        ],
+        "rows": [
+          [
+            "Help",
+            "Opens the in-app help window.",
+            "—",
+            "Getting Help"
+          ],
+          [
+            "Keyboard Shortcuts",
+            "Opens the keyboard-shortcuts reference window.",
+            "`Ctrl+?`",
+            "Keyboard Shortcuts"
+          ],
+          [
+            "About APRS Command",
+            "Opens the About window — version, credits, and license information.",
+            "—",
+            "About & Licenses"
+          ]
+        ]
+      }
+    },
+    {
+      "screenshot": "The APRS Command menu bar directly under the title bar, with the Map menu open to show the Draw and Weather submenus expanded alongside the Coverage Prediction and Elevation Profile items."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**A menu item is grayed out.** The feature needs something set up first — usually a station identity or an active connection. Open **Settings** and finish your station setup, then reopen the menu.",
+        "**The radar item under Map ▸ Weather has a different label than shown here.** That item's text changes to reflect whether the radar overlay is currently on or off; the wording flips each time you click it. That is expected.",
+        "**I clicked a menu item and no window appeared.** It may already be open behind the main window. Check your taskbar or cycle windows before opening it again.",
+        "**I don't see a menu bar at all.** Make sure the main APRS Command window is focused and not covered by another window; the bar sits just below the title bar with the **TX Disabled** badge.",
+        "**A window opened but is empty or shows no data.** Read-only monitors under **View** only fill in once packets are being received. Confirm a connection is active in **Settings** and that stations are being heard."
+      ]
+    }
+  ],
+  "order": 37
+}

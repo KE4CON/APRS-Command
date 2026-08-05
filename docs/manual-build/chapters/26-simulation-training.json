@@ -1,0 +1,204 @@
+{
+  "title": "Simulation & Training",
+  "subtitle": "Practice with lifelike make-believe APRS traffic that fills your map and station list but never touches the air.",
+  "in_this_chapter": [
+    "What Simulation Mode makes and where it shows up",
+    "The Start / Pause / Resume / Stop / Step / Reset controls",
+    "The default mix of stations, objects, weather, and messages",
+    "Training Mode: guided scenarios with task checklists",
+    "Why nothing here can ever transmit",
+    "How Simulation differs from Replay (Chapter 25)",
+    "Troubleshooting when you don't see the fake traffic"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "**Simulation Mode** and **Training Mode** let you learn APRS Command with the whole app doing something. Instead of staring at an empty map waiting for a real station to come by, you turn on Simulation and the map fills with made-up stations moving around, a weather station reporting, an object or two, and some message and bulletin traffic. Everything lands on the __map page__, the station list, and the packet monitor exactly like real received traffic, so you can practice finding stations, opening their details, and reading packets."
+    },
+    {
+      "p": "**Training Mode** goes one step further: it wraps that fake traffic in a guided __scenario__ with a short checklist of practice tasks (\"Locate SIM001 on the map\", \"Open station details\"), so a newcomer has something concrete to do and a way to track progress."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Nothing here goes on the air",
+        "text": "Both modes are transmit-safe by design. The title bar keeps showing the **TX Disabled** badge, and each panel shows **Simulation transmit disabled** / **Training transmit disabled** in teal. The simulated packets are generated inside the app and fed into your display only — they are never keyed up on the radio or sent to APRS-IS. This is a fixed, built-in safety property, not a setting you can flip off by accident."
+      }
+    },
+    {
+      "h1": "Where to find these"
+    },
+    {
+      "p": "Simulation and Training each have their own panel in the feature tab area at the lower-right of the __map page__ — the same place **Replay** lives. Click the **Simulation** tab or the **Training** tab to bring up its controls. The map, station list, packet monitor, event logs, alerts, and weather panels all keep running while a session plays, so you can watch the fake traffic flow into every part of the app."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Source-tagged",
+        "text": "Every simulated packet is tagged with the source `Simulation` so it stays clearly separated from live APRS-IS or RF data in the logs and packet monitor. Training scenarios that use simulated data are tagged the same way."
+      }
+    },
+    {
+      "h1": "Simulation Mode, step by step"
+    },
+    {
+      "p": "The **Simulation Mode** panel has a row of buttons across the top and a running list of the most recent generated packets at the bottom. The state (Stopped, Starting, Running, Paused, or Faulted) shows on the right of the title."
+    },
+    {
+      "steps": [
+        "Open the **Simulation** tab in the lower-right feature area.",
+        "Click **Start**. The state changes to `Running` and the first batch of simulated stations, objects, weather, messages, and bulletins is generated and pushed to the map and station list.",
+        "Watch the map fill in. Use **Pause** to freeze generation and **Resume** to continue where you left off.",
+        "Click **Step** to generate exactly one more batch by hand — handy when you want to advance slowly and study each update.",
+        "Click **Stop** when you're done. To wipe the generated packets and start clean (including re-homing the moving stations), click **Reset**."
+      ]
+    },
+    {
+      "p": "Below the buttons the panel spells out what the run contains: the source name (**APRS Simulation**), the station count (for example `3 fixed / 2 mobile / 1 weather`), the update interval (`30 sec` by default), and the coverage area as a center latitude/longitude with a radius in meters. If anything goes wrong, an error line appears in red."
+    },
+    {
+      "h1": "What Simulation produces"
+    },
+    {
+      "p": "With the built-in defaults, each generated batch includes a handful of fixed stations with status text, moving mobile stations, a weather station, an object, and some message and bulletin traffic. The made-up callsigns are deliberately obvious so you never confuse them with real stations:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Kind",
+          "Example name",
+          "What it is"
+        ],
+        "rows": [
+          [
+            "FixedStation",
+            "`SIM001`",
+            "A stationary simulated station with a position beacon"
+          ],
+          [
+            "Status",
+            "`SIM001`",
+            "A status text packet for that station"
+          ],
+          [
+            "MobileStation",
+            "`SIM...`",
+            "A station that moves between batches (up to 45 knots by default)"
+          ],
+          [
+            "Weather",
+            "`TESTWX1`",
+            "A simulated weather report (wind, gusts, and so on)"
+          ],
+          [
+            "Object",
+            "`OBJTEST1`",
+            "A simulated APRS object"
+          ],
+          [
+            "Message",
+            "`N0CALL`",
+            "Sample incoming message traffic"
+          ],
+          [
+            "Bulletin",
+            "`BLN`",
+            "A sample bulletin"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The bottom of the panel shows **Recent simulated packets** with a scrolling list — each row gives the local time, the kind, the entity name, the source, and the raw packet text — so you can see exactly what was generated."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Defaults are a starting point",
+        "text": "Out of the box a run covers roughly 3 fixed, 2 mobile, and 1 weather station plus 1 object, updating every 30 seconds, centered on the built-in area with a 10 km (10000 meter) radius and moving stations enabled. That mix is chosen to exercise most of the app at once."
+      }
+    },
+    {
+      "h1": "Training Mode, step by step"
+    },
+    {
+      "p": "**Training Mode** turns the fake traffic into guided practice. The left side lists the built-in __scenarios__ (each with a name, difficulty, and type); the right side shows the selected scenario's description, a progress readout, its task checklist, and a running event log."
+    },
+    {
+      "steps": [
+        "Open the **Training** tab. If the state reads `Disabled`, click **Enable** first — the state moves to `Ready`.",
+        "Pick a scenario from the list on the left. Its description and tasks appear on the right.",
+        "Click **Start**. The scenario begins and, where it uses simulated or replayed data, that data source starts automatically. The state shows `Running`.",
+        "Work the checklist under **Scenario Tasks**. Select a task and click **Complete** when you've done it, or **Skip** to pass. Progress updates as `X / Y tasks (Z%)`.",
+        "Use **Pause** / **Resume** to hold and continue, **Stop** to end the run, and **Reset** to set every task back to not-started and re-home the data.",
+        "Click **Disable** when you're finished to turn Training Mode off entirely."
+      ]
+    },
+    {
+      "p": "The built-in scenarios range from **Beginner** (map familiarization, tracking mobile stations, watching a simulated weather station) through **Intermediate** (messaging practice, object placement, geofence entry/exit, replay review) to **Advanced** (alert-response practice). Each carries a short task list so a new operator always knows the next thing to try. Completing or skipping every task marks the scenario `Completed`."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Training rides on Simulation and Replay",
+        "text": "A scenario feeds itself using the same transmit-safe simulation engine and, for the replay-review scenario, the Replay engine. Because both underlying sources are transmit-disabled, Training Mode is transmit-safe too."
+      }
+    },
+    {
+      "h1": "Simulation vs. Replay"
+    },
+    {
+      "p": "Both are transmit-safe ways to see traffic without a live radio, but they are not the same tool. Use this to pick the right one:"
+    },
+    {
+      "table": {
+        "headers": [
+          "",
+          "Simulation (this chapter)",
+          "Replay (Chapter 25)"
+        ],
+        "rows": [
+          [
+            "Where the data comes from",
+            "Freshly invented by the app as it runs",
+            "A previously recorded log of real packets"
+          ],
+          [
+            "Is it repeatable?",
+            "Randomized — different each run",
+            "The exact same packets every time"
+          ],
+          [
+            "Best for",
+            "Filling an empty map to learn the interface",
+            "Reviewing something that actually happened"
+          ],
+          [
+            "Transmit",
+            "Always disabled",
+            "Always disabled"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "In short: reach for **Simulation** when you just want lifelike activity to practice against, and **Replay** when you want to step back through a real recording. **Training** can use either one behind a guided checklist."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Started Simulation but the map is empty.** Confirm the state reads `Running` (not `Stopped` or `Paused`), then check your map filters and the station list — the simulated stations use obvious names like `SIM001` and `TESTWX1`. Zoom out or center the map on the simulation area if the stations are off-screen.",
+        "**The simulated stations aren't moving.** Movement advances one batch at a time. Wait for the update interval (30 seconds by default), or click **Step** to force the next batch immediately.",
+        "**A red error line appeared and the state says `Faulted`.** Click **Stop**, then **Reset**, and **Start** again to begin a clean run.",
+        "**Training buttons seem to do nothing.** Training must be enabled and a scenario selected first. Click **Enable** (state should read `Ready`), pick a scenario on the left, then click **Start**.",
+        "**Training progress or tasks look stale.** Click **Reset** to set every task back to not-started and reset the scenario's data, then start it again.",
+        "**Worried something might transmit.** It can't. The **TX Disabled** badge stays in the title bar and each panel shows its transmit-disabled line the entire time — Simulation and Training never key the radio or reach APRS-IS."
+      ]
+    }
+  ],
+  "order": 26
+}

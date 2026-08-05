@@ -91,10 +91,13 @@ Chapters are drafted as validated JSON by parallel agents that read the real sou
 deterministically by `style.py`/`build.py`. Verify a clean build after each batch.
 
 - **Batch 1** ✅ — 3, 5, 6, 8, 9, 18 (offline)
-- **Batch 2** — 10, 11, 12, 13, 14, 15, 16
-- **Batch 3** — 17, 19, 20, 21, 22, 23, 24
-- **Batch 4** — 26, 27, 28, 29, 30, 31
-- **Batch 5** — 34, 35 (Ch. 32 RepeaterBook & 33 Winlink are HELD — not built until permissions land)
-- **Batch 6** — 36, 37, 38, 39, 40, 41
+- **Batch 2** ✅ — 10, 11, 12, 13, 14, 15, 16
+- **Batch 3** ✅ — 17, 19, 20, 21, 22, 23, 24
+- **Batch 4** ✅ — 26, 27, 28, 29, 30, 31
+- **Batch 6** ✅ — 34, 35, 36, 37, 38, 39, 40, 41
+- **HELD** — 32 (RepeaterBook), 33 (Winlink): not built until permissions land
+
+**All 39 non-gated chapters are drafted and building clean (≈230 pages).** Remaining work: hand-place
+screenshots (last), then export the final PDF; and add chapters 32/33 if the gated features are approved.
 
 *(Chapters 1, 2, 4, 7, 25 are hand-written function chapters in `build.py`.)*

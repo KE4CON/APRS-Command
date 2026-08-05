@@ -1,0 +1,145 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **Elevation Profile** tool draws a side-view terrain cross-section of the ground between two stations. It answers one practical question: is there a hill, ridge, or rise sitting in the path between you and the other station? That matters most on VHF and UHF, where a clean signal usually wants line-of-sight, and a lump of terrain in the middle can be the whole reason you can't hear someone who is only a few miles away."
+    },
+    {
+      "p": "You pick the two ends by __callsign__ — your station and the station you want to reach. APRS Command already knows where those stations are from the position packets it has received, so it looks up both sets of coordinates, samples the ground elevation along the straight-line path between them, and draws a simple terrain chart you can read at a glance."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receive-only, off-air",
+        "text": "This is an analysis tool. It reads positions the app already has and fetches terrain data over the internet. It never keys the radio or sends anything on the air — the title bar's **TX Disabled** badge stays exactly as it was."
+      }
+    },
+    {
+      "p": "One thing to know up front: the terrain data comes from a free online service, the __Open Elevation API__, so this tool needs an internet connection to work. If you are operating fully off-grid with no data connection, the profile can't be fetched."
+    },
+    {
+      "h1": "Before you start: both stations need a position"
+    },
+    {
+      "p": "The profile is built from the two stations' latitude and longitude. APRS Command gets those from position packets it has heard. If a callsign has never sent a position — or you just started the app and haven't heard it yet — there is nothing to draw a line from, and the tool will tell you so."
+    },
+    {
+      "bullets": [
+        "Your own station usually has a position if you've set your location or beaconed one.",
+        "The __to__ station must have been heard with a position — check the station list first if you're unsure.",
+        "Both callsigns are matched exactly as stored, so `KE4CON` and `ke4con` are treated the same (they're upper-cased for you)."
+      ]
+    },
+    {
+      "h1": "Opening the tool"
+    },
+    {
+      "steps": [
+        "From the menu bar, open **Map**.",
+        "Choose **Elevation Profile**. A small floating window titled **Elevation Profile** opens over the map."
+      ]
+    },
+    {
+      "screenshot": "The Map menu open, with the Elevation Profile item highlighted, sitting below Coverage Prediction and above Frequency Reference."
+    },
+    {
+      "h1": "Drawing a profile"
+    },
+    {
+      "steps": [
+        "In the **From callsign** field, type your station's callsign (the watermark shows an example, `e.g. KE4CON`).",
+        "In the **To callsign** field, type the other station's callsign (watermark `e.g. W4ABC`).",
+        "Click **Generate Profile**.",
+        "A thin progress bar appears with the message __Fetching elevation data from Open Elevation API…__ while the terrain is looked up.",
+        "When it finishes, the terrain chart appears in the panel and a one-line summary shows along the bottom."
+      ]
+    },
+    {
+      "screenshot": "The Elevation Profile window: two callsign fields separated by an arrow, a Generate Profile button, and the monospace terrain chart filling the panel below with a status summary line at the bottom."
+    },
+    {
+      "h1": "Reading the chart"
+    },
+    {
+      "p": "The chart is a plain-text terrain drawing in a fixed-width font. The horizontal axis is __distance__ along the path, starting at your station on the left (0) and ending at the other station on the right. The vertical axis is __ground elevation in meters__, labeled on the left edge at the bottom, middle, and top."
+    },
+    {
+      "p": "The solid blocks are the filled-in ground, and the small triangle marks the top of the terrain at each sampled step. A ridge in the middle shows up as a hump rising between the two ends — that hump is what can block a line-of-sight path. Twenty points are sampled evenly along the route, so the shape is an approximation of the real ground, good enough to spot obstructions at ham-radio distances."
+    },
+    {
+      "p": "Above the chart, three numbers summarize it: **Min** and **Max** elevation along the path, and **Change** — the net rise or fall from your end to the far end (a `+` value means the far station sits higher than you)."
+    },
+    {
+      "table": {
+        "headers": [
+          "What you see",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "A flat, low profile end to end",
+            "Clear shot — terrain is unlikely to be blocking you"
+          ],
+          [
+            "A tall hump in the middle",
+            "A ridge or hill is in the path; a line-of-sight signal may be obstructed"
+          ],
+          [
+            "Steady climb (large positive Change)",
+            "The far station is uphill from you overall"
+          ],
+          [
+            "Steady drop (large negative Change)",
+            "The far station is downhill from you overall"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "The summary line"
+    },
+    {
+      "p": "The status line at the bottom of the window restates the key facts in one place: the two callsigns and direction (`FROM → TO`), the total path distance shown in both **miles and kilometers**, the **Min** and **Max** elevation in meters, and a note that the data came from the __Open Elevation API__."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Distance vs. path quality",
+        "text": "Distance alone doesn't tell you whether you'll make the contact — a short path over a ridge can be worse than a longer path across a flat valley. The whole point of the chart is to show you the terrain the distance number hides."
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "It's terrain, not a signal prediction",
+        "text": "The elevation profile shows the shape of the ground only. It does not account for antenna height above ground, buildings, trees, foliage, or your power and mode. Treat a clear profile as encouraging, not a guarantee — and a blocked profile as a strong hint, not a verdict. For a signal-strength estimate, use **Map ▸ Coverage Prediction** instead."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**\"Enter both callsigns to generate a profile.\"** You left one of the fields blank. Fill in both **From callsign** and **To callsign**, then click **Generate Profile** again.",
+        "**\"KE4CON has no position data.\"** (or the other callsign) That station's position isn't known yet. Wait until you've heard a position packet from it, confirm it appears in the station list with a location, then retry.",
+        "**\"Could not fetch elevation data — check internet connection.\"** The terrain service couldn't be reached. Confirm you have a working internet connection — this tool needs one — and try again in a moment.",
+        "**\"Elevation fetch failed: …\"** Something went wrong during the lookup (often a timeout or a temporary outage of the free elevation service). Wait a bit and generate the profile again.",
+        "**The chart looks blocky or coarse.** That's expected — only 20 points are sampled along the path and the chart is drawn in text characters. It's meant to reveal major terrain, not fine detail.",
+        "**Nothing happens when I click Generate Profile.** If a fetch is already running the button is disabled until it finishes; watch for the progress bar and let the current lookup complete."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "What the elevation profile shows and why it matters",
+    "Why both stations need a known position",
+    "Opening it from the Map menu",
+    "Entering two callsigns and generating a profile",
+    "Reading the terrain chart and summary line",
+    "Fixing common errors and no-data messages"
+  ],
+  "subtitle": "Draw a terrain cross-section between two stations to judge whether a hill or ridge is blocking your path.",
+  "title": "Elevation Profile",
+  "order": 28
+}

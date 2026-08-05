@@ -1,0 +1,198 @@
+{
+  "title": "GPS & Location",
+  "subtitle": "Connect a USB or GPSD receiver so APRS Command knows where your station is, and watch the live fix.",
+  "in_this_chapter": [
+    "Where the GPS tab lives (Settings menu)",
+    "Setting up a direct USB (serial NMEA) receiver",
+    "Setting up GPSD on Linux and Raspberry Pi",
+    "Feeding your station position from GPS",
+    "Reading the Status sub-tab and fix quality",
+    "Why GPS never transmits on its own",
+    "Troubleshooting a receiver that won't fix"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **GPS** tab lets APRS Command read your position from a real GPS receiver, so your station knows where it is without you typing coordinates. It is where you pick how the GPS connects, and where you watch the live fix once it is running."
+    },
+    {
+      "p": "You reach it under the **Settings** menu. Inside the Settings window, open the **GPS** tab. That tab has two sub-tabs: **Setup**, where you choose and configure a receiver, and **Status**, where you see the current fix quality, satellite count, and live coordinates."
+    },
+    {
+      "p": "APRS Command reads two kinds of GPS source: a __serial NMEA__ receiver (a USB GPS plugged straight into this computer) or __GPSD__, the GPS daemon that manages the hardware on Linux and Raspberry Pi and shares it with other programs. You turn on whichever one matches your setup."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Reading GPS is passive",
+        "text": "Listening to a GPS receiver never puts anything on the air. Your position only goes out over the radio if you separately enable transmit and a beacon. The title bar keeps showing the **TX Disabled** badge until you deliberately turn transmit on."
+      }
+    },
+    {
+      "h2": "Before you start"
+    },
+    {
+      "bullets": [
+        "Plug the USB GPS receiver in **before** opening the Setup sub-tab, so its port shows up in the list.",
+        "Know your receiver's baud rate. Most GPS units run at `4800`, which is the default.",
+        "On Linux or Raspberry Pi, GPSD is the recommended path. Install it first with `sudo apt install gpsd gpsd-clients`."
+      ]
+    },
+    {
+      "h1": "Setting up a serial (USB) GPS"
+    },
+    {
+      "p": "Use this when the GPS receiver is plugged directly into the computer running APRS Command, on any platform."
+    },
+    {
+      "steps": [
+        "Open the **Settings** menu, then the **GPS** tab, then the **Setup** sub-tab.",
+        "In the **Serial GPS (direct NMEA)** box, check **Enable serial GPS**.",
+        "Pick your receiver from the **Serial port** list. The box is editable, so you can also type a port name directly — for example `COM3` on Windows, or `/dev/tty.usbserial` on macOS and Linux.",
+        "Set **Baud rate** to match your receiver. The default is `4800`; the list also offers `9600`, `19200`, `38400`, `57600`, and `115200`.",
+        "If you want the app to keep your station location in step with the GPS, check **Update station position from GPS** (covered below).",
+        "Click **Save**. The status line confirms with something like `GPS enabled on COM3 at 4800 baud. Restart the app to apply.`"
+      ]
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "A restart is required",
+        "text": "GPS changes take effect only after you restart APRS Command. Save your settings, close the app, and open it again before checking the **Status** sub-tab."
+      }
+    },
+    {
+      "screenshot": "The GPS Setup sub-tab, showing the Serial GPS box with the Enable serial GPS checkbox, the Serial port drop-down, and the Baud rate drop-down set to 4800."
+    },
+    {
+      "h1": "Setting up GPSD (Linux and Raspberry Pi)"
+    },
+    {
+      "p": "__GPSD__ is a background service that talks to the GPS hardware and hands the data to any program that asks. It is the recommended choice on Linux and Raspberry Pi because more than one application can share the receiver at once."
+    },
+    {
+      "steps": [
+        "Install GPSD if you have not already: `sudo apt install gpsd gpsd-clients`.",
+        "In the **Setup** sub-tab, find the **GPSD (GPS Daemon)** box and check **Enable GPSD**.",
+        "Leave **Host** at `127.0.0.1` if GPSD runs on the same machine. If it runs on another computer on your network, enter that machine's hostname or IP address instead.",
+        "Leave **Port** at `2947`, the GPSD default, unless you changed it.",
+        "Click **Save**, then restart APRS Command."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Pick one source",
+        "text": "Enable either serial GPS or GPSD, not both, so it is clear which receiver is feeding your position. The **Status** sub-tab always tells you which source the fix came from."
+      }
+    },
+    {
+      "h1": "Feeding your station position from GPS"
+    },
+    {
+      "p": "By itself, the GPS just displays where you are on the **Status** sub-tab. To have those coordinates become your station's actual location, check **Update station position from GPS** in the Serial GPS box. This is what you want for portable and mobile operating, where you move around and don't want to retype coordinates."
+    },
+    {
+      "p": "For a home station that never moves, leave that box unchecked. In the **Settings → Station Setup** tab there is a **Fixed station** option that tells the app to use the latitude and longitude you typed rather than any GPS source — most home stations should have that checked."
+    },
+    {
+      "table": {
+        "headers": [
+          "Your situation",
+          "Update station position from GPS",
+          "Fixed station (Station Setup)"
+        ],
+        "rows": [
+          [
+            "Home station, never moves",
+            "Unchecked",
+            "Checked"
+          ],
+          [
+            "Portable or mobile, position changes",
+            "Checked",
+            "Unchecked"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Position still doesn't transmit on its own",
+        "text": "Turning on **Update station position from GPS** only changes where the app thinks you are. It does not beacon that position. Sending your location over the air is a separate, deliberate step, and transmit stays off until you enable it."
+      }
+    },
+    {
+      "h1": "Reading the Status sub-tab"
+    },
+    {
+      "p": "Open **Settings → GPS → Status** to see the live fix. The top line shows the **Source** (`gpsd`, `NMEA`, `Simulation`, `Manual`, or `Unknown`) with a colored fix badge beside it. Below that are the current readings."
+    },
+    {
+      "p": "The badge reports one of these states:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Badge",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "**Valid fix**",
+            "The GPS has a good, current position lock."
+          ],
+          [
+            "**Stale fix**",
+            "A fix was received, but no fresh update has arrived recently — check the antenna and connection."
+          ],
+          [
+            "**No fix**",
+            "The receiver is connected but has not locked onto enough satellites yet."
+          ],
+          [
+            "**Disconnected**",
+            "The app is not receiving anything from the GPS source."
+          ],
+          [
+            "**Unknown**",
+            "No GPS data has arrived at all."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The panel also shows **Latitude**, **Longitude**, **Altitude** (in feet), **Speed** (in knots), **Course** (in degrees), **HDOP**, the total **Satellites** in view, how many are **Used** in the fix, the fix **Age**, and the **Last update** time in UTC. A **Raw source** box at the bottom shows the last raw sentence from the receiver, which is handy when something looks wrong."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Give it a clear view of the sky",
+        "text": "A cold receiver can take a couple of minutes to reach **Valid fix**, and it needs a view of the sky. Lower **HDOP** and more satellites under **Used** mean a stronger, more accurate fix."
+      }
+    },
+    {
+      "screenshot": "The GPS Status sub-tab with a green Valid fix badge, showing latitude, longitude, altitude, speed, course, HDOP, satellite counts, age, and last update."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**The Serial port list is empty.** Plug the GPS in first, then reopen the **Setup** sub-tab; if it still doesn't appear, type the port name (`COM3`, `/dev/tty.usbserial`) directly into the editable box.",
+        "**Saved settings but nothing changed.** GPS changes only apply after a restart. Close APRS Command and open it again.",
+        "**Status shows No fix.** Move the receiver where it can see the sky and wait a couple of minutes; a cold start needs time to acquire satellites.",
+        "**Status shows Stale fix.** Data stopped arriving. Check the USB cable or antenna, and confirm the receiver still has power.",
+        "**Status shows Disconnected.** The app isn't receiving from the source. Recheck the port and baud rate for serial, or that the GPSD service is running for GPSD.",
+        "**Wrong baud rate.** If the receiver connects but never fixes, the baud rate probably doesn't match — most units use `4800`. Try the values in the list.",
+        "**GPSD won't connect.** Confirm GPSD is installed and running, that **Host** points at the right machine (`127.0.0.1` for local), and that **Port** is `2947`.",
+        "**Position isn't following the GPS.** Make sure **Update station position from GPS** is checked and that **Fixed station** in Station Setup is unchecked.",
+        "**Fix looks good but nothing is going out on the radio.** That's expected — GPS never transmits by itself. Beaconing your position is a separate action, and transmit stays off until you enable it."
+      ]
+    }
+  ],
+  "order": 17
+}

@@ -1,0 +1,170 @@
+{
+  "title": "Digipeater",
+  "subtitle": "Repeat received RF packets so distant stations get heard — a transmit feature that stays off until you deliberately enable it.",
+  "in_this_chapter": [
+    "What a digipeater does and WIDEn-N aliases",
+    "Why digipeating is off by default",
+    "The Setup tab: enable, callsign, port, and mode",
+    "Fill-in vs. full digipeater mode",
+    "Coordinating before you enable",
+    "The Status tab: what got repeated and what got blocked",
+    "Troubleshooting why nothing repeats"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "A __digipeater__ (short for \"digital repeater\") listens for APRS packets on the radio and re-sends them, so a station that is too far away or too low-powered to be heard directly can still reach the network. Think of it as a relay: a weak packet comes in on RF, your station repeats it, and stations further out now hear it."
+    },
+    {
+      "p": "APRS Command can act as a digipeater, but this is a __transmit__ feature — when it digipeats, your radio keys up and sends. Because of that, it ships completely off. Nothing is repeated until you fill in the settings on the **Setup** tab and deliberately turn it on."
+    },
+    {
+      "p": "You will find both tabs under the **Settings** menu. Open **Settings**, choose the **Digipeater** tab along the top, and you will see two sub-tabs: **Setup** and **Status**."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Digipeating is transmitting",
+        "text": "A digipeater is not a receive feature. Every time it repeats a packet, your station transmits on RF. APRS Command starts receive-first with a **TX Disabled** badge in the title bar, and the digipeater is off by default. It stays silent until you enable it here and RF transmit is turned on."
+      }
+    },
+    {
+      "h2": "A quick word on WIDEn-N"
+    },
+    {
+      "p": "APRS packets carry a __path__ that says how far they want to be relayed, written as aliases like `WIDE1-1` and `WIDE2-1`. The `N` counts down each time a digipeater repeats the packet; when it reaches zero, the packet stops being relayed. `WIDE1-1` means \"repeat me once, close in.\" `WIDE2-1` means \"one more hop further out.\" A digipeater looks at that path, decides whether it is being asked to repeat, decrements the count, stamps its own callsign in, and re-sends. APRS Command handles all of that decrementing for you — you just choose which aliases your station answers."
+    },
+    {
+      "screenshot": "The Settings window with the Digipeater tab selected and the Setup sub-tab showing, displaying the Enable digipeater checkbox at top, the callsign and port fields, the mode checkboxes, and the yellow Coordinate before enabling warning box."
+    },
+    {
+      "h1": "The Setup tab"
+    },
+    {
+      "p": "The **Setup** sub-tab (headed **Digipeater Setup**) is where you configure and enable digipeating. Its intro line sums up the requirements: to digipeat you need an RF port with transmit enabled in **Connections**, and digipeating enabled here."
+    },
+    {
+      "h2": "Enable and identity"
+    },
+    {
+      "bullets": [
+        "**Enable digipeater** — the master on/off switch for this feature. Off by default. Checking it (and saving) is what makes your station start repeating packets.",
+        "**Enable RF transmit** — allows the digipeater to actually key the radio on the port below. The app's transmit safety authority still applies on top of this, so this box alone does not bypass the global transmit gate.",
+        "**Digipeater callsign** — the callsign your station stamps into packets it repeats. Usually your main callsign with an SSID, for example `KE4CON-2`. It is saved in upper case.",
+        "**RF transmit port ID** — the port ID to transmit on, copied exactly from your **Connections** list, for example `rf-1`."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Both switches, plus a working port",
+        "text": "Enabling the digipeater does nothing on its own. **Enable digipeater** and **Enable RF transmit** must both be checked, a valid **RF transmit port ID** must be filled in, and that port must have transmit enabled and pass the app's transmit safety checks. Any one of those missing and packets are logged as blocked, never sent."
+      }
+    },
+    {
+      "h2": "Digipeater mode"
+    },
+    {
+      "p": "Two checkboxes under **Digipeater mode** decide how aggressively your station repeats. Pick the one that matches your station's role."
+    },
+    {
+      "table": {
+        "headers": [
+          "Mode",
+          "Checkbox label",
+          "Use it for"
+        ],
+        "rows": [
+          [
+            "Fill-in",
+            "**Fill-in mode (WIDE1-1 only)**",
+            "A low-power or portable digipeater, or one filling a coverage gap. It only answers `WIDE1-1` — the first hop — and does not repeat packets that have already been digipeated."
+          ],
+          [
+            "Full",
+            "**Full digipeater mode (all WIDEn-N)**",
+            "A fixed, high-site digipeater. It answers all `WIDEn-N` paths. This requires coordination — two full digipeaters on the same frequency collide."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Below the modes, **Supported aliases (comma-separated)** lists exactly which path aliases your station will respond to. The default is `WIDE1-1,WIDE2-1`, which is right for most operators — leave it unchanged unless you know you need something different."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Sensible defaults are built in",
+        "text": "Out of the box the digipeater already ignores internet-only paths (`TCPIP`, `TCPXX`, `q` constructs), suppresses duplicate packets within a 30-minute window, refuses to repeat a packet that already carries its own callsign (loop protection), and rate-limits itself to at most 10 repeats a minute and 3 per station per minute. You do not configure these — they protect the channel automatically."
+      }
+    },
+    {
+      "h2": "Coordinate before enabling"
+    },
+    {
+      "p": "The yellow warning box on the Setup tab is there on purpose. Running a digipeater — a full one especially — affects everyone on the local APRS frequency. Contact your local APRS frequency coordinator and confirm a digipeater is actually needed in your area before you enable one. Uncoordinated digipeaters cause channel congestion and coverage holes rather than helping."
+    },
+    {
+      "steps": [
+        "Set up and transmit-enable an RF port on the **Connections** tab first, and note its port ID.",
+        "On **Settings -> Digipeater -> Setup**, fill in your **Digipeater callsign** (for example `KE4CON-2`) and the **RF transmit port ID** (for example `rf-1`).",
+        "Choose **Fill-in mode** or **Full digipeater mode**, and leave **Supported aliases** at `WIDE1-1,WIDE2-1` unless you have a reason to change it.",
+        "Only after coordinating locally, check **Enable digipeater** and **Enable RF transmit**.",
+        "Click **Save**. The status line confirms — for example \"Digipeater enabled (fill-in mode). Listening for packets to repeat.\" **Revert** discards unsaved edits."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "The status line tells you the result",
+        "text": "After **Save**, the line beside the buttons reads either \"Digipeater enabled (fill-in mode). Listening for packets to repeat.\" (or \"full mode\") or, when off, \"Digipeater disabled. No packets will be repeated.\" Changes apply immediately to the running app — no restart needed."
+      }
+    },
+    {
+      "h1": "The Status tab"
+    },
+    {
+      "p": "The **Status** sub-tab (headed **Digipeater Safety**) is a read-only window into what the digipeater is doing. Its subtitle states the rule plainly: RF digipeating remains disabled unless digipeater mode, RF transmit, path matching, and port safety all pass."
+    },
+    {
+      "p": "Across the top, four tiles show the current state at a glance — **Digipeater** (Enabled / Disabled), **RF transmit** (Enabled / Disabled), **TX port**, and **Callsign**. Below them a panel summarizes your **Aliases** and **Modes** (Fill-in / Full), plus running counts."
+    },
+    {
+      "bullets": [
+        "**Decisions** — a tally, for example how many packets were digipeated, blocked, duplicate, and rate limited.",
+        "**Validation** — a count of invalid packets and errors, or \"No digipeater errors recorded.\"",
+        "**Last digipeated packet** — the most recent packet your station actually repeated, shown with its rewritten path.",
+        "**Last blocked reason** — why the most recent non-repeat was held back.",
+        "**Last decision** — the time of the most recent decision, in your local time."
+      ]
+    },
+    {
+      "p": "Underneath, a scrolling list shows each recent decision as its own row: the time, the source **Callsign** and receive port, the packet type and transmit port, the **Decision**, whether a transmit was attempted, the resulting **Path**, and a plain-language **Reason**. This is the place to look when you expect a packet to be repeated and it is not — the reason column tells you exactly which gate stopped it."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Blocked is normal and safe",
+        "text": "Most packets your station hears are not addressed to your aliases, or are duplicates, or come from the internet side — so seeing lots of \"Blocked,\" \"Duplicate,\" or \"NoMatchingAlias\" rows is expected and healthy. It means the digipeater is being selective, exactly as it should be."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**I enabled the digipeater but nothing is being repeated.** Both **Enable digipeater** and **Enable RF transmit** must be checked and saved, and the app's master transmit must be on. The **Status** tab's **Last blocked reason** will name the specific gate — often \"RF transmit is disabled for digipeater mode.\"",
+        "**Status shows \"No RF transmit port is selected.\"** The **RF transmit port ID** field is empty or does not match a real port. Copy the port ID exactly from the **Connections** tab, for example `rf-1`.",
+        "**Every decision reads \"TransmitDisabled.\"** Transmit is gated. Confirm **Enable RF transmit** here, that the port has transmit enabled in **Connections**, and that the app is not receive-only. The title bar **TX Disabled** badge reflects the master switch.",
+        "**Packets are logged as \"NoMatchingAlias.\"** The incoming path did not ask for one of your **Supported aliases**, or fill-in mode is on and the packet was already digipeated. Full mode answers all `WIDEn-N`; fill-in answers only `WIDE1-1`.",
+        "**A packet shows \"Duplicate\" even though I only heard it once.** The same packet often reaches you by more than one path, or echoes back with your callsign inserted. The digipeater suppresses repeats within a 30-minute window and never repeats a packet already carrying its own callsign. This is loop protection working.",
+        "**Decisions read \"RateLimited.\"** The digipeater caps itself at 10 repeats per minute and 3 per station per minute to protect the channel. Heavy local traffic can hit that ceiling briefly; it is by design.",
+        "**Rows read \"Invalid.\"** The packet was malformed, or had an invalid source callsign or missing path. Malformed traffic is never repeated.",
+        "**I want to stop digipeating right now.** Uncheck **Enable digipeater** on the **Setup** tab and click **Save**. The status line confirms \"Digipeater disabled. No packets will be repeated,\" effective immediately."
+      ]
+    }
+  ],
+  "order": 20
+}

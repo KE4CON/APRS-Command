@@ -1,0 +1,174 @@
+{
+  "title": "Extensions Overview",
+  "subtitle": "A plain-language tour of the four ways APRS Command can connect to your own tools and scripts, and why every one of them is switched off until you say otherwise.",
+  "in_this_chapter": [
+    "What the four extension surfaces are for",
+    "The local REST API for reading your data",
+    "WebSocket event streams for live dashboards",
+    "File import and export hooks",
+    "Plugin and driver support",
+    "Why everything is disabled by default",
+    "Where the developer detail lives"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS Command can talk to other programs you run on the same computer: a dashboard on a second monitor, a wall display at a net control table, a little script that files away every packet, or a weather driver someone wrote. This chapter is the friendly tour of those connection points. It tells you what each one is for and, just as importantly, tells you that every single one of them is turned __off__ until you deliberately turn it on."
+    },
+    {
+      "p": "There are four surfaces, and they all follow the same rule: they let outside tools __observe__ your APRS Command data, and in a few carefully controlled cases feed data __in__. None of them can make your radio transmit. This is a receive-and-read story, not a remote-control story."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Safe by default",
+        "text": "The local REST API, WebSocket streams, file hooks, and plugin loading are all shipped **disabled**. Nothing listens on a port, watches a folder, or loads a plugin unless you enable it. And no extension can ever bypass the same transmit safety that keeps the title bar showing **TX Disabled**."
+      }
+    },
+    {
+      "h2": "The four surfaces at a glance"
+    },
+    {
+      "table": {
+        "headers": [
+          "Surface",
+          "What it does",
+          "Default",
+          "Local port / location"
+        ],
+        "rows": [
+          [
+            "Local REST API",
+            "Lets a tool ask APRS Command for data (stations, weather, objects, messages, alerts) over plain HTTP, and submit tightly controlled local data",
+            "Off",
+            "`127.0.0.1:8765`"
+          ],
+          [
+            "WebSocket event streams",
+            "Pushes live events (a station moved, an alert fired) to a dashboard as they happen",
+            "Off",
+            "`127.0.0.1:8766`"
+          ],
+          [
+            "File import / export hooks",
+            "Reads and writes documented files in a folder so tools that prefer files over networking can join in",
+            "Off",
+            "`file-hooks/` folder"
+          ],
+          [
+            "Plugin / driver support",
+            "A foundation for loadable add-ons such as a weather input driver or a data exporter",
+            "Off (no runtime loading yet)",
+            "Manifest-declared plugins"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "The Local REST API"
+    },
+    {
+      "p": "The __REST API__ is a way for a program on your computer to ask APRS Command questions using ordinary web requests. Think of a small dashboard fetching your current station list every few seconds, or a script that pulls the latest weather. It reads data out; it is not a way to drive the app."
+    },
+    {
+      "p": "When it is running (which it is not, out of the box), it answers on `127.0.0.1:8765` — that address means __localhost only__, so nothing off your machine can reach it. A token is required, and it starts in read-only mode. Read requests look like `GET /api/stations`, `GET /api/weather`, `GET /api/objects`, `GET /api/alerts`, and a simple `GET /api/health` heartbeat."
+    },
+    {
+      "bullets": [
+        "**Localhost only** — bound to `127.0.0.1`; it does not accept connections from other computers.",
+        "**Token required** — callers must present a valid API token.",
+        "**Read-only to start** — the controlled submit endpoints (like `POST /api/external/weather`) stay refused until you separately allow external data submit.",
+        "**No transmit** — the `POST /api/transmit/queue` endpoint exists only as a blocked placeholder; it returns a policy error and cannot send anything."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Data submitted in is labeled",
+        "text": "If you ever enable the submit endpoints, anything a tool feeds in is tagged as coming from `LocalApi` so APRS Command can always tell your operator-entered data apart from an external tool's data."
+      }
+    },
+    {
+      "h1": "WebSocket Event Streams"
+    },
+    {
+      "p": "Where the REST API answers questions on demand, __WebSocket streams__ push events to a listener the moment they occur. This is the right tool for a live wall display or a dashboard that should update the instant a station moves or an alert triggers, without polling over and over."
+    },
+    {
+      "p": "The stream service is also localhost-only, token-protected, and read-only — it is explicitly __not a command channel and not a transmit path__. A dashboard connects to an address like `ws://127.0.0.1:8766/ws/events?token=YOUR_LOCAL_TOKEN`, optionally narrows down to just the categories it cares about (stations, weather, alerts, and so on), and then receives a steady stream of small event messages."
+    },
+    {
+      "bullets": [
+        "Dedicated endpoints such as `/ws/stations`, `/ws/weather`, and `/ws/alerts` pre-filter to one kind of event.",
+        "Clients can filter further by category, event type, callsign, or minimum severity.",
+        "The only things a client may send back are safe stream controls: `ping`, `subscribe`, `filter`, `unsubscribe`, `close` — anything else is rejected.",
+        "If a dashboard drops off, the service lets it go cleanly; missed events are not replayed, so a well-behaved dashboard reconnects with backoff."
+      ]
+    },
+    {
+      "h1": "File Import / Export Hooks"
+    },
+    {
+      "p": "Not every helper tool wants to speak HTTP. The __file hooks__ surface lets tools exchange data through plain files in a `file-hooks/` folder — APRS Command writes exports there, and can read imports from there. It is a documented, file-based bridge, not a plugin loader or a command runner."
+    },
+    {
+      "p": "Exports are files like `stations.json`, `weather.json`, `objects.geojson` (map-friendly GeoJSON), `messages.csv` (open it in a spreadsheet), and `raw-packets.log`. Imports drop station, weather, object, GPS, or raw-packet files into an `incoming/` subfolder, where APRS Command validates them, tags them as `FileImport`, and moves accepted files to `processed/` and rejected ones to `rejected/` for you to review."
+    },
+    {
+      "p": "Inside the app, a **File Import / Export Hooks** panel shows the current state at a glance — whether hooks, import, and export are enabled, the base, import, and export folder paths, the last export and import times, import counts, and the last error. Three buttons let you drive it by hand: **Manual Export**, **Scan Imports**, and **Clear Status**."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Imports are not a back door to transmit",
+        "text": "There is an `incoming/transmit-requests/` folder, but it is a blocked placeholder. Imported transmit requests are rejected by default and can never slip past APRS-IS, RF, iGate, digipeater, or beacon safety. Importing a packet file does not send anything on the air."
+      }
+    },
+    {
+      "h1": "Plugin and Driver Support"
+    },
+    {
+      "p": "The __plugin / driver framework__ is the foundation for future loadable add-ons — for example a weather input driver, a station data exporter, a training-scenario provider, or a read-only dashboard connector. Today this is groundwork: runtime plugin loading is disabled, and the framework is documented for developers rather than exposed as a one-click install."
+    },
+    {
+      "p": "The design is deliberately cautious. A plugin ships a manifest describing who made it, what it can do, and which permissions it wants. Unsigned plugins are rejected by default, and nothing loads without your approval. A plugin declares __capabilities__ (what it is for) separately from __permissions__ (what it is allowed to do), and asking for a permission never grants it — transmit permissions in particular are denied by default and still have to clear central transmit safety even if approved."
+    },
+    {
+      "bullets": [
+        "Plugins are treated as untrusted until you configure them; the default permission is `ReadOnly`.",
+        "A plugin cannot transmit directly, start a hidden radio connection, read your credentials, or change internal app data.",
+        "Plugin data is source-tagged as `Plugin` (or a more specific type like `WeatherDriver`) so you always know where it came from."
+      ]
+    },
+    {
+      "h1": "Why Everything Starts Off"
+    },
+    {
+      "p": "APRS Command follows a __safe-defaults__ philosophy across all four surfaces. Out of the box, no port is open, no folder is watched, and no plugin is loaded. Each surface is localhost-only, token-protected where it accepts connections, and read-first. This is the same protective posture as the receive-first, transmit-disabled radio side of the app: the tool does nothing surprising on your behalf, and you opt in feature by feature."
+    },
+    {
+      "p": "The single unbreakable rule tying it all together: no extension can transmit. A REST request, a WebSocket message, an imported file, or a plugin event may describe or request a transmit, but only the app's central transmit safety — checking your settings, station profile, and lockout state — can ever authorize one. A valid permission is never enough by itself."
+    },
+    {
+      "h1": "Where to Learn More"
+    },
+    {
+      "p": "This chapter is the user-level map. The exact endpoints, message envelopes, DTO shapes, manifest fields, and configuration keys live in the separate __Programming Guide__ and its underlying design notes, which cover each surface in developer depth."
+    },
+    {
+      "bullets": [
+        "**Local REST API** — full endpoint list, auth, and permissions: `docs/LOCAL_REST_API.md`.",
+        "**WebSocket event streams** — endpoints, envelopes, filtering: `docs/WEBSOCKET_EVENT_STREAMS.md`.",
+        "**File import / export hooks** — folder layout, formats, validation: `docs/FILE_IMPORT_EXPORT_HOOKS.md`.",
+        "**Plugin / driver framework** — manifest, lifecycle, capabilities: `docs/PLUGIN_DRIVER_FRAMEWORK.md`.",
+        "**Architecture and security model** — how the pieces fit and the trust rules: `docs/EXTENSION_ARCHITECTURE.md` and `docs/EXTENSION_SECURITY_MODEL.md`."
+      ]
+    },
+    {
+      "screenshot": "The File Import / Export Hooks panel showing the State, Hooks/Import/Export enabled fields, folder paths, and the Manual Export, Scan Imports, and Clear Status buttons across the top."
+    }
+  ],
+  "order": 35
+}

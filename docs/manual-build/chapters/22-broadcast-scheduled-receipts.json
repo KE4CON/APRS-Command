@@ -1,0 +1,243 @@
+{
+  "title": "Broadcast, Scheduled Messages & Receipts",
+  "subtitle": "Send one message to many stations, queue messages for later, and watch delivery and acknowledgments from one dashboard — all with transmit off until you turn it on.",
+  "in_this_chapter": [
+    "Where the three tools live in the Messages menu",
+    "Message Broadcast: one message to a whole list",
+    "Pulling recipients from your net roster",
+    "Scheduled Messages: compose now, send later",
+    "Canceling a scheduled message before it fires",
+    "The Message Receipts dashboard and its status colors",
+    "What each delivery status actually means",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **Messages** menu holds more than the plain inbox. Three of its entries are for operators who send a lot of traffic and want to keep it organized: **Message Broadcast** pushes one short message out to a whole list of callsigns at once, **Scheduled Messages** lets you write a message now and have the app send it at a future date and time, and the **Message Receipts Dashboard** gives you a single running scoreboard of what got acknowledged, what is still waiting, and what failed."
+    },
+    {
+      "p": "All three of these are __transmit__ tools. Nothing here reaches the air on its own. APRS Command is receive-first, and the title bar shows a **TX Disabled** badge until you deliberately enable transmit. These windows will let you compose, queue, and line everything up while transmit is still off — but a message only leaves your station once you have turned transmit on."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Sending is a transmit action",
+        "text": "Broadcasting, scheduling, and any ordinary message send all put your callsign on the air. They stay inert while the **TX Disabled** badge is showing. Turn transmit on only when you intend to key up, and remember that **Toggle Exercise Mode (inhibit all transmit)** under the **Tools** menu blocks every one of these regardless of the TX setting."
+      }
+    },
+    {
+      "screenshot": "The Messages menu open, showing Messages, Message Broadcast, Scheduled Messages, and Message Receipts Dashboard, with the TX Disabled badge visible in the title bar above."
+    },
+    {
+      "h1": "Opening the three tools"
+    },
+    {
+      "p": "Everything in this chapter opens from the same menu. Each one is a small floating window you can move around and leave open next to the map."
+    },
+    {
+      "table": {
+        "headers": [
+          "Tool",
+          "Menu path",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "Message Broadcast",
+            "**Messages ▸ Message Broadcast**",
+            "Sends one identical message to many callsigns in sequence"
+          ],
+          [
+            "Scheduled Messages",
+            "**Messages ▸ Scheduled Messages**",
+            "Queues a message to send automatically at a chosen time"
+          ],
+          [
+            "Message Receipts Dashboard",
+            "**Messages ▸ Message Receipts Dashboard**",
+            "Read-only scoreboard of delivery and acknowledgment status"
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "Message Broadcast — one message to many"
+    },
+    {
+      "p": "Use **Message Broadcast** when the same short text needs to reach several stations: a net announcement, exercise traffic, or a heads-up to everyone checked in. It is not a bulletin sent to a special address — it simply sends the message to each callsign you list, one after another, as ordinary direct APRS messages."
+    },
+    {
+      "steps": [
+        "Open **Messages ▸ Message Broadcast**.",
+        "In **Recipients (comma-separated)**, type the callsigns you want, separated by commas — for example `W4ABC, KD4XYZ, N4DEF`. Semicolons and new lines also work as separators. The line below shows a live **recipient(s)** count.",
+        "Type your text in the **Message** box. APRS messages are limited to 67 characters, and the counter reads `/67 chars` as you type.",
+        "Confirm transmit is enabled (the **TX Disabled** badge must be cleared), then click **Send to all**.",
+        "Watch the **Results** list fill in — one row per callsign, with a check or an X and a short detail."
+      ]
+    },
+    {
+      "p": "The app sends to each station with a short pause between sends so it does not flood the channel. While it works, the status line reads something like `Sending to 3 station(s)…`, and when it finishes you get either `✓ Sent to all 3 station(s).` or a tally such as `Sent: 2, Failed: 1.`"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "\"Queued\" is normal",
+        "text": "A successful broadcast row shows the detail `Queued`. That means the message was accepted into the send engine, not that it has been acknowledged by the far station. Acknowledgment tracking lives in the receipts dashboard, described below."
+      }
+    },
+    {
+      "bullets": [
+        "**＋ From net roster** — pulls the callsigns from your current Net Control roster into the recipient box, skipping any that are already there. If the roster is empty you'll see `No stations in net control roster.`",
+        "**Send to all** — begins the broadcast; it is disabled while a send is already running.",
+        "**Clear results** — empties the **Results** list and status line so you can start a fresh broadcast. It does not un-send anything."
+      ]
+    },
+    {
+      "screenshot": "The Message Broadcast window: recipients box with three callsigns, a message with the 12/67 character counter, and the Results list showing green checks reading Queued next to each callsign."
+    },
+    {
+      "h1": "Scheduled Messages — compose now, send later"
+    },
+    {
+      "p": "**Scheduled Messages** lets you write a message ahead of time and have APRS Command send it automatically at a future moment — a net start reminder, a shift-change note, a scheduled status. You set a recipient, a date, a time, and the text; the app holds it and fires it when the clock arrives."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "The app has to be running — and transmit enabled — at send time",
+        "text": "A scheduled message is held in memory by the running program. If APRS Command is closed at the scheduled moment, or transmit is still disabled then, the message will not go out. The window itself says the app must be running at send time."
+      }
+    },
+    {
+      "steps": [
+        "Open **Messages ▸ Scheduled Messages**.",
+        "Enter the **Recipient** callsign, for example `W4ABC`.",
+        "Set **Send date** in `MM/dd/yyyy` form and **Send time** in 24-hour `HH:mm` form. Both fields are pre-filled to one hour from now as a starting point.",
+        "Type the **Message** (again capped at 67 characters, shown as a `/67` counter).",
+        "Click **Schedule**. The status line confirms with something like `Scheduled to W4ABC at 08/04 15:30.` and the entry appears in the **Scheduled messages** list."
+      ]
+    },
+    {
+      "p": "The app checks for due messages roughly twice a minute, so a scheduled send fires within about half a minute of its set time rather than to the exact second. After you schedule one, the date and time fields advance by an hour automatically, which makes it quick to lay down a series of timed messages."
+    },
+    {
+      "p": "Each row in the **Scheduled messages** list shows the recipient, the local send time, a preview of the text, and a status. A message still waiting reads **Pending** in blue; once it has gone out it reads **✓ Sent** with the time, in green."
+    },
+    {
+      "h2": "Canceling a scheduled message"
+    },
+    {
+      "steps": [
+        "Click the message in the **Scheduled messages** list to select it.",
+        "Click **Cancel selected**. The status line confirms `Cancelled scheduled message to …` and the entry is removed from the queue."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "You can only cancel what hasn't fired",
+        "text": "Cancel removes a still-pending message from the queue before it sends. Once a message has already gone out (**✓ Sent**), there is nothing left to cancel — an APRS transmission cannot be recalled."
+      }
+    },
+    {
+      "screenshot": "The Scheduled Messages window: recipient, send date, send time and message fields at top, and a list below with one Pending (blue) entry and one Sent (green) entry."
+    },
+    {
+      "h1": "Message Receipts Dashboard — the delivery scoreboard"
+    },
+    {
+      "p": "The **Message Receipts Dashboard** (its title bar reads **Message Read Receipts Dashboard**) is a read-only overview of every message this session — sent and received — and where each one stands. It is the place to answer \"did that get through?\" without digging through the inbox and outbox. Across the top are five count tiles; below is a filterable list of individual messages."
+    },
+    {
+      "p": "The five summary tiles are **Total**, **Acknowledged** (green), **Waiting** (blue), **Pending** (gray), and **Failed** (red). Together they give you an at-a-glance read on how your traffic is landing."
+    },
+    {
+      "table": {
+        "headers": [
+          "Status",
+          "Icon",
+          "Meaning"
+        ],
+        "rows": [
+          [
+            "Acknowledged",
+            "✓✓",
+            "The far station confirmed receipt — the message got through"
+          ],
+          [
+            "Received",
+            "✓",
+            "An incoming message from another station"
+          ],
+          [
+            "Sent",
+            "✓",
+            "Transmitted, counted under Waiting"
+          ],
+          [
+            "Waiting for ACK",
+            "…",
+            "Sent and now waiting for the far station to confirm"
+          ],
+          [
+            "Retrying",
+            "↻",
+            "A send is being retried, counted under Pending"
+          ],
+          [
+            "Pending / Queued / Draft",
+            "·",
+            "Not yet transmitted"
+          ],
+          [
+            "Failed / Rejected",
+            "✗",
+            "Did not go through"
+          ],
+          [
+            "Cancelled",
+            "✗",
+            "A scheduled or queued message that was called off; grouped with Failed"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Use the drop-down at the top right of the **Messages** list to narrow the view. The filter choices are **All**, **Acknowledged**, **Sent (waiting)**, **Pending/Queued**, **Failed/Rejected**, and **Received**. Each row shows a status icon, the direction (**TX→** for outgoing, **←RX** for incoming), the sender, the recipient, a preview of the text, the local timestamp, and a colored status label. The status line at the bottom reports how many of the total are currently shown, for example `4 of 12 message(s) shown.`"
+    },
+    {
+      "p": "The dashboard reflects the current session only — it is a live view, not a stored log. Click **Refresh** to re-pull the latest counts and list after activity."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Acknowledged is the one that means \"delivered\"",
+        "text": "A green **Acknowledged** (✓✓) is the only status that confirms the far station actually got your message. **Sent** and **Waiting for ACK** mean it left your radio but hasn't been confirmed. On simplex or a busy channel, plenty of good messages sit at **Waiting for ACK** simply because the other station's confirmation hasn't been heard yet."
+      }
+    },
+    {
+      "screenshot": "The Message Receipts Dashboard: five count tiles across the top (Total, Acknowledged in green, Waiting in blue, Pending in gray, Failed in red), a status filter drop-down, and a list of messages with direction arrows and colored status labels."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing left my station when I clicked Send to all or Schedule.** Check the title bar. If the **TX Disabled** badge is showing, transmit is off and no message goes out. Enable transmit deliberately, then send.",
+        "**Everything is blocked even though transmit looks on.** **Exercise Mode** may be active. Look under **Tools ▸ Toggle Exercise Mode (inhibit all transmit)** — while it is on, all transmit is suppressed.",
+        "**Broadcast says \"Enter at least one recipient callsign.\"** The recipients box is empty or held only separators. Type at least one callsign, separated by commas.",
+        "**A message won't send — \"Message too long.\"** APRS messages max out at 67 characters. Trim the text until the counter is at or under `67`.",
+        "**\"From net roster\" added nothing.** Either the Net Control roster is empty (`No stations in net control roster.`) or every roster station is already listed (`All roster stations already in recipient list.`).",
+        "**Scheduled Messages rejects my time — \"Invalid date/time.\"** Use `MM/dd/yyyy` for the date and 24-hour `HH:mm` for the time, exactly as the watermarks show.",
+        "**\"Send time must be in the future.\"** The scheduled moment is now or in the past. Pick a later date and time.",
+        "**A scheduled message never fired.** The app must be running, and transmit enabled, at the scheduled time. If APRS Command was closed or transmit was off when the time arrived, the message did not go out.",
+        "**A broadcast row shows \"Queued\" but the dashboard never shows Acknowledged.** Queued only means the send engine accepted it. Confirmation depends on the far station's ACK being heard; on simplex or a busy channel it may sit at **Waiting for ACK**.",
+        "**The receipts counts look stale.** The dashboard is a session snapshot. Click **Refresh** to re-pull the latest status, and remember it clears when you restart the app."
+      ]
+    }
+  ],
+  "order": 22
+}

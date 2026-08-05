@@ -1,0 +1,275 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This chapter is the place to start when something is not working — or when you just have a quick question. It gathers the most common issues and questions from across APRS Command into one compiled list of __Q&A__: no stations on the map, \"why won't it transmit,\" connection problems, GPS trouble, blank blue patches over lakes and oceans, and where your files live. Each answer points you at the right screen or setting so you can fix it and get back to operating."
+    },
+    {
+      "p": "Almost everything here is safe to try. APRS Command is __receive-first__ and __transmit-disabled by default__, so reading logs, checking status, and switching maps never puts anything on the air. Watch the title bar: as long as it shows the **TX Disabled** badge, the app is listening only."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Before you dig in",
+        "text": "Two screens answer most questions on their own. **View ▸ Events** shows a read-only history of everything the app decoded and did, and the status bar along the bottom shows `Ready`, the APRS-IS connection state, and the `RF TX Disabled` badge at a glance."
+      }
+    },
+    {
+      "h1": "Nothing on the Map"
+    },
+    {
+      "h2": "Why don't I see any stations?"
+    },
+    {
+      "p": "An empty map almost always means no packets are arriving yet, not that the app is broken. APRS Command only shows stations it actually hears. Work through it in order:"
+    },
+    {
+      "steps": [
+        "Check the status bar. If it reads **APRS-IS Disconnected**, you have no internet source of packets — connect one under the **Operate** or **Tools** area first.",
+        "Open **View ▸ Events** and watch for decoded packets. If packets are coming in but no dots appear, the problem is filtering or map view, not reception.",
+        "Give it time. On a quiet band or a slow local network, minutes can pass between beacons. APRS is bursty.",
+        "Confirm you are looking at live data and not a paused __replay__ or __simulation__ session, which only show their own recorded traffic.",
+        "Zoom and pan out. Stations you are hearing may simply be outside the current map view."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "This is normal at first",
+        "text": "A brand-new station with no connection configured will show an empty map. That is expected — you have not told the app where to get packets yet. See the connecting and iGate chapters to add a source."
+      }
+    },
+    {
+      "h1": "\"Why Won't It Transmit?\""
+    },
+    {
+      "h2": "I clicked send / beacon and nothing went out. Is it broken?"
+    },
+    {
+      "p": "No — this is the single most common question, and the answer is that __it is working exactly as designed__. APRS Command ships receive-first with every transmit path turned off. Transmitting is never automatic; it takes a deliberate operator action to enable, and even then each transmit type is armed separately."
+    },
+    {
+      "p": "By default, all of these are disabled: __station transmit__, __APRS-IS transmit__, __RF transmit__, __iGate__, __digipeater__, __beaconing__, __weather beaconing__, plus object and message transmit. Editing an object or composing a message does not send it. The **TX Disabled** badge in the title bar (and `RF TX Disabled` in the status bar) is your proof that nothing is going on the air."
+    },
+    {
+      "table": {
+        "headers": [
+          "You expected to transmit",
+          "Why it didn't",
+          "Where to change it"
+        ],
+        "rows": [
+          [
+            "A message to another station",
+            "Message transmit is disabled by default",
+            "Enable transmit deliberately; see the Message Center chapter"
+          ],
+          [
+            "A position beacon",
+            "Beaconing is disabled by default",
+            "The station beaconing chapter walks through arming it"
+          ],
+          [
+            "Gating RF packets to the internet",
+            "iGate is disabled by default",
+            "iGate chapter — enable only when you understand your obligations"
+          ],
+          [
+            "Anything at all",
+            "App is receive-first; TX Disabled badge is showing",
+            "Nothing transmits until you turn it on and satisfy the safety checks"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "This is a safety feature, not a bug",
+        "text": "You are responsible for legal operation. Transmit stays off until you configure it on purpose, because an accidental transmission with a wrong callsign or on the wrong path is exactly what receive-first design prevents. When you are ready, the Safety & Transmit chapter is the guide."
+      }
+    },
+    {
+      "h1": "Connection Problems"
+    },
+    {
+      "h2": "APRS-IS won't connect. What do I check?"
+    },
+    {
+      "p": "The status bar shows **APRS-IS Disconnected** whenever there is no live internet feed. Work through the usual suspects:"
+    },
+    {
+      "bullets": [
+        "Confirm you have working internet on this machine.",
+        "Check the server hostname and the port — the standard APRS-IS filter port is `14580`.",
+        "If one server is down, try the pooled address `rotate.aprs2.net`, which hands you a working server automatically.",
+        "Check that a local firewall is not blocking the app's outbound connection.",
+        "Temporarily remove any server-side filter while testing, then add it back once packets flow.",
+        "Keep receive-only enabled while troubleshooting — you never need transmit turned on just to receive."
+      ]
+    },
+    {
+      "h2": "My TNC or radio isn't being seen. What now?"
+    },
+    {
+      "p": "RF (radio) connections have their own short checklist. Most \"no packets over RF\" problems come down to the cable, the port name, or the modem not being in the right mode:"
+    },
+    {
+      "bullets": [
+        "Check the USB cable and that the interface actually enumerated as a serial port.",
+        "Confirm the correct serial port name and baud rate for your TNC.",
+        "Confirm the TNC is in **KISS** mode — APRS Command speaks KISS to hardware TNCs.",
+        "For a software modem like __Direwolf__, start it first, enable its TCP KISS interface, and point APRS Command at host `127.0.0.1`, port `8001`.",
+        "On Linux, a \"permission denied\" on the serial port usually means your user isn't in the serial group — add it and log out and back in. Do not run the app as root to work around it."
+      ]
+    },
+    {
+      "h1": "GPS Won't Get a Fix"
+    },
+    {
+      "h2": "My GPS is connected but the app shows no position."
+    },
+    {
+      "p": "An external NMEA GPS needs a clear view of the sky and a minute or two to acquire satellites — a __cold start__ indoors or under cover often never fixes. Use the built-in status screen to see what the receiver is actually reporting."
+    },
+    {
+      "steps": [
+        "Open the GPS status screen at **Settings ▸ GPS ▸ Status**. It shows the current __fix quality__, __satellite count__, and live coordinates once the receiver is connected and running.",
+        "If the satellite count is low or zero, move to a window or outdoors with an open sky and wait for the count to climb.",
+        "Confirm the correct serial port and that no other program is holding the GPS open.",
+        "Remember that GPS configuration changes take effect after you restart APRS Command — set it, then restart, then re-check the status screen."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "No GPS is fine",
+        "text": "You do not need a GPS at all. You can type your station's latitude and longitude in Station Setup and operate perfectly from a fixed location."
+      }
+    },
+    {
+      "h1": "The Map Looks Wrong"
+    },
+    {
+      "h2": "Why is there a solid blue-gray patch over lakes and the ocean?"
+    },
+    {
+      "p": "That muted blue-gray fill is intentional and correct. The __aerial imagery__ basemaps come from USGS, which only publishes detailed land photos — over open water at high zoom there simply are no tiles. Rather than show blank white gaps, APRS Command fills open water with a solid muted water color (roughly `#345B73`) chosen to blend softly with the shoreline in the photos."
+    },
+    {
+      "p": "If you actually want detail over water — shorelines, depth areas, place names — switch the basemap. The vector maps draw water themselves:"
+    },
+    {
+      "bullets": [
+        "**OpenStreetMap** — worldwide streets, water, and place names.",
+        "**USGS Topo** — topographic contours, roads, and water for the United States.",
+        "Either one renders lakes and oceans with real detail instead of the solid fill."
+      ]
+    },
+    {
+      "h1": "Where Are My Files?"
+    },
+    {
+      "h2": "Where does APRS Command keep logs, exports, and map tiles?"
+    },
+    {
+      "p": "Everything lives under a single application-data root folder named `APRS Command`, created during first-run setup in your platform's standard app-data location (the app uses .NET's application-data paths, so it is correct for Windows, macOS, and Linux — no hardcoded Windows path). You can point it at a different drive during setup if you want logs and maps elsewhere."
+    },
+    {
+      "table": {
+        "headers": [
+          "Folder",
+          "What's in it"
+        ],
+        "rows": [
+          [
+            "config/",
+            "Settings and safe placeholder configuration files"
+          ],
+          [
+            "logs/",
+            "Application logs — start here when the app misbehaves"
+          ],
+          [
+            "packet-logs/",
+            "Recorded raw packet traffic"
+          ],
+          [
+            "event-logs/",
+            "The decoded events history"
+          ],
+          [
+            "maps/ and map-cache/",
+            "Offline map tiles and cached tiles"
+          ],
+          [
+            "exports/",
+            "PDF and data exports you generate"
+          ],
+          [
+            "replay/ and training/",
+            "Replay and training session files"
+          ],
+          [
+            "backups/",
+            "Configuration backups"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Find it from inside the app",
+        "text": "You don't have to hunt through your file system. The **Settings** area's First Run tab lists the exact application-data, log, map-cache, and export folder paths for your machine."
+      }
+    },
+    {
+      "h1": "A Few More Quick Answers"
+    },
+    {
+      "h2": "Is it safe to try things while learning?"
+    },
+    {
+      "p": "Yes. As long as the **TX Disabled** badge is showing, the app only listens. Reading logs, panning the map, opening tools, and running replay or simulation never transmit — replay and training data are tagged as non-live and cannot go on the air. Use a placeholder callsign like `N0CALL` while you learn."
+    },
+    {
+      "h2": "The Help button doesn't open anything."
+    },
+    {
+      "p": "The offline Help viewer reads from the `docs/` folder that ships beside the app. If Help won't open, confirm that folder exists next to the published program. A missing individual topic shows `This help topic is not available in this build` rather than crashing the app."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Map is empty and status bar says APRS-IS Disconnected.** You have no packet source yet — connect APRS-IS or an RF port under Operate/Tools, then watch View ▸ Events for incoming packets.",
+        "**Packets show in the Events log but no dots on the map.** Reception is fine; the issue is filtering or view — clear station filters and zoom/pan out.",
+        "**Message or beacon \"didn't send.\"** By design — transmit is disabled by default. Nothing is broken; arm the specific transmit type deliberately per the Safety & Transmit chapter.",
+        "**APRS-IS keeps disconnecting.** Verify internet, hostname, and port `14580`; try `rotate.aprs2.net`; check the firewall; drop the filter while testing.",
+        "**TNC not detected.** Check the USB cable and serial port name, confirm the baud rate, and make sure the TNC is in KISS mode.",
+        "**Direwolf won't connect.** Start Direwolf first, enable TCP KISS, and point the app at `127.0.0.1` port `8001`.",
+        "**Serial \"permission denied\" on Linux.** Add your user to the serial group and log out and back in — do not run as root.",
+        "**GPS shows no position.** Open Settings ▸ GPS ▸ Status to see satellite count and fix quality; move to open sky; remember GPS changes need an app restart.",
+        "**Solid blue-gray over water.** Normal for USGS aerial imagery (land-only tiles); switch to OpenStreetMap or USGS Topo for real water detail.",
+        "**Can't find your log or export files.** Open the Settings First Run tab; it lists the exact folder paths under the APRS Command application-data root.",
+        "**Help button opens nothing.** Confirm the docs/ folder sits beside the published app."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Nothing on the map — no packet source yet",
+    "\"Why won't it transmit?\" — TX Disabled by design",
+    "APRS-IS and RF/TNC connection checklists",
+    "GPS no-fix and the Settings ▸ GPS ▸ Status screen",
+    "Blank blue-gray water over aerial imagery",
+    "Where logs, exports, and map tiles live on disk",
+    "Quick answers and a symptom-and-fix reference"
+  ],
+  "subtitle": "The common problems and questions from across APRS Command, answered in one place — most fixes are safe to try because the app only listens by default.",
+  "title": "Troubleshooting & FAQ",
+  "order": 39
+}

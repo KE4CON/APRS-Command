@@ -1,0 +1,204 @@
+{
+  "title": "Glossary",
+  "subtitle": "Plain-language definitions of the APRS and ham-radio terms used throughout APRS Command and this manual.",
+  "in_this_chapter": [
+    "What this glossary is for and how to read it",
+    "Core APRS terms: packet, beacon, object, item, symbol",
+    "Callsign, SSID, path, and WIDEn-N routing",
+    "Infrastructure: iGate, digipeater, APRS-IS, filter, passcode",
+    "Hardware and software: TNC, KISS, Direwolf, AGWPE, LoRa",
+    "Location terms: grid square, NMEA, GPSD, dead reckoning",
+    "Data terms: telemetry, PHG, weather packet, geofence"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS carries a lot of jargon, and this manual uses it because your radio, the packets on the air, and the app's own screens all use it too. This glossary is here so you never have to guess. Skim it once, then come back whenever a word in another chapter — or a label in the app — leaves you scratching your head."
+    },
+    {
+      "p": "Definitions are short and practical, aimed at what the term means when you are actually operating, not at textbook precision. Terms are listed alphabetically. Where a word names something APRS Command can do, the entry also notes the app's __receive-first__ default so there are no surprises."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Receive-first, always",
+        "text": "Several terms below — __beacon__, __digipeater__, __iGate__ — describe things that put packets on the air. In APRS Command every one of them is __disabled by default__, and the title bar shows a **TX Disabled** badge until you deliberately turn transmit on. Reading about a feature here does not mean the app is doing it."
+      }
+    },
+    {
+      "h1": "Terms A through I"
+    },
+    {
+      "table": {
+        "headers": [
+          "Term",
+          "Meaning"
+        ],
+        "rows": [
+          [
+            "**AGWPE**",
+            "AGW Packet Engine. A packet-radio interface protocol (from the AGW family of software) that some sound-card modems and TNC programs expose. APRS Command can talk to a modem over an AGWPE connection as an alternative to KISS."
+          ],
+          [
+            "**APRS**",
+            "Automatic Packet Reporting System. The amateur-radio system for sharing positions, messages, objects, weather, telemetry, and status over packet radio and the internet. It is what this whole app is built around."
+          ],
+          [
+            "**APRS-IS**",
+            "The APRS Internet Service — the worldwide network that carries APRS packets over the internet. Connecting to APRS-IS lets you see stations far beyond your own radio's range."
+          ],
+          [
+            "**Beacon**",
+            "A periodic packet your station sends to announce its position or status. Beaconing is __off by default__ in APRS Command; you turn it on yourself, and it only transmits once you also enable transmit."
+          ],
+          [
+            "**Callsign**",
+            "Your licensed station identifier, such as `N0CALL`. Every APRS station is known by its callsign."
+          ],
+          [
+            "**Dead reckoning**",
+            "Estimating where a moving station probably is __now__ from its last known position, course, and speed, when no fresh packet has arrived yet. APRS Command shows a dead-reckoning estimate for moving stations with recent data, marked with a compass icon so you know it is a projection, not a real report."
+          ],
+          [
+            "**Digipeater**",
+            "A __digital repeater__ — an RF station that re-transmits packets to extend their reach. APRS Command's digipeater features are __disabled by default__."
+          ],
+          [
+            "**Direwolf**",
+            "A popular free software TNC (a __soundcard modem__) that decodes and encodes packet audio and offers a TCP KISS connection. APRS Command can connect to Direwolf instead of a hardware TNC."
+          ],
+          [
+            "**Filter**",
+            "An APRS-IS server-side filter that limits which packets the server sends you — for example, only stations within a certain distance. Filters keep the firehose of internet traffic down to what you care about."
+          ],
+          [
+            "**Geofence**",
+            "A geographic area — a circle or a polygon — you define so APRS Command can watch for stations entering or leaving it. Used for arrival/departure alerts and after-action review."
+          ],
+          [
+            "**GPSD**",
+            "A GPS daemon (service) common on Linux and Raspberry Pi that shares one GPS receiver's data over a local network connection. APRS Command can read your position from GPSD."
+          ],
+          [
+            "**Grid square (Maidenhead)**",
+            "A short code such as `EM73` or `EM73tv` that names a rectangle on the globe — the __Maidenhead__ locator system hams use as a compact location. APRS Command can read a grid square from a status report and place it on the map."
+          ],
+          [
+            "**iGate**",
+            "An __internet gateway__ station that passes packets between RF and APRS-IS. APRS Command's iGate features are __disabled by default__."
+          ],
+          [
+            "**Item**",
+            "An APRS point of interest, much like an object, but sent in a slightly different packet format. Items are typically used for things that do not move."
+          ]
+        ]
+      }
+    },
+    {
+      "h1": "Terms K through W"
+    },
+    {
+      "table": {
+        "headers": [
+          "Term",
+          "Meaning"
+        ],
+        "rows": [
+          [
+            "**KISS**",
+            "\"Keep It Simple, Stupid\" — a minimal protocol for shuttling raw packet frames between software (like APRS Command) and a TNC or software modem. The most common way to connect a modem."
+          ],
+          [
+            "**LoRa**",
+            "A long-range, low-power radio modulation used by some newer, low-cost APRS trackers and gateways. APRS Command recognizes LoRa-originated stations so you can tell them apart on the map."
+          ],
+          [
+            "**Mic-E**",
+            "A compact APRS position format that packs location, course, speed, and a status code into the packet very efficiently. Common on mobile trackers. APRS Command decodes Mic-E packets automatically."
+          ],
+          [
+            "**NMEA**",
+            "The plain-text sentence format most GPS receivers output (lines beginning with `$GP...`). APRS Command can read position directly from an NMEA GPS over serial or USB."
+          ],
+          [
+            "**Object**",
+            "An APRS point of interest created and reported by a station — an aid station, a shelter, a hazard, a net-control point. Unlike a plain position, an object has its own name and can be moved or killed by its owner."
+          ],
+          [
+            "**Packet**",
+            "A single APRS transmission — one position report, message, object, weather report, status, or telemetry line. Everything on APRS travels as packets."
+          ],
+          [
+            "**Passcode**",
+            "The numeric login code paired with your callsign for APRS-IS. It is required only for APRS-IS transmit/login workflows. Keep it private — never post or share it."
+          ],
+          [
+            "**Path**",
+            "The routing instructions that follow the destination in a packet, telling digipeaters how far to relay it. `WIDE1-1,WIDE2-1` is a typical path."
+          ],
+          [
+            "**PHG**",
+            "Power-Height-Gain — an optional code in a beacon that describes a station's transmitter power, antenna height, and antenna gain, used to estimate its coverage. APRS Command can read PHG data when a station includes it."
+          ],
+          [
+            "**RF**",
+            "Radio frequency — operation over the air, as opposed to over the internet. RF transmit is __disabled by default__ in APRS Command."
+          ],
+          [
+            "**SSID**",
+            "A suffix on a callsign, such as the `-7` in `N0CALL-7`, that distinguishes a station's different devices or roles (handheld, home station, digipeater, and so on)."
+          ],
+          [
+            "**Symbol**",
+            "The icon shown for a station, object, or weather marker on the map. APRS encodes it as a table-and-code pair (for example a car, a tent, a repeater tower). APRS Command looks up and draws the matching symbol."
+          ],
+          [
+            "**Tactical callsign (label)**",
+            "A friendly, human-readable display name — like `NET CONTROL` or `AID 1` — shown for a station in place of its raw callsign, while the real callsign is still preserved underneath."
+          ],
+          [
+            "**Telemetry**",
+            "APRS packets carrying numeric or on/off sensor readings — battery voltage, temperature, channel states, and the like. APRS Command can display a station's telemetry values."
+          ],
+          [
+            "**TNC**",
+            "Terminal Node Controller — the hardware or software modem that turns radio audio into packet data and back. A hardware TNC or a software TNC like Direwolf sits between your radio and the app."
+          ],
+          [
+            "**TX Disabled**",
+            "The badge shown in the title bar whenever transmit is turned off. It is the default state, and it is your at-a-glance confirmation that the app is listening only, not putting anything on the air."
+          ],
+          [
+            "**Weather packet**",
+            "An APRS packet carrying weather data — wind, temperature, rain, humidity, pressure. APRS Command can plot weather stations and show their readings."
+          ],
+          [
+            "**WIDEn-N**",
+            "The standard APRS path convention for controlled digipeating, written like `WIDE2-2`. The first number is how many hops the packet may take; the second counts down as digipeaters relay it, so it eventually stops. Using sensible WIDEn-N paths keeps the network from being flooded."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Callsign vs. SSID vs. tactical label",
+        "text": "These three are easy to mix up. The **callsign** (`N0CALL`) is the license. The **SSID** (`-7`) tells apart that operator's several stations. A **tactical label** (`NET CONTROL`) is just a friendly name laid over the top for readability — the callsign underneath never changes."
+      }
+    },
+    {
+      "h1": "Where to Learn More"
+    },
+    {
+      "bullets": [
+        "For how packets actually flow between RF, digipeaters, iGates, and APRS-IS, see the connecting and iGate/digipeater chapters of this manual.",
+        "For what the app does with positions, symbols, and dead reckoning, see the moving map and stations chapters.",
+        "For objects, items, telemetry, and weather in practice, see their dedicated chapters.",
+        "Whenever a term here describes putting packets on the air — beacon, digipeater, iGate — remember it stays off until you deliberately enable transmit, and the **TX Disabled** badge tells you the current state at a glance."
+      ]
+    }
+  ],
+  "order": 40
+}

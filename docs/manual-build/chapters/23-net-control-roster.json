@@ -1,0 +1,262 @@
+{
+  "title": "Net Control & Roster",
+  "subtitle": "A receive-safe logbook for running an EmComm net — track check-ins, last-heard times, and ICS resource status for every station, all without keying your radio.",
+  "in_this_chapter": [
+    "What the Net Control Roster is for",
+    "Opening it from the Operate menu",
+    "Adding stations by hand or automatically",
+    "Checking stations in, standby, and departed",
+    "Setting ICS resource status and assignments",
+    "Reading last-heard times and staleness",
+    "Refreshing, filtering, and clearing the roster",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "When you run an EmComm net — a weather net, an ARES check-in net, a drill, or a real activation — you are the person keeping the list. Who called in, when you last heard them, where they are, and who is still out on an assignment. On paper that is a clipboard, a highlighter, and a lot of scribbling. **Net Control** is that clipboard built into APRS Command, tied to the stations the app is already hearing."
+    },
+    {
+      "p": "The __Net Control Roster__ is a single window that lists stations, tracks each one's __check-in status__, shows how long ago you last heard each, and lets you record an ICS-style __resource status__ and assignment for each. You can add callsigns by hand, or let the roster fill itself in from stations heard on the air. Think of it as a local logbook for the net controller."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "THIS IS A RECEIVE-SAFE LOGBOOK",
+        "text": "Everything in the Net Control window is local record-keeping. Checking a station in, marking standby, setting a resource status, or auto-adding heard stations only writes to your own roster on screen. None of it keys your radio or sends anything over the air. The title bar keeps showing the **TX Disabled** badge the whole time. Running the net by voice, sending an APRS message, or beaconing are separate, deliberate actions covered in their own chapters — transmit stays off until you turn it on there."
+      }
+    },
+    {
+      "h1": "Opening the Net Control Roster"
+    },
+    {
+      "steps": [
+        "In the menu bar, click **Operate**.",
+        "Click **Net Control**."
+      ]
+    },
+    {
+      "p": "You can also open it any time with the keyboard shortcut `Ctrl+N`. The window is titled **Net Control Roster** and floats over the map, so you can keep watching traffic while you log. Drag it wherever is comfortable and resize it as needed."
+    },
+    {
+      "screenshot": "The Net Control Roster window floating over the map, showing the net-name header at top, the add-callsign bar, the roster list on the left, and the station detail panel on the right"
+    },
+    {
+      "h1": "The Layout at a Glance"
+    },
+    {
+      "p": "The window has four parts, top to bottom. Learn these once and the rest is easy."
+    },
+    {
+      "bullets": [
+        "**Header** — an editable **Net name** field (it starts as `Net Control`; click and type to rename it, for example `Saturday ARES Net`) with a live one-line summary beneath it, plus the **Auto-add heard stations** checkbox and a **↻ Refresh** button.",
+        "**Add bar** — a box to type a callsign, an **Add to Roster** button, and a separate **Filter roster...** search box.",
+        "**Roster list (left)** — one row per station: a status icon, the callsign, its check-in time, and how long ago it was last heard.",
+        "**Detail panel (right)** — everything about the station you have selected: the check-in buttons, resource status, assignment, resource typing, and notes."
+      ]
+    },
+    {
+      "p": "The summary line under the net name always reads like `2 checked in · 1 standby · 1 departed · 5 total`, so you have a running head count without counting rows yourself."
+    },
+    {
+      "h1": "Adding Stations to the Roster"
+    },
+    {
+      "p": "There are two ways stations get onto the list, and you can mix them freely."
+    },
+    {
+      "h2": "By hand"
+    },
+    {
+      "steps": [
+        "Click the **Enter callsign to add (e.g. W4ABC)** box.",
+        "Type a callsign — case does not matter, it is stored in capitals automatically.",
+        "Click **Add to Roster** (or press Enter)."
+      ]
+    },
+    {
+      "p": "If the station has already been heard on the air, APRS Command fills in its last-heard time, position, and comment from the live station database automatically. If it has not been heard yet, it is added anyway and simply waits. If the callsign is already on the roster, the status line tells you so and nothing is duplicated."
+    },
+    {
+      "h2": "Automatically, from stations heard on the air"
+    },
+    {
+      "p": "Turn on the **Auto-add heard stations** checkbox in the header. From then on, any station APRS Command hears that is not already on the roster is added for you, with its position and comment filled in. Stations already on the roster get their last-heard time and position quietly updated as new packets arrive, whether or not this box is checked."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "WHEN TO USE AUTO-ADD",
+        "text": "For a formal check-in net where you want only stations that actually called in, leave **Auto-add heard stations** off and add each one by hand as they check in. For a wide-area situational-awareness net where you want to see everyone on frequency, turn it on. You can toggle it at any point during the net."
+      }
+    },
+    {
+      "h1": "Check-In Status: Checked In, Standby, Departed"
+    },
+    {
+      "p": "Every station carries one __check-in status__. Select a station in the list, then use the three buttons at the top of the detail panel, under the **Status** heading:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Button",
+          "Meaning",
+          "Row icon",
+          "Shortcut"
+        ],
+        "rows": [
+          [
+            "**✓ Check In**",
+            "Station has formally checked into the net; the check-in time is stamped the first time you press it.",
+            "✓ (green)",
+            "F1"
+          ],
+          [
+            "**⏸ Standby**",
+            "Station is present but holding — parked until you need it.",
+            "⏸ (amber)",
+            "F2"
+          ],
+          [
+            "**✗ Departed**",
+            "Station has left the net or secured.",
+            "✗ (gray)",
+            "F3"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "A station you have added but not yet actioned shows a hollow `○` icon and counts only toward the **total**. The moment you press **✓ Check In**, its check-in time appears in the **Checked In** column and stays fixed even if you later change its status — so the log shows when it first joined."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "FUNCTION KEYS SPEED UP A BUSY NET",
+        "text": "The whole bottom of the window is a shortcut cheat-sheet: `F1 Check In  F2 Standby  F3 Depart  F4 Available  F5 Assigned  F6 On Scene  F7 Returning  F8 OOS  Del Remove`. Select a station, then press the key — no mouse needed. This matters when check-ins are coming fast."
+      }
+    },
+    {
+      "h1": "Resource Status and Assignments (ICS)"
+    },
+    {
+      "p": "Check-in status tracks net participation. __Resource status__ is a separate, ICS-style track for what a station is actually doing on an incident or exercise. A station can be checked in and, at the same time, be Assigned and On Scene. Select a station and use the buttons under **Resource Status**:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Button",
+          "Meaning",
+          "Shortcut"
+        ],
+        "rows": [
+          [
+            "**● Available**",
+            "Available for assignment.",
+            "F4"
+          ],
+          [
+            "**→ Assigned**",
+            "Has been given an assignment; en route or preparing.",
+            "F5"
+          ],
+          [
+            "**★ On Scene**",
+            "At the assigned location, working the task.",
+            "F6"
+          ],
+          [
+            "**← Returning**",
+            "Task complete, heading back to staging.",
+            "F7"
+          ],
+          [
+            "**○ Out of Service**",
+            "Unavailable for assignment.",
+            "F8"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "The current resource status shows as a colored badge both in the roster row and large in the detail panel, so you can scan the list and see who is available versus committed at a glance. New stations start as **Available**."
+    },
+    {
+      "p": "Below the status buttons you can record the specifics for the selected station:"
+    },
+    {
+      "bullets": [
+        "**Current assignment** — a free-text box (`Describe the assignment...`) for what the station is doing, e.g. `Traffic control, Main & 5th`. Assignment text also shows under the callsign in the roster list.",
+        "**Resource type (ICS)** — a dropdown offering `Type 1` through `Type 4` plus untyped. Type 1 is the highest capability, Type 4 the most basic; it lets an incident commander request resources by capability level.",
+        "**Category** — a short text box (`e.g. Communications`) for the resource category, such as Communications, Medical, or Logistics.",
+        "**Notes** — a multi-line box for anything else worth recording about the station."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "RESOURCE TRACKING IS OPTIONAL",
+        "text": "For a plain check-in net you may never touch the resource-status buttons or typing fields at all — check-in status alone is enough. They are there for the incident and exercise side, where net control doubles as a resource tracker. Use as much or as little as the net needs."
+      }
+    },
+    {
+      "h1": "Last Heard, Position, and Stale Stations"
+    },
+    {
+      "p": "Each roster row shows a **last-heard** value on the right — `Just now`, `12m ago`, `1h 20m ago`, or a date-time for anything older than a day. This is driven by real packets, so it tells you at a glance whether a station is still active or has gone quiet. The detail panel shows the station's last known position (latitude and longitude, or `No position` if none has been heard)."
+    },
+    {
+      "p": "A station that has not been heard for more than 30 minutes is treated as __stale__ internally — a useful cue that you may want to call for it again or move it to standby. Position and last-heard update on their own as long as the app keeps hearing the station."
+    },
+    {
+      "h1": "Refreshing, Filtering, and Clearing"
+    },
+    {
+      "bullets": [
+        "**↻ Refresh** (top-right) pulls the newest last-heard times and positions from the live station database for everyone already on the roster, then stamps the status line with the refresh time. Handy after a quiet spell.",
+        "**Filter roster...** (the search box, top-right) narrows the visible list as you type — it matches on callsign, tactical label, or comment. Clearing the box shows everyone again. Filtering never removes anyone; it only hides non-matches from view.",
+        "**Remove from roster** (red text, bottom of the detail panel, or the `Delete` key) takes the selected station off the list.",
+        "**Clear All** (bottom toolbar) empties the entire roster and resets the window. Use it to start a fresh net."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "CLEAR ALL AND REMOVE ARE IMMEDIATE",
+        "text": "**Clear All** wipes every station and their check-in times, assignments, and notes with no undo, and **Remove from roster** drops the selected station the same way. The roster is a live working document, not a saved log — if you need a permanent record of the net, capture it (for example through the after-action export) before clearing."
+      }
+    },
+    {
+      "h1": "A Typical Net, Start to Finish"
+    },
+    {
+      "steps": [
+        "Open **Operate ▸ Net Control** (or `Ctrl+N`).",
+        "Click the net-name field and rename it, e.g. `Tuesday EmComm Net`.",
+        "Decide on auto-add: leave **Auto-add heard stations** off for a formal check-in net, or turn it on for a wide-area net.",
+        "As each station calls in, type its callsign and click **Add to Roster** (or let auto-add place it), then press **F1** to check it in.",
+        "Move stations to **⏸ Standby** (F2) as they hold, and **✗ Departed** (F3) as they secure.",
+        "For an incident, set resource status (F4–F8) and fill in the assignment, resource type, category, and notes as tasks are handed out.",
+        "Watch the summary line and last-heard column to keep the net moving.",
+        "When the net closes, capture any record you need, then use **Clear All** to reset for next time."
+      ]
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**A station I added shows no position and says `No position`.** It has not been heard on the air yet, or has only sent status packets without a location. It will fill in the first time a position packet arrives. You can also click **↻ Refresh** to pull the latest from the station database.",
+        "**Last-heard times look frozen.** Nothing new has been decoded for those stations. Click **↻ Refresh** to sync from the live database; if everything is stale, check that APRS Command is actually receiving (your connection or modem), since the roster only reflects what the app hears.",
+        "**A callsign won't add.** If the status line says it is already in the roster, it is a duplicate — use the **Filter roster...** box to find the existing entry. An empty or blank callsign is ignored.",
+        "**The function keys do nothing.** They act on the selected station. Click a row in the roster first, then press F1–F8 or Delete.",
+        "**I set a resource status but nothing changed.** No station was selected — the status line reads `Select a station first.` Pick a row, then press the button.",
+        "**I cleared the roster by mistake.** There is no undo for **Clear All** or **Remove from roster**. The roster is session-local and not saved; rebuild it by re-adding stations or by turning on **Auto-add heard stations** and letting active stations repopulate it.",
+        "**Nothing here transmits — is that right?** Yes. The Net Control window only logs locally; it never keys the radio, and the **TX Disabled** badge stays in the title bar. To actually send on the net you use voice, or the messaging and beacon features, which you enable deliberately elsewhere."
+      ]
+    }
+  ],
+  "order": 23
+}

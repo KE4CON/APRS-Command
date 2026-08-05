@@ -1,0 +1,201 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The __Message Center__ is where APRS Command collects the text traffic that flows in and out of your station: direct messages addressed to your callsign, club __bulletins__, __announcements__, station __queries__, and the messages you stage to send. It is one window with a row of tabs, plus a compose area along the bottom for building a message to another station."
+    },
+    {
+      "p": "Open it from the menu bar with **Messages** > **Messages**. The window is titled **APRS Command — Messages** and its panel header reads **Messages**. A short line of guidance sits across the top of the window explaining what the tabs hold."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Receiving is always on; sending is not",
+        "text": "Reading messages, bulletins, announcements, and queries never puts a signal on the air. Composing and sending a message is a **transmit action**. APRS Command ships receive-first with a **TX Disabled** badge in the title bar, and it stays that way until you deliberately enable transmit. Nothing in the Message Center goes out over the air on its own."
+      }
+    },
+    {
+      "screenshot": "The Messages window: tab strip (Inbox, Bulletins, Announcements, Queries, Outbox, Drafts, Thread) filling the upper area, and the bordered compose staging area docked along the bottom with Template, From, To, and Message fields."
+    },
+    {
+      "h1": "The tabs — what each one holds"
+    },
+    {
+      "p": "The Message Center groups incoming and outgoing traffic into tabs. Click a tab to switch views; the list underneath updates to match."
+    },
+    {
+      "table": {
+        "headers": [
+          "Tab",
+          "What it shows"
+        ],
+        "rows": [
+          [
+            "**Inbox**",
+            "Direct (private) messages addressed to your callsign — sender, message text, and a timestamp."
+          ],
+          [
+            "**Bulletins**",
+            "General bulletins from other stations, each with the sender, its bulletin ID (for example `BLN0`), the text, and a status."
+          ],
+          [
+            "**Announcements**",
+            "Announcement-class bulletins, with sender, announcement ID, text, and source."
+          ],
+          [
+            "**Queries**",
+            "Incoming APRS station queries (such as `?APRSD`), with the sender, query type, body, and time received."
+          ],
+          [
+            "**Outbox**",
+            "Messages you have sent or queued to send, with the destination station, the text, and a status."
+          ],
+          [
+            "**Drafts**",
+            "Messages staged but not yet queued for transmit — destination and text only."
+          ],
+          [
+            "**Thread**",
+            "The back-and-forth conversation with one station, showing each message's direction, status, text, and a short validation summary."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "Selecting a message in the **Inbox** loads that station's conversation into the **Thread** tab, so you can see the whole exchange in order."
+    },
+    {
+      "h1": "Reading a conversation"
+    },
+    {
+      "steps": [
+        "Open **Messages** > **Messages**.",
+        "On the **Inbox** tab, click the message you want to read. The row shows the sending station, a preview of the text, and when it arrived.",
+        "Switch to the **Thread** tab to see the full exchange with that station — each entry is labeled with its **Direction** (incoming or outgoing) and a **Status**, with the message body wrapped below.",
+        "Use the **Bulletins**, **Announcements**, and **Queries** tabs to browse the broader traffic that is not addressed specifically to you."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Inbox vs. bulletins",
+        "text": "The **Inbox** is only messages addressed to your callsign. Club and net bulletins, general announcements, and station queries live on their own tabs so a busy bulletin channel never buries a message meant for you."
+      }
+    },
+    {
+      "h1": "Composing and sending a message"
+    },
+    {
+      "p": "The compose area is the bordered panel docked along the bottom of the window — the subtitle under the **Messages** heading calls it __compose staging__. It has four inputs stacked in one row: an optional **Template** picker, **From**, **To**, and **Message**."
+    },
+    {
+      "bullets": [
+        "**From** is filled in automatically from your **Station Setup** callsign — you normally leave it alone.",
+        "**To** is the destination station's callsign (for example `K8ABC`).",
+        "**Message** is the text you want to send.",
+        "**Template (optional)** is a dropdown that pre-fills the compose area from your saved templates — see the next section."
+      ]
+    },
+    {
+      "p": "A small validation line sits under the fields. It reads **Not validated** until the message is checked, then either **Ready to queue** or a plain-language list of what needs fixing (for example a missing recipient or an over-length body). Fixing the flagged item and re-checking clears the warning."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Sending is a transmit action",
+        "text": "When you send, APRS Command hands the message to its acknowledgement/retry engine: it transmits the message, waits about 30 seconds for an __ACK__ (acknowledgement) from the receiving station, retries up to 3 times if none arrives, and marks the message **Failed** if it still gets no reply. None of this happens while transmit is disabled. Enabling transmit is your decision, made outside this window; until then the app stays receive-only and the **TX Disabled** badge remains in the title bar."
+      }
+    },
+    {
+      "h1": "Acknowledgements (ACKs)"
+    },
+    {
+      "p": "APRS direct messages are confirmed end to end. When the station you messaged receives it, its radio sends back a short __ACK__ packet. APRS Command matches that ACK to your outgoing message and marks it acknowledged right away — you will see the message's **Status** update in the **Outbox** and **Thread** tabs."
+    },
+    {
+      "bullets": [
+        "An outgoing message that is transmitted but not yet acknowledged is retried automatically — up to 3 times, roughly 30 seconds apart.",
+        "When the ACK arrives, the message is marked acknowledged immediately and retries stop.",
+        "If no ACK ever comes back, the message ends up marked **Failed** — a sign the other station did not hear you, or is not on the air.",
+        "APRS Command also answers the other direction: when *you* receive a direct message, the acknowledgement handling is part of the same message pipeline (a transmit path that, again, only operates when transmit is enabled)."
+      ]
+    },
+    {
+      "h1": "Message Templates"
+    },
+    {
+      "p": "__Templates__ are canned messages you can drop into the compose area with one pick, so you are not retyping the same check-in or status text every time. They are managed on their own settings tab and used from the Message Center."
+    },
+    {
+      "h2": "Using a template"
+    },
+    {
+      "steps": [
+        "In the Message Center, open the **Template (optional)** dropdown above the **From** / **To** / **Message** fields. It is labeled with the placeholder **Pick a template to pre-fill compose…**.",
+        "Choose a template. Its name and a preview of its body are shown in the list.",
+        "The template fills the **Message** field, and if the template has a default recipient it fills **To** as well. A template with no recipient only fills the body, leaving **To** for you to set.",
+        "Edit the pre-filled text if you need to, then send as usual."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Pick again freely",
+        "text": "The dropdown clears its selection after it fills the compose area, so you can pick the same template a second time — handy if you overwrote the text and want the original back."
+      }
+    },
+    {
+      "h2": "Creating and editing templates"
+    },
+    {
+      "p": "Templates are managed in **Settings** > **Message Templates** tab. The left side lists your templates; the right side shows the selected template's details or an editor."
+    },
+    {
+      "steps": [
+        "Open **Settings** and select the **Message Templates** tab.",
+        "Click **+ New Template** at the bottom to start a new one, or select an existing template and click **Edit**.",
+        "Fill in **Template name** (required), an optional **Default recipient** callsign, and the **Message body** (required). Leaving the recipient blank means the template only pre-fills the body.",
+        "Click **Save**. A status line at the bottom confirms the template was added or updated. Use **Cancel** to back out without saving.",
+        "To reorder the list, select a template and use the **↑** (move up) and **↓** (move down) buttons. To remove one, select it and click **Delete**."
+      ]
+    },
+    {
+      "p": "APRS Command comes with a set of ready-made templates — for example **Check In** (`Checking in. All OK.`), **At Position**, **Departing**, **Need Assistance**, **All Clear**, **Copy That**, and **Say Again**. If you edit them and want the originals back, click **Restore defaults** at the bottom right of the tab."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "A template never sends by itself",
+        "text": "Templates only fill in the compose fields. Choosing one puts text in the box — it does not transmit. Sending is still a separate, deliberate step, and still gated by the transmit setting."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**A message won't send / nothing goes out.** Transmit is disabled by default — the **TX Disabled** badge in the title bar means the app is receive-only. Enable transmit deliberately before expecting anything on the air.",
+        "**The compose line says something other than 'Ready to queue'.** That is the validation summary telling you what is wrong — commonly a missing **To** callsign or a message body that is too long. Fix the flagged item; the line updates when it re-checks.",
+        "**A sent message shows as Failed.** No acknowledgement came back after the retries. The other station may be out of range, off the air, or not running an APRS station that ACKs — try again later or via a different path.",
+        "**The Template dropdown is empty.** Open **Settings** > **Message Templates** and add one with **+ New Template**, or click **Restore defaults** to bring back the built-in set.",
+        "**My From callsign is wrong or blank.** It is pulled from **Station Setup** — set your callsign there and reopen the Message Center.",
+        "**A club bulletin isn't in my Inbox.** Bulletins, announcements, and queries are not addressed to you individually — look on the **Bulletins**, **Announcements**, and **Queries** tabs, not the **Inbox**.",
+        "**A template I edited doesn't show its recipient.** A blank **Default recipient** is normal — that template only pre-fills the message body and leaves **To** for you to enter."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Opening the Message Center from Messages > Messages",
+    "The tabs: Inbox, Bulletins, Announcements, Queries, Outbox, Drafts, Thread",
+    "Reading a conversation in the Thread tab",
+    "Composing and sending a message (a transmit action)",
+    "Acknowledgements, retries, and Failed status",
+    "Using templates to pre-fill compose",
+    "Creating and editing templates in Settings"
+  ],
+  "subtitle": "Reading and sending APRS text messages, tracking acknowledgements, and using one-click message templates — with transmit staying off until you enable it.",
+  "title": "The Message Center & Templates",
+  "order": 21
+}

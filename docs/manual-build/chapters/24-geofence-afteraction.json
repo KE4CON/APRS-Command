@@ -1,0 +1,251 @@
+{
+  "title": "Geofence Alerts & After-Action Reporting",
+  "subtitle": "Watch an area for stations coming and going, then export a complete record of your session for served agencies or your own files.",
+  "in_this_chapter": [
+    "What geofences do and how alerts fire",
+    "Creating a circle or polygon geofence",
+    "Enabling alert-on-enter and alert-on-exit",
+    "Opening the After-Action Report export",
+    "Choosing what to include (CSVs, summary, ICS forms)",
+    "Where report files are saved",
+    "Troubleshooting alerts and exports"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This chapter covers two features that pair up nicely at the end of an operation. __Geofence alerts__ let you define an area and get notified the moment a station moves into or out of it — handy for watching a staging area, a shelter zone, a parade route, or the boundary of a search grid. __After-action reporting__ takes everything **APRS Command** heard during your session and writes it out to files you can file with a served agency or keep for your own records."
+    },
+    {
+      "p": "Neither feature transmits anything. Both only read what has already come in over the air. **APRS Command** is receive-first, and the **TX Disabled** badge in the title bar stays put whether or not you set up a geofence or export a report."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Two separate tools",
+        "text": "Geofences live in the **Geofence** panel in the feature area. After-action reports live under **Tools > After-Action Report**. You do not need one to use the other, but a geofence that logged some enter and leave activity makes for a richer report."
+      }
+    },
+    {
+      "h1": "Geofence Alerts"
+    },
+    {
+      "p": "A __geofence__ is a named area — a circle, a polygon, or a rectangle — that **APRS Command** watches. Whenever a station's received position update lands inside or outside that area, and you have asked for that kind of alert, a **Geofence Alert** notification pops up. The alert is driven entirely by positions received over the air; nothing is sent."
+    },
+    {
+      "screenshot": "The Geofence panel: the geofence list on the left showing name, enabled state, and type; the detail form on the right with name, type, center coordinates, radius, and the two alert checkboxes."
+    },
+    {
+      "h2": "Opening the Geofence editor"
+    },
+    {
+      "p": "Open the **Geofence** panel in the lower-right feature area. You will see the **Geofence Editor** heading, a small count line (for example `2 geofences`), a list of existing geofences on the left, and a detail form on the right."
+    },
+    {
+      "h2": "Creating a circle geofence"
+    },
+    {
+      "steps": [
+        "Click **New Circle**. The form fills with a starter draft named `New circle` and the status line reads `Circle draft ready.`",
+        "Type a **Name** (required) and, optionally, a **Description**.",
+        "Set **Center latitude** and **Center longitude** in decimal degrees. The starter values are `39.05833` and `-84.50833`. The **Use Map Center** button drops in a center point for you.",
+        "Set **Radius meters** — the distance from the center out to the edge. The starter value is `1609` (about one mile).",
+        "Tick **Alert on enter**, **Alert on exit**, or both (see below).",
+        "Leave **Enabled** checked so the geofence is live, then click **Save**. A successful save shows `Saved.` in the status line."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Meters, not miles",
+        "text": "The radius field is in __meters__. `1609` is about 1 mile, `5000` is about 5 km, `804` is about half a mile. A very large radius (over 500,000 meters) still saves but shows the warning `Circle geofence is very large.`"
+      }
+    },
+    {
+      "h2": "Creating a polygon geofence"
+    },
+    {
+      "p": "For an area that is not a neat circle — a park boundary, a district, a stretch of highway — use a polygon."
+    },
+    {
+      "steps": [
+        "Click **New Polygon**. The status line reads `Polygon draft ready.` and the points box is pre-filled with a sample four-corner shape.",
+        "In the **Polygon points** box, enter one point per line as `latitude,longitude` — for example `39.050,-84.520`. A polygon needs at least three points.",
+        "Use **Add Map Point Placeholder** to append another point line if you want a starting value to edit.",
+        "Choose your alert options and click **Save**."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Rectangle option",
+        "text": "The **type** dropdown also offers `Rectangle`. A rectangle is defined by corner points in the same points box — two points (opposite corners) or four — and its area is the box that encloses them. Circle and polygon cover almost every field need."
+      }
+    },
+    {
+      "h2": "What triggers an alert"
+    },
+    {
+      "p": "A geofence only fires when a station __crosses__ the boundary — not simply because it is already inside. The first position **APRS Command** hears from a station just records where that station stands (inside or outside). The alert fires on the next update that shows it has moved across the line:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Setting",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "**Alert on enter**",
+            "Notifies you when a station that was outside moves inside the area."
+          ],
+          [
+            "**Alert on exit**",
+            "Notifies you when a station that was inside moves outside the area."
+          ],
+          [
+            "**Enabled** unchecked",
+            "The geofence is dormant. It watches nothing and fires nothing until you re-enable it."
+          ]
+        ]
+      }
+    },
+    {
+      "p": "When a crossing happens, a **Geofence Alert** toast appears with a message like `KE4CON entered geofence Net control area.` Only geofences that are enabled and free of validation errors are watched."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Alerts are receive-only",
+        "text": "A geofence alert is a local notification. It does not beacon, does not reply to the station, and does not transmit in any form. Transmit stays disabled until you deliberately turn it on elsewhere in the app. You can test geofences safely with replay or simulated station data — never by keying up."
+      }
+    },
+    {
+      "h2": "Editing, toggling, and deleting"
+    },
+    {
+      "steps": [
+        "Click a geofence in the left-hand list to load it into the form.",
+        "Change any field and click **Save** to update it.",
+        "Click **Toggle** to flip a geofence between enabled and disabled without opening it — the status line confirms `Enabled.` or `Disabled.`",
+        "Click **Delete** to remove the selected geofence. The status line shows `Deleted.`"
+      ]
+    },
+    {
+      "h1": "After-Action Reporting"
+    },
+    {
+      "p": "When an operation wraps up, the after-action export gathers what your session heard — stations, messages, and raw packets — and writes it to files. It is built for handing a clean record to a served agency or keeping documentation for your club. Like everything in this chapter, it only reads stored session data; it transmits nothing."
+    },
+    {
+      "h2": "Opening the export window"
+    },
+    {
+      "p": "Choose **Tools > After-Action Report**. The **After-Action Report Export** window opens with the reminder \"Export session data for filing with served agencies or for your records.\" Near the top, a **Session data available** panel shows three live counts: **Stations heard**, **Messages**, and **Packets logged**, so you know what is about to be exported."
+    },
+    {
+      "screenshot": "The After-Action Report Export window: the event name field, the three session-data counts, the Include-in-export checklist, and the Export button at the bottom."
+    },
+    {
+      "h2": "Filling it in"
+    },
+    {
+      "steps": [
+        "In **Event / operation name**, type a name such as `Field Day 2026` or `Hurricane Prep Exercise`. If you leave it blank, the report is labeled `APRS Session`.",
+        "Under **Include in export**, tick the pieces you want (see the table below).",
+        "If you leave **ICS-214 Activity Log** checked, an **ICS-214 Operator Information** section appears — fill in **Operator name**, **ICS position**, **Home agency / club**, **Check-in location (ICS-211)**, and optional **ICS-205 special instructions**.",
+        "Click **Export**."
+      ]
+    },
+    {
+      "h2": "What you can include"
+    },
+    {
+      "table": {
+        "headers": [
+          "Option",
+          "File",
+          "Default"
+        ],
+        "rows": [
+          [
+            "Text summary",
+            "`AAR_..._Summary.txt`",
+            "On"
+          ],
+          [
+            "Stations heard CSV",
+            "`AAR_..._Stations.csv`",
+            "On"
+          ],
+          [
+            "Messages CSV",
+            "`AAR_..._Messages.csv`",
+            "On"
+          ],
+          [
+            "Raw packet log CSV",
+            "`AAR_..._PacketLog.csv`",
+            "Off"
+          ],
+          [
+            "ICS-211 Check-In/Check-Out List",
+            "`ICS211_....txt`",
+            "On"
+          ],
+          [
+            "ICS-213 General Message Forms",
+            "`ICS213_....txt`",
+            "Off"
+          ],
+          [
+            "ICS-214 Activity Log",
+            "`ICS214_....txt`",
+            "On"
+          ],
+          [
+            "ICS-205 Radio Communications Plan",
+            "`ICS205_....txt`",
+            "On"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Why ICS-213 is off by default",
+        "text": "The **ICS-213 General Message Forms** option produces one form per APRS message sent or received. For a busy session that is a lot of files, so it starts unchecked. Turn it on when a served agency asks for individual message documentation."
+      }
+    },
+    {
+      "h2": "Where the files go"
+    },
+    {
+      "p": "Every file is written to your **Downloads** folder. Each name carries the export date and time (for example `AAR_2026-08-04_1430_Summary.txt`), so running the export more than once never overwrites an earlier report. After a run, the status line confirms something like `✓ 5 files ready to save.`"
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "Nothing selected",
+        "text": "If you clear every checkbox and click **Export**, nothing is written and the status line reads `Nothing selected — tick at least one export option.` Make sure at least one item is checked."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**No geofence alert when a station is clearly inside the area.** The first position heard only sets the baseline; the alert fires on the next update that crosses the boundary. Also confirm the geofence is **Enabled** and that **Alert on enter** or **Alert on exit** is ticked.",
+        "**Saving a geofence shows an error instead of `Saved.`** Check the message: a circle needs a center and a positive **Radius meters**; a polygon needs at least three `latitude,longitude` points; every geofence needs a **Name**. Fix the flagged field and save again.",
+        "**A geofence never triggers even though it looks right.** A disabled geofence, or one with validation errors, is skipped entirely. Re-enable it and clear any warning shown in its list row.",
+        "**Radius seems way too big or too small.** The field is in **meters**, not miles or feet. Use `1609` for about a mile, `1000` for a kilometer.",
+        "**Export counts show zero stations, messages, or packets.** The report can only include what the session actually received. Confirm station updates were arriving before you exported; nothing is transmitted to fetch more.",
+        "**Cannot find the exported files.** They are in your **Downloads** folder, named with the export date and time — sort by newest to find the latest set.",
+        "**Worried the export or a geofence might key the radio.** Neither feature transmits. The **TX Disabled** badge stays in the title bar, and transmit only happens when you deliberately enable it elsewhere."
+      ]
+    }
+  ],
+  "order": 24
+}

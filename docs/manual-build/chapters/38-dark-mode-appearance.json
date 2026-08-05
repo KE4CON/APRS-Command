@@ -1,0 +1,131 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "APRS Command can display itself in a bright __light__ theme or a dimmed __dark__ theme. This chapter covers the one control that switches between them, what it changes, and how the app remembers your choice."
+    },
+    {
+      "p": "There is a single appearance setting: a **Toggle Dark Mode** switch. The app starts in __light__ mode the first time you run it. Flip it once and every screen — the map page, side panels, menus, tab strips, and text — repaints in the matching palette. Nothing else about how the app works changes, and nothing you flip here affects radio behavior. The **TX Disabled** badge in the title bar stays exactly as it is."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "One switch, two looks",
+        "text": "There is no separate \"appearance settings\" screen and no per-panel color picker for the app theme. Dark mode is a simple on/off toggle that applies to the whole application at once."
+      }
+    },
+    {
+      "h1": "How to Switch Light / Dark"
+    },
+    {
+      "p": "There are two ways to flip the theme, and both do the exact same thing."
+    },
+    {
+      "steps": [
+        "Open the **View** menu in the menu bar.",
+        "Click **Toggle Dark Mode** (at the bottom of the menu, below the separator).",
+        "The whole app repaints immediately. Pick it again to switch back."
+      ]
+    },
+    {
+      "p": "If you prefer the keyboard, press `Ctrl+D` from anywhere in the app to toggle instantly — no menu needed."
+    },
+    {
+      "table": {
+        "headers": [
+          "Action",
+          "Where",
+          "Result"
+        ],
+        "rows": [
+          [
+            "**Toggle Dark Mode**",
+            "**View** menu",
+            "Switches the whole app between light and dark"
+          ],
+          [
+            "`Ctrl+D`",
+            "Any screen",
+            "Same toggle, from the keyboard"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Find it fast",
+        "text": "The keyboard shortcut is also listed on the shortcuts card (open it with `Ctrl+/`), shown there as \"Toggle Dark / Light mode.\""
+      }
+    },
+    {
+      "screenshot": "The View menu open with \"Toggle Dark Mode\" highlighted at the bottom, below the separator line."
+    },
+    {
+      "h1": "What the Toggle Affects"
+    },
+    {
+      "p": "Dark mode swaps the app's color palette across the board. When you switch, these all change together:"
+    },
+    {
+      "bullets": [
+        "Application and panel backgrounds (light gray in __light__ mode, deep navy in __dark__ mode).",
+        "Body text and labels, so they stay readable against the new background.",
+        "The map page's title bar and status bar chrome.",
+        "Menus, tab strips, and the selected-tab accent.",
+        "Side panel headers and accents."
+      ]
+    },
+    {
+      "p": "The theme is a display choice only. It does not touch your settings, your station list, your messages, your beaconing configuration, or whether the radio can transmit. The map tiles themselves come from your map source and are not recolored by the toggle."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Receive-first, unchanged",
+        "text": "Switching to dark mode never enables transmit. APRS Command stays receive-first and transmit-disabled until you deliberately turn transmit on elsewhere. The **TX Disabled** badge is not part of the theme and does not move or disappear when you flip modes."
+      }
+    },
+    {
+      "h1": "Does It Remember My Choice?"
+    },
+    {
+      "p": "Yes. Your light/dark preference is saved as soon as you toggle it, and it is applied at startup before the main window even appears. Close the app in dark mode and it will come back up in dark mode the next time — no need to set it again each session."
+    },
+    {
+      "p": "The preference is stored with your other app settings (the `DarkMode` flag in the saved settings file). The factory default is __light__ mode, so a brand-new install or a reset settings file starts light."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Per install, not per screen",
+        "text": "The choice is global to the app, not remembered separately for individual windows or the map page. Whatever you last selected is what the whole app uses next time."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing happens when I click Toggle Dark Mode.** Look at the whole window, not just the map tiles — the map imagery is not recolored, but the surrounding chrome, panels, menus, and text do change. If those switched, the toggle worked.",
+        "**The app reopened in the wrong theme.** It reopens in whatever theme you last selected. Toggle it once more (**View → Toggle Dark Mode** or `Ctrl+D`); the new choice is saved immediately for next launch.",
+        "**`Ctrl+D` does nothing.** Make sure the main APRS Command window has focus — a shortcut only fires when the app is the active window. Use **View → Toggle Dark Mode** as a fallback.",
+        "**Dark text is hard to read on a dark panel, or vice versa.** Toggle the theme once; text colors are paired to their background and switch together, which usually resolves a mismatched look from an interrupted change.",
+        "**A fresh install came up light and I wanted dark.** That is expected — the default is light. Flip it once and it will stay dark from then on."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "What the light and dark themes are",
+    "Switching with the View menu",
+    "The Ctrl+D keyboard shortcut",
+    "What the toggle recolors (and what it doesn't)",
+    "How your choice is saved across restarts",
+    "Why the theme never affects transmit"
+  ],
+  "subtitle": "Switch the whole app between a bright light theme and a dimmed dark theme, and have your choice stick.",
+  "title": "Dark Mode & Appearance",
+  "order": 38
+}

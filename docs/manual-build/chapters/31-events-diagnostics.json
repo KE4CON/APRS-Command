@@ -1,0 +1,222 @@
+{
+  "title": "Events Log & Diagnostics",
+  "subtitle": "A running, read-only history of everything APRS Command decoded and did, plus live RF health diagnostics for troubleshooting.",
+  "in_this_chapter": [
+    "Opening the Events Log from the View menu",
+    "Reading a decoded event entry",
+    "Filtering by category, severity, and callsign",
+    "Event categories and severities explained",
+    "RF Diagnostics: the live link scoreboard",
+    "Where the log files live on disk",
+    "Troubleshooting a quiet or unhealthy link"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The __Events Log__ is APRS Command's running record of what the app has been doing: packets it decoded, stations it saw, ports that connected or dropped, alerts that fired, and messages that came and went. When something looks off — a radio link that went quiet, a beacon that never appeared, a port that will not stay open — the events log is the first place to look. It is a read-only history, so opening it and reading it never puts anything on the air."
+    },
+    {
+      "p": "Alongside it, the **RF Diagnostics** tool gives you a live scoreboard of your radio link: packet counts, duplicates, unique stations, and warnings about noisy paths or over-eager beacons. Between the two, you can answer \"is my station actually hearing traffic, and is everything healthy?\" without guessing."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "Transmit-safe",
+        "text": "Both the Events Log and RF Diagnostics only observe and report. APRS Command is receive-first and transmit-disabled by default — the **TX Disabled** badge in the title bar stays put — and nothing in these two tools changes that."
+      }
+    },
+    {
+      "h2": "Opening the Events Log"
+    },
+    {
+      "p": "The events log lives on the **View** menu. Open it from **View ▸ Events**. It opens in its own floating window titled `APRS Command — Events`, so you can leave it open on a second monitor while you work the map."
+    },
+    {
+      "steps": [
+        "Click **View** in the menu bar.",
+        "Choose **Events**.",
+        "The window opens showing the __Decoded Event Log__ — a scrolling list with a filter row across the top and a running count reading `Decoded events: N`."
+      ]
+    },
+    {
+      "screenshot": "The Events window: a one-line description strip, a filter row (a Search events box, a Callsign/source box, and three dropdowns for category, severity, and event type), a Clear button at top right, and the scrolling event list below."
+    },
+    {
+      "h2": "Reading an entry"
+    },
+    {
+      "p": "Each row lays out the essentials in columns, left to right: the __timestamp__, the __severity__, the __category__, the __event type__, the __callsign or source__, and a plain-language __summary__. A second line underneath carries the __details__ when there are any."
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it tells you"
+        ],
+        "rows": [
+          [
+            "Timestamp",
+            "When the event happened."
+          ],
+          [
+            "Severity",
+            "How much it matters — `Debug`, `Info`, `Warning`, `Error`, or `Critical`."
+          ],
+          [
+            "Category",
+            "Which part of the app it came from (see the category list below)."
+          ],
+          [
+            "Event Type",
+            "The specific thing that happened, e.g. `StationCreated`, `PortDisconnected`, `AlertTriggered`."
+          ],
+          [
+            "Callsign/Source",
+            "The station or feed the event relates to, when one applies."
+          ],
+          [
+            "Summary / Details",
+            "A readable one-line summary, with extra detail on the line beneath."
+          ]
+        ]
+      }
+    },
+    {
+      "h2": "Filtering the list"
+    },
+    {
+      "p": "The filter row lets you cut a long log down to what you care about. Everything updates as you type or choose — there is no separate Apply button."
+    },
+    {
+      "bullets": [
+        "**Search events** — free-text match against the summary, details, and notes. Type part of a message and the list narrows.",
+        "**Callsign/source** — show only rows tied to a particular station or feed (for example your own call, or `gpsd`).",
+        "**Category dropdown** — defaults to `All`; pick one category to focus on (for example `Port` or `Alert`).",
+        "**Severity dropdown** — defaults to `All`; pick `Warning`, `Error`, or `Critical` to surface only problems.",
+        "**Event type dropdown** — defaults to `All`; narrow to one exact event, such as `PacketTransmitBlocked`."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "Find problems fast",
+        "text": "Set the severity dropdown to `Warning` (or higher) and leave everything else on `All`. What remains is the short list of things the app thought were worth flagging."
+      }
+    },
+    {
+      "h2": "Event categories"
+    },
+    {
+      "p": "Every entry is tagged with one category so you can tell at a glance which subsystem it came from. The categories are:"
+    },
+    {
+      "bullets": [
+        "`Packet` — raw and parsed packet activity",
+        "`Station` — stations created, updated, or expired",
+        "`Object` — APRS objects created, updated, or killed",
+        "`Weather` — weather reports and weather-station updates",
+        "`Message` — messages received, sent, acknowledged, or rejected",
+        "`Bulletin` — bulletins received",
+        "`GPS` — position/fix updates from a GPS source",
+        "`Port` — serial/TNC port connect, disconnect, and errors",
+        "`AprsIs` — APRS-IS internet feed connect/disconnect",
+        "`RF` — radio-link events",
+        "`Beacon` — beacons generated (and, when enabled, transmitted)",
+        "`IGate` — I-Gate candidate detection and gating decisions",
+        "`Digipeater` — digipeat repeat/block decisions",
+        "`Alert` — alert rules that triggered",
+        "`System` — general application events"
+      ]
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Why you may see \"transmit\" events with TX disabled",
+        "text": "Entries like `PacketTransmitBlocked` or `BeaconGenerated` are normal and expected. They record that the app *prepared* something and the safety gate *stopped* it from reaching the air. A generated beacon is not a transmitted one — the log is showing you the guardrail working, not a transmission."
+      }
+    },
+    {
+      "h2": "Clearing the view"
+    },
+    {
+      "p": "The **Clear** button at the top right empties the in-memory event list so you can start watching fresh — handy right before you plug in a radio or start a __replay__ so only new activity shows. Clearing affects the on-screen list; it does not erase any log files already written to disk."
+    },
+    {
+      "h2": "RF Diagnostics"
+    },
+    {
+      "p": "For a live health check of the radio link itself, open **Tools ▸ RF Diagnostics**. Instead of a line-by-line history, it shows summary tiles and warning panels that update as packets arrive."
+    },
+    {
+      "bullets": [
+        "**Tiles** across the top: **Packets** (total heard), **RF**, **APRS-IS**, **Duplicates**, and **Stations** (unique callsigns).",
+        "**Station Rates** and **Source Rates** — which stations and which sources are the busiest.",
+        "**Path Warnings** and **Beacon Warnings** — flags for questionable digipeater paths and stations beaconing too often.",
+        "**Recent packets** — a scrolling list showing each packet's time, callsign, source, duplicate state, link state, path, and any warnings.",
+        "A **Last updated** line and a **Clear** button to reset the counters."
+      ]
+    },
+    {
+      "screenshot": "The RF Diagnostics window: a row of count tiles (Packets, RF, APRS-IS, Duplicates, Stations), a line summarizing link health, four small panels (Station Rates, Source Rates, Path Warnings, Beacon Warnings), and a scrolling recent-packets list at the bottom."
+    },
+    {
+      "h2": "Where the log files live"
+    },
+    {
+      "p": "APRS Command keeps its data under one folder in your user profile. On Windows the default root is `%AppData%\\APRS Command`. The exact paths for your machine are shown on the **First Run** setup screen, which lists **Application data**, **Logs**, **Map cache**, and **Exports** folders — the same folder review you saw the first time you launched the app."
+    },
+    {
+      "table": {
+        "headers": [
+          "Folder",
+          "Holds"
+        ],
+        "rows": [
+          [
+            "`logs`",
+            "General application logs, including `startup-error.log` if the app ever fails to start."
+          ],
+          [
+            "`event-logs`",
+            "Decoded-event log files, when file logging is turned on."
+          ],
+          [
+            "`packet-logs`",
+            "Raw packet capture files."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "File logging is off by default",
+        "text": "The Events window always keeps a live in-memory history (the most recent several thousand events). Writing those events to files in the `event-logs` folder is a separate, off-by-default option — the on-screen log works whether or not files are being written."
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "If the app will not start",
+        "text": "When APRS Command fails during startup it writes the reason to `startup-error.log` in the `logs` folder (or your system temp folder as a last resort). That file has the timestamp and error text to include if you need to ask for help."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**The events list is empty.** Nothing has been decoded yet, or a filter is hiding everything. Set every dropdown back to `All` and clear both text boxes; then confirm a source is connected (a port, APRS-IS, or a running replay/simulation).",
+        "**I see lots of `PacketTransmitBlocked` events.** That is expected with transmit disabled — the app built a packet and the safety gate stopped it. It is the guardrail working, not an error.",
+        "**RF Diagnostics shows zero packets.** Your station is not hearing anything. Check that your TNC/radio port is connected (look for `PortConnected` in the events log) or that APRS-IS is connected, then watch the **Packets** tile climb as traffic arrives.",
+        "**Duplicate count is high.** Normal in busy areas or when both RF and APRS-IS carry the same stations; the **Duplicates** tile and each packet's duplicate state show what is being seen more than once.",
+        "**I get Beacon Warnings for a station.** That station is beaconing more often than recommended — informational only; APRS Command does not stop other stations.",
+        "**The event-logs folder is empty.** File logging is off by default; the on-screen log still works. Turn on file logging in settings if you want events written to disk.",
+        "**The app would not start and there is no window to check.** Open `startup-error.log` in the `logs` folder under `%AppData%\\APRS Command` (or your temp folder) for the recorded error."
+      ]
+    }
+  ],
+  "order": 31
+}

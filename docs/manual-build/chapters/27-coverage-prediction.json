@@ -1,0 +1,172 @@
+{
+  "title": "Coverage Prediction (PHG)",
+  "subtitle": "Draw an estimated radio coverage circle for any station from its Power-Height-Gain data.",
+  "in_this_chapter": [
+    "What PHG is and why it matters",
+    "Opening the Coverage Prediction window",
+    "Filling in a station by hand or from the map",
+    "Reading the coverage overlay on the map page",
+    "Using the built-in PHG Calculator",
+    "Managing and clearing overlays"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "__PHG__ stands for __Power-Height-Gain__ (plus a directivity digit). It is a small code many APRS stations put in their beacon comment, like `PHG7370`, that describes how much of a signal the station puts out: its transmitter power, antenna height above average terrain, antenna gain, and whether the antenna favors one direction. **Coverage Prediction** turns that code into an estimated coverage circle drawn on the map page, so you can see roughly how far a station is likely to be heard."
+    },
+    {
+      "p": "This is a planning and estimating tool. It reads data and draws a circle on your screen. It never keys the radio and never sends anything over the air, so you can use it freely. The title bar still shows the **TX Disabled** badge the whole time."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "It is an estimate",
+        "text": "The circle is a rough line-of-sight estimate from a standard APRS range formula. Real coverage depends on terrain, obstructions, and conditions PHG cannot know about. Treat the circle as a ballpark, not a guarantee."
+      }
+    },
+    {
+      "h2": "Opening it"
+    },
+    {
+      "p": "Open the window from the menu bar."
+    },
+    {
+      "steps": [
+        "Click **Map** in the menu bar.",
+        "Choose **Coverage Prediction**.",
+        "The **Coverage Prediction (PHG)** window opens on top of the map page.",
+        "The form is pre-filled with your own station's callsign, PHG data, and fixed position if you have set them up in your station profile."
+      ]
+    },
+    {
+      "screenshot": "The Coverage Prediction (PHG) window floating over the map page, showing the input form at top (Callsign, PHG string, Latitude, Longitude), the Active overlays / PHG Calculator tabs, and the row of footer buttons."
+    },
+    {
+      "h2": "The input form"
+    },
+    {
+      "p": "The form at the top of the window has four fields. Fill them in, then use one of the footer buttons to draw the circle."
+    },
+    {
+      "table": {
+        "headers": [
+          "Field",
+          "What to enter",
+          "Example"
+        ],
+        "rows": [
+          [
+            "**Callsign**",
+            "The station the circle is for.",
+            "`KE4CON`"
+          ],
+          [
+            "**PHG string**",
+            "The 7-character PHG code. Max 7 characters.",
+            "`PHG7370`"
+          ],
+          [
+            "**Latitude**",
+            "Decimal degrees, north positive.",
+            "`33.7490`"
+          ],
+          [
+            "**Longitude**",
+            "Decimal degrees, west negative.",
+            "`-84.3880`"
+          ]
+        ]
+      }
+    },
+    {
+      "p": "As you type or edit the **PHG string**, the status line just below the form shows a plain-language summary of what that code means, for example the power in watts, the height in feet HAAT, the gain in dBd, the beam direction, and the estimated range in miles and kilometers. If the code is not valid it says `Invalid PHG string.`"
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "PHG digits at a glance",
+        "text": "A PHG code is `PHGphgd`: __p__ = power (codes map to 0, 1, 4, 9, 16, 25, 36, 49, 64, 81 watts), __h__ = height (10 up to 5120 feet HAAT), __g__ = gain in dBd (0 to 9), __d__ = directivity (0 = omni, then NE, E, SE, S, SW, W, NW, N). So `PHG7370` reads as 49 W, 80 ft, 7 dBd, omni."
+      }
+    },
+    {
+      "h2": "Three ways to add a station"
+    },
+    {
+      "p": "The footer has three buttons for placing a coverage circle, plus buttons to remove or clear circles."
+    },
+    {
+      "bullets": [
+        "**◯ Add my station** — pre-fills the form from your own station profile and immediately draws your coverage circle. The fastest way to see your own footprint.",
+        "**◉ From selected station** — pre-fills the form from whichever station is currently selected on the map. It pulls the callsign and position from the station database, and if a PHG code appears in that station's comment field it fills that in too. Select the station on the map first, then open Coverage Prediction (or use this button while it is open).",
+        "**◯ Add overlay** — draws a circle from whatever is currently typed in the form. Use this after entering a callsign, PHG string, and position by hand."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "One circle per callsign",
+        "text": "You can show several stations at once, but only one overlay per callsign. If you try to add a callsign that is already shown, the status line says the overlay is already displayed."
+      }
+    },
+    {
+      "h2": "Reading the overlay on the map"
+    },
+    {
+      "p": "Each station you add appears as a translucent circle on the map page, centered on the station's position, with a radius set by its estimated range. The station's callsign and a one-line summary of its PHG values also appear in the **Active overlays** tab inside the window. The larger the circle, the farther that station is estimated to reach; overlapping circles suggest two stations that can likely hear each other."
+    },
+    {
+      "screenshot": "The map page with two overlapping translucent blue PHG coverage circles, each centered on a station marker, illustrating estimated reach and where two stations' coverage overlaps."
+    },
+    {
+      "h2": "The PHG Calculator tab"
+    },
+    {
+      "p": "If you know your station's real specs but not its PHG code, switch to the **PHG Calculator** tab. It works out the closest matching PHG string for you and estimates the range. The result is automatically copied into the overlay form so you can draw it right away."
+    },
+    {
+      "steps": [
+        "Click the **PHG Calculator** tab.",
+        "Set **Transmitter power (watts)** (0 to 81).",
+        "Set **Antenna height HAAT (feet)** (10 to 5120). This is __Height Above Average Terrain__, not the physical height of your mast.",
+        "Set **Antenna gain (dBd)** (0 to 9). A plain omni dipole is 0 dBd.",
+        "Pick a **Beam direction** (Omni, or one of eight compass directions).",
+        "Click **⚡ Calculate PHG**."
+      ]
+    },
+    {
+      "p": "The result panel shows the computed **PHG string** in large type, the encoded values next to the values you entered (PHG uses fixed steps, so they may differ slightly), the directivity, and the estimated range in miles and kilometers. Press **Copy** to put the PHG string on your clipboard. The string is also dropped into the overlay form at the top automatically, so you can jump to the footer and press **◯ Add overlay**."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "HAAT vs. mast height",
+        "text": "PHG height is average terrain height, which is why a modest tower on a hilltop can encode far more reach than a tall tower in a valley. If in doubt, start with a conservative HAAT and adjust."
+      }
+    },
+    {
+      "h2": "Managing overlays"
+    },
+    {
+      "bullets": [
+        "**Remove** — deletes the overlay currently selected in the **Active overlays** list. The button is grayed out until you select one.",
+        "**Clear all** — removes every coverage circle from the map at once."
+      ]
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing appears when I add a station.** Every field must be valid. Check that the callsign is filled, the PHG string parses (the status line should show a summary, not `Invalid PHG string.`), and latitude and longitude are real numbers in range. The status line names whichever field is the problem.",
+        "**\"From selected station\" says no station is selected.** Click a station on the map first, then use the button. If it says the callsign is not in the station database, the app has not heard a position from that station yet.",
+        "**A selected station loads but the PHG string is blank.** That station's comment field did not contain a PHG code, so there is nothing to read. Type a PHG string in by hand, or use the PHG Calculator to build one.",
+        "**The circle looks too big or too small.** Remember it is an estimate from power, height, and gain only. Double-check the HAAT value especially, since terrain height drives most of the range. Nothing here transmits, so it is safe to try different values and re-add.",
+        "**I entered a value in the calculator but the encoded number is different.** PHG only allows fixed steps (for example power snaps to 0, 1, 4, 9, 16, 25... watts). The result panel shows both what you entered and what PHG encoded, so a small difference is normal.",
+        "**The overlay is still on the map after I close the window.** Reopen **Map > Coverage Prediction** and use **Clear all**, or **Remove** the individual overlay you no longer want."
+      ]
+    }
+  ],
+  "order": 27
+}
