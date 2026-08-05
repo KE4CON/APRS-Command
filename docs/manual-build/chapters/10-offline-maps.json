@@ -1,0 +1,251 @@
+{
+  "title": "Offline Maps",
+  "subtitle": "Download map tiles ahead of time so the map still works with no internet in the field.",
+  "in_this_chapter": [
+    "Why offline maps matter",
+    "Opening the downloader",
+    "Naming your area and picking a map layer",
+    "Entering the bounding box",
+    "Choosing zoom levels",
+    "Estimate, then download",
+    "Where tiles are stored",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The map area normally pulls its map pictures (called __tiles__) from the internet as you pan and zoom. That is fine at home, but a POTA site, a summit, or an EMCOMM deployment often has no cell signal and no Wi-Fi. When that happens, the map goes blank because there is nothing to download."
+    },
+    {
+      "p": "The **Offline Map Download** tool fixes this ahead of time. While you still have internet, you draw a box around the area you care about, pick how much detail you want, and APRS Command downloads all the tiles for that box and saves them on your computer. Later, in the field with no connection, the map draws those saved tiles instead of reaching for the internet."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "PLAN AHEAD",
+        "text": "Download your area the night before, on a good connection. Tile downloads can be large, and you cannot make them once you are already off-grid."
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "This tool uses the internet to fetch tiles. It does not transmit anything on the radio and has nothing to do with the TX badge. It is purely a one-time download of map pictures."
+      }
+    },
+    {
+      "h1": "Opening the Downloader"
+    },
+    {
+      "p": "On the map page, go to the menu bar and choose **Map -> Offline Map Download**. A floating panel titled **Offline Map Download** opens, centered over the main window."
+    },
+    {
+      "screenshot": "The menu bar with the Map menu open, showing the Offline Map Download item near the bottom"
+    },
+    {
+      "p": "At the top of the panel is a short reminder of what it does: pre-download map tiles for use without an internet connection, define an area, estimate the size, then download. Below that are the fields you fill in, from top to bottom."
+    },
+    {
+      "screenshot": "The Offline Map Download floating panel showing the Area name, Map layer, Bounding box, and Zoom level range fields"
+    },
+    {
+      "h1": "Step 1 — Name the Area"
+    },
+    {
+      "p": "The first field is **Area name**. This is just a label so you can recognize this download later. Type something meaningful, for example `Fulton County GA` or `Field Day Site`. It starts pre-filled with `Field Operation Area`, which you can type over."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "REQUIRED",
+        "text": "The area name cannot be left blank. If it is empty, the Estimate step will report an error instead of a size."
+      }
+    },
+    {
+      "h1": "Step 2 — Choose the Map Layer"
+    },
+    {
+      "p": "The **Map layer** drop-down chooses which map style gets downloaded. Two choices are offered:"
+    },
+    {
+      "bullets": [
+        "**OpenStreetMap** — a worldwide street map (streets, water, place names). A good all-around choice anywhere in the world.",
+        "**USGS Topo** — the United States Geological Survey topographic map (contours, roads, water). Best for terrain and back-country work in the United States."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "Whatever layer you download here is the layer that will be available offline. If you expect to want topographic detail in the field, download the USGS Topo layer, not just OpenStreetMap."
+      }
+    },
+    {
+      "h1": "Step 3 — Enter the Bounding Box"
+    },
+    {
+      "p": "The **Bounding box (decimal degrees)** section is where you tell the tool exactly which rectangle of the world to save. A __bounding box__ is just the four edges of a rectangle, given as latitude and longitude numbers. There are four boxes:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Field",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "North latitude",
+            "The top edge of your rectangle"
+          ],
+          [
+            "South latitude",
+            "The bottom edge of your rectangle"
+          ],
+          [
+            "West longitude",
+            "The left edge of your rectangle"
+          ],
+          [
+            "East longitude",
+            "The right edge of your rectangle"
+          ]
+        ],
+        "widths": [
+          2,
+          5
+        ]
+      }
+    },
+    {
+      "p": "Enter the numbers in __decimal degrees__ (for example `34.0500`, not degrees-and-minutes). Latitudes run from `-90` to `90`; north of the equator is positive. Longitudes run from `-180` to `180`; in the United States they are negative (west of Greenwich), for example `-84.5000`. Each box has small up/down arrows, or you can click in and type the value directly."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "RULE",
+        "text": "North latitude must be a larger number than South latitude — the top of the box has to be above the bottom. If North is not greater than South, the estimate will fail with an error."
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "KEEP IT TIGHT",
+        "text": "Draw the smallest box that still covers where you will operate and drive. A big box multiplies the tile count fast. Very large boxes (roughly a 10-by-10 degree area or bigger) are blocked outright and report that the area is too large."
+      }
+    },
+    {
+      "h1": "Step 4 — Choose the Zoom Levels"
+    },
+    {
+      "p": "The **Zoom level range** decides how much detail you download. Lower zoom numbers are zoomed-out, big-picture views; higher zoom numbers are zoomed-in, street-level views. You set two numbers:"
+    },
+    {
+      "bullets": [
+        "**Minimum zoom** — the most zoomed-out level to save.",
+        "**Maximum zoom** — the most zoomed-in (most detailed) level to save."
+      ]
+    },
+    {
+      "p": "The panel gives this guidance directly: zoom 8 to 12 is good for regional awareness, and zoom 14 and up is for detailed street-level maps at specific locations. The tool downloads every level from your minimum through your maximum, inclusive."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "SIZE GROWS FAST",
+        "text": "Each step up in maximum zoom roughly quadruples the number of tiles. Going from max zoom 12 to max zoom 16 is not four times bigger — it is many times bigger. Add high zoom levels only for the small spots where you truly need street detail."
+      }
+    },
+    {
+      "h1": "Step 5 — Estimate the Download"
+    },
+    {
+      "p": "Before anything downloads, click **Estimate**. The tool counts how many tiles your box and zoom range would need and shows a summary line, for example `~2,400 tiles  ·  ~60 MB  ·  Ready to download`. The size is an approximation, but it is close enough to judge whether the download is reasonable."
+    },
+    {
+      "screenshot": "The estimate result line showing an approximate tile count, size in MB, and Ready to download"
+    },
+    {
+      "p": "If the box, zoom range, or area name is invalid, the panel shows an error such as `Estimate failed: ...` instead of a size. Fix the flagged field and click **Estimate** again. If the estimate comes back very large, a warning is appended to the summary line — consider shrinking the box or lowering the maximum zoom before continuing."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "Any time you change a field — the name, the box, the layer, or the zoom levels — the estimate clears and the Download button is disabled again. Always click Estimate as your last step before downloading."
+      }
+    },
+    {
+      "h1": "Step 6 — Download"
+    },
+    {
+      "p": "Once you have an estimate you are happy with, click **Download**. (The button stays disabled until a valid estimate exists.) A progress bar appears with a running status line, for example `Downloading… 1,200 / 2,400 tiles (50%)  ·  0 failed  ·  35 skipped`."
+    },
+    {
+      "steps": [
+        "Watch the progress bar fill as tiles are saved.",
+        "Tiles you already downloaded before are counted as \"skipped\" and reused — the tool does not re-download them.",
+        "If some tiles fail (a brief network hiccup, for example), the count of failed tiles rises but the job keeps going instead of stopping.",
+        "When it finishes, the status line reports the outcome, for example `✓ Download complete — 2,365 tiles downloaded, 35 already cached.`"
+      ]
+    },
+    {
+      "screenshot": "The download in progress, showing the progress bar and the live tile count status line"
+    },
+    {
+      "p": "To stop early, click **Cancel Download**, which appears only while a download is running. The job stops at the next tile and reports `Download cancelled.` Whatever tiles finished before you canceled are kept — nothing already saved is lost."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "IF SOME TILES FAILED",
+        "text": "If the job ends with failures, the status line says it finished with errors and how many tiles failed. You can simply run the same area again later on a better connection; already-saved tiles are skipped, so only the missing ones are fetched."
+      }
+    },
+    {
+      "h1": "Where the Tiles Are Stored"
+    },
+    {
+      "p": "Downloaded tiles are saved on your computer, by default under your local application-data folder in `APRS Command\\TileCache`. You do not have to manage these files by hand — APRS Command reads them automatically."
+    },
+    {
+      "p": "By default the cache is capped at about 1 GB total, and the oldest tiles are trimmed first when that limit is reached. Tiles also have a default freshness age of about 30 days; older tiles may be refreshed when you are back online, but they still draw offline in the meantime."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "RASPBERRY PI / SMALL DISKS",
+        "text": "Offline maps can grow large quickly. On a Raspberry Pi or any machine with limited storage, keep boxes small and maximum zoom modest so the cache stays within the available free space."
+      }
+    },
+    {
+      "h1": "Using the Maps Offline"
+    },
+    {
+      "p": "There is nothing special to switch on. Once tiles for an area are in the cache, the map area draws them from disk whenever the internet is unavailable. Pan and zoom within the area you downloaded, at the zoom levels you downloaded, and the map fills in normally. If you stray outside your downloaded box, or zoom in past your maximum zoom, those tiles were never saved and will be blank until you are back online."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "MATCH THE LAYER",
+        "text": "Offline tiles only cover the map layer you downloaded. If you downloaded OpenStreetMap but switch the base-map selector to a USGS layer in the field, that other layer has no saved tiles and will be blank. Download the layer you actually plan to use."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Download button is grayed out** — you have not run a valid Estimate yet, or you changed a field after estimating. Click **Estimate** again.",
+        "**\"Estimate failed\"** — check that the Area name is not blank, North latitude is greater than South latitude, and latitude/longitude values are within their allowed ranges.",
+        "**\"Offline map area is large and requires explicit approval\"** — your box covers too much of the globe. Make the rectangle smaller.",
+        "**Estimate shows a huge tile count or a warning** — lower the Maximum zoom or shrink the box; high zoom levels multiply tiles dramatically.",
+        "**Some tiles failed** — usually a temporary network problem. Re-run the same area on a stable connection; saved tiles are skipped and only missing ones are fetched.",
+        "**Map is blank in the field** — you may be outside your downloaded box, zoomed in past your maximum zoom, or viewing a different map layer than the one you downloaded. Confirm the base-map selector matches the layer you saved.",
+        "**Nothing downloads even with internet** — confirm the app can write to its tile-cache folder and that there is enough free disk space."
+      ]
+    }
+  ],
+  "order": 10
+}

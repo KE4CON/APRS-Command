@@ -516,7 +516,7 @@ def ch_drawing(doc, n):
             ["Fill", "The fill for polygons and circles: None (outline only), Solid, or a hatch / dot pattern."],
             ["W (width)", "Line / outline thickness, from 1 to 12."],
             ["Measure", "Turns the length / diameter / area labels on shapes on or off."],
-            ["Units", "Switches measurements between Imperial and Metric."],
+            ["Units", "Imperial or Metric, plus a 'Keep small units' toggle (stay in ft/acres · m/ha even for large shapes)."],
             ["Clear", "Deletes every drawing on the map."],
             ["✕ Exit", "Leaves draw mode (your drawings stay)."],
         ],
@@ -605,6 +605,9 @@ def ch_drawing(doc, n):
     S.body(doc, ["Use ", ("Units", 'b'), " to switch between ", ("Imperial", 'b'), " (feet, miles, acres) and ",
         ("Metric", 'b'), " (meters, kilometers, hectares) — the unit auto-scales to the size. The value is the true "
         "distance on the ground, stays correct as you zoom, is the same on every base map, and updates live while you draw."])
+    S.body(doc, ["The Units menu also has a ", ("Keep small units", 'b'), " toggle: turn it on to stay in feet and acres "
+        "(or meters and hectares) even for large shapes, instead of auto-scaling up to miles and square miles. The label "
+        "appears just below each shape, clear of the outline."])
     S.callout(doc, "note", "NOTE", "Measurements are corrected for the map projection, so a mile measured near the poles "
         "reads the same as a mile at the equator — the on-screen size differs, but the real-world number is right.")
     S.screenshot(doc, "Shapes with measurement labels — a line's length, a circle's diameter and area, a polygon's area")
@@ -783,14 +786,27 @@ def ch_replay(doc, n):
     ])
 
 
-# Registry — order here sets provisional chapter numbers.
-CHAPTERS = [
-    ch_welcome,
-    ch_installing,
-    ch_maptour,
-    ch_drawing,
-    ch_replay,
+# Hand-written chapters, each tagged with its outline order. JSON chapters (docs/manual-build/chapters/
+# *.json, each with an "order") are merged in by order, so chapters slot into the right place regardless
+# of whether they're Python functions or agent-produced JSON. Final numbers are assigned 1..N by order.
+FUNCTION_CHAPTERS = [
+    (1,  ch_welcome),
+    (2,  ch_installing),
+    (4,  ch_maptour),
+    (7,  ch_drawing),
+    (25, ch_replay),
 ]
+
+
+def load_json_chapters():
+    import glob, json
+    out = []
+    folder = os.path.join(os.path.dirname(__file__), "chapters")
+    for path in sorted(glob.glob(os.path.join(folder, "*.json"))):
+        with open(path, encoding="utf-8") as f:
+            ch = json.load(f)
+        out.append((int(ch.get("order", 999)), ch))
+    return out
 
 
 def main():
@@ -800,12 +816,21 @@ def main():
     how_to_use(doc)
     contents(doc)
     amendments_register(doc)
-    for i, ch in enumerate(CHAPTERS, 1):
-        ch(doc, i)
+
+    items = [(order, ("func", fn)) for order, fn in FUNCTION_CHAPTERS]
+    items += [(order, ("json", ch)) for order, ch in load_json_chapters()]
+    items.sort(key=lambda x: x[0])
+
+    for number, (_order, (kind, payload)) in enumerate(items, 1):
+        if kind == "func":
+            payload(doc, number)
+        else:
+            S.render_chapter(doc, payload, number)
+
     out = os.environ.get("MANUAL_OUT") or os.path.join(os.path.dirname(__file__), "..", "USER_MANUAL.docx")
     out = os.path.abspath(out)
     doc.save(out)
-    print("OK wrote", out)
+    print("OK wrote", out, "—", len(items), "chapters")
 
 
 if __name__ == "__main__":

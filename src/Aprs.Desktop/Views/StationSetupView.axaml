@@ -63,12 +63,12 @@
                        Foreground="{DynamicResource TextPrimaryBrush}" />
             <TextBlock TextWrapping="Wrap" FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
-                       Text="Choose the unit system you prefer for all distances in the app. The app converts to kilometres behind the scenes wherever APRS-IS requires it." />
+                       Text="Choose the unit system you prefer for all distances in the app. The app converts to kilometers behind the scenes wherever APRS-IS requires it." />
             <StackPanel Orientation="Horizontal" Spacing="20" Margin="0,4,0,0">
               <RadioButton Content="Miles  (US / UK)"
                            IsChecked="{Binding UseMetric, Converter={x:Static BoolConverters.Not}}"
                            FontSize="13" />
-              <RadioButton Content="Kilometres  (metric)"
+              <RadioButton Content="Kilometers  (metric)"
                            IsChecked="{Binding UseMetric}"
                            FontSize="13" />
             </StackPanel>

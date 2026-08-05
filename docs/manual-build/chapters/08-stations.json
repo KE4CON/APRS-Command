@@ -1,0 +1,284 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Every time APRS Command hears a station on the air (or over the internet feed), it remembers that station and drops a marker for it on the **map area**. The **Station List** is the plain, text-only version of that same information: one scrollable list of every station currently known, so you can read callsigns, see how long ago each one was heard, and jump the map straight to any of them. Think of the map as the picture and the Station List as the roster behind it."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "RECEIVE-ONLY",
+        "text": "Nothing in this chapter transmits. Opening the list, sorting it, selecting a station, and assigning a tactical label are all local, receive-side actions. None of them put a signal on the air."
+      }
+    },
+    {
+      "h1": "Opening the Station List"
+    },
+    {
+      "p": "The Station List lives in the **menu bar** at the top of the **map page**."
+    },
+    {
+      "steps": [
+        "In the **menu bar**, click **View**.",
+        "In the menu that drops down, click **Station List**.",
+        "A **floating panel** titled __APRS Command — Station List__ opens in its own window. You can move it, resize it, and leave it open beside the map while you work."
+      ]
+    },
+    {
+      "screenshot": "The View menu open in the menu bar with the Station List item highlighted"
+    },
+    {
+      "p": "At the top of the panel a line reads how many rows are showing, for example __47 visible stations__, with a smaller reminder underneath: __Newest first · click a callsign to center the map__."
+    },
+    {
+      "screenshot": "The Station List floating panel: count line at top, filter controls in the middle, and the scrolling list of station cards below"
+    },
+    {
+      "h1": "What Each Row Shows"
+    },
+    {
+      "p": "Each station is drawn as its own little card. Above the cards is a row of column **headers** you can click to sort (covered further down). The columns, left to right, are:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "**Call**",
+            "The station's callsign, shown in a monospaced font (for example `KE4CON-9`). A small colored dot sits to its left showing the station's age state (see below). A purple **LoRa** badge appears here if the station arrived over a LoRa radio link."
+          ],
+          [
+            "**Name**",
+            "The display name. If you have assigned a tactical label to this station, that label shows here; otherwise it repeats the callsign."
+          ],
+          [
+            "**Symbol**",
+            "A plain-language description of the APRS symbol the station is using, such as __Car__, __Digipeater__, or __Weather station__."
+          ],
+          [
+            "**Age**",
+            "The lifecycle state in words: __Active__, __Stale__, __Expired__, or __Hidden__ (explained in the next section)."
+          ],
+          [
+            "**Src**",
+            "The source the packet came in on, such as __AprsIs__ (the internet feed), __Rf__ (radio), __Replay__, or __Simulation__."
+          ]
+        ],
+        "widths": [
+          1.3,
+          5
+        ]
+      }
+    },
+    {
+      "p": "Below those columns, each card also shows up to three extra lines when the data exists:"
+    },
+    {
+      "bullets": [
+        "A compact __age · speed · course__ line, for example `3 min ago · 25 kt · 90°`. Fields that aren't known are simply left out, so a parked station just reads `3 min ago`.",
+        "The station's __comment/status__ text, if it sent any.",
+        "A __Device:__ line naming the radio or software that sent the packet, if APRS Command could identify it. Stations it can't identify have no device line."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "The list only ever shows stations that have a position. A station heard with no location does not get a marker or a row here."
+      }
+    },
+    {
+      "h1": "Age States: Active, Stale, Expired, Hidden"
+    },
+    {
+      "p": "APRS packets get old. A car that reported ten seconds ago is worth trusting; one last heard three hours ago may be long gone. APRS Command sorts every station into one of four __age states__ based on how long it has been since you last heard it. The colored dot next to the callsign and the word in the **Age** column both show this state."
+    },
+    {
+      "table": {
+        "headers": [
+          "State",
+          "Default timing",
+          "Dot color",
+          "What it means"
+        ],
+        "rows": [
+          [
+            "__Active__",
+            "Heard within the last 30 minutes",
+            "Green",
+            "Fresh. Trust this position."
+          ],
+          [
+            "__Stale__",
+            "30 minutes to 2 hours ago",
+            "Amber",
+            "Aging. The station may have moved since."
+          ],
+          [
+            "__Expired__",
+            "2 to 24 hours ago",
+            "Gray",
+            "Old. Kept for reference, but treat with caution."
+          ],
+          [
+            "__Hidden__",
+            "Over 24 hours, or hidden by you on purpose",
+            "Gray",
+            "Effectively retired from the normal view."
+          ]
+        ],
+        "widths": [
+          1.2,
+          2.2,
+          1,
+          3.2
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "These cutoffs are the built-in defaults (30 minutes, 2 hours, 24 hours). The exact numbers matter less than the idea: green means recent, amber means getting old, gray means stale. Watch the dot color for a quick read of the room."
+      }
+    },
+    {
+      "h1": "Filtering the List"
+    },
+    {
+      "p": "Between the count line and the columns sit four controls that narrow the list down. They stack on top of each other:"
+    },
+    {
+      "bullets": [
+        "**Search callsign or label** — a text box. Type any part of a callsign or a tactical label and the list instantly shrinks to matches. Clear the box to see everything again.",
+        "**Active only** — a checkbox. When checked, only green __Active__ stations remain. Use this to cut the noise down to who is on right now.",
+        "**Show expired** — a checkbox, on by default. Uncheck it to drop the oldest (__Expired__) stations from view.",
+        "A source dropdown — pick where packets came from: **All**, **AprsIs**, **Rf**, **TcpKiss**, **SerialKiss**, **Direwolf**, **Agwpe**, **Replay**, **Simulation**, or **LoRa**. Choose one to see only stations heard that way; leave it on **All** to see every source."
+      ]
+    },
+    {
+      "screenshot": "The filter area: search box on top, Active only and Show expired checkboxes, and the source dropdown"
+    },
+    {
+      "h1": "Sorting the List"
+    },
+    {
+      "p": "By default the list is sorted __newest first__ — the most recently heard station at the top. You can re-sort by clicking any of the clickable column **headers** above the cards:"
+    },
+    {
+      "bullets": [
+        "**Call** — sort alphabetically by callsign.",
+        "**Name** — sort alphabetically by display name / tactical label.",
+        "**Age** — group by lifecycle state.",
+        "**Src** — group by packet source."
+      ]
+    },
+    {
+      "p": "There is also a **Recent** button up near the top-right of the panel. Click it to snap the list back to __most-recently-heard first__, which is the handiest order when you are watching activity live."
+    },
+    {
+      "h1": "Selecting a Station and Reading Its Details"
+    },
+    {
+      "p": "The list and the map are linked. Clicking a station's card does two things at once:"
+    },
+    {
+      "steps": [
+        "Click any station card in the list.",
+        "The **map area** re-centers on that station so you can see where it is.",
+        "A __station details panel__ appears in the lower-left corner of the **map area** with the full readout for that station."
+      ]
+    },
+    {
+      "screenshot": "A station card selected in the list, with the map re-centered and the details panel showing in the lower-left of the map area"
+    },
+    {
+      "p": "The details panel is a lot roomier than a list row. Reading from the top, it shows:"
+    },
+    {
+      "bullets": [
+        "The display name in large text, with the raw callsign beneath it, and a **Clear** button to dismiss the panel.",
+        "**Symbol** — what the station's symbol represents.",
+        "**Grid** — its Maidenhead grid square (a short code hams use for location, like `EM73`).",
+        "**Coordinates** — latitude and longitude.",
+        "**Heard** — how long ago the last packet arrived, in plain words (__Just now__, __12 min ago__, __3 hr ago__).",
+        "**Speed / Course** — for moving stations; __Unknown__ if it isn't moving or didn't report.",
+        "**Altitude** — if reported.",
+        "**Source** and **Packets** — where the data came from and how many packets this station has sent.",
+        "A blue **Dead reckoning estimate** box, shown only for moving stations with recent data — a best-guess of where the station is *now*, projected forward from its last fix using its heading and speed.",
+        "**Path** and **Heard by** — the digipeaters and gateways the packet traveled through to reach you.",
+        "A warning strip if duplicate packets were detected.",
+        "**Comment** — the station's free-text status message.",
+        "**Last Raw Packet** — the exact, unprocessed packet text, in monospaced font, for the curious or the troubleshooting."
+      ]
+    },
+    {
+      "p": "To close the panel, click its **Clear** button. That also deselects the station."
+    },
+    {
+      "h1": "Assigning a Tactical Label"
+    },
+    {
+      "p": "A __tactical label__ (also called a tactical callsign) is a short, human-friendly name you pin onto a station so you don't have to remember its callsign. During a public-service event or a net, it is far easier to spot __NET CTL__ or __MOBILE 1__ on the map than `W4ABC-7`. The label is yours alone — it lives only on your computer and is never transmitted."
+    },
+    {
+      "steps": [
+        "First select the station: click its card in the Station List (or click its marker on the map). The details panel should be showing it.",
+        "Move to the **map area** and right-click anywhere on the map.",
+        "In the context menu that pops up, click **Assign tactical callsign…**.",
+        "A small **Assign Tactical Callsign** window opens, naming the station at the top.",
+        "Type your label in the box — for example `NET CTL`, `MOBILE 1`, or `EOC`. It can be up to 20 characters.",
+        "Click **Assign** to save it."
+      ]
+    },
+    {
+      "screenshot": "The Assign Tactical Callsign dialog with the station's callsign at top and a label typed into the input box"
+    },
+    {
+      "p": "Once assigned, the label takes the place of the callsign as the station's __Name__ everywhere — in the list's **Name** column, in the details panel's large heading, and on the map marker. The real callsign is always still shown underneath so you never lose track of who it actually is."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "The **Assign tactical callsign…** menu item is grayed out until a station is selected. If you can't click it, select a station in the list first, then right-click the map."
+      }
+    },
+    {
+      "h2": "Changing or Removing a Label"
+    },
+    {
+      "p": "Repeat the same steps to change a label: the dialog opens pre-filled with the current one, so you can edit it and click **Assign** again. To take the label off entirely and go back to the plain callsign, click **Clear label** instead."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "__The list is empty or very short.__ You may have a filter on. Check that **Show expired** is on, that **Active only** is unchecked, that the source dropdown is on **All**, and that the **Search callsign or label** box is empty.",
+        "__A station I expect isn't listed.__ The list only shows stations that reported a position. A station heard without a location won't appear. It may also have aged out — turn on **Show expired** to check.",
+        "__Clicking a card didn't move the map.__ Make sure you clicked the station card in the list, not a column header (headers sort instead of select). Try again on the body of the card.",
+        "__The details panel won't go away.__ Click its **Clear** button; that closes the panel and deselects the station.",
+        "__Assign tactical callsign… is grayed out.__ No station is selected. Click a station in the list first, then right-click the map.",
+        "__My tactical label vanished from the map.__ Re-open the Station List and confirm it still shows in the **Name** column. If it reads the plain callsign again, the label may have been cleared; assign it once more."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "Opening the list from View -> Station List",
+    "The columns: Call, Name, Symbol, Age, Src",
+    "Age states: Active, Stale, Expired, Hidden",
+    "Searching, filtering, and sorting",
+    "Clicking a station to center the map",
+    "Reading the station details panel",
+    "Assigning and clearing a tactical label"
+  ],
+  "subtitle": "Reading the roster of every station you have heard, and pinning your own labels on them.",
+  "title": "Stations: the Station List & Details",
+  "order": 8
+}

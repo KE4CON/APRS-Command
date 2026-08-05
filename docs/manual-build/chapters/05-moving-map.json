@@ -1,0 +1,227 @@
+{
+  "title": "Moving Around the Map & Base Maps",
+  "subtitle": "Pan, zoom, switch base maps, and tap a marker to see who is who.",
+  "in_this_chapter": [
+    "Panning by dragging",
+    "Zooming with the mouse wheel",
+    "The base-map selector dropdown",
+    "The four base-map choices",
+    "Selecting a station marker",
+    "Reading the station-details panel",
+    "Where quick-nav tools live"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The **map area** is the large canvas that fills most of the **map page**. It is where every station APRS Command hears shows up as a marker in its real-world location. This chapter covers the three things you do most often on that canvas: moving the map (panning), zooming in and out, and switching the background map (the streets, terrain, or aerial photo drawn underneath the markers). It also shows how to click a marker to bring up that station's full details."
+    },
+    {
+      "p": "None of this transmits anything. Moving the map, zooming, changing the base map, and selecting markers are all view-only actions on your own screen. Nothing leaves your radio or your computer."
+    },
+    {
+      "screenshot": "The map page with the map area filling the center, the base-map selector dropdown in the top-left corner of the map, and several station markers visible"
+    },
+    {
+      "h1": "Panning: Moving the Map by Dragging"
+    },
+    {
+      "p": "To move the map to a different area, press and hold the left mouse button anywhere on the open **map area**, drag in the direction you want, then release. The map follows your mouse. Drag to the right to bring into view what was off the left edge, drag down to bring in what was above the top edge, and so on. This is called __panning__. There is no separate move tool to switch on; dragging the open map always pans it."
+    },
+    {
+      "steps": [
+        "Move your mouse over the open map (not over a marker).",
+        "Press and hold the left mouse button.",
+        "Drag in any direction. The map slides along with your mouse.",
+        "Release the button when the area you want is in view."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "If a drawing tool is active (a **Draw-mode banner** is showing across the top of the map), dragging draws a shape instead of panning the map. Exit the draw tool first, using the banner's Exit control, to get normal panning back. Drawing tools are covered in their own chapter."
+      }
+    },
+    {
+      "h1": "Zooming In and Out"
+    },
+    {
+      "p": "Roll the mouse wheel forward (away from you) to zoom in for a closer look, and roll it back (toward you) to zoom out for a wider view. The map zooms toward wherever the mouse pointer is sitting, so point at the spot you care about before you scroll. Zooming and panning work together: zoom in to separate markers that are stacked on top of each other, then drag to re-center."
+    },
+    {
+      "bullets": [
+        "Wheel forward (up) = zoom in (closer, more detail).",
+        "Wheel back (down) = zoom out (farther, wider area).",
+        "The map zooms toward the mouse pointer, not the center of the screen."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "When you first open APRS Command, the map centers on your own station (your QTH) at a regional zoom level. If you get lost after a lot of panning and zooming, the **Home** button in the **icon sidebar** snaps you straight back to that starting view (see the icon-sidebar chapter)."
+      }
+    },
+    {
+      "h1": "Choosing a Base Map"
+    },
+    {
+      "p": "The __base map__ is the background layer drawn underneath your station markers. APRS Command offers four different backgrounds, chosen from the **Base-map selector** dropdown in the top-left corner of the **map area**. The dropdown is labeled **Base map:** and always sits in that corner. Click it to open the list, then click the background you want. The map redraws immediately and your markers stay exactly where they are on top."
+    },
+    {
+      "screenshot": "The Base-map selector dropdown open in the top-left of the map, showing its four choices: OpenStreetMap, USGS Topo, USGS Imagery, USGS Imagery + Topo"
+    },
+    {
+      "steps": [
+        "Click the **Base map:** dropdown in the top-left corner of the map.",
+        "The list of four choices drops open.",
+        "Click the base map you want.",
+        "The background switches right away; the station markers stay in place on top."
+      ]
+    },
+    {
+      "p": "Here are the four choices, exactly as they appear in the dropdown, and what each one shows:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Choice",
+          "What it shows",
+          "Coverage"
+        ],
+        "rows": [
+          [
+            "OpenStreetMap",
+            "A worldwide street map: roads, water, and place names, drawn as a clean map.",
+            "Worldwide"
+          ],
+          [
+            "USGS Topo",
+            "The USGS topographic map: contour lines, roads, and water.",
+            "United States only"
+          ],
+          [
+            "USGS Imagery",
+            "Aerial and satellite photography.",
+            "United States only"
+          ],
+          [
+            "USGS Imagery + Topo",
+            "The aerial photography with topographic contour lines and labels drawn on top of it.",
+            "United States only"
+          ]
+        ],
+        "widths": [
+          2,
+          4.5,
+          1.8
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "The three USGS choices only cover the United States. Outside the US they will be blank. **OpenStreetMap** is the only worldwide option, so use it if you operate outside the US or want place names everywhere."
+      }
+    },
+    {
+      "h2": "Why aerial imagery turns white over water when you zoom in"
+    },
+    {
+      "p": "The two imagery choices (**USGS Imagery** and **USGS Imagery + Topo**) are built from aerial photographs, and those photos only cover land. Zoomed out, USGS shows a coarse worldwide picture that includes water, so a lake or ocean looks normal. Zoom in and USGS switches to detailed land-only photos, and over open water there is simply nothing to show. To keep those areas from appearing as blank white, APRS Command automatically fills them with a solid, muted water color while an imagery map is showing. This happens on its own; there is nothing to turn on. If you want real detail over water (shorelines, place names), switch to **USGS Topo** or **OpenStreetMap**, which are drawn maps and show water everywhere at every zoom level."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "Each base map keeps its own cache of the tiles you have already viewed, so switching back to one you used before is instant and works offline for areas you have already looked at. Tiles are only saved as you view them; the app never bulk-downloads ahead of time."
+      }
+    },
+    {
+      "h1": "Selecting a Station on the Map"
+    },
+    {
+      "p": "Every marker on the map represents something APRS Command has heard: a station, an object, or a weather station. Click directly on a marker to __select__ it. The selected marker is highlighted with a yellow ring so you can tell which one you picked, and for a station its full details open in the **station-details panel** in the bottom-left corner of the map."
+    },
+    {
+      "steps": [
+        "Move your mouse over the marker you want.",
+        "Click it once with the left mouse button.",
+        "The marker gets a yellow highlight ring.",
+        "For a station, the **station-details panel** opens at the bottom-left with everything known about it."
+      ]
+    },
+    {
+      "p": "Before you select anything, that bottom-left corner shows a small prompt reading **Select a station marker**. That is just a hint; it is replaced by the details panel as soon as you click a station."
+    },
+    {
+      "screenshot": "A station marker selected on the map (with a yellow highlight ring) and the station-details panel open at the bottom-left showing callsign, grid, coordinates, and last-heard fields"
+    },
+    {
+      "h2": "What the station-details panel shows"
+    },
+    {
+      "p": "The **station-details panel** lists everything APRS Command knows about the selected station, drawn straight from the packets it has received. You will see:"
+    },
+    {
+      "bullets": [
+        "The station's display name and its `callsign`.",
+        "**Symbol** — a plain-language description of its APRS symbol (for example home station, mobile, digipeater).",
+        "**Grid** — its Maidenhead grid square.",
+        "**Coordinates** — its latitude and longitude.",
+        "**Heard** — how long ago it was last heard.",
+        "**Speed / Course** — how fast it is moving and in what direction (for mobile stations).",
+        "**Altitude** — its reported altitude, when available.",
+        "**Source** — where the packet came from.",
+        "**Packets** — how many packets have been received from it.",
+        "**Path** — the digipeater path the last packet traveled.",
+        "**Heard by** — which stations relayed it.",
+        "**Comment** — the station's comment or status text.",
+        "**Last Raw Packet** — the exact unprocessed packet text, in a monospace font."
+      ]
+    },
+    {
+      "p": "For a station that is moving and has recent data, a small blue **Dead reckoning estimate** box also appears, showing where the station is probably located now based on its last known speed and course. It is only an estimate, and it only shows for moving stations."
+    },
+    {
+      "p": "To close the panel and deselect the station, click the **Clear** button in the top-right corner of the panel. The panel disappears and the yellow highlight is removed from the marker."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "Clicking a weather-station marker or an object marker also selects it (yellow ring), but the full bottom-left details panel described above is specific to regular stations. Weather stations and objects are covered in their own chapters."
+      }
+    },
+    {
+      "h1": "Where the Quick-Navigation Tools Live"
+    },
+    {
+      "p": "Handy shortcuts for getting around the map — **Home** (reset the view), **Center on my station**, **Find station** (jump to a callsign), **Measure distance**, and **Map layer** (cycle the base map) — are not on the map itself. They are icon buttons in the **icon sidebar**, the vertical strip of buttons down the left edge of the window. Each one is explained step by step in the icon-sidebar chapter."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "The **Map layer** button in the **icon sidebar** cycles through the same four base maps in order (OpenStreetMap, USGS Topo, USGS Imagery, USGS Imagery + Topo). It is just a faster way to step through the choices without opening the dropdown."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**The map won't pan, it draws a shape instead** — a drawing tool is active. Look for the **Draw-mode banner** across the top of the map and click its Exit control, then dragging will pan again.",
+        "**I clicked a marker but no details appeared** — you may have clicked just beside it. Zoom in a little so the marker is larger, then click directly on its center. Remember the full bottom-left details panel only appears for regular stations, not weather or object markers.",
+        "**The map is blank / white when zoomed in** — if you are on **USGS Imagery** or **USGS Imagery + Topo**, the white area is open water with no aerial photo (see the explanation above); switch to **USGS Topo** or **OpenStreetMap** for detail over water.",
+        "**A USGS map is completely blank** — the three USGS choices only cover the United States. Outside the US, switch to **OpenStreetMap**.",
+        "**I panned too far and got lost** — use the **Home** button in the **icon sidebar** to jump back to your own station at the starting zoom.",
+        "**A base map looks stale or won't fill in** — tiles you have not viewed before need an internet connection to download the first time; check that you are online, then pan slowly to let the tiles load."
+      ]
+    }
+  ],
+  "order": 5
+}

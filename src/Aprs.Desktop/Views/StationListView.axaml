@@ -12,7 +12,7 @@
         <TextBlock Text="{Binding RowCount, StringFormat='{}{0} visible stations'}"
                    FontSize="13" FontWeight="SemiBold"
                    Foreground="{DynamicResource TextPrimaryBrush}" />
-        <TextBlock Text="Newest first · click a callsign to centre the map"
+        <TextBlock Text="Newest first · click a callsign to center the map"
                    FontSize="11"
                    Foreground="{DynamicResource TextSubtleBrush}" />
       </StackPanel>

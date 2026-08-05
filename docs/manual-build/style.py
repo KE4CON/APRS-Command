@@ -12,6 +12,7 @@ AFTER every chapter's text is complete — until then, regenerating is safe.
 Once screenshots are in, do NOT regenerate; make further changes in Word, and
 ship future changes as dated amendment supplements (see the amendment model).
 """
+import re
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT, WD_BREAK
@@ -164,6 +165,13 @@ def _one_cell(doc, width=Inches(6.5)):
     tbl.alignment = WD_TABLE_ALIGNMENT.CENTER
     tbl.autofit = False; tbl.allow_autofit = False
     cell = tbl.cell(0, 0); cell.width = width
+    # Keep the whole box together — never let a screenshot, callout, or code block split across a
+    # page break (image separated from its caption, or a half-box stranded at a page bottom). This
+    # matters most once real screenshots replace the placeholders: the box moves to the next page as
+    # a unit rather than straddling the break.
+    trPr = tbl.rows[0]._tr.get_or_add_trPr()
+    if trPr.find(qn('w:cantSplit')) is None:
+        trPr.append(OxmlElement('w:cantSplit'))
     return tbl, cell
 
 def callout(doc, kind, label, text):
@@ -271,6 +279,28 @@ def _table_light_borders(t, color="D7DEE7", sz=4):
         borders.append(el)
     tblPr.append(borders)
 
+def _keep_table_together(t):
+    """Stop tables straddling a page break. Each row is marked no-split (never break a
+    single row across pages); every row but the last is glued to the next row (keepNext)
+    so a table that fits on one page moves to the next page as a whole unit rather than
+    splitting. As a fallback for any table taller than a full page, the header row is set
+    to repeat at the top of each page it continues onto."""
+    rows = t.rows
+    n = len(rows)
+    for ri, row in enumerate(rows):
+        trPr = row._tr.get_or_add_trPr()
+        if trPr.find(qn('w:cantSplit')) is None:
+            trPr.append(OxmlElement('w:cantSplit'))
+        if ri == 0 and trPr.find(qn('w:tblHeader')) is None:
+            trPr.append(OxmlElement('w:tblHeader'))
+        if ri < n - 1:
+            for cell in row.cells:
+                for p in cell.paragraphs:
+                    pPr = p._p.get_or_add_pPr()
+                    for tag in ('w:keepNext', 'w:keepLines'):
+                        if pPr.find(qn(tag)) is None:
+                            pPr.append(OxmlElement(tag))
+
 def table(doc, headers, rows, widths):
     """Styled table: accent header row, zebra body rows, light borders.
     Each cell value is an add_runs-style string or list of runs."""
@@ -294,5 +324,66 @@ def table(doc, headers, rows, widths):
             for rr in p.runs:
                 if rr.font.size is None: rr.font.size = Pt(9.5)
     _table_light_borders(t)
+    _keep_table_together(t)
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
     return t
+
+# ---- JSON chapter renderer ------------------------------------------------
+# Agents produce chapters as JSON (see build.py). This renders that JSON deterministically,
+# so a malformed chapter can only affect itself — it can never break the Python build.
+
+_INLINE = re.compile(r'\*\*(.+?)\*\*|`([^`]+?)`|__(.+?)__')
+
+def parse_inline(text):
+    """Turn a marked-up string into add_runs parts: **bold**, `code`, __italic__."""
+    text = str(text)
+    parts, pos = [], 0
+    for m in _INLINE.finditer(text):
+        if m.start() > pos:
+            parts.append(text[pos:m.start()])
+        if m.group(1) is not None:   parts.append((m.group(1), 'b'))
+        elif m.group(2) is not None: parts.append((m.group(2), 'c'))
+        else:                        parts.append((m.group(3), 'i'))
+        pos = m.end()
+    if pos < len(text):
+        parts.append(text[pos:])
+    return parts if parts else [text]
+
+_CALLOUT_KINDS = {'note', 'tip', 'important', 'warning'}
+
+def render_chapter(doc, ch, number):
+    """Render one chapter dict (title, subtitle, in_this_chapter, blocks[]) into the document."""
+    chapter_open(doc, number, ch.get('title', 'Untitled'), ch.get('subtitle', ''), ch.get('in_this_chapter'))
+    for blk in ch.get('blocks', []):
+        if not isinstance(blk, dict):
+            continue
+        if 'h1' in blk:
+            h1(doc, str(blk['h1']))
+        elif 'h2' in blk:
+            h2(doc, str(blk['h2']))
+        elif 'p' in blk:
+            body(doc, parse_inline(blk['p']))
+        elif 'steps' in blk:
+            steps(doc, [parse_inline(s) for s in blk['steps']])
+        elif 'bullets' in blk:
+            bullets(doc, [parse_inline(s) for s in blk['bullets']])
+        elif 'callout' in blk:
+            c = blk['callout'] if isinstance(blk['callout'], dict) else {}
+            kind = c.get('kind', 'note')
+            if kind not in _CALLOUT_KINDS:
+                kind = 'note'
+            callout(doc, kind, str(c.get('label', kind.upper())), parse_inline(c.get('text', '')))
+        elif 'screenshot' in blk:
+            screenshot(doc, str(blk['screenshot']))
+        elif 'table' in blk:
+            t = blk['table'] if isinstance(blk['table'], dict) else {}
+            headers = [str(h) for h in t.get('headers', [])]
+            rows = [[parse_inline(cell) for cell in row] for row in t.get('rows', [])]
+            ncol = max(1, len(headers))
+            widths = t.get('widths')
+            if widths and len(widths) == ncol:
+                widths = [Inches(float(w)) for w in widths]
+            else:
+                widths = [Inches(6.5 / ncol)] * ncol
+            if headers and all(len(r) == ncol for r in rows):
+                table(doc, headers, rows, widths)

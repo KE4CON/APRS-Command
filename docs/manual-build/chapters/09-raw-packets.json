@@ -1,0 +1,202 @@
+{
+  "title": "The Raw Packet Monitor",
+  "subtitle": "See every APRS packet exactly as it arrives, and prove your radio link is actually working.",
+  "in_this_chapter": [
+    "What the raw packet monitor is for",
+    "Opening it from the menu bar",
+    "Reading a single packet row",
+    "The search box and three filters",
+    "Clearing the on-screen list",
+    "Saving an .aprslog file for Replay",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "The __raw packet monitor__ is a floating panel that shows every APRS packet APRS Command receives, printed in its plain, unprocessed form — the same raw line of text your radio or the internet feed actually delivered. Nothing is hidden, summarized, or turned into a map symbol here. It is the closest you can get to watching the data arrive over the wire."
+    },
+    {
+      "p": "This is the best tool for answering the one question every new operator eventually asks: __\"Is anything actually coming in?\"__ The map page shows stations as icons, but an empty map does not tell you whether the world is quiet or whether your connection is broken. The raw packet monitor removes that doubt. The panel says it plainly at the top: `Every packet received on all active ports, in arrival order. If packets appear here, the port is receiving.`"
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "USE IT FIRST",
+        "text": "Before you trust an empty or sparse map, open the raw packet monitor. Packets scrolling in confirm the receive side is alive. An empty monitor tells you to go fix your connection, not to keep staring at the map."
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "RECEIVE-FIRST",
+        "text": "The monitor is a listening tool. Opening it and watching packets never transmits anything. APRS Command is receive-first and transmit-disabled by default, and this panel does not change that."
+      }
+    },
+    {
+      "h1": "Opening the Raw Packet Monitor"
+    },
+    {
+      "p": "The monitor opens from the menu bar across the top of the map page."
+    },
+    {
+      "steps": [
+        "In the menu bar, click **View**.",
+        "In the menu that drops down, click **Raw Packets**."
+      ]
+    },
+    {
+      "p": "A separate window titled **Raw Packet Monitor** opens (its full title bar reads `APRS Command — Raw Packet Monitor`). Because it is a floating panel, you can move it, resize it, or set it beside the map page so you can watch both at once. Closing this window does not stop APRS Command from receiving; it only hides the view."
+    },
+    {
+      "screenshot": "The Raw Packet Monitor window open beside the map page, showing several packet rows"
+    },
+    {
+      "h1": "Reading the Screen"
+    },
+    {
+      "p": "Near the top you will see the heading **Raw Packet Monitor** and, just beneath it, a running count labeled **Logged APRS packet lines:** followed by a number. That number is how many packet lines are currently held in the list. Watching it climb is a quick sign that packets are flowing."
+    },
+    {
+      "p": "Below the search and filter row is the packet list itself. Each packet takes up one row, split across a few short columns with the full raw packet text printed on its own line underneath, in a fixed-width (monospace) font so it lines up neatly. The most recent packet appears at the top of the list."
+    },
+    {
+      "h2": "What each column means"
+    },
+    {
+      "table": {
+        "headers": [
+          "Column",
+          "What it tells you"
+        ],
+        "rows": [
+          [
+            "Time",
+            "The local clock time the packet was logged, shown as hours:minutes:seconds (for example `14:07:32`)."
+          ],
+          [
+            "Direction",
+            "Whether the packet was **Received**, **Transmitted**, **Generated** (built as a preview but not sent), **Blocked** (a transmit that the safety gate stopped), or **Unknown**. For normal listening you will see **Received**."
+          ],
+          [
+            "Source",
+            "Where the packet came in: the source type (such as `AprsIs`, `Rf`, `TcpKiss`, `SerialKiss`, `Direwolf`, `Agwpe`, `Replay`) and, when known, the specific port name it arrived on."
+          ],
+          [
+            "Callsign",
+            "The sending station's callsign, or `-` if none could be read."
+          ],
+          [
+            "Type",
+            "The kind of APRS packet it is (for example a position, status, or message), or `Unknown` if it could not be identified."
+          ],
+          [
+            "Status",
+            "The validation result: `Valid`, `Invalid`, or `Unknown`. This is APRS Command's judgment of whether the packet was well-formed."
+          ]
+        ],
+        "widths": [
+          1.3,
+          5
+        ]
+      }
+    },
+    {
+      "p": "The long line beneath those columns is the raw packet itself — the exact text as received, for example `N0CALL>APRS,TCPIP*:!3903.50N/08430.50W-Test beacon`. You do not need to decode this by hand; the point is that you can see it is really there."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "BLOCKED IS NORMAL",
+        "text": "If you ever see a row marked **Blocked**, that is the transmit safety gate doing its job — a packet that would have gone out on the air was stopped because transmitting is disabled. It is a sign the safety system is working, not an error."
+      }
+    },
+    {
+      "h1": "Finding One Packet Among Many"
+    },
+    {
+      "p": "On a busy feed, packets arrive faster than you can read them. The row just under the heading gives you one search box and three drop-down filters to narrow the list. They all work together — the list shows only packets that match every control you have set."
+    },
+    {
+      "h2": "The search box"
+    },
+    {
+      "p": "The box on the left reads **Search packets** until you type in it. As you type, the list instantly narrows to packets whose raw text, sending callsign, or notes contain what you typed. It ignores upper- and lower-case, so `w1aw` and `W1AW` find the same packets. Clear the box to see everything again."
+    },
+    {
+      "h2": "The three drop-downs"
+    },
+    {
+      "bullets": [
+        "**Source filter** — the first drop-down. Choose a specific source such as `AprsIs` or `Rf` to see only packets that came in that way. Leave it on **All** to see every source.",
+        "**Direction filter** — the middle drop-down. Choose **Received**, **Transmitted**, **Generated**, **Blocked**, or **Unknown** to see only that kind of row. Leave it on **All** for everything.",
+        "**Packet-type filter** — the last drop-down. Its choices are built from the packet types actually seen so far, so pick a type to focus on just those, or leave it on **All**."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "RESET",
+        "text": "If the list suddenly looks emptier than you expect, you may have a filter still set. Put all three drop-downs back to **All** and empty the search box to see the complete list again."
+      }
+    },
+    {
+      "h2": "Clearing the list"
+    },
+    {
+      "p": "The **Clear** button in the top-right corner empties the on-screen list and resets the count to zero. Use it to start with a clean slate — for example, right before you test a new connection so anything that appears afterward is guaranteed to be new."
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "CLEAR IS NOT SAVE",
+        "text": "**Clear** discards the captured packets from the list. If you want to keep them, use **Save Log** first (next section). Once cleared, those packets are gone from the monitor."
+      }
+    },
+    {
+      "h1": "Saving a Log for Replay"
+    },
+    {
+      "p": "At the bottom of the window is the **Save Log** button. It writes everything the monitor has captured to a file on your computer that the Replay feature can play back later. This is how you turn a live listening session into something you can study, demonstrate, or re-watch — all without ever transmitting."
+    },
+    {
+      "p": "Note that **Save Log** always writes the full captured log, not just the filtered view on screen. Your search text and drop-down choices only change what you are looking at; they do not shrink what gets saved."
+    },
+    {
+      "steps": [
+        "Let packets accumulate in the monitor until you have what you want to keep.",
+        "Click **Save Log** at the bottom-left of the window.",
+        "In the file dialog that opens, pick a folder and a name. APRS Command suggests a name like `aprs-log-20260804-1407` and the file type **APRS packet log**, which saves with the `.aprslog` extension.",
+        "Click Save. The status text beside the button confirms it, for example `Saved 42 packets to aprs-log-20260804-1407.aprslog — load it in the Replay window.`"
+      ]
+    },
+    {
+      "p": "The saved `.aprslog` file is a plain text (CSV) file. Each line holds one packet along with its time, source, direction, callsign, type, and any notes — everything Replay needs to feed the packets back through APRS Command in the right order."
+    },
+    {
+      "screenshot": "The Save packet log dialog with the suggested aprslog file name filled in"
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "SEE THE REPLAY CHAPTER",
+        "text": "To play a saved `.aprslog` file back — watching the packets and map animate as if they were arriving live, with nothing going on the air — see the __Replay__ chapter. Saving here and opening in Replay are the two halves of the same workflow."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**Nothing appears in the monitor.** No packets are being received. Check that a source is connected (APRS-IS or a radio/TNC port) — the map has nothing to show either until packets arrive. The empty monitor is telling you the problem is the connection, not the app.",
+        "**The count is stuck and the list is short.** A filter may be hiding rows. Set all three drop-downs to **All** and clear the **Search packets** box.",
+        "**Save Log did nothing / a message says no packets.** If the log is empty, saving reports `No packets captured yet — connect a source and let packets arrive first.` Wait for at least one packet to show before saving.",
+        "**Could not save.** If the status reads `Could not save log:` followed by a reason, the folder may be read-only or in use. Choose a different folder, such as your Documents folder, and try again.",
+        "**I cleared the list by mistake.** Cleared packets are not recoverable. Going forward, click **Save Log** before **Clear** whenever you want to keep a session.",
+        "**Packets show but the map is still empty.** That points at the map or a map filter rather than reception — reception is confirmed by the very fact that raw packets are arriving here."
+      ]
+    }
+  ],
+  "order": 9
+}

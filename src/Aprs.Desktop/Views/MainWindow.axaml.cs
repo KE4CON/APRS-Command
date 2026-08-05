@@ -494,9 +494,13 @@ public sealed partial class MainWindow : Window
             if (mFrom is null || mTo is null) { resultText.Text = $"{(mFrom is null ? from : to)} not found in station list."; return; }
 
             var distKm  = Aprs.Desktop.Services.GeoMath.HaversineKm(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
-            var distMi  = distKm * 0.621371;
             var bearing = Aprs.Desktop.Services.GeoMath.BearingDeg(mFrom.Latitude, mFrom.Longitude, mTo.Latitude, mTo.Longitude);
-            resultText.Text = $"{from} → {to}\nDistance: {distMi:F1} mi  ({distKm:F1} km)\nBearing: {bearing:F0}° ({Aprs.Desktop.Services.GeoMath.CardinalBearing(bearing)})";
+            // Distance follows the operator's master unit preference (Settings → Station), and auto-scales
+            // to the small unit for short hops — feet under a mile (imperial) or metres under a km (metric)
+            // — rather than always showing miles. Uses the same formatter as the drawing-tool measurements.
+            var measureImperial = Configuration.StationProfile.Load().DistanceUnit != Configuration.DistanceUnit.Kilometres;
+            var distText = Aprs.Desktop.Mapping.ShapeMeasurements.FormatLength(distKm * 1000.0, measureImperial, small: false);
+            resultText.Text = $"{from} → {to}\nDistance: {distText}\nBearing: {bearing:F0}° ({Aprs.Desktop.Services.GeoMath.CardinalBearing(bearing)})";
         };
 
         await dialog.ShowDialog(this);

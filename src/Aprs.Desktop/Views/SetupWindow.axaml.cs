@@ -54,7 +54,7 @@ public sealed partial class SetupWindow : Window
         }
 
         var unit = (MilesRadio.IsChecked == true) ? DistanceUnit.Miles : DistanceUnit.Kilometres;
-        var unitLabel = unit == DistanceUnit.Miles ? "miles" : "kilometres";
+        var unitLabel = unit == DistanceUnit.Miles ? "miles" : "kilometers";
 
         if (!int.TryParse(RadiusBox.Text?.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var radiusDisplay)
             || radiusDisplay <= 0)

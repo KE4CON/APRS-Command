@@ -1,0 +1,175 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "Down the left edge of the **map page** is a narrow vertical strip of picture buttons. That strip is the **icon sidebar**. It holds the ten controls you reach for most often while watching the map: five **map tools** for moving and measuring the view, and five **operator tools** for beaconing, alerts, rings, trails, and radar. A thin dividing line separates the two groups."
+    },
+    {
+      "p": "Every button is a small icon (a symbol or emoji) with __no printed label next to it__. To learn what a button does, rest your mouse pointer on it for a moment without clicking; a small tooltip pops up with the button's name. Nothing happens until you actually click, so hovering to read tooltips is completely safe."
+    },
+    {
+      "screenshot": "The icon sidebar down the left edge of the map page, showing all ten icon buttons top to bottom with the divider between the map tools and the operator tools"
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "The buttons never scroll or move. They stay in the same order every time you open APRS Command, so once you learn the positions you can find each tool by muscle memory."
+      }
+    },
+    {
+      "h1": "How to Read This Chapter"
+    },
+    {
+      "p": "Each button is listed below in the exact order it appears in the sidebar, top to bottom. For every one you get its icon, the name you should use for it, the tooltip text the app actually shows on hover, and a plain-language description of what a click does. One button, **Beacon Now**, is the only one in this sidebar that can transmit over the air; it is flagged clearly and explained in its own section."
+    },
+    {
+      "h1": "The Map Tools (top group)"
+    },
+    {
+      "p": "These five buttons change what the map shows or measures. None of them transmit anything; they only affect your own view."
+    },
+    {
+      "table": {
+        "headers": [
+          "Icon",
+          "Name",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "⌂",
+            "**Home**",
+            "Tooltip: __Home / Reset view__. Snaps the map back to its default starting view. Use this any time you have zoomed or panned far away and want to get back to a known, sensible view of the whole map."
+          ],
+          [
+            "◎",
+            "**Center on my station**",
+            "Tooltip: __Center on my station__. Re-centers the map on your own station's position without changing the zoom level. Handy after you have scrolled off to look at a distant station and want to jump back to where you are."
+          ],
+          [
+            "🔍",
+            "**Find station**",
+            "Tooltip: __Find station__. Opens a search so you can look up a station by callsign and jump the map straight to it, instead of hunting for its marker by eye."
+          ],
+          [
+            "📏",
+            "**Measure distance**",
+            "Tooltip: __Measure distance__. Opens a small **Measure Distance** window where you pick two stations by callsign — a **From** and a **To** — from drop-down lists of the stations currently on the map, then click **Calculate**. It reports the straight-line distance and the compass bearing between them. The distance is shown in your chosen unit system (set on the Settings **Station** tab): miles for imperial or kilometers for metric, automatically switching to the smaller unit — feet or meters — for short distances."
+          ],
+          [
+            "🗺",
+            "**Map layer**",
+            "Tooltip: __Map layer toggle__. Switches the underlying base map to the next available layer. This is the same set of base maps offered by the on-map **base-map selector** dropdown in the top-left corner of the map area; the button just steps through them from the sidebar."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "If the map ever looks wrong, empty, or lost, click **Home** (⌂) first. It resets the view and is the quickest way to get your bearings back."
+      }
+    },
+    {
+      "h1": "The Operator Tools (bottom group)"
+    },
+    {
+      "p": "Below the divider are five buttons aimed at running a session: sending a beacon, checking alerts, and turning three map overlays on and off (range rings, trails, and weather radar). The first one, **Beacon Now**, is the transmit button — read its warning below before you use it."
+    },
+    {
+      "table": {
+        "headers": [
+          "Icon",
+          "Name",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "📡",
+            "**Beacon Now**",
+            "Tooltip: __Beacon Now — transmit your position__. Sends your station's position on the air right now. This is the one button in the sidebar that transmits. See the full warning in the next section before using it. (Keyboard shortcut: `Ctrl+B`.)"
+          ],
+          [
+            "🔔",
+            "**Alerts**",
+            "Tooltip: __Alert status__. Opens the alert status view so you can see the current state of your configured alerts."
+          ],
+          [
+            "⊙",
+            "**Range rings**",
+            "Turns distance range rings on the map on or off. Range rings are evenly spaced circles drawn outward from a center point, so you can judge how far away other stations are at a glance. Its tooltip shows where the rings are centered — it reads __Rings from my station__ by default, or __Rings from__ a latitude/longitude if you have set a custom center point elsewhere."
+          ],
+          [
+            "🛤",
+            "**Trails**",
+            "Toggles station movement trails on or off. A trail is the breadcrumb path a moving station has traveled. Its tooltip tells you the current state: __Station trails OFF — click to show__ when they are hidden, or __Station trails ON — click to hide__ when they are showing."
+          ],
+          [
+            "🌧",
+            "**Radar**",
+            "Toggles the weather-radar overlay on or off. When radar is on, this button takes on a faint blue highlight so you can see at a glance that it is active, and its tooltip reads __Radar overlay ON — click to hide__ (or __OFF — click to show__ when off). With radar on and frames loaded, a separate radar scrubber appears on the map to step or play through the frames."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "**Range rings**, **Trails**, and **Radar** are simple on/off toggles: click once to turn the overlay on, click again to turn it off. They only change what your map draws — they never transmit."
+      }
+    },
+    {
+      "h1": "Beacon Now — the Transmit Button"
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "WARNING",
+        "text": "**Beacon Now** (📡) is a transmit control. Clicking it tells APRS Command to put your station's position on the air. Treat it differently from every other sidebar button, all of which only affect your own screen."
+      }
+    },
+    {
+      "p": "APRS Command is receive-first and __transmit-disabled by default__. Out of the box the app listens and shows traffic but does not send anything, and the **TX badge** at the right end of the title bar reads **TX Disabled**. While transmit is disabled, your radio will not key up even if you click **Beacon Now**."
+    },
+    {
+      "p": "Before **Beacon Now** can actually put a signal on the air, transmit has to be enabled and your station has to be set up correctly (your callsign and position in **Settings**). Only send a beacon when you genuinely intend to announce your position and you are licensed and configured to transmit on the frequency in use. When you do want to beacon from the keyboard instead of the sidebar, the shortcut is `Ctrl+B`."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "IMPORTANT",
+        "text": "If you are practicing or running a drill and want to be certain nothing goes out, use **Tools -> Toggle Exercise Mode (inhibit all transmit)** from the menu bar. Exercise mode blocks all transmit, including **Beacon Now**."
+      }
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "I do not see any labels on the buttons — that is normal. The sidebar buttons show __tooltips on hover only__; there are no printed labels. Rest the pointer on a button to read its name.",
+        "A tooltip did not appear — hold the pointer still over the button for a second without moving or clicking. Tooltips need a brief pause to show.",
+        "I clicked **Beacon Now** and nothing went out — that is expected when transmit is disabled (the **TX badge** reads **TX Disabled**). Beaconing does nothing on the air until transmit is enabled and your station is configured in **Settings**.",
+        "The **Range rings** tooltip says 'Rings from my station' but I want them somewhere else — the button only toggles the rings on and off. The center point (and its tooltip text) is set elsewhere in the app; by default the rings radiate from your own station.",
+        "I turned on **Radar** but see no scrubber — the radar scrubber only appears once radar frames have loaded. Give it a moment; the button's blue highlight confirms radar is switched on.",
+        "The map is zoomed or panned somewhere confusing — click **Home** (⌂) to reset the view, or **Center on my station** (◎) to jump back to your own position."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "What the icon sidebar is",
+    "Hovering to read tooltips (no printed labels)",
+    "The five map tools, top to bottom",
+    "The five operator tools, top to bottom",
+    "Beacon Now is the transmit button",
+    "Range rings, trails, and radar toggles",
+    "Troubleshooting the buttons"
+  ],
+  "subtitle": "A button-by-button tour of the vertical icon strip on the left edge of the map page.",
+  "title": "The Icon Sidebar Tools",
+  "order": 6
+}

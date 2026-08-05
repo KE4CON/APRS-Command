@@ -1,0 +1,277 @@
+{
+  "blocks": [
+    {
+      "h1": "What This Is / What It Is For"
+    },
+    {
+      "p": "This chapter walks you through the very first time you open **APRS Command** on a brand-new computer. You will see where the app opens, enter a starting station identity, and then review the safety settings that keep the program in a listen-only state until you deliberately change them."
+    },
+    {
+      "p": "APRS Command is __receive-first__: out of the box it only listens for APRS traffic and shows it on a map. It does not put your signal on the air until you turn transmit on yourself. Nothing in this chapter transmits anything. The one place a transmit setting appears is called out plainly so you know to leave it alone for now."
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "USE A PRACTICE CALLSIGN",
+        "text": "While you are learning, use the placeholder callsign `N0CALL`. It is the standard \"not a real station\" callsign hams use for testing. It lets you explore every screen without accidentally identifying as a licensed station. Swap in your real, licensed callsign only when you are ready to actually operate."
+      }
+    },
+    {
+      "h1": "Step 1 — The First-Run Setup window"
+    },
+    {
+      "p": "The first time you start APRS Command with no saved station, a small window opens in the center of the screen before the main program appears. Its title bar reads **APRS Command — First-Run Setup** and the heading inside says **Welcome to APRS Command**. This window cannot be resized; it just collects a few basics so the map knows who you are and where to center."
+    },
+    {
+      "screenshot": "The First-Run Setup window centered on screen, showing the Welcome heading and the Callsign, Latitude, Longitude, Distance units, and Receive filter radius fields with the Save and continue button."
+    },
+    {
+      "p": "There are five things to fill in:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Field",
+          "What to type",
+          "Notes"
+        ],
+        "rows": [
+          [
+            "**Callsign**",
+            "`N0CALL`",
+            "The box shows a faint example, `e.g. KE4CON`. Type `N0CALL` while learning. Whatever you type is automatically changed to capital letters when you save."
+          ],
+          [
+            "**Latitude (decimal degrees)**",
+            "Your approximate latitude, e.g. `42.328068`",
+            "North is positive, south is negative. Must be between -90 and 90."
+          ],
+          [
+            "**Longitude (decimal degrees)**",
+            "Your approximate longitude, e.g. `-88.454975`",
+            "East is positive, west (most of North America) is negative. Must be between -180 and 180."
+          ],
+          [
+            "**Distance units**",
+            "Pick **Miles (US / UK)** or **Kilometers (metric)**",
+            "**Miles** is selected by default. This sets the units used throughout the app."
+          ],
+          [
+            "**Receive filter radius**",
+            "A whole number, e.g. `125`",
+            "How far out, from your location, to pull in APRS traffic. The label changes to match your chosen units, and the number auto-converts if you switch units."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "The receive filter radius only controls how much traffic you receive. It has nothing to do with transmitting. A larger radius shows more stations; a smaller one keeps the map less cluttered."
+      }
+    },
+    {
+      "steps": [
+        "Type `N0CALL` in the **Callsign** box.",
+        "Enter your **Latitude** and **Longitude** in decimal degrees (a quick web search for your town plus \"latitude longitude\" is fine for practice).",
+        "Choose **Miles (US / UK)** or **Kilometers (metric)**.",
+        "Leave the **Receive filter radius** at its default, or set a whole number you prefer.",
+        "Click **Save and continue**."
+      ]
+    },
+    {
+      "p": "If anything is missing or out of range, a red message appears explaining what to fix (for example, \"Please enter your callsign.\" or \"Latitude must be a number between -90 and 90.\"). Correct the field and click **Save and continue** again. Once the entry is valid, this window closes and the main program opens."
+    },
+    {
+      "callout": {
+        "kind": "tip",
+        "label": "TIP",
+        "text": "You are not locked into these answers. Everything here can be changed later on the Settings **Station** tab, covered in Step 4 below. If you already set up a station on a previous run, this window is skipped and APRS Command goes straight to the map."
+      }
+    },
+    {
+      "h1": "Step 2 — Where the app opens: the map page"
+    },
+    {
+      "p": "After **Save and continue**, APRS Command opens to the __map page__ — the main screen you will spend most of your time on. From top to bottom it has these regions:"
+    },
+    {
+      "bullets": [
+        "**Title bar** — the dark strip across the very top. On the left it reads **APRS Command** with the words \"APRS station map\" beneath it.",
+        "**Status badges** — two small badges at the right end of the title bar. On first launch they read **APRS-IS Offline** and **TX Disabled**. The **TX Disabled** badge is your at-a-glance confirmation that the app is not transmitting.",
+        "**Menu bar** — the row of text menus just below the title bar: **Settings**, **View**, **Map**, **Messages**, **Operate**, **Tools**, **Help**.",
+        "**Icon sidebar** — the vertical strip of icon buttons down the left edge (home/reset view, center on station, find station, measure, map layer, and more).",
+        "**Map area** — the large map canvas that fills the middle of the window.",
+        "**Status bar** — the thin strip along the very bottom."
+      ]
+    },
+    {
+      "screenshot": "The map page right after first launch: title bar with the APRS-IS Offline and TX Disabled status badges, the menu bar, the icon sidebar on the left, and the empty map area."
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "NOTE",
+        "text": "Seeing the **TX Disabled** badge is normal and correct for a new install. It confirms APRS Command is in receive-first mode. You do not need to do anything to \"turn on\" listening — it is on by default once a connection is configured (covered in a later chapter)."
+      }
+    },
+    {
+      "h1": "Step 3 — Open Settings and find the First Run tab"
+    },
+    {
+      "p": "The First-Run Setup window in Step 1 only captured your identity. A separate review screen lets you check the data folders and confirm the safe defaults. You reach it from the menu bar."
+    },
+    {
+      "steps": [
+        "On the menu bar, click **Settings**.",
+        "A floating panel titled **APRS Command Settings** opens. At the top it reads **Settings** with the subtitle \"Connection and safety settings\".",
+        "Click the **First Run** tab in the row of tabs."
+      ]
+    },
+    {
+      "p": "The tab row includes **Readiness**, **First Run**, **Station**, and several more (GPS, Offline Maps, Connections, and others covered in later chapters). For first-run setup you care about **First Run**, **Station**, and optionally **Readiness**."
+    },
+    {
+      "screenshot": "The Settings floating panel with the tab row visible and the First Run tab selected."
+    },
+    {
+      "h2": "What the First Run tab shows"
+    },
+    {
+      "p": "The **First Run** tab is a lightweight review screen — not a multi-step wizard. It is read-only except for one button at the bottom. It shows three things:"
+    },
+    {
+      "bullets": [
+        "A heading, **Welcome to APRS Command**, and a status line that reads **First-run setup is not complete.** until you finish (then it changes to \"First-run setup marked complete.\").",
+        "An **Application data** box listing four folder paths: **Application data**, **Logs**, **Map cache**, and **Exports**. These are where APRS Command keeps your settings, log files, downloaded map tiles, and exported files.",
+        "A **Safe defaults** box listing what is turned off, ending with the lines **Transmit disabled: True** and **Extension inputs disabled: True**."
+      ]
+    },
+    {
+      "screenshot": "The First Run tab showing the four folder paths in the Application data box and the Safe defaults box below it."
+    },
+    {
+      "p": "Read the folder paths so you know where your data lives. The default location is chosen automatically for your operating system and is fine for almost everyone. Keep the default unless you specifically need logs, maps, and exports on a different drive."
+    },
+    {
+      "p": "The **Safe defaults** box spells out the receive-first promise. It lists, in plain language:"
+    },
+    {
+      "bullets": [
+        "APRS Command does not transmit by default.",
+        "APRS-IS transmit is disabled until configured.",
+        "RF (radio) transmit is disabled until configured.",
+        "iGate and digipeater modes are disabled until configured.",
+        "Beaconing and weather beaconing are disabled until configured.",
+        "REST API, WebSocket streams, file hooks, and plugin loading are disabled until configured."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "THIS IS NOT PERMISSION TO TRANSMIT",
+        "text": "Marking first-run setup complete does not enable transmit and does not turn anything on. Every transmit path stays off. Turning transmit on is a separate, deliberate step you take later on the Station tab, only after you have your real callsign and understand your local rules."
+      }
+    },
+    {
+      "p": "When you have read the folders and the safe-defaults list, click **Mark First-Run Setup Complete**. The status line updates to confirm it. That is the entire First Run tab — nothing on it puts you on the air."
+    },
+    {
+      "h1": "Step 4 — Confirm your receive-first identity on the Station tab"
+    },
+    {
+      "p": "The **Station** tab (next to **First Run**) is where your identity and beacon settings live, and where you can change anything you entered in Step 1. For learning, you only need to confirm two things: your placeholder callsign, and that all transmit switches are off."
+    },
+    {
+      "steps": [
+        "In the Settings panel, click the **Station** tab. The heading reads **Station Setup**.",
+        "In the **Callsign** box, confirm `N0CALL` (or type it now). The **SSID** next to it can stay at `0` for a primary station.",
+        "Check that **Latitude** and **Longitude** match what you entered earlier.",
+        "Scroll down to the **Transmit safety** box (it has a colored warning background)."
+      ]
+    },
+    {
+      "p": "The **Transmit safety** box contains four checkboxes. On a fresh install they are all __unchecked__, which is exactly what you want while learning:"
+    },
+    {
+      "table": {
+        "headers": [
+          "Checkbox",
+          "Leave it",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "**Master transmit enabled**",
+            "Unchecked",
+            "The master on/off switch for all transmitting. With this off, the app is receive-only — no beacon or message can go out."
+          ],
+          [
+            "**APRS-IS transmit**",
+            "Unchecked",
+            "Would allow sending to the APRS-IS internet network. Needs a passcode and master transmit on."
+          ],
+          [
+            "**RF transmit**",
+            "Unchecked",
+            "Would allow sending over the radio. Needs a connected TNC or sound-card interface and master transmit on."
+          ],
+          [
+            "**Fixed station**",
+            "Your choice",
+            "Marks your station as not moving, using the latitude/longitude you typed instead of GPS. Safe to leave unchecked while learning; it does not transmit."
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "warning",
+        "label": "WARNING",
+        "text": "Do not check **Master transmit enabled** while you are learning or while using `N0CALL`. Transmitting requires your own licensed callsign and compliance with your local regulations. Leaving these boxes unchecked keeps the **TX Disabled** badge lit and keeps you safely in receive-only mode."
+      }
+    },
+    {
+      "p": "If you change anything on the Station tab, click **Save** at the bottom to keep it, or **Revert** to undo. The other fields on this tab — station symbol, comment, beacon path, beacon intervals, range rings, and PHG data — only matter once you begin transmitting, so you can safely ignore them for now."
+    },
+    {
+      "h1": "Optional — Peek at the Readiness tab"
+    },
+    {
+      "p": "The **Readiness** tab (first in the row) is a live pre-operation checklist. It shows a summary banner, a list of check items with status icons, and the note \"Pre-operation checklist for EmComm activations and exercises.\" It refreshes on its own every 5 seconds. You do not need it for basic setup, but it is a handy at-a-glance view of what is and is not ready before an activation."
+    },
+    {
+      "h1": "You're set up"
+    },
+    {
+      "p": "At this point you have a working, receive-first install: a placeholder identity, reviewed data folders, confirmed safe defaults, and every transmit switch off. Close the Settings panel and you are back on the map page, ready to start watching APRS traffic. Configuring an actual data connection so stations appear on the map is covered in a later chapter."
+    },
+    {
+      "h1": "Troubleshooting"
+    },
+    {
+      "bullets": [
+        "**The First-Run Setup window never appeared.** APRS Command only shows it when no station is saved yet. If a station profile already exists (from an earlier run), the app opens straight to the map. To edit those details, use the menu bar **Settings**, then the **Station** tab.",
+        "**\"Please enter your callsign.\"** The Callsign box was blank. Type something — `N0CALL` is fine for practice — then click **Save and continue** again.",
+        "**\"Latitude must be a number between -90 and 90\" (or the longitude equivalent).** Enter the coordinate in decimal degrees (like `42.328068`), not degrees-minutes-seconds, and use a minus sign for south latitude or west longitude.",
+        "**The receive filter radius was rejected.** It must be a whole number greater than zero. Remove any decimal point or letters.",
+        "**The map area is empty.** That is expected right after setup — no data connection is configured yet, so there is nothing to plot. This is normal and does not mean anything is broken.",
+        "**I want to change my callsign or location later.** Open the menu bar **Settings**, go to the **Station** tab, edit the fields, and click **Save**.",
+        "**I'm not sure I'm safe to transmit.** Check the title bar: if the badge reads **TX Disabled**, nothing is going out. Keep the four boxes in the Station tab's **Transmit safety** section unchecked to stay that way."
+      ]
+    }
+  ],
+  "in_this_chapter": [
+    "The First-Run Setup window",
+    "Entering a practice callsign (N0CALL)",
+    "Where the app opens: the map page",
+    "Reaching Settings and the First Run tab",
+    "Reviewing data folders and safe defaults",
+    "Confirming receive-first on the Station tab",
+    "Troubleshooting first launch"
+  ],
+  "subtitle": "Your first time opening APRS Command: enter a practice identity, review the safe defaults, and confirm you are in receive-only mode.",
+  "title": "First Launch & First-Run Setup",
+  "order": 3
+}

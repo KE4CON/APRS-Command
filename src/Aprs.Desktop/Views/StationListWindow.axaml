@@ -19,7 +19,7 @@
           BoxShadow="0 6 18 -10 #33101828">
     <DockPanel>
       <TextBlock DockPanel.Dock="Top"
-                 Text="Every station heard on your active connections, newest first. Click a callsign to centre the map on it."
+                 Text="Every station heard on your active connections, newest first. Click a callsign to center the map on it."
                  Foreground="{DynamicResource TextSubtleBrush}" FontSize="12"
                  TextWrapping="Wrap" Margin="0,0,0,12" />
       <views:StationListView DataContext="{Binding StationList}" />

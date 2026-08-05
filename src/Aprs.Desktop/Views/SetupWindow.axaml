@@ -44,7 +44,7 @@
                    Foreground="{DynamicResource TextPrimaryBrush}" />
         <StackPanel Orientation="Horizontal" Spacing="20">
           <RadioButton x:Name="MilesRadio" Content="Miles (US / UK)" IsChecked="True" />
-          <RadioButton x:Name="KmRadio" Content="Kilometres (metric)" />
+          <RadioButton x:Name="KmRadio" Content="Kilometers (metric)" />
         </StackPanel>
       </StackPanel>
 

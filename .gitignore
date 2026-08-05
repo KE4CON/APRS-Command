@@ -17,3 +17,7 @@ artifacts/
 publish/
 packages/
 *.zip
+
+# Python bytecode cache (manual-build tooling)
+__pycache__/
+*.pyc
