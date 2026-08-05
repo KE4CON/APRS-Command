@@ -2,5 +2,10 @@
   <PropertyGroup>
     <RollForward>Major</RollForward>
     <Product>APRS Command</Product>
+    <!-- File metadata carried into signed binaries (SignPath requires configured/enforced metadata).
+         Sole individual developer, not a company — the "Company" field holds the author's name. -->
+    <Company>James Rospopo (KE4CON)</Company>
+    <Authors>James Rospopo (KE4CON)</Authors>
+    <Copyright>Copyright © 2026 James Rospopo (KE4CON)</Copyright>
   </PropertyGroup>
 </Project>

@@ -160,6 +160,19 @@ You should have received a copy of the GNU General Public License along with thi
 
 ---
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- **Committers and reviewers:** [James Rospopo — KE4CON](https://github.com/KE4CON) (repository owner). Changes proposed by non-committers (pull requests) are reviewed by a maintainer before merge.
+- **Approvers:** [James Rospopo — KE4CON](https://github.com/KE4CON). Every signing request is manually approved.
+
+**Privacy policy:** APRS Command is a local desktop application with **no telemetry, analytics, crash reporting, account system, or backend server** — nothing is collected from users or sent to the maintainer. Settings and any credentials are stored only in the operator's own local profile. See [PRIVACY.md](PRIVACY.md) (full detail in [SECURITY.md](SECURITY.md)).
+
+The complete policy — signed artifacts, build pipeline, file metadata, and account security — is in [docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md).
+
+---
+
 ## Contributing
 
 Pull requests are welcome. For significant changes, please open an issue first to discuss what you would like to change. All contributions must be compatible with GPL v3.
