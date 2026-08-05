@@ -162,7 +162,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+**Current status:** Windows builds are being set up for code signing via **Azure Artifact Signing**, under the maintainer's own validated identity. Until that is active, Windows builds ship **unsigned** — see [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass, which is standard for open-source software distributed outside an app store. This policy documents how signing is governed once it is in place.
 
 - **Committers and reviewers:** [James Rospopo — KE4CON](https://github.com/KE4CON) (repository owner). Changes proposed by non-committers (pull requests) are reviewed by a maintainer before merge.
 - **Approvers:** [James Rospopo — KE4CON](https://github.com/KE4CON). Every signing request is manually approved.

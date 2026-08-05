@@ -1,7 +1,12 @@
 # Code Signing Policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by
-[SignPath Foundation](https://signpath.org).
+**Current status:** Windows signing is being set up via **Azure Artifact Signing** (a paid Microsoft
+service), issued under the maintainer's own validated identity — so the publisher shown to users will be
+the maintainer's real name. Until that is active, Windows builds ship **unsigned** (see
+[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass). A prior SignPath
+Foundation application was declined at this early stage for lack of public-visibility signals, with an
+invitation to reapply as the project grows. This document defines how signing is governed once a
+certificate is in place — the roles, process, and privacy commitments below apply regardless of provider.
 
 APRS Command is a free, open-source (GPL v3) cross-platform APRS client for amateur radio. This
 document describes who is trusted to build, review, and approve signed releases, how signing is
@@ -33,8 +38,8 @@ GitHub permission reference: the sole owner/committer is the repository owner,
   from a tagged commit (`v*.*.*`) in the public repository — not on a developer's personal machine.
 - **Every signing request is approved manually** by an Approver; there is no automatic or unattended
   signing.
-- The signing certificate's private key is held on the **SignPath Foundation HSM**; the project never
-  possesses or handles the private key.
+- When signing is active, the signing certificate's private key is held by the signing provider's secure
+  infrastructure (an HSM); the project never possesses or handles the private key.
 - macOS and Linux builds are distributed unsigned, as is standard for open-source software distributed
   outside an app store.
 

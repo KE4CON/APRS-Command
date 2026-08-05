@@ -114,47 +114,41 @@ jobs:
           $v = "${{ github.ref_name }}" -replace '^v',''
           pwsh scripts/make-windows-installer.ps1 -Version $v
 
-      # Upload the (unsigned) installer. This is what ships until SignPath is configured; when it is,
-      # the signing steps below overwrite this same artifact in place with the signed installer.
+      # ── Azure Artifact Signing (formerly Trusted Signing) ─────────────────────────────────────
+      # DORMANT until Azure signing is set up and the repo is configured. It activates automatically
+      # once the repository VARIABLE `AZURE_SIGNING_ACCOUNT` is set; until then this step is skipped
+      # and unsigned installers ship exactly as before. It signs the Setup.exe in place, so the upload
+      # step below then publishes the signed file.
+      #
+      # After the Azure identity validation completes, set (Settings → Secrets and variables → Actions):
+      #   Secrets (from `az ad sp create-for-rbac ... --role "Trusted Signing Certificate Profile Signer"`):
+      #     • AZURE_TENANT_ID        • AZURE_CLIENT_ID        • AZURE_CLIENT_SECRET
+      #   Variables:
+      #     • AZURE_SIGNING_ENDPOINT      — region URI, e.g. https://wus2.codesigning.azure.net/
+      #     • AZURE_SIGNING_ACCOUNT      — the Artifact Signing account name  (this is the on-switch)
+      #     • AZURE_SIGNING_CERT_PROFILE — the Public Trust certificate profile name
+      - name: Sign installer (Azure Artifact Signing)
+        if: ${{ vars.AZURE_SIGNING_ACCOUNT != '' }}
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_CERT_PROFILE }}
+          files-folder: ${{ github.workspace }}\artifacts\installers
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      # Publishes the installer — signed if the step above ran, unsigned otherwise.
       - name: Upload Windows installer
-        id: upload-installer
         uses: actions/upload-artifact@v5
         with:
           name: APRSCommand-${{ github.ref_name }}-windows-x64-installer
           path: artifacts/installers/APRSCommand-windows-x64-Setup.exe
-
-      # ── SignPath code signing (free OSS certificate) ──────────────────────────────────────────
-      # DORMANT until the SignPath application is approved and the repo is configured. It activates
-      # automatically once the repository VARIABLE `SIGNPATH_ORGANIZATION_ID` is set; until then both
-      # steps are skipped and unsigned installers ship exactly as before.
-      #
-      # After SignPath approval, set (Settings → Secrets and variables → Actions):
-      #   • Secret   SIGNPATH_API_TOKEN              — API token for a user with Submitter permission
-      #   • Variable SIGNPATH_ORGANIZATION_ID        — from the SignPath organization page
-      #   • Variable SIGNPATH_PROJECT_SLUG           — the SignPath project slug (e.g. aprs-command)
-      #   • Variable SIGNPATH_SIGNING_POLICY_SLUG    — usually `release-signing`
-      # Also install the SignPath GitHub App on the repository if SignPath instructs you to.
-      # (If your SignPath project needs a specific artifact configuration, add
-      #  `artifact-configuration-slug: ${{ vars.SIGNPATH_ARTIFACT_CONFIG_SLUG }}` to the step below.)
-      - name: Sign installer via SignPath
-        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
-        uses: signpath/github-action-submit-signing-request@v2
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG }}
-          github-artifact-id: ${{ steps.upload-installer.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: artifacts/signed
-
-      - name: Replace installer artifact with signed build
-        if: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' }}
-        uses: actions/upload-artifact@v5
-        with:
-          name: APRSCommand-${{ github.ref_name }}-windows-x64-installer
-          path: artifacts/signed/APRSCommand-windows-x64-Setup.exe
-          overwrite: true
 
   # ── Linux .deb / .rpm packages ────────────────────────────────────────────
   installer-linux:
