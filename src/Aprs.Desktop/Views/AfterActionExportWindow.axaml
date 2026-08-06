@@ -83,6 +83,9 @@
           <CheckBox IsChecked="{Binding IncludeIcs214}"
                     Content="ICS-214 Activity Log (ICS214_….txt)"
                     ToolTip.Tip="FEMA ICS-214 standard activity log form. Required by many served agencies for documentation of communications activities." />
+          <CheckBox IsChecked="{Binding IncludeIcs309}"
+                    Content="ICS-309 Communications Log (ICS309_….txt)"
+                    ToolTip.Tip="FEMA ICS-309 — a single chronological log of every message handled during the operational period (time, from, to, subject). The standard radio communications log for the incident record." />
           <CheckBox IsChecked="{Binding IncludeIcs205}"
                     Content="ICS-205 Radio Communications Plan (ICS205_….txt)"
                     ToolTip.Tip="FEMA ICS-205 standard radio communications plan. Lists all frequencies, assignments, and operators for the incident." />

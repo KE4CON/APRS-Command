@@ -2,7 +2,7 @@
 
 *How and why the code works — a maintainer's field guide, in plain language.*
 
-*Generated August 05, 2026 · Markdown is the living source of truth.*
+*Generated August 06, 2026 · Markdown is the living source of truth.*
 
 
 ---
@@ -3400,6 +3400,15 @@ var transmitResult = await aprsIsClient.SendRawPacketAsync(
 ```
 
 > **Sibling: the iGate monitor** — IGateMonitorService is the read-only companion. It watches both the RF and APRS-IS sides, remembers which packets it has already seen on the internet, and marks RF packets that were also seen on APRS-IS — feeding the duplicate detection above. It decides nothing and transmits nothing; it only observes, which is why it needs no safety authority at all.
+
+
+### Aside: the After-Action & ICS Export Family
+
+Alongside the live services sits a small family of *export generators* that turn a session's data into the paperwork a served agency expects. They live in `src/Aprs.Desktop/Services/Ics*ExportService.cs`, and each is a static class with a single `Generate…` method — no state, no I/O — that takes plain snapshot records (stations, messages, roster) and returns formatted text.
+
+The family covers the FEMA/NIMS forms an EmComm operator files: **ICS-205** (communications plan), **ICS-211** (check-in list), **ICS-213** (one general-message form per message), **ICS-214** (activity log), and **ICS-309** (a single chronological communications log of every message). The `AfterActionExportViewModel` gathers the session's stations, messages, and net-control roster, lets the operator tick which forms to include, and calls each generator — raising one save-file request per file produced.
+
+The shape is deliberate: because every generator is a *pure function over snapshot records*, it is trivial to unit-test (feed inputs, assert the text) and carries no dependency on the running app — the same discipline that keeps the parsers pure. Adding a new form is correspondingly small: ICS-309 was added as exactly one new static class plus one checkbox bound to a boolean, nothing more.
 
 
 ## Why It Matters / Design Takeaways

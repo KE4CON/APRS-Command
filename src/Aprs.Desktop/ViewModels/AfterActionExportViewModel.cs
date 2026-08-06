@@ -29,6 +29,7 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     private bool includeIcs205 = true;
     private bool includeIcs211 = true;
     private bool includeIcs213 = false; // off by default — generates one form per message
+    private bool includeIcs309 = true;  // chronological communications log — on by default
     private string checkInLocation = "Incident Command Post";
     private string specialInstructions = string.Empty;
     private string operatorName = string.Empty;
@@ -132,6 +133,12 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
     {
         get => includeIcs214;
         set { if (includeIcs214 != value) { includeIcs214 = value; OnPropertyChanged(); } }
+    }
+
+    public bool IncludeIcs309
+    {
+        get => includeIcs309;
+        set { if (includeIcs309 != value) { includeIcs309 = value; OnPropertyChanged(); } }
     }
 
     public bool IncludeTextSummary
@@ -323,6 +330,27 @@ public sealed class AfterActionExportViewModel : INotifyPropertyChanged
                     stations:          stations,
                     messages:          msgSnapshots);
                 SaveFileRequested?.Invoke(this, ($"ICS214_{dateStamp}.txt", ics214));
+                filesExported++;
+            }
+
+            if (IncludeIcs309)
+            {
+                StatusText = "Generating ICS-309 communications log…";
+                await Task.Delay(50);
+                var messages = messageStore.GetAllMessages();
+                var msgSnapshots = messages.Select(m => new AprsMessageSnapshot(
+                    m.CreatedAtUtc, m.Sender, m.Recipient, m.MessageBody,
+                    m.Direction == AprsMessageDirection.Outgoing)).ToList();
+                var opName = string.IsNullOrWhiteSpace(OperatorName) ? callsign : OperatorName;
+                var ics309 = Ics309ExportService.GenerateIcs309(
+                    incidentName:      name,
+                    operatorName:      opName,
+                    operatorCallsign:  callsign,
+                    icsPosition:       IcsPosition,
+                    periodFrom:        sessionStart,
+                    periodTo:          reportTime,
+                    messages:          msgSnapshots);
+                SaveFileRequested?.Invoke(this, ($"ICS309_{dateStamp}.txt", ics309));
                 filesExported++;
             }
 

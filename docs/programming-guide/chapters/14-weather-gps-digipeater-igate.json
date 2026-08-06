@@ -214,6 +214,18 @@
       }
     },
     {
+      "h2": "Aside: the After-Action & ICS Export Family"
+    },
+    {
+      "p": "Alongside the live services sits a small family of __export generators__ that turn a session's data into the paperwork a served agency expects. They live in `src/Aprs.Desktop/Services/Ics*ExportService.cs`, and each is a static class with a single `Generate…` method — no state, no I/O — that takes plain snapshot records (stations, messages, roster) and returns formatted text."
+    },
+    {
+      "p": "The family covers the FEMA/NIMS forms an EmComm operator files: **ICS-205** (communications plan), **ICS-211** (check-in list), **ICS-213** (one general-message form per message), **ICS-214** (activity log), and **ICS-309** (a single chronological communications log of every message). The `AfterActionExportViewModel` gathers the session's stations, messages, and net-control roster, lets the operator tick which forms to include, and calls each generator — raising one save-file request per file produced."
+    },
+    {
+      "p": "The shape is deliberate: because every generator is a __pure function over snapshot records__, it is trivial to unit-test (feed inputs, assert the text) and carries no dependency on the running app — the same discipline that keeps the parsers pure. Adding a new form is correspondingly small: ICS-309 was added as exactly one new static class plus one checkbox bound to a boolean, nothing more."
+    },
+    {
       "h1": "Why It Matters / Design Takeaways"
     },
     {

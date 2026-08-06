@@ -205,6 +205,11 @@
             "On"
           ],
           [
+            "ICS-309 Communications Log",
+            "`ICS309_....txt`",
+            "On"
+          ],
+          [
             "ICS-205 Radio Communications Plan",
             "`ICS205_....txt`",
             "On"
@@ -217,6 +222,13 @@
         "kind": "note",
         "label": "Why ICS-213 is off by default",
         "text": "The **ICS-213 General Message Forms** option produces one form per APRS message sent or received. For a busy session that is a lot of files, so it starts unchecked. Turn it on when a served agency asks for individual message documentation."
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "ICS-309 vs. ICS-213 — both come from your messages",
+        "text": "They serve different needs. **ICS-309** is ONE chronological communications log of every message handled — time, from, to, subject — the everyday radio log a served agency expects, and it is on by default. **ICS-213** instead produces a SEPARATE formal message form for each message; turn it on only when an agency asks for individual message documentation."
       }
     },
     {
