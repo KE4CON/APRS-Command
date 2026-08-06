@@ -85,8 +85,9 @@ def build():
     run(vp, "Turn scattered radio traffic into one live picture of who is where, what the weather is doing, "
             "and where the resources and hazards are.", size=11.5, color=S.ACCENT, bold=True, name="Segoe UI Semibold")
     sub = doc.add_paragraph(); sub.alignment = WD_ALIGN_PARAGRAPH.CENTER; sub.paragraph_format.space_after = Pt(8)
-    run(sub, "A modern, cross-platform APRS client built for everyday operating and serious emergency "
-             "communications — the successor UI-View32 users have been waiting for.",
+    run(sub, "A modern, cross-platform APRS client for everyday operating and serious emergency "
+             "communications — the open-source successor to UI-View32, the classic APRS client that "
+             "went dark in 2004.",
         size=10, color=S.MUTED)
 
     # ── Feature grid (2 x 2 cards) ────────────────────────────────────────────
