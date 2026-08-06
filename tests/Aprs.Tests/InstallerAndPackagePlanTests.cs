@@ -6,7 +6,7 @@ public sealed class InstallerAndPackagePlanTests
 {
     private static readonly string[] PackagingFiles =
     [
-        "docs/INSTALLER_AND_PACKAGE_PLAN.md",
+        "docs/release/INSTALLER_AND_PACKAGE_PLAN.md",
         "packaging/templates/aprs-command.desktop.template",
         "packaging/templates/macos-info-plist-notes.md",
         "packaging/templates/windows-shortcuts.md",
@@ -16,7 +16,7 @@ public sealed class InstallerAndPackagePlanTests
     [Fact]
     public void InstallerAndPackagePlanDocumentsSupportedPlatforms()
     {
-        var plan = Read("docs/INSTALLER_AND_PACKAGE_PLAN.md");
+        var plan = Read("docs/release/INSTALLER_AND_PACKAGE_PLAN.md");
 
         Assert.Contains("Windows x64", plan, StringComparison.Ordinal);
         Assert.Contains("macOS Apple Silicon", plan, StringComparison.Ordinal);
@@ -34,7 +34,7 @@ public sealed class InstallerAndPackagePlanTests
     [Fact]
     public void InstallerAndPackagePlanDocumentsReleaseFoldersAndSafetyDefaults()
     {
-        var plan = Read("docs/INSTALLER_AND_PACKAGE_PLAN.md");
+        var plan = Read("docs/release/INSTALLER_AND_PACKAGE_PLAN.md");
 
         Assert.Contains("artifacts/", plan, StringComparison.Ordinal);
         Assert.Contains("publish/", plan, StringComparison.Ordinal);
@@ -68,10 +68,10 @@ public sealed class InstallerAndPackagePlanTests
     [Fact]
     public void PackagingDocsAreLinkedFromMainDocs()
     {
-        Assert.Contains("docs/INSTALLER_AND_PACKAGE_PLAN.md", Read("README.md"), StringComparison.Ordinal);
-        Assert.Contains("docs/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/PACKAGING_PREPARATION.md"), StringComparison.Ordinal);
-        Assert.Contains("docs/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/BUILD_AND_PUBLISH.md"), StringComparison.Ordinal);
-        Assert.Contains("docs/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/INSTALLATION_GUIDE.md"), StringComparison.Ordinal);
+        Assert.Contains("docs/release/INSTALLER_AND_PACKAGE_PLAN.md", Read("README.md"), StringComparison.Ordinal);
+        Assert.Contains("docs/release/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/release/PACKAGING_PREPARATION.md"), StringComparison.Ordinal);
+        Assert.Contains("docs/release/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/release/BUILD_AND_PUBLISH.md"), StringComparison.Ordinal);
+        Assert.Contains("docs/release/INSTALLER_AND_PACKAGE_PLAN.md", Read("docs/help/INSTALLATION_GUIDE.md"), StringComparison.Ordinal);
     }
 
     [Fact]

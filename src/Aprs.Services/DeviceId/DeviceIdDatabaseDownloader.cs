@@ -13,7 +13,7 @@ public interface IDeviceIdDatabaseDownloader
 /// </summary>
 public sealed class HttpDeviceIdDatabaseDownloader : IDeviceIdDatabaseDownloader
 {
-    // Canonical machine-readable endpoint (see docs/DEVICE_ID_DESIGN.md and THIRD_PARTY_NOTICES.md).
+    // Canonical machine-readable endpoint (see docs/architecture/DEVICE_ID_DESIGN.md and THIRD_PARTY_NOTICES.md).
     private static readonly Uri DatabaseUri = new("https://aprs-deviceid.aprsfoundation.org/tocalls.dense.json");
 
     private readonly HttpClient httpClient;

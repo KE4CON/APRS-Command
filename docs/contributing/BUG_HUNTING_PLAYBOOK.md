@@ -69,7 +69,7 @@ Work top-down. Tier 1 is cheap and runs forever after; don't skip it to chase a 
 
 ### Tier 4 — Human + real world
 10. **Systematic click-through** (not random poking): open *every* window, exercise *every* feature
-    once, against `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
+    once, against `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
 11. **Beta testers / field use.** Diverse hardware, real deployments — finds what one user's habits
     never will. Capture findings as issues, then convert each to a test (the one rule).
 
@@ -97,9 +97,9 @@ Work top-down. Tier 1 is cheap and runs forever after; don't skip it to chase a 
   outside the repo). Feed it TNC2-format lines on stdin; it prints the decoded interpretation. Use as
   the reference decoder for parser diffs.
 - **Test suite:** `dotnet test tests/Aprs.Tests/Aprs.Tests.csproj`. Keep it green; it's the safety net.
-- **Conformance status & residuals:** `docs/APRS_SPEC_CONFORMANCE_PLAN.md`.
+- **Conformance status & residuals:** `docs/architecture/APRS_SPEC_CONFORMANCE_PLAN.md`.
 - **Known latent issues to work:** Decisions Log **P2**.
-- **Release/manual validation checklist:** `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
+- **Release/manual validation checklist:** `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
 - **On Windows:** the app locks its DLLs while running — close it before `dotnet build`/`test` of the
   desktop project. Shell `git`/`curl` hit SSL cert errors here; use `gh` for network reads.
 

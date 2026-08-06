@@ -241,7 +241,7 @@ jobs:
             **macOS:** Right-click the .app → Open → Open. One time only.
             **Windows:** Click "More info" → "Run anyway". One time only.
 
-            See [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for full instructions.
+            See [INSTALLATION_GUIDE.md](docs/help/INSTALLATION_GUIDE.md) for full instructions.
 
             ---
             Copyright © 2026 KE4CON — GPL v3 — github.com/KE4CON/APRS-Command

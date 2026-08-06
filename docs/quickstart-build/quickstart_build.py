@@ -149,7 +149,7 @@ def build():
         "was just the fast lane.")
     S.body(doc, ["Welcome aboard, and ", ("73", 'b'), " (that's ham for \"best regards\")."])
 
-    out = os.environ.get("QUICKSTART_OUT") or os.path.join(HERE, "..", "QUICK_START_GUIDE.docx")
+    out = os.environ.get("QUICKSTART_OUT") or os.path.join(HERE, "..", "published", "QUICK_START_GUIDE.docx")
     out = os.path.abspath(out)
     doc.save(out)
     print("OK — wrote", out)

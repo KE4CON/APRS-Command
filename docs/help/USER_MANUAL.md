@@ -67,7 +67,7 @@ Packaged installers are planned for a future release. For now, use a published f
 dotnet run --project src/Aprs.Desktop/Aprs.Desktop.csproj
 ```
 
-See `docs/INSTALLATION_GUIDE.md` for platform steps.
+See `docs/help/INSTALLATION_GUIDE.md` for platform steps.
 
 ## First Launch
 

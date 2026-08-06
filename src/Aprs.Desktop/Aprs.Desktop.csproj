@@ -35,7 +35,7 @@
     <ProjectReference Include="..\AprsCommand.Api\AprsCommand.Api.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\..\docs\*.md" Link="docs\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\..\docs\help\*.md" Link="docs\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Assets\aprs-symbols-64-0.png">

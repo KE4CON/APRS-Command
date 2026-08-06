@@ -4608,14 +4608,14 @@ The extension surfaces are physically separated from the rest of the app into th
 | Local REST API | AprsCommand.Api/LocalRestApiService.cs | 14.8 | No |
 | WebSocket event streams | AprsCommand.Api/WebSocketEventStreamService.cs | 14.9 | No |
 | File import/export hooks | AprsCommand.Api/FileHookService.cs | 14.10 | No |
-| Plugin/driver framework | docs/PLUGIN_DRIVER_FRAMEWORK.md (foundation); Aprs.Services weather drivers are the live example | 14.11 | No |
+| Plugin/driver framework | docs/architecture/PLUGIN_DRIVER_FRAMEWORK.md (foundation); Aprs.Services weather drivers are the live example | 14.11 | No |
 
 Notice the last column: every single one is *off by default*. That is the safe-defaults model, and it is worth understanding before any of the mechanics, because it is the reason a fresh install of APRS-Command opens no network ports and watches no folders until the operator deliberately turns something on.
 
 
 ### The shared foundation: contracts, source tags, and the event bus
 
-Before looking at any one surface, three shared pieces make the whole thing hang together. The architecture document, `docs/EXTENSION_ARCHITECTURE.md`, lays them out as layers, and the code follows it faithfully.
+Before looking at any one surface, three shared pieces make the whole thing hang together. The architecture document, `docs/architecture/EXTENSION_ARCHITECTURE.md`, lays them out as layers, and the code follows it faithfully.
 
 First, *DTOs* (short for "data transfer objects" — plain data containers with no behavior, meant only to be serialized to and from JSON). The app's real internal models change as the app grows; the DTOs in **AprsCommand.Contracts** are the *stable public shape* the outside world sees. A station going out over the API is a `StationUpdateDto`, not the mutable internal station object. This is the classic "don't hand strangers the keys to your house — hand them a photocopy of the floor plan" move. Every DTO carries a `schemaVersion` so a future format change can be detected instead of silently misread.
 
@@ -4772,7 +4772,7 @@ Whatever the file *claimed* about its own trust, the import forces it to `FileIm
 
 ### Surface 4: the plugin / driver framework
 
-The fourth surface is the most forward-looking. A *plugin* is add-on code that snaps into an app to extend it; a *driver* is a plugin specialized for feeding in data from one kind of device or source. The framework itself (Phase 14.11) is currently a *foundation and a set of rules* — `docs/PLUGIN_DRIVER_FRAMEWORK.md` states plainly that "runtime plugin loading remains disabled by default," and unsigned plugins are rejected, operator approval is required, and transmit permissions are denied.
+The fourth surface is the most forward-looking. A *plugin* is add-on code that snaps into an app to extend it; a *driver* is a plugin specialized for feeding in data from one kind of device or source. The framework itself (Phase 14.11) is currently a *foundation and a set of rules* — `docs/architecture/PLUGIN_DRIVER_FRAMEWORK.md` states plainly that "runtime plugin loading remains disabled by default," and unsigned plugins are rejected, operator approval is required, and transmit permissions are denied.
 
 But the *pattern* is already alive and shipping in the weather input drivers, which is the best way to see what a future plugin looks like. The `IWeatherInputDriver` interface is the contract every weather source obeys — Davis, Ecowitt, Ambient, Tempest, PeetBros, a manual entry, and a file-import bridge each implement it:
 
@@ -4797,7 +4797,7 @@ Every driver reports an identity, an enabled flag, a status, its last observatio
 
 ### The security model, in one place
 
-All four surfaces answer to a single security posture, spelled out in `docs/EXTENSION_SECURITY_MODEL.md` and `docs/EXTENSION_SAFETY_RULES.md`: extensions are untrusted until the operator configures them, default to `ReadOnly`, default to unknown/untrusted source metadata, and — the load-bearing sentence — "No extension can transmit by default."
+All four surfaces answer to a single security posture, spelled out in `docs/architecture/EXTENSION_SECURITY_MODEL.md` and `docs/architecture/EXTENSION_SAFETY_RULES.md`: extensions are untrusted until the operator configures them, default to `ReadOnly`, default to unknown/untrusted source metadata, and — the load-bearing sentence — "No extension can transmit by default."
 
 The transmit rule is worth stating in full because it is the project's central safety claim. Every transmit-capable action — APRS-IS, RF, iGate, digipeater, beaconing, weather beaconing, object transmit, message transmit, and any *future* API-queued or plugin-requested or file-imported packet — must pass one centralized safety check. And a permission, the doc stresses, "is not enough by itself": the central policy still weighs current operator settings, station profile, port state, training/replay lockout, stale-data checks, and rate limits before anything could go on the air. The extension surfaces don't get their own private path to the radio; there is exactly one path, and it is guarded in one place.
 
@@ -5357,7 +5357,7 @@ This is the chapter about the book itself — the one that explains how the very
 
 The short version: *section numbers are permanent*, changes ship as small *dated amendments* instead of silent rewrites, and a single running table — the *Amendments Register* — records exactly what state the book is in. If you are the next person to touch this guide, this chapter is your rulebook. Follow it and the book keeps its integrity; ignore it and cross-references start pointing at the wrong things.
 
-> **Where this discipline is defined** — The rules in this chapter are the plan-of-record recorded in docs/DOCUMENTATION_PLAN.md (the "Amendment / supplement model" section) and the locked outline in docs/programming-guide/OUTLINE.md. This chapter, §22, is the authoritative home of the Amendments Register; §1 introduces the idea, but the live register lives here.
+> **Where this discipline is defined** — The rules in this chapter are the plan-of-record recorded in docs/planning/DOCUMENTATION_PLAN.md (the "Amendment / supplement model" section) and the locked outline in docs/programming-guide/OUTLINE.md. This chapter, §22, is the authoritative home of the Amendments Register; §1 introduces the idea, but the live register lives here.
 
 
 ### The problem this solves: books that die because they can't be updated

@@ -115,7 +115,7 @@ The local API foundation publishes internal events where practical:
 - external raw packet submitted
 - transmit request blocked
 
-WebSocket streams, file exports, dashboards, and plugin callbacks can subscribe to these events. See `docs/WEBSOCKET_EVENT_STREAMS.md` for the Phase 14.9 stream foundation.
+WebSocket streams, file exports, dashboards, and plugin callbacks can subscribe to these events. See `docs/architecture/WEBSOCKET_EVENT_STREAMS.md` for the Phase 14.9 stream foundation.
 
 ## Example GET
 

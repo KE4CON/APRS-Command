@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <!-- APRS device-ID (tocall) database snapshot, aprsorg/aprs-deviceid, CC BY-SA 2.0.
-         Bundled so device identification works offline. See docs/THIRD_PARTY_NOTICES.md. -->
+         Bundled so device identification works offline. See docs/release/THIRD_PARTY_NOTICES.md. -->
     <EmbeddedResource Include="DeviceId\tocalls.dense.json" />
   </ItemGroup>
 </Project>

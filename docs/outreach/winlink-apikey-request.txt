@@ -1,0 +1,27 @@
+Subject: Quick follow-up - APRS Command Winlink API key
+
+Hi [Name],
+
+Just a gentle nudge on this one - no rush at all, and I know you're busy. A while back I put in a request
+for a per-application Winlink web services API key for APRS Command (my free, open-source APRS client),
+and I wanted to check whether it's still on your radar or if there's anything you need from me to move it
+along.
+
+A quick recap of what it's for and how it behaves, so it's all in one place:
+
+- It's a "Winlink RMS Gateways" panel that shows an operator the RMS gateways near their own station
+  location, using the /gateway/proximity endpoint with their own grid square.
+- User-initiated only - no automatic or background polling.
+- Display-only - results are shown on the operator's screen and never transmitted, redistributed, or
+  cached to disk.
+- Each operator stores the key you issue locally in their own settings; it's sent only to api.winlink.org
+  over HTTPS. Nothing shared or embedded in the app.
+
+I'm glad to send full project details, credit Winlink however you prefer, or make any changes you'd like.
+Whenever you get a chance is completely fine.
+
+Thanks so much for everything you do for Winlink and the EmComm community - it's genuinely appreciated.
+
+73,
+Jim - KE4CON
+APRS Command · https://github.com/KE4CON/APRS-Command

@@ -26,7 +26,7 @@ public sealed class FinalReleaseValidationTests
     [Fact]
     public void FinalReleaseChecklistContainsRequiredSections()
     {
-        var checklist = Read("docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
+        var checklist = Read("docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
 
         Assert.Contains("APRS Command Final Release Validation Checklist", checklist, StringComparison.Ordinal);
         foreach (var heading in RequiredChecklistHeadings)
@@ -48,7 +48,7 @@ public sealed class FinalReleaseValidationTests
     [Fact]
     public void FinalReleaseChecklistCoversSafetyDefaultsAndCredentialReview()
     {
-        var checklist = Read("docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
+        var checklist = Read("docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
 
         foreach (var phrase in new[]
         {
@@ -82,7 +82,7 @@ public sealed class FinalReleaseValidationTests
     [Fact]
     public void FinalReleaseChecklistCoversPackageAndPlatformSmokeValidation()
     {
-        var checklist = Read("docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
+        var checklist = Read("docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md");
 
         foreach (var phrase in new[]
         {
@@ -125,7 +125,7 @@ public sealed class FinalReleaseValidationTests
         Assert.Contains("CrossPlatformAprs.sln", script, StringComparison.Ordinal);
         Assert.Contains("src/Aprs.Desktop/Aprs.Desktop.csproj", script, StringComparison.Ordinal);
         Assert.Contains("Could not locate $description", script, StringComparison.Ordinal);
-        Assert.Contains("docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md", script, StringComparison.Ordinal);
+        Assert.Contains("docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md", script, StringComparison.Ordinal);
         Assert.Contains("scripts/package-runtime.sh", script, StringComparison.Ordinal);
         Assert.Contains("CopyToPublishDirectory", script, StringComparison.Ordinal);
         Assert.Contains("BEGIN PRIVATE KEY", script, StringComparison.Ordinal);
@@ -139,19 +139,19 @@ public sealed class FinalReleaseValidationTests
         foreach (var relativePath in new[]
         {
             "README.md",
-            "docs/BUILD_AND_PUBLISH.md",
-            "docs/PACKAGING_PREPARATION.md",
-            "docs/INSTALLER_AND_PACKAGE_PLAN.md"
+            "docs/release/BUILD_AND_PUBLISH.md",
+            "docs/release/PACKAGING_PREPARATION.md",
+            "docs/release/INSTALLER_AND_PACKAGE_PLAN.md"
         })
         {
-            Assert.Contains("docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md", Read(relativePath), StringComparison.Ordinal);
+            Assert.Contains("docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md", Read(relativePath), StringComparison.Ordinal);
         }
     }
 
     [Fact]
     public void ReleaseValidationReportRecordsCurrentPlatformTestPackage()
     {
-        var report = Read("docs/RELEASE_VALIDATION_REPORT.md");
+        var report = Read("docs/release/RELEASE_VALIDATION_REPORT.md");
 
         Assert.Contains("APRS Command Release Validation Report", report, StringComparison.Ordinal);
         Assert.Contains(".NET SDK version", report, StringComparison.Ordinal);

@@ -40,6 +40,6 @@ APRS Command does not transmit by default. APRS-IS transmit, RF transmit, iGate,
 
 ## Troubleshooting Links
 
-- `docs/INSTALLATION_GUIDE.md`
-- `docs/TROUBLESHOOTING.md`
-- `docs/SAFETY_AND_TRANSMIT_GUIDE.md`
+- `docs/help/INSTALLATION_GUIDE.md`
+- `docs/help/TROUBLESHOOTING.md`
+- `docs/help/SAFETY_AND_TRANSMIT_GUIDE.md`

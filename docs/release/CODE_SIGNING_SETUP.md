@@ -9,7 +9,7 @@ reading. The only slow bits are Microsoft's and Apple's identity checks, which h
 you start them, then wait.
 
 > This is the **private** maintainer setup guide (accounts, credentials, commands). The **public**
-> user-facing policy is `docs/CODE_SIGNING_POLICY.md`. **Never** put a real certificate, key, password,
+> user-facing policy is `docs/release/CODE_SIGNING_POLICY.md`. **Never** put a real certificate, key, password,
 > `.p12`, or `.p8` file into the repository — only their *names* ever appear in these files.
 
 **Contents**

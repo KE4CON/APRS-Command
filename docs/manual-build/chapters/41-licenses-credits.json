@@ -138,7 +138,7 @@
     {
       "bullets": [
         "The complete **GPL v3** text is in the `LICENSE` file at the root of the program's folder (and in the source repository).",
-        "Attributions and license notices for bundled third-party material are in `docs/THIRD_PARTY_NOTICES.md`, which is copied into the installed app.",
+        "Attributions and license notices for bundled third-party material are in `docs/release/THIRD_PARTY_NOTICES.md`, which is copied into the installed app.",
         "The **About APRS Command** window (menu bar: **Help ▸ About APRS Command**) shows the version, your callsign, the runtime and platform, the `GPL v3` license line, a link to the source at `github.com/KE4CON/APRS-Command`, and a short credit line naming Avalonia, Mapsui, and BruTile."
       ]
     },
@@ -159,7 +159,7 @@
         "**Want the exact legal terms?** Open the `LICENSE` file in the program folder, or read GPL v3 at `https://www.gnu.org/licenses/`.",
         "**Want to see who wrote what?** Open **Help ▸ About APRS Command** for the credit and source-link summary.",
         "**Want to contribute or fork it?** The full source is public at `github.com/KE4CON/APRS-Command`. Contributions must be GPL v3 compatible.",
-        "**Curious about a specific bundled library's terms?** See `docs/THIRD_PARTY_NOTICES.md` in the app folder for the attributions, and each library's own project page for its full license."
+        "**Curious about a specific bundled library's terms?** See `docs/release/THIRD_PARTY_NOTICES.md` in the app folder for the attributions, and each library's own project page for its full license."
       ]
     }
   ],

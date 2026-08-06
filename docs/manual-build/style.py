@@ -3,7 +3,7 @@
 Shared styling + building blocks for the APRS Command User Manual.
 
 The manual's *source of truth* is this build pipeline (style.py + build.py + the
-chapter modules). Running build.py regenerates docs/USER_MANUAL.docx from scratch.
+chapter modules). Running build.py regenerates docs/published/USER_MANUAL.docx from scratch.
 
 IMPORTANT WORKFLOW NOTE
 -----------------------

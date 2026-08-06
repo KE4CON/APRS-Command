@@ -151,7 +151,7 @@ def build():
     p2 = cta.add_paragraph(); p2.alignment = WD_ALIGN_PARAGRAPH.CENTER; p2.paragraph_format.space_after = Pt(0)
     run(p2, "Open-source (GPL v3)  ·  by James Rospopo, KE4CON  ·  73", size=9.5, color=S.GOLD)
 
-    out = os.environ.get("FACTSHEET_OUT") or os.path.join(HERE, "..", "APRS_Command_Fact_Sheet.docx")
+    out = os.environ.get("FACTSHEET_OUT") or os.path.join(HERE, "..", "published", "APRS_Command_Fact_Sheet.docx")
     out = os.path.abspath(out)
     doc.save(out)
     print("OK — wrote", out)

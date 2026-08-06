@@ -72,11 +72,11 @@ This software can key a real transmitter (RF via KISS/AGWPE) and post to the APR
 - xUnit. Inject clocks/time — **no `DateTime.Now`/`UtcNow` in tests**. Prefer fakes over real network/sockets; bound any fake-server waits.
 - Required coverage: parser (with sample packets), message ACK/retry, object handling, station expiration, beacon scheduling, **transmit-safety gating** (including the global-inhibit chokepoint), REST API auth.
 - Run: `dotnet test tests/Aprs.Tests/Aprs.Tests.csproj -c Debug`.
-- **Debugging / hardening sessions: read and follow `docs/BUG_HUNTING_PLAYBOOK.md`.** It defines the
+- **Debugging / hardening sessions: read and follow `docs/contributing/BUG_HUNTING_PLAYBOOK.md`.** It defines the
   method pipeline (static analysis → oracle/fuzz → safety-critical/concurrency → human), the pillars,
   and the one rule — **every bug found gets a regression test before moving on.** Parser spec
   compliance is only one pillar; most bugs live in UI, concurrency, integrations, and feature logic.
-- **Documentation initiative: read `docs/DOCUMENTATION_PLAN.md`.** Plan-of-record for the two big
+- **Documentation initiative: read `docs/planning/DOCUMENTATION_PLAN.md`.** Plan-of-record for the two big
   deliverables — the operator **User Manual** (Word → screenshots → PDF, every feature, step-by-step)
   and the **APRS-Command Programming Guide Book** (Markdown + PDF + Word; who/what/why/how of the code).
   Both use a stable-numbering + dated-amendment model, and both must look "wow"-professional.
@@ -114,7 +114,7 @@ Build **all** parser/encoder work against the current specification — **not** 
 - **Dire Wolf** — `github.com/wb2osz/direwolf` — the reference software TNC/decoder; use it as the source of conformance test vectors (especially MIC-E).
 - **Device-ID (tocall) database** — `github.com/aprsorg/aprs-deviceid`, machine-readable at `https://aprs-deviceid.aprsfoundation.org/tocalls.dense.json` (CC BY-SA 2.0, attribution required). Maps the AX.25 destination to the sending device/software. **APRS Command's own registered tocall is `APCMD0`** (`AprsConstants.ToCall`; bump to `APCMD1` at v1.0). Every outbound packet must carry it.
 - **APRS symbols** — aprsspec `APRS-Symbols` / `how.aprs.works/aprs-symbols/`.
-- Conformance roadmap: `docs/APRS_SPEC_CONFORMANCE_PLAN.md`.
+- Conformance roadmap: `docs/architecture/APRS_SPEC_CONFORMANCE_PLAN.md`.
 
 ## External dependencies / pending approvals
 - **RepeaterBook API** (`RepeaterBookService`): the Field Repeater Lookup feature needs an app-level approval from RepeaterBook (distributed-app category); operators then use their own `rbuapp_` token. **Approval is not granted as of 2026-08-01** (a reply to RepeaterBook is outstanding). The feature is built to degrade cleanly (no token → "no token configured"); do **not** assume the API works or treat the feature as shippable until approval lands.

@@ -2,7 +2,7 @@
 
 Phase 15.2 adds repeatable build and publish scripts for APRS Command. These scripts create publish folders only. They do not create installers, package managers, signed bundles, notarized apps, or final release archives.
 
-See `docs/INSTALLER_AND_PACKAGE_PLAN.md` for the planned installer/package strategy that will consume these publish folders in a later release step. Before producing public packages, run the source-level validation script and complete `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
+See `docs/release/INSTALLER_AND_PACKAGE_PLAN.md` for the planned installer/package strategy that will consume these publish folders in a later release step. Before producing public packages, run the source-level validation script and complete `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
 
 ## Prerequisites
 
@@ -40,7 +40,7 @@ For the automated release-readiness subset that does not launch hardware, requir
 ./scripts/validate-release.sh
 ```
 
-The final manual release gate is `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
+The final manual release gate is `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`.
 
 ## Supported Runtime Identifiers
 
@@ -104,7 +104,7 @@ Generic helper:
 ./scripts/package-runtime.sh linux-arm64
 ```
 
-Every package script creates the standard portable archive and a matching `-test` archive for validation. Phase 15.10 records the all-target portable package rerun in `docs/RELEASE_VALIDATION_REPORT.md`.
+Every package script creates the standard portable archive and a matching `-test` archive for validation. Phase 15.10 records the all-target portable package rerun in `docs/release/RELEASE_VALIDATION_REPORT.md`.
 
 Example for macOS Apple Silicon:
 

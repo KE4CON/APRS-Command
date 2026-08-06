@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Build docs/USER_MANUAL.docx from the chapter content in this folder.
+Build docs/published/USER_MANUAL.docx from the chapter content in this folder.
 
 Run:  python docs/manual-build/build.py
-Output: docs/USER_MANUAL.docx  (styled; screenshot placeholders; auto TOC)
+Output: docs/published/USER_MANUAL.docx  (styled; screenshot placeholders; auto TOC)
 
 Chapter numbers are assigned by registry order (see CHAPTERS at the bottom) and
 are PROVISIONAL until the full Table of Contents is locked.
@@ -895,7 +895,7 @@ def main():
         else:
             S.render_chapter(doc, payload, number)
 
-    out = os.environ.get("MANUAL_OUT") or os.path.join(os.path.dirname(__file__), "..", "USER_MANUAL.docx")
+    out = os.environ.get("MANUAL_OUT") or os.path.join(os.path.dirname(__file__), "..", "published", "USER_MANUAL.docx")
     out = os.path.abspath(out)
     doc.save(out)
     print("OK wrote", out, "—", len(items), "chapters")

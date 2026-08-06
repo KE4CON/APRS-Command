@@ -1,6 +1,6 @@
 # Bug-Hunting Playbook — TEMPLATE
 
-**Project-agnostic template.** Copy this into any project as `docs/BUG_HUNTING_PLAYBOOK.md`, then fill
+**Project-agnostic template.** Copy this into any project as `docs/contributing/BUG_HUNTING_PLAYBOOK.md`, then fill
 the four `<FILL IN>` spots (pillar table, project hooks, latent-bug backlog, tracker). Everything else
 is universal and should stay as-is. Add a pointer to it from that project's `CLAUDE.md` (Testing
 section). The APRS Command instance is the reference example.

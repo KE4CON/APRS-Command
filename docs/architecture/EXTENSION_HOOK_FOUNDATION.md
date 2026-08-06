@@ -30,7 +30,7 @@ Initial placeholder DTOs include:
 
 Each public DTO carries a `SchemaVersion`, source metadata, validation warnings, validation errors, and notes where appropriate. Phase 14.6 should finalize mapping/adapters between internal models and these contracts rather than exposing internal records directly.
 
-See `docs/PUBLIC_DATA_CONTRACTS.md` for the Phase 14.6 contract strategy, DTO list, serialization expectations, validation pattern, and transmit safety reminder.
+See `docs/architecture/PUBLIC_DATA_CONTRACTS.md` for the Phase 14.6 contract strategy, DTO list, serialization expectations, validation pattern, and transmit safety reminder.
 
 ## Source Tagging Standard
 
@@ -92,7 +92,7 @@ Initial event types include:
 
 The event bus is not intended to become an enterprise messaging system. It should stay simple, testable, and isolated from Avalonia views.
 
-See `docs/INTERNAL_EVENT_BUS.md` for the Phase 14.7 event bus model, categories, event types, publishing guidance, event monitor foundation, and transmit-safety boundary.
+See `docs/architecture/INTERNAL_EVENT_BUS.md` for the Phase 14.7 event bus model, categories, event types, publishing guidance, event monitor foundation, and transmit-safety boundary.
 
 ## Extension Permission Model
 

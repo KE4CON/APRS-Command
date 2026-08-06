@@ -122,28 +122,24 @@ For iGating and digipeating, configure those in **Settings → iGate** and **Set
 
 ## Documentation
 
-| Guide | Description |
+The `docs/` folder is organized into a few clearly-named areas. Start with the complete guides below.
+
+**Complete guides** (`docs/published/`) — the polished, print-ready deliverables:
+
+| Document | What it is |
 |---|---|
-| [Quick Start](docs/QUICK_START.md) | Get up and running in minutes |
-| [Installation Guide](docs/INSTALLATION_GUIDE.md) | Platform-specific install instructions |
-| [First-Run Setup](docs/FIRST_RUN_SETUP.md) | First-run wizard and initial configuration |
-| [User Manual](docs/USER_MANUAL.md) | Complete feature reference |
-| [Safety and Transmit Guide](docs/SAFETY_AND_TRANSMIT_GUIDE.md) | Transmit safety, exercise mode, and best practices |
-| [APRS-IS Setup Guide](docs/APRS_IS_SETUP_GUIDE.md) | Connecting to the APRS internet network |
-| [RF/TNC Setup Guide](docs/RF_TNC_SETUP_GUIDE.md) | Hardware TNC, DigiRig, and serial connections |
-| [Map and Offline Maps Guide](docs/MAP_AND_OFFLINE_MAPS_GUIDE.md) | Tile sources and offline caching |
-| [Messages Guide](docs/MESSAGES_GUIDE.md) | Direct messages, bulletins, and announcements |
-| [Objects Guide](docs/OBJECTS_GUIDE.md) | Creating and transmitting APRS objects |
-| [Weather Guide](docs/WEATHER_GUIDE.md) | Weather station integration |
-| [Alerts and Geofences Guide](docs/ALERTS_AND_GEOFENCES_GUIDE.md) | Alert rules and geofence triggers |
-| [Replay, Simulation and Training Guide](docs/REPLAY_SIMULATION_TRAINING_GUIDE.md) | Replay logs, simulation, and training mode |
-| [RF Diagnostics Guide](docs/RF_DIAGNOSTICS_GUIDE.md) | RF port monitoring and diagnostics |
-| [Logs, Events and Exports Guide](docs/LOGS_EVENTS_AND_EXPORTS_GUIDE.md) | Raw packet log, event bus, and CSV export |
-| [Troubleshooting](docs/TROUBLESHOOTING.md) | Common issues and solutions |
-| [Glossary](docs/GLOSSARY.md) | APRS terminology reference |
-| [Developer Guide](docs/DEVELOPER_GUIDE.md) | Architecture, contributing, and extension points |
-| [Installer and Package Plan](docs/INSTALLER_AND_PACKAGE_PLAN.md) | Distribution and packaging |
-| [Final Release Validation Checklist](docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md) | Pre-release checklist |
+| [User Manual](docs/published/USER_MANUAL.docx) | The full, chapter-by-chapter manual — how to install, set up, and operate every feature |
+| [Programming Guide](docs/published/PROGRAMMING_GUIDE.md) | A ground-up walkthrough of how the app is built, for developers |
+| [Quick Start Guide](docs/published/QUICK_START_GUIDE.docx) | A one-sitting overview for people who won't read the full manual |
+| [Fact Sheet](docs/published/APRS_Command_Fact_Sheet.docx) | One-page overview of what APRS Command is and why it exists |
+
+**In-app Help** (`docs/help/`) — the same short, task-focused topics you can read inside the app under the **Help** menu (Installation, First-Run Setup, Messages, Objects, Weather, Maps, RF/TNC, APRS-IS, Alerts, Replay, Troubleshooting, Glossary, and more). Browse the [`docs/help/`](docs/help/) folder to read them here on GitHub.
+
+**For contributors and maintainers:**
+
+- **Architecture & internals** — [`docs/architecture/`](docs/architecture/) (start with the [Developer Guide](docs/architecture/DEVELOPER_GUIDE.md))
+- **Build, packaging & release** — [`docs/release/`](docs/release/), including the [Installer and Package Plan](docs/release/INSTALLER_AND_PACKAGE_PLAN.md) and the [Final Release Validation Checklist](docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md)
+- **Roadmap & planning** — [`docs/planning/`](docs/planning/) · **Contributing** — [`docs/contributing/`](docs/contributing/)
 
 
 ---
@@ -162,14 +158,14 @@ You should have received a copy of the GNU General Public License along with thi
 
 ## Code signing policy
 
-**Current status:** Windows builds are being set up for code signing via **Azure Artifact Signing**, under the maintainer's own validated identity. Until that is active, Windows builds ship **unsigned** — see [INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass, which is standard for open-source software distributed outside an app store. This policy documents how signing is governed once it is in place.
+**Current status:** Windows builds are being set up for code signing via **Azure Artifact Signing**, under the maintainer's own validated identity. Until that is active, Windows builds ship **unsigned** — see [INSTALLATION_GUIDE.md](docs/help/INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass, which is standard for open-source software distributed outside an app store. This policy documents how signing is governed once it is in place.
 
 - **Committers and reviewers:** [James Rospopo — KE4CON](https://github.com/KE4CON) (repository owner). Changes proposed by non-committers (pull requests) are reviewed by a maintainer before merge.
 - **Approvers:** [James Rospopo — KE4CON](https://github.com/KE4CON). Every signing request is manually approved.
 
 **Privacy policy:** APRS Command is a local desktop application with **no telemetry, analytics, crash reporting, account system, or backend server** — nothing is collected from users or sent to the maintainer. Settings and any credentials are stored only in the operator's own local profile. See [PRIVACY.md](PRIVACY.md) (full detail in [SECURITY.md](SECURITY.md)).
 
-The complete policy — signed artifacts, build pipeline, file metadata, and account security — is in [docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md).
+The complete policy — signed artifacts, build pipeline, file metadata, and account security — is in [docs/release/CODE_SIGNING_POLICY.md](docs/release/CODE_SIGNING_POLICY.md).
 
 ---
 

@@ -126,7 +126,7 @@ def build_docx(chapters):
     S.toc(doc)
     for number, (_order, ch) in enumerate(chapters, 1):
         S.render_chapter(doc, ch, number)
-    out = os.environ.get("GUIDE_OUT") or os.path.join(HERE, "..", "PROGRAMMING_GUIDE.docx")
+    out = os.environ.get("GUIDE_OUT") or os.path.join(HERE, "..", "published", "PROGRAMMING_GUIDE.docx")
     out = os.path.abspath(out)
     doc.save(out)
     return out
@@ -138,7 +138,7 @@ def main():
         print("No chapters found in ./chapters/*.json — nothing to build yet.")
         return
     md = to_markdown(chapters)
-    md_path = os.path.abspath(os.path.join(HERE, "..", "PROGRAMMING_GUIDE.md"))
+    md_path = os.path.abspath(os.path.join(HERE, "..", "published", "PROGRAMMING_GUIDE.md"))
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(md)
     docx_path = build_docx(chapters)

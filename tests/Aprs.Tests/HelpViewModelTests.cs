@@ -126,7 +126,7 @@ public sealed class HelpViewModelTests : IDisposable
         var project = XDocument.Load(projectPath);
         var docsItem = project
             .Descendants("Content")
-            .Single(element => element.Attribute("Include")?.Value == @"..\..\docs\*.md");
+            .Single(element => element.Attribute("Include")?.Value == @"..\..\docs\help\*.md");
 
         Assert.Equal(@"docs\%(Filename)%(Extension)", docsItem.Attribute("Link")?.Value);
         Assert.Equal("PreserveNewest", docsItem.Attribute("CopyToOutputDirectory")?.Value);

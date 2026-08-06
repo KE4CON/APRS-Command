@@ -1,7 +1,7 @@
 # APRS Command — v2 Feature Backlog (in-app)
 
 Features intended for **this desktop codebase** but deliberately deferred past v1.0. Unlike
-`docs/FUTURE_PROJECTS.md` (which holds ideas that would become *separate* projects, e.g. the mobile
+`docs/planning/FUTURE_PROJECTS.md` (which holds ideas that would become *separate* projects, e.g. the mobile
 app), everything here would ship inside APRS Command itself in a later release.
 
 > Nothing here is scheduled or committed. Recorded so the ideas aren't lost while v1.0 is locked and

@@ -76,7 +76,7 @@ public sealed class PortablePackageScriptTests
     [Fact]
     public void BuildAndPublishDocsListPortablePackageOutputs()
     {
-        var document = Read("docs/BUILD_AND_PUBLISH.md");
+        var document = Read("docs/release/BUILD_AND_PUBLISH.md");
 
         Assert.Contains("./scripts/package-win-x64.sh", document, StringComparison.Ordinal);
         Assert.Contains("./scripts/package-linux-arm64.sh", document, StringComparison.Ordinal);
@@ -104,7 +104,7 @@ public sealed class PortablePackageScriptTests
     [Fact]
     public void ReleaseNotesTemplateDocumentsSafeDefaultsAndPackages()
     {
-        var template = Read("docs/RELEASE_NOTES_TEMPLATE.md");
+        var template = Read("docs/release/RELEASE_NOTES_TEMPLATE.md");
 
         Assert.Contains("APRS Command Release Notes Template", template, StringComparison.Ordinal);
         Assert.Contains("APRS-Command-win-x64.zip", template, StringComparison.Ordinal);

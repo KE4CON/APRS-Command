@@ -25,7 +25,7 @@
       "callout": {
         "kind": "note",
         "label": "Where this discipline is defined",
-        "text": "The rules in this chapter are the plan-of-record recorded in docs/DOCUMENTATION_PLAN.md (the \"Amendment / supplement model\" section) and the locked outline in docs/programming-guide/OUTLINE.md. This chapter, §22, is the authoritative home of the Amendments Register; §1 introduces the idea, but the live register lives here."
+        "text": "The rules in this chapter are the plan-of-record recorded in docs/planning/DOCUMENTATION_PLAN.md (the \"Amendment / supplement model\" section) and the locked outline in docs/programming-guide/OUTLINE.md. This chapter, §22, is the authoritative home of the Amendments Register; §1 introduces the idea, but the live register lives here."
       }
     },
     {

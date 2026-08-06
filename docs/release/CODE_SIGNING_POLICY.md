@@ -3,7 +3,7 @@
 **Current status:** Windows signing is being set up via **Azure Artifact Signing** (a paid Microsoft
 service), issued under the maintainer's own validated identity — so the publisher shown to users will be
 the maintainer's real name. Until that is active, Windows builds ship **unsigned** (see
-[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass). A prior SignPath
+[INSTALLATION_GUIDE.md](../help/INSTALLATION_GUIDE.md) for the one-time SmartScreen bypass). A prior SignPath
 Foundation application was declined at this early stage for lack of public-visibility signals, with an
 invitation to reapply as the project grows. This document defines how signing is governed once a
 certificate is in place — the roles, process, and privacy commitments below apply regardless of provider.
@@ -67,13 +67,13 @@ a local settings file in that operator's own OS user profile, and leave the mach
 user-enabled network requests the application documents (for example APRS-IS, or optional integrations
 the operator explicitly turns on).
 
-The project's dedicated privacy policy is published as [PRIVACY.md](../PRIVACY.md); the full,
-source-backed security and data-handling detail is in [SECURITY.md](../SECURITY.md). Every claim in both
+The project's dedicated privacy policy is published as [PRIVACY.md](../../PRIVACY.md); the full,
+source-backed security and data-handling detail is in [SECURITY.md](../../SECURITY.md). Every claim in both
 can be verified against the source code.
 
 ## Reporting and contact
 
-Security issues: see [SECURITY.md](../SECURITY.md) (GitHub Issues, or private vulnerability reporting on
+Security issues: see [SECURITY.md](../../SECURITY.md) (GitHub Issues, or private vulnerability reporting on
 the repository). General contact: via [github.com/KE4CON/APRS-Command](https://github.com/KE4CON/APRS-Command).
 
 ---

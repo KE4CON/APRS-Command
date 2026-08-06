@@ -320,7 +320,7 @@ fixed (D1–D9).
 
 ### P3 — Match the APRS specification exactly (plan started)
 **Decision:** Pursue exact conformance to the current APRS spec (APRS 1.2 / `wb2osz/aprsspec`), tracked
-in `docs/APRS_SPEC_CONFORMANCE_PLAN.md`. Canonical references (aprsspec, Dire Wolf, how.aprs.works,
+in `docs/architecture/APRS_SPEC_CONFORMANCE_PLAN.md`. Canonical references (aprsspec, Dire Wolf, how.aprs.works,
 aprs-deviceid) are now recorded in `CLAUDE.md`; build all parser/encoder work against them, not the
 obsolete APRS101.pdf.
 **Phase 0 audit — key findings (see the plan for the full matrix):** the parser is more complete than

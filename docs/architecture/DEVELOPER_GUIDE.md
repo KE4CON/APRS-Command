@@ -49,7 +49,7 @@ Every DTO should include:
 - `validationWarnings`
 - `validationErrors`
 
-See `docs/PUBLIC_DATA_CONTRACTS.md`.
+See `docs/architecture/PUBLIC_DATA_CONTRACTS.md`.
 
 ## Source Metadata
 
@@ -97,7 +97,7 @@ This applies to:
 - object transmit
 - message transmit
 
-See `docs/EXTENSION_SAFETY_RULES.md`.
+See `docs/architecture/EXTENSION_SAFETY_RULES.md`.
 
 ## REST API Overview
 
@@ -105,7 +105,7 @@ The local REST API is disabled by default, localhost-only by default, token-prot
 
 Use it for local tools that need current state snapshots or carefully controlled external data submission.
 
-See `docs/LOCAL_REST_API.md` and `examples/rest/`.
+See `docs/architecture/LOCAL_REST_API.md` and `examples/rest/`.
 
 ## WebSocket Overview
 
@@ -113,7 +113,7 @@ WebSocket streams are disabled by default and notification-only. They are for li
 
 Inbound messages are limited to safe stream controls such as ping, subscribe/filter, unsubscribe, and close.
 
-See `docs/WEBSOCKET_EVENT_STREAMS.md` and `examples/websocket/`.
+See `docs/architecture/WEBSOCKET_EVENT_STREAMS.md` and `examples/websocket/`.
 
 ## File Import / Export Overview
 
@@ -121,13 +121,13 @@ File hooks are disabled by default. They support documented JSON, GeoJSON, CSV, 
 
 Imported data is tagged as `FileImport`. Imported transmit requests are blocked by default.
 
-See `docs/FILE_IMPORT_EXPORT_HOOKS.md` and `examples/file-hooks/`.
+See `docs/architecture/FILE_IMPORT_EXPORT_HOOKS.md` and `examples/file-hooks/`.
 
 ## Plugin / Driver Framework Overview
 
 The plugin/driver framework is a foundation for future operator-approved local extensions. Plugin loading remains disabled by default. Unsigned plugins and unapproved plugins are rejected by default.
 
-See `docs/PLUGIN_DRIVER_FRAMEWORK.md` and `examples/plugins/`.
+See `docs/architecture/PLUGIN_DRIVER_FRAMEWORK.md` and `examples/plugins/`.
 
 ## Examples
 

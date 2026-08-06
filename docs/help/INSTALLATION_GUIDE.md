@@ -176,6 +176,6 @@ Output goes to `artifacts/installers/`.
 ## Package planning and release validation
 
 The full installer and package strategy is documented in
-[docs/INSTALLER_AND_PACKAGE_PLAN.md](docs/INSTALLER_AND_PACKAGE_PLAN.md).
+[docs/release/INSTALLER_AND_PACKAGE_PLAN.md](docs/release/INSTALLER_AND_PACKAGE_PLAN.md).
 Before producing public packages, complete the
-[Final Release Validation Checklist](docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md).
+[Final Release Validation Checklist](docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md).

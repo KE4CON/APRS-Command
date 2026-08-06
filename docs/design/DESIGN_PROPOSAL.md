@@ -400,8 +400,8 @@ There are two complementary hook surfaces; the design keeps both:
 
 **Current state — mostly done already.** The Help button exists in the header and
 is bound to `OpenHelpCommand`; `HelpView`/`HelpWindow` render an offline help
-viewer; `HelpDocumentService` already loads `docs/USER_MANUAL.md` plus ~16 other
-guides, and `docs/USER_MANUAL.md` already exists (160 lines, full outline). Missing
+viewer; `HelpDocumentService` already loads `docs/help/USER_MANUAL.md` plus ~16 other
+guides, and `docs/help/USER_MANUAL.md` already exists (160 lines, full outline). Missing
 topics fall back to a friendly "not available in this build" message instead of
 crashing.
 

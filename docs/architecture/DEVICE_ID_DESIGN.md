@@ -5,7 +5,7 @@ delivery, full dataset, shown in both list + detail, auto weekly refresh + manua
 
 **Done (slice 1):** `IDeviceIdentificationService` + `DeviceIdentificationService` +
 `DeviceIdentity` (`src/Aprs.Services/DeviceId/`), a bundled full snapshot of `tocalls.dense.json`
-(embedded resource, CC BY-SA 2.0 — see `docs/THIRD_PARTY_NOTICES.md`), tocall pattern matching with
+(embedded resource, CC BY-SA 2.0 — see `docs/release/THIRD_PARTY_NOTICES.md`), tocall pattern matching with
 `?` wildcards (most-specific wins), and `DeviceIdentificationServiceTests` (incl. our own `APCMD0` →
 "APRS Command"). Fully offline, no UI yet.
 

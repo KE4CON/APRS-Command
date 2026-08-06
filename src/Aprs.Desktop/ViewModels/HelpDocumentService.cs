@@ -138,7 +138,7 @@ public sealed class HelpDocumentService
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            var candidate = Path.Combine(current.FullName, "docs");
+            var candidate = Path.Combine(current.FullName, "docs", "help");
             if (File.Exists(Path.Combine(candidate, "USER_MANUAL.md")))
             {
                 return candidate;

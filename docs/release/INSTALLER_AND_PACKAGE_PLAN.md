@@ -2,7 +2,7 @@
 
 This plan describes how APRS Command should be packaged for first-user testing and later releases. It is a planning document only. It does not create final installers, signed packages, release archives, signing identities, notarization credentials, or package-manager manifests.
 
-Before producing public packages, complete `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`. The checklist covers build/test validation, desktop launch, first-run setup, Help/docs, package contents, checksums, platform smoke tests, and safe transmit-disabled defaults.
+Before producing public packages, complete `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`. The checklist covers build/test validation, desktop launch, first-run setup, Help/docs, package contents, checksums, platform smoke tests, and safe transmit-disabled defaults.
 
 ## Packaging Goals
 

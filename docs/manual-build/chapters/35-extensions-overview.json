@@ -159,11 +159,11 @@
     },
     {
       "bullets": [
-        "**Local REST API** — full endpoint list, auth, and permissions: `docs/LOCAL_REST_API.md`.",
-        "**WebSocket event streams** — endpoints, envelopes, filtering: `docs/WEBSOCKET_EVENT_STREAMS.md`.",
-        "**File import / export hooks** — folder layout, formats, validation: `docs/FILE_IMPORT_EXPORT_HOOKS.md`.",
-        "**Plugin / driver framework** — manifest, lifecycle, capabilities: `docs/PLUGIN_DRIVER_FRAMEWORK.md`.",
-        "**Architecture and security model** — how the pieces fit and the trust rules: `docs/EXTENSION_ARCHITECTURE.md` and `docs/EXTENSION_SECURITY_MODEL.md`."
+        "**Local REST API** — full endpoint list, auth, and permissions: `docs/architecture/LOCAL_REST_API.md`.",
+        "**WebSocket event streams** — endpoints, envelopes, filtering: `docs/architecture/WEBSOCKET_EVENT_STREAMS.md`.",
+        "**File import / export hooks** — folder layout, formats, validation: `docs/architecture/FILE_IMPORT_EXPORT_HOOKS.md`.",
+        "**Plugin / driver framework** — manifest, lifecycle, capabilities: `docs/architecture/PLUGIN_DRIVER_FRAMEWORK.md`.",
+        "**Architecture and security model** — how the pieces fit and the trust rules: `docs/architecture/EXTENSION_ARCHITECTURE.md` and `docs/architecture/EXTENSION_SECURITY_MODEL.md`."
       ]
     },
     {

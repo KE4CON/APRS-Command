@@ -74,7 +74,7 @@ public sealed class BuildAndPublishTests
     [Fact]
     public void BuildAndPublishDocumentation_ListsSupportedCommandsAndSafetyLimits()
     {
-        var document = File.ReadAllText(Path.Combine(RepositoryRoot, "docs", "BUILD_AND_PUBLISH.md"));
+        var document = File.ReadAllText(Path.Combine(RepositoryRoot, "docs", "release", "BUILD_AND_PUBLISH.md"));
 
         Assert.Contains("APRS Command Build and Publish", document, StringComparison.Ordinal);
         Assert.Contains("dotnet restore", document, StringComparison.Ordinal);

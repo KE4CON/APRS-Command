@@ -50,9 +50,9 @@ dotnet publish src/Aprs.Desktop/Aprs.Desktop.csproj -c Release /p:PublishProfile
 dotnet publish src/Aprs.Desktop/Aprs.Desktop.csproj -c Release /p:PublishProfile=linux-arm64
 ```
 
-See `docs/BUILD_AND_PUBLISH.md` for the full build and publish workflow.
+See `docs/release/BUILD_AND_PUBLISH.md` for the full build and publish workflow.
 
-See `docs/INSTALLER_AND_PACKAGE_PLAN.md` for the planned Windows, macOS, Linux, and Raspberry Pi package strategy before final installers are created. Use `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md` as the final go/no-go checklist before public package publication.
+See `docs/release/INSTALLER_AND_PACKAGE_PLAN.md` for the planned Windows, macOS, Linux, and Raspberry Pi package strategy before final installers are created. Use `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md` as the final go/no-go checklist before public package publication.
 
 Portable package commands:
 

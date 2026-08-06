@@ -6,23 +6,23 @@ public sealed class UserDocumentationTests
 {
     private static readonly string[] RequiredUserDocs =
     [
-        "docs/USER_MANUAL.md",
-        "docs/QUICK_START.md",
-        "docs/INSTALLATION_GUIDE.md",
-        "docs/FIRST_RUN_SETUP.md",
-        "docs/SAFETY_AND_TRANSMIT_GUIDE.md",
-        "docs/APRS_IS_SETUP_GUIDE.md",
-        "docs/RF_TNC_SETUP_GUIDE.md",
-        "docs/MAP_AND_OFFLINE_MAPS_GUIDE.md",
-        "docs/MESSAGES_GUIDE.md",
-        "docs/OBJECTS_GUIDE.md",
-        "docs/WEATHER_GUIDE.md",
-        "docs/ALERTS_AND_GEOFENCES_GUIDE.md",
-        "docs/REPLAY_SIMULATION_TRAINING_GUIDE.md",
-        "docs/RF_DIAGNOSTICS_GUIDE.md",
-        "docs/LOGS_EVENTS_AND_EXPORTS_GUIDE.md",
-        "docs/TROUBLESHOOTING.md",
-        "docs/GLOSSARY.md"
+        "docs/help/USER_MANUAL.md",
+        "docs/help/QUICK_START.md",
+        "docs/help/INSTALLATION_GUIDE.md",
+        "docs/help/FIRST_RUN_SETUP.md",
+        "docs/help/SAFETY_AND_TRANSMIT_GUIDE.md",
+        "docs/help/APRS_IS_SETUP_GUIDE.md",
+        "docs/help/RF_TNC_SETUP_GUIDE.md",
+        "docs/help/MAP_AND_OFFLINE_MAPS_GUIDE.md",
+        "docs/help/MESSAGES_GUIDE.md",
+        "docs/help/OBJECTS_GUIDE.md",
+        "docs/help/WEATHER_GUIDE.md",
+        "docs/help/ALERTS_AND_GEOFENCES_GUIDE.md",
+        "docs/help/REPLAY_SIMULATION_TRAINING_GUIDE.md",
+        "docs/help/RF_DIAGNOSTICS_GUIDE.md",
+        "docs/help/LOGS_EVENTS_AND_EXPORTS_GUIDE.md",
+        "docs/help/TROUBLESHOOTING.md",
+        "docs/help/GLOSSARY.md"
     ];
 
     [Fact]
@@ -39,19 +39,16 @@ public sealed class UserDocumentationTests
     {
         var readme = Read("README.md");
 
-        Assert.Contains("Quick Start", readme, StringComparison.Ordinal);
-        Assert.Contains("Installation Guide", readme, StringComparison.Ordinal);
+        // Consolidated Documentation section: headline deliverables live in docs/published/,
+        // the in-app Help topics under docs/help/, and contributor material in its own folders.
         Assert.Contains("User Manual", readme, StringComparison.Ordinal);
-        Assert.Contains("First-Run Setup", readme, StringComparison.Ordinal);
-        Assert.Contains("Safety and Transmit Guide", readme, StringComparison.Ordinal);
-        Assert.Contains("APRS-IS Setup Guide", readme, StringComparison.Ordinal);
-        Assert.Contains("RF/TNC Setup Guide", readme, StringComparison.Ordinal);
-        Assert.Contains("Map and Offline Maps Guide", readme, StringComparison.Ordinal);
-        Assert.Contains("Troubleshooting", readme, StringComparison.Ordinal);
-        Assert.Contains("Glossary", readme, StringComparison.Ordinal);
+        Assert.Contains("Programming Guide", readme, StringComparison.Ordinal);
+        Assert.Contains("Quick Start", readme, StringComparison.Ordinal);
         Assert.Contains("Developer Guide", readme, StringComparison.Ordinal);
-        Assert.Contains("(docs/QUICK_START.md)", readme, StringComparison.Ordinal);
-        Assert.Contains("(docs/GLOSSARY.md)", readme, StringComparison.Ordinal);
+        Assert.Contains("(docs/published/USER_MANUAL.docx)", readme, StringComparison.Ordinal);
+        Assert.Contains("(docs/published/PROGRAMMING_GUIDE.md)", readme, StringComparison.Ordinal);
+        Assert.Contains("(docs/help/)", readme, StringComparison.Ordinal);
+        Assert.Contains("(docs/architecture/DEVELOPER_GUIDE.md)", readme, StringComparison.Ordinal);
         Assert.DoesNotContain("/Users/", readme, StringComparison.Ordinal);
     }
 
@@ -73,9 +70,9 @@ public sealed class UserDocumentationTests
     [Fact]
     public void UserDocumentationDescribesTransmitDisabledByDefault()
     {
-        var safety = Read("docs/SAFETY_AND_TRANSMIT_GUIDE.md");
-        var manual = Read("docs/USER_MANUAL.md");
-        var firstRun = Read("docs/FIRST_RUN_SETUP.md");
+        var safety = Read("docs/help/SAFETY_AND_TRANSMIT_GUIDE.md");
+        var manual = Read("docs/help/USER_MANUAL.md");
+        var firstRun = Read("docs/help/FIRST_RUN_SETUP.md");
 
         Assert.Contains("does not transmit by default", safety, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("APRS-IS transmit disabled", safety, StringComparison.OrdinalIgnoreCase);

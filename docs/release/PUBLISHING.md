@@ -6,9 +6,9 @@ This document summarizes publish guidance. It does not create installers.
 
 See also:
 
-- `docs/FIRST_RUN_SETUP.md`
-- `docs/PACKAGING_PREPARATION.md`
-- `docs/BUILD_AND_PUBLISH.md`
+- `docs/help/FIRST_RUN_SETUP.md`
+- `docs/release/PACKAGING_PREPARATION.md`
+- `docs/release/BUILD_AND_PUBLISH.md`
 
 ## SDK Requirement
 

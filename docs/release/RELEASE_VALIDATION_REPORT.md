@@ -210,14 +210,14 @@ Passed.
 Validated documents include:
 
 - `README.md`
-- `docs/FINAL_RELEASE_VALIDATION_CHECKLIST.md`
-- `docs/BUILD_AND_PUBLISH.md`
-- `docs/INSTALLER_AND_PACKAGE_PLAN.md`
-- `docs/INSTALLATION_GUIDE.md`
-- `docs/SAFETY_AND_TRANSMIT_GUIDE.md`
-- `docs/TROUBLESHOOTING.md`
-- `docs/GLOSSARY.md`
-- `docs/RELEASE_NOTES_TEMPLATE.md`
+- `docs/release/FINAL_RELEASE_VALIDATION_CHECKLIST.md`
+- `docs/release/BUILD_AND_PUBLISH.md`
+- `docs/release/INSTALLER_AND_PACKAGE_PLAN.md`
+- `docs/help/INSTALLATION_GUIDE.md`
+- `docs/help/SAFETY_AND_TRANSMIT_GUIDE.md`
+- `docs/help/TROUBLESHOOTING.md`
+- `docs/help/GLOSSARY.md`
+- `docs/release/RELEASE_NOTES_TEMPLATE.md`
 
 The final checklist is linked from build/package planning docs. Documentation continues to use `APRS Command` as the user-facing application name.
 
@@ -308,12 +308,12 @@ Windows packages contained:
 - `SAFETY_AND_TRANSMIT_GUIDE.md`.
 - `TROUBLESHOOTING.md`.
 - Published `docs/` folder with offline Help files.
-- `docs/USER_MANUAL.md`.
-- `docs/QUICK_START.md`.
-- `docs/INSTALLATION_GUIDE.md`.
-- `docs/SAFETY_AND_TRANSMIT_GUIDE.md`.
-- `docs/TROUBLESHOOTING.md`.
-- `docs/GLOSSARY.md`.
+- `docs/help/USER_MANUAL.md`.
+- `docs/help/QUICK_START.md`.
+- `docs/help/INSTALLATION_GUIDE.md`.
+- `docs/help/SAFETY_AND_TRANSMIT_GUIDE.md`.
+- `docs/help/TROUBLESHOOTING.md`.
+- `docs/help/GLOSSARY.md`.
 
 macOS packages contained:
 
@@ -325,13 +325,13 @@ macOS packages contained:
 - `SAFETY_AND_TRANSMIT_GUIDE.md`.
 - `TROUBLESHOOTING.md`.
 - Published `docs/` folder with 36 help/documentation files.
-- `docs/USER_MANUAL.md`.
-- `docs/QUICK_START.md`.
-- `docs/INSTALLATION_GUIDE.md`.
-- `docs/FIRST_RUN_SETUP.md`.
-- `docs/SAFETY_AND_TRANSMIT_GUIDE.md`.
-- `docs/TROUBLESHOOTING.md`.
-- `docs/GLOSSARY.md`.
+- `docs/help/USER_MANUAL.md`.
+- `docs/help/QUICK_START.md`.
+- `docs/help/INSTALLATION_GUIDE.md`.
+- `docs/help/FIRST_RUN_SETUP.md`.
+- `docs/help/SAFETY_AND_TRANSMIT_GUIDE.md`.
+- `docs/help/TROUBLESHOOTING.md`.
+- `docs/help/GLOSSARY.md`.
 
 Linux and Raspberry Pi/Linux ARM64 packages contained:
 
@@ -342,12 +342,12 @@ Linux and Raspberry Pi/Linux ARM64 packages contained:
 - `SAFETY_AND_TRANSMIT_GUIDE.md`.
 - `TROUBLESHOOTING.md`.
 - Published `docs/` folder with offline Help files.
-- `docs/USER_MANUAL.md`.
-- `docs/QUICK_START.md`.
-- `docs/INSTALLATION_GUIDE.md`.
-- `docs/SAFETY_AND_TRANSMIT_GUIDE.md`.
-- `docs/TROUBLESHOOTING.md`.
-- `docs/GLOSSARY.md`.
+- `docs/help/USER_MANUAL.md`.
+- `docs/help/QUICK_START.md`.
+- `docs/help/INSTALLATION_GUIDE.md`.
+- `docs/help/SAFETY_AND_TRANSMIT_GUIDE.md`.
+- `docs/help/TROUBLESHOOTING.md`.
+- `docs/help/GLOSSARY.md`.
 
 The release validation script found no obvious real credentials, APRS-IS passcodes, API tokens, signing secrets, private keys, or transmit-enabled placeholders in the repository docs, scripts, examples, or templates.
 
@@ -424,6 +424,6 @@ The scripts print the repository root, solution path, and desktop project path b
 1. Commit the Phase 15.10 package-script, documentation, and validation-report updates.
 2. Repeat package smoke validation on Windows x64, macOS Intel, Linux x64, Linux ARM64/Raspberry Pi if those packages will be offered.
 3. Perform manual visual smoke tests for Help, map layout, station list, packet monitor, and safe-default UI indicators.
-4. Produce release notes from `docs/RELEASE_NOTES_TEMPLATE.md`.
+4. Produce release notes from `docs/release/RELEASE_NOTES_TEMPLATE.md`.
 5. Replace the temporary macOS `.command` launcher with a signed/notarized `.app` bundle in final macOS packaging work.
 6. Generate final public release packages only after cross-platform smoke tests pass.
