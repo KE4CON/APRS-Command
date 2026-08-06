@@ -59,4 +59,152 @@ Each should be individually toggleable — the goal is *chosen* awareness, never
 - **Receive-side only — no transmit-safety impact.** Announcements never key the radio; they're purely
   local output and are safe in exercise/simulation/replay modes (could even be useful in training).
 - **Accessibility framing:** if built well, this doubles as a screen-reader-style aid for the whole app,
-  not just messages.
+  not just messages. See §10, which builds on this feature.
+
+---
+
+## 2. Bulletin / announcement transmit (BLN)
+
+**Status:** v2 idea. **Gap it closes:** today the app is **receive-only** for bulletins — it displays
+incoming `BLN`/announcement traffic but has no way to *send* one. Net control announcing "net starts at
+1900 local" is a core EmComm task that currently isn't possible.
+
+**What it is:** compose and transmit APRS bulletins (`BLNn`) and announcements (`BLN` + letter),
+addressed the APRS way, with the standard content-length limits.
+
+**Design notes:** route through the existing transmit-safety authority like every other transmit path;
+honor Exercise Traffic Marking (a drill bulletin should carry the EXERCISE tag); a small compose UI in
+the Message Center; optional scheduled/repeat bulletin (announce every N minutes during an event).
+
+## 3. Map snapshot export (PNG / PDF)
+
+**Status:** v2 idea. **What it is:** export the current map view — *including your drawings and
+annotations* — as a PNG or PDF for a briefing, situation report, or an after-action package.
+
+**Why it's wanted:** pairs directly with the ICS-213/214/309 after-action exports already built — an
+operator can attach a labeled map picture to the incident record. Also useful for pre-op briefings.
+
+**Design notes:** render the Mapsui canvas plus the drawing layer to a bitmap; add a title block
+(event name, date/time, callsign) matching the after-action style; offer "current view" vs. "fit all
+stations." Receive-side; no transmit involved.
+
+## 4. Station track recording → GPX / KML export
+
+**Status:** v2 idea. **What it is:** record the actual movement *track* of any station (or your own)
+over a session and export it as GPX or KML.
+
+**Why it's wanted:** the app already draws live trails and already imports/exports GPX/KML for shapes —
+this is the missing half: a persisted, exportable track for post-event review, SAR debriefs, or
+dropping into Google Earth / a GPS.
+
+**Design notes:** reuse the GPX/KML writer from the drawing tools; let the operator pick which station(s)
+to record and the time window; store points with timestamps; tie into the after-action export.
+
+## 5. Automatic object refresh
+
+**Status:** v2 idea. **Gap it closes:** APRS objects **time out and disappear** unless periodically
+re-transmitted. Right now an operator must manually re-send an object to keep it alive.
+
+**What it is:** an option to automatically re-transmit your owned objects at a chosen interval (e.g.
+every 10 minutes) so shelters, staging areas, and hazards stay on everyone's map through an operation.
+
+**Design notes:** per-object or global interval; only re-sends objects you own; respects transmit-safety
+and Exercise Traffic Marking; stops automatically when an object is killed.
+
+## 6. Satellite APRS
+
+**Status:** v2 idea — a large, self-contained feature. **What it is:** work APRS through amateur
+satellites — pass predictions (ISS, PSAT-class birds), Doppler awareness, and satellite-gateway support.
+
+**Why it's wanted:** broad, enthusiastic ham appeal, and it would draw a new audience to the app.
+Distinct enough that it could be a well-scoped v2 headline.
+
+**Design notes:** needs Keplerian/TLE data (a fetch + cache), a pass-prediction engine, and a "satellite
+mode" that adjusts paths/timing. Sizable — spec carefully before committing.
+
+## 7. Telemetry history & charts
+
+**Status:** v2 idea. **What it is:** the app already receives APRS telemetry; this plots a station's
+analog channels over time as charts, with optional threshold alarms.
+
+**Why it's wanted:** turns raw telemetry numbers into something you can actually read at a glance, and
+dovetails with the voice "telemetry alarm" (§1, #12) and with battery/voltage monitoring of remote gear.
+
+**Design notes:** ring-buffer of recent telemetry per station (session-local, consistent with the
+stateless model); simple line charts via the native Skia rendering already used for the far-field/2D
+plots; user-set high/low thresholds that raise an alert (and optionally a spoken one).
+
+## 8. Message auto-responder / away message
+
+**Status:** v2 idea. **What it is:** an optional, configurable APRS auto-reply to incoming messages
+(e.g. "Mobile — will respond when parked").
+
+**Why it's wanted:** common in other APRS clients; useful when operating away from the keyboard.
+
+**Design notes:** **transmit-safety-gated and off by default** (it transmits!); rate-limited so it can't
+loop or spam; one reply per sender per cooldown window; honors Exercise Traffic Marking; clear on-screen
+indicator that auto-reply is armed (it puts you on the air unattended).
+
+## 9. Recipient groups / distribution lists
+
+**Status:** v2 idea. **What it is:** named groups of callsigns (e.g. "Net Roster," "Shelter Team") so an
+operator can send one message to the whole group in a click.
+
+**Why it's wanted:** speeds up net traffic and multi-station coordination. Ties into Net Control roster
+and message templates.
+
+**Design notes:** APRS messages are one-to-one on the wire, so a group send fans out to individual
+addressed messages (each still tracked/ack'd separately); groups persist in settings; respects
+transmit-safety and the 67-char/exercise-marking rules per message.
+
+## 10. Accessibility — making APRS Command usable by the visually impaired
+
+**Status:** v2 initiative (larger than a single feature). **Goal:** a blind or low-vision operator can
+install, set up, and *operate* APRS Command productively — because EmComm needs every capable operator,
+and APRS is one of the more accessible modes (it's fundamentally text and audio, not visual-only).
+
+**Why it matters:** amateur radio has a long tradition of blind operators; an APRS client they can truly
+use is rare and valuable. Built well, this also benefits everyone (keyboard power-users, small screens,
+bright-sunlight field conditions).
+
+**The pieces (build toward "operable without seeing the screen"):**
+- **Screen-reader support.** Proper Avalonia UI Automation (accessible names, roles, and values on every
+  control, list item, and badge) so NVDA/JAWS on Windows, VoiceOver on macOS, and Orca on Linux can read
+  the interface. This is the foundation — most other pieces build on it.
+- **Full keyboard navigation.** Every action reachable and operable from the keyboard, in a logical tab
+  order, with visible focus and documented shortcuts — no mouse-only controls.
+- **Spoken awareness (builds on §1).** Voice announcements become the eyes-free layer: new messages,
+  emergencies, check-ins, connection changes read aloud. A "read the station list / read this message"
+  command.
+- **An eyes-free / audio-first operating mode.** A mode tuned for operating by ear: spoken new-station
+  and proximity call-outs, spoken bearing/distance to a selected station ("W4XYZ, 12 miles, bearing
+  270"), and a way to browse the station list and messages entirely by keyboard + speech.
+- **Map described, not just drawn.** Since a map is inherently visual, provide a text/spoken alternative:
+  "nearest 5 stations" with distance and bearing, a spoken summary of what's on screen, and keyboard
+  cycling through markers with each one announced.
+- **Visual accessibility too.** High-contrast theme, colorblind-safe palettes, and adjustable font / UI
+  scaling for low-vision (not fully blind) operators.
+- **Braille** comes for free once screen-reader support is solid (screen readers drive braille displays).
+
+**Design notes:** this is mostly disciplined UI work (automation peers, focus order, no unlabeled
+controls) plus the voice layer from §1 — not a rewrite. Best approached as a sustained pass with a blind
+operator testing along the way. Pairs naturally with §1 and §11.
+
+## 11. Localization (multi-language UI)
+
+**Status:** v2 idea. **What it is:** translate the interface (and eventually the docs) so operators
+outside English-speaking regions can use APRS Command in their own language.
+
+**Design notes:** externalize UI strings into resource files; right-to-left readiness; keep APRS
+protocol tokens (callsigns, paths) untranslated. A large but mechanical effort once the string
+extraction is done.
+
+## 12. Settings sync across machines
+
+**Status:** v2 idea. **What it is:** move your station profile and settings between computers easily
+(the author runs both macOS and Windows), via a clean export/import bundle — or optional sync.
+
+**Design notes:** settings are already one JSON tree, so a signed/portable export bundle is
+straightforward; keep it local-file based (no cloud dependency) to stay consistent with the
+no-backend, privacy-first posture; never include secrets/tokens in a shared bundle unless the operator
+opts in.
