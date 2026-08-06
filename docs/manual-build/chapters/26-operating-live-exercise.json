@@ -1,0 +1,85 @@
+{
+  "order": 26,
+  "title": "Operating in a Live Exercise",
+  "subtitle": "How to run a real drill where you DO transmit — with every packet clearly labeled EXERCISE so it can never be mistaken for a real emergency.",
+  "in_this_chapter": [
+    "The two different \"exercise\" features, and which one you want",
+    "Turning on Exercise Traffic Marking",
+    "What gets marked, on every kind of transmission",
+    "Messages, the 67-character limit, and the EXERCISE template",
+    "Objects and items: the X- name convention",
+    "Keeping drill traffic off the real APRS network",
+    "Ending the exercise",
+    "Troubleshooting"
+  ],
+  "blocks": [
+    { "h1": "What This Is / What It Is For" },
+    { "p": "Sooner or later you will take part in a __real exercise__ — an ARES/RACES drill, a SET, a public-service dry run — where stations actually put traffic on the air to practice. The moment you transmit during a drill, one rule matters above all others: **every transmission must be unmistakably labeled as an exercise**, so that no one — not another operator, not a served agency, not someone scanning the frequency — can confuse your practice traffic for a real emergency. This chapter shows you how APRS Command does that for you, automatically." },
+    { "callout": { "kind": "important", "label": "Two \"exercise\" features — don't mix them up", "text": "APRS Command has two tools with similar names that do OPPOSITE things. **Exercise Mode** (Tools menu) is a rehearsal lock: it INHIBITS all transmit so you can practice with the app and send nothing. **Exercise Traffic Marking** (this chapter) is the opposite: it lets you transmit for a real drill and stamps EXERCISE onto everything you send. For a live exercise where operators actually exchange traffic, you want Exercise Traffic Marking — and Exercise Mode OFF." } },
+    { "p": "The two features are covered together on purpose. If you are only practicing by yourself, use Simulation, Replay, or Training (see the previous chapter) with nothing on the air. If you are transmitting to other real stations in a drill, use Exercise Traffic Marking so your traffic is labeled." },
+
+    { "h1": "Turning On Exercise Traffic Marking" },
+    { "steps": [
+      "On the menu bar, open the **Tools** menu.",
+      "Click **Toggle Exercise Traffic Marking (tag transmit as EXERCISE)**.",
+      "A bright amber **EXERCISE MARKING** badge appears in the title bar, next to the TX badge. That badge is your at-a-glance confirmation that marking is on.",
+      "Run your exercise normally. Everything you transmit is now labeled automatically (see below).",
+      "When the drill ends, open **Tools** and click the same item again to turn marking off. The amber badge disappears."
+    ] },
+    { "screenshot": "The Tools menu with 'Toggle Exercise Traffic Marking' highlighted, and the amber EXERCISE MARKING badge shown in the title bar" },
+    { "callout": { "kind": "note", "label": "Marking does not transmit — it only labels", "text": "Turning Exercise Traffic Marking on does not enable or disable transmitting. It simply labels whatever you do choose to send. Your normal transmit controls (and the TX Disabled badge) still work exactly as always. Marking and transmitting are separate switches." } },
+    { "callout": { "kind": "tip", "label": "It resets every time you start the app", "text": "Exercise Traffic Marking is deliberately session-only: it is always OFF when APRS Command starts. That way you can never accidentally leave it on and have EXERCISE labels bleed into real operations days later. Turn it on at the start of each drill; closing the app clears it." } },
+
+    { "h1": "What Gets Marked" },
+    { "p": "While marking is on, APRS Command stamps the exercise label onto every kind of packet you can send — you do not have to remember to do it for each one. Here is exactly what happens to each:" },
+    { "table": {
+      "headers": ["What you send", "How it is labeled"],
+      "rows": [
+        ["Text messages", "The body is prefixed with EXERCISE (twice by default — see below)."],
+        ["Objects and items", "EXERCISE is added to the object's comment."],
+        ["Your position beacon", "EXERCISE is added to your beacon comment / status."],
+        ["Weather beacons", "EXERCISE is added to the weather comment."],
+        ["Status text", "The status is prefixed with EXERCISE."]
+      ]
+    } },
+    { "callout": { "kind": "note", "label": "It never double-labels", "text": "If a message or comment already contains EXERCISE (for example because you used the built-in EXERCISE template), the app leaves it as-is rather than adding a second tag. You will never see \"EXERCISE EXERCISE EXERCISE EXERCISE.\"" } },
+
+    { "h2": "Messages, the 67-character limit, and the EXERCISE template" },
+    { "p": "An APRS text message can hold at most **67 characters**. The classic spoken convention is to say \"EXERCISE\" three times, but three copies (\"EXERCISE EXERCISE EXERCISE \") eat 27 of those characters and leave little room to actually say anything. So APRS Command marks messages with **two** copies by default (\"EXERCISE EXERCISE \"), which is unmistakable and still leaves about 49 characters for your text." },
+    { "p": "You do not have to count characters yourself. When marking is on, APRS Command **reserves room for the label** and checks the total length as you compose — if your text plus the EXERCISE prefix would run past 67 characters, it tells you to shorten it before it sends, so a labeled message never gets truncated on the air." },
+    { "p": ["For the loud opening and closing announcement of an exercise, use the built-in **EXERCISE** message template. Open the ", ["Message Center", "b"], ", pick the ", ["EXERCISE", "b"], " template, and it fills the body with the full \"EXERCISE EXERCISE EXERCISE \" opener for you to finish. (Because the app never double-labels, using the template while marking is also on is perfectly safe.)"] },
+
+    { "h2": "Objects and items: the X- name convention" },
+    { "p": "When marking is on, the app automatically adds EXERCISE to an object's or item's **comment**. It deliberately does **not** change the object's **name**, and it is worth understanding why — because there is a small step here that is yours to do." },
+    { "p": ["An APRS object name is at most **9 characters**, and — this is the important part — the name is the object's __identity__. To later move, update, or \"kill\" (retire) an object, you send another packet with the ", ["exact same name", "b"], ". If the app silently renamed your object while marking was on, you would be unable to retire it later unless marking happened to still be on — a genuine foot-gun. So the app leaves the name alone and marks the comment instead."] },
+    { "p": ["The recommended convention, which you apply yourself when you name a drill object, is a short **X- prefix**: name exercise objects things like ", ["X-EOC", "c"], ", ", ["X-SHELTR", "c"], ", or ", ["X-STAGE", "c"], ". The \"X-\" reads instantly as \"exercise,\" fits the 9-character limit, and stays stable so you can update or kill the object later. Between the X- name you type and the EXERCISE comment the app adds, a drill object is unmistakable from every angle."] },
+    { "callout": { "kind": "tip", "label": "Why not just let the app rename it?", "text": "Because an object you cannot retire is worse than one that is slightly less labeled. Keeping the name stable means your \"kill\" packet always matches, so drill objects disappear cleanly when the exercise ends. The comment tag plus your X- prefix give you the labeling without the risk." } },
+
+    { "h1": "Keeping Drill Traffic Off the Real Network" },
+    { "p": "Labeling is one layer of safety. The second is **isolation** — keeping your practice traffic from cluttering the live nationwide network or being seen by stations who aren't part of the drill. Use both together." },
+    { "bullets": [
+      "**An exercise or simplex frequency (RF).** Run the drill on a designated exercise frequency, or on a simplex frequency off the normal APRS channel. This keeps your traffic on its own channel. Note the catch: simplex only reaches stations within __line of sight__ of each other — if your exercise area is spread out or has terrain in the way, distant participants won't hear you unless you also set up a digipeater to relay.",
+      "**A private or local APRS-IS server.** Instead of connecting to a public APRS-IS server, point everyone's connection at a private server on your own network (Settings → Connections → set the server to your private host). Drill traffic then flows only among your participants and never reaches the national network.",
+      "**Mark AND isolate.** Do both: label every packet EXERCISE, and run on an isolated channel or server. If a tag is ever missed, the isolation still contains it; if isolation ever leaks, the tag still explains it."
+    ] },
+    { "callout": { "kind": "tip", "label": "Announce loudly at the ends, tag lightly in between", "text": "The real-world convention: announce \"EXERCISE EXERCISE EXERCISE\" clearly at the START and END of the exercise (voice, and your first/last messages), then keep the shorter automatic tag on the ongoing traffic in between. The EXERCISE message template gives you the full three-times opener; Exercise Traffic Marking handles the rest." } },
+
+    { "h1": "Ending the Exercise" },
+    { "steps": [
+      "Send your closing \"EXERCISE EXERCISE EXERCISE — end of exercise\" announcement.",
+      "Retire any drill objects you placed (kill them, using the same X- names you gave them).",
+      "Open **Tools** and click **Toggle Exercise Traffic Marking** to turn it off. The amber EXERCISE MARKING badge disappears.",
+      "If you were on an exercise frequency or private server, switch your connection back to your normal setup."
+    ] },
+    { "callout": { "kind": "note", "label": "A safety net either way", "text": "Even if you forget to turn marking off, it clears automatically the next time you start APRS Command — it never persists into a new session. Still, turning it off at the end (and watching the badge disappear) is the clean way to close out a drill." } },
+
+    { "h1": "Troubleshooting" },
+    { "bullets": [
+      "**My message won't send — it says it's too long.** With marking on, your text plus the EXERCISE prefix has to fit in 67 characters. Shorten your text; the app is protecting you from a message that would be cut off on the air.",
+      "**I don't see the EXERCISE MARKING badge.** Marking is off (it defaults off at every launch). Turn it on from Tools → Toggle Exercise Traffic Marking, and the amber badge appears.",
+      "**My object's name isn't tagged.** That is by design — the name is the object's identity and must stay stable so you can retire it. The comment is tagged automatically; add the X- prefix to the name yourself (for example X-EOC).",
+      "**My drill traffic is showing up on the live national map.** You are still connected to a public APRS-IS server or transmitting on the normal APRS frequency. Switch to an exercise/simplex frequency or a private APRS-IS server (see \"Keeping Drill Traffic Off the Real Network\").",
+      "**I want to rehearse without sending anything at all.** That's the other feature — turn on Exercise Mode (Tools → Toggle Exercise Mode), or use Simulation/Replay/Training. Those keep everything off the air."
+    ] }
+  ]
+}

@@ -8,17 +8,20 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
     private readonly IAprsMessageTransmitService transmitService;
     private readonly IAprsMessageIdGenerator messageIdGenerator;
     private readonly AprsMessageRetryConfiguration configuration;
+    private readonly ExerciseMarking? marking;
 
     public AprsMessageRetryEngine(
         IAprsMessageStoreService messageStore,
         IAprsMessageTransmitService transmitService,
         IAprsMessageIdGenerator? messageIdGenerator = null,
-        AprsMessageRetryConfiguration? configuration = null)
+        AprsMessageRetryConfiguration? configuration = null,
+        ExerciseMarking? marking = null)
     {
         this.messageStore = messageStore;
         this.transmitService = transmitService;
         this.messageIdGenerator = messageIdGenerator ?? new SequentialAprsMessageIdGenerator();
         this.configuration = configuration ?? AprsMessageRetryConfiguration.Default;
+        this.marking = marking;
     }
 
     public async Task<AprsMessageRecord> SendMessageAsync(Guid messageRecordId, DateTimeOffset now, CancellationToken cancellationToken)
@@ -179,7 +182,10 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
     {
         var source = record.LocalStationCallsign.Trim().ToUpperInvariant();
         var recipient = record.Recipient.Trim().ToUpperInvariant().PadRight(9)[..9];
-        return $"{source}>{configuration.Destination}::{recipient}:{record.MessageBody}{{{messageId}";
+        // Exercise Traffic Marking (when active) prefixes the body with "EXERCISE …" so drill traffic
+        // is unmistakable. No-op when marking is off or the body is already tagged (e.g. the EXERCISE template).
+        var body = marking?.MarkBody(record.MessageBody) ?? record.MessageBody;
+        return $"{source}>{configuration.Destination}::{recipient}:{body}{{{messageId}";
     }
 
     private static string ExtractMessageId(string rawPacket)

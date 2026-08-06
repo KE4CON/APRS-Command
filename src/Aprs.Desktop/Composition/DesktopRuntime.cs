@@ -112,6 +112,10 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IAprsPortManager, AprsPortManager>();
         services.AddSingleton<ITransmitPolicyContext, SettingsTransmitPolicyContext>();
         services.AddSingleton<ITransmitSafetyAuthority, TransmitSafetyAuthority>();
+        // Exercise Traffic Marking: the sibling of the inhibit gate. When on, it stamps "EXERCISE" onto
+        // every outbound packet so drill traffic is never mistaken for real traffic. Session-only
+        // (defaults off at every launch); consulted by each per-type formatter.
+        services.AddSingleton<ExerciseMarking>();
         // Diagnostic logging — one shared sink so faults surfaced by coordinators land somewhere a
         // UI log view or export can show them, instead of a debugger-only channel.
         services.AddSingleton<ILogService>(_ => new LogService());
@@ -183,7 +187,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         services.AddSingleton<IAprsObjectEditorService>(provider =>
             new AprsObjectEditorService(
                 provider.GetRequiredService<IAprsObjectManager>(),
-                provider.GetRequiredService<ILocalStationProfileService>()));
+                provider.GetRequiredService<ILocalStationProfileService>(),
+                provider.GetRequiredService<ExerciseMarking>()));
 
         // Event bus — shared across decoded event log, event monitor, and file hooks
         services.AddSingleton<IAprsEventBus, AprsEventBus>();
@@ -292,11 +297,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var transmitAuthority = provider.GetRequiredService<ITransmitSafetyAuthority>();
         var inhibitGate = (ITransmitInhibitGate)transmitAuthority;
         rfTransmitClient.InhibitGate = inhibitGate;
+        var exerciseMarking = provider.GetRequiredService<ExerciseMarking>();
 
         var beaconService = BeaconService.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             rfBeaconClient: rfTransmitClient,
-            inhibitGate: inhibitGate);
+            inhibitGate: inhibitGate,
+            marking: exerciseMarking);
 
         // Wire the live APRS-IS client into the deferred iGate proxy now that it exists.
         deferredIGateClient.InnerClient = beaconService.AprsIsClient;
@@ -308,7 +315,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             messageStore,
             aprsIsClient:      beaconService.AprsIsClient,
             rfClient:          rfTransmitClient,
-            transmitConfirmed: beaconService.AprsIsClient is not null);
+            transmitConfirmed: beaconService.AprsIsClient is not null,
+            marking:           exerciseMarking);
 
         // Object transmit service — wires the live APRS-IS client into the object manager viewmodel.
         if (beaconService.AprsIsClient is not null)
@@ -324,7 +332,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
                 provider.GetRequiredService<IAprsWeatherFormatter>(),
                 provider.GetRequiredService<IWeatherObservationSourceProvider>(),
                 beaconService.AprsIsClient,
-                rfTransmitClient: rfTransmitClient);
+                rfTransmitClient: rfTransmitClient,
+                marking: exerciseMarking);
             mainViewModel.Weather.SetBeaconScheduler(wxScheduler);
 
             // Shadow beacon service — reuses the same live APRS-IS client.

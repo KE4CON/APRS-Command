@@ -54,6 +54,7 @@ public sealed partial class MainWindow : Window
             vm.ScheduledBeaconsRequested -= OnScheduledBeaconsRequested;
             vm.BeaconNowRequested     -= OnBeaconNowRequested;
             vm.ExerciseModeRequested  -= OnExerciseModeRequested;
+            vm.ExerciseMarkingRequested -= OnExerciseMarkingRequested;
             vm.AboutRequested         -= OnAboutRequested;
             vm.DarkModeRequested      -= OnDarkModeRequested;
             vm.NetControlRequested    -= OnNetControlRequested;
@@ -98,6 +99,7 @@ public sealed partial class MainWindow : Window
             vm.ScheduledBeaconsRequested += OnScheduledBeaconsRequested;
             vm.BeaconNowRequested     += OnBeaconNowRequested;
             vm.ExerciseModeRequested  += OnExerciseModeRequested;
+            vm.ExerciseMarkingRequested += OnExerciseMarkingRequested;
             vm.AboutRequested         += OnAboutRequested;
             vm.DarkModeRequested      += OnDarkModeRequested;
             vm.NetControlRequested    += OnNetControlRequested;
@@ -595,6 +597,18 @@ public sealed partial class MainWindow : Window
             TxBadgeBorder.Background = new Avalonia.Media.SolidColorBrush(
                 Avalonia.Media.Color.Parse("#7F1D1D"));
         }
+    }
+
+    private void OnExerciseMarkingRequested(object? s, EventArgs e)
+    {
+        var marking = (Application.Current as App)?.Runtime?.GetService<Aprs.Services.ExerciseMarking>();
+        if (marking is null) return;
+
+        // Toggle marking on/off (default repeat of 2 "EXERCISE" words on messages/status). This is the
+        // opposite of exercise-inhibit mode: it does NOT stop transmit — it labels every outgoing packet.
+        marking.Set(!marking.Active, marking.Repeat);
+
+        ExerciseMarkBadgeBorder.IsVisible = marking.Active;
     }
 
     private async void OnBeaconNowRequested(object? s, EventArgs e)

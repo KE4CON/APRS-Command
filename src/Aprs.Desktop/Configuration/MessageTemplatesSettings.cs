@@ -12,5 +12,6 @@ public sealed record MessageTemplatesSettings(IReadOnlyList<MessageTemplate> Tem
         MessageTemplate.Create("All Clear",      string.Empty, "All clear. No issues to report."),
         MessageTemplate.Create("Copy That",      string.Empty, "Copy that. Acknowledged."),
         MessageTemplate.Create("Say Again",      string.Empty, "Please say again. Did not copy."),
+        MessageTemplate.Create("EXERCISE",       string.Empty, "EXERCISE EXERCISE EXERCISE "),
     ]);
 }

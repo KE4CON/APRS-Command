@@ -31,10 +31,11 @@ public sealed class MessageAckCoordinator : IAsyncDisposable
     public static MessageAckCoordinator Create(
         IAprsMessageStoreService messageStore,
         IAprsIsClient aprsIsClient,
-        bool transmitConfirmed = true)
+        bool transmitConfirmed = true,
+        ExerciseMarking? marking = null)
     {
         var transmitService = new AprsIsMessageTransmitService(aprsIsClient, transmitConfirmed);
-        var retryEngine = new AprsMessageRetryEngine(messageStore, transmitService);
+        var retryEngine = new AprsMessageRetryEngine(messageStore, transmitService, marking: marking);
         return new MessageAckCoordinator(retryEngine);
     }
 
@@ -46,10 +47,11 @@ public sealed class MessageAckCoordinator : IAsyncDisposable
         IAprsMessageStoreService messageStore,
         IAprsIsClient? aprsIsClient,
         IRfBeaconTransmitClient? rfClient,
-        bool transmitConfirmed = true)
+        bool transmitConfirmed = true,
+        ExerciseMarking? marking = null)
     {
         var transmitService = new CompositeMessageTransmitService(aprsIsClient, rfClient, transmitConfirmed);
-        var retryEngine = new AprsMessageRetryEngine(messageStore, transmitService);
+        var retryEngine = new AprsMessageRetryEngine(messageStore, transmitService, marking: marking);
         return new MessageAckCoordinator(retryEngine);
     }
 

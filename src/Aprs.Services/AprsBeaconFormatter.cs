@@ -4,6 +4,10 @@ namespace Aprs.Services;
 
 public sealed partial class AprsBeaconFormatter : IAprsBeaconFormatter
 {
+    private readonly ExerciseMarking? marking;
+
+    public AprsBeaconFormatter(ExerciseMarking? marking = null) => this.marking = marking;
+
     public AprsBeaconFormatResult FormatFixedPositionBeacon(AprsBeaconInput input)
     {
         return FormatPositionBeacon(input, positionType: '!');
@@ -49,7 +53,7 @@ public sealed partial class AprsBeaconFormatter : IAprsBeaconFormatter
             profile.FixedLongitude,
             profile.SymbolTableIdentifier,
             profile.SymbolCode,
-            profile.StationComment,
+            marking?.MarkComment(profile.StationComment) ?? profile.StationComment,
             AltitudeFeet: null,
             CourseDegrees: null,
             SpeedKnots: null,

@@ -40,7 +40,8 @@ public sealed class BeaconService : IAsyncDisposable
     public static BeaconService CreateFromSettings(
         Configuration.AppSettings settings,
         Aprs.Services.IRfBeaconTransmitClient? rfBeaconClient = null,
-        ITransmitInhibitGate? inhibitGate = null)
+        ITransmitInhibitGate? inhibitGate = null,
+        Aprs.Services.ExerciseMarking? marking = null)
     {
         var station = settings.Station;
         var profileService = new LocalStationProfileService();
@@ -61,7 +62,7 @@ public sealed class BeaconService : IAsyncDisposable
             RequireTransmitConfirmation: false,
             SmartBeaconing:          settings.SmartBeaconing.ToServiceConfig());
 
-        var beaconFormatter = new AprsBeaconFormatter();
+        var beaconFormatter = new AprsBeaconFormatter(marking);
         IAprsIsClient clientForScheduler = aprsIsClient ?? (IAprsIsClient)new NullAprsIsClient();
         var scheduler = new BeaconScheduler(
             profileService,

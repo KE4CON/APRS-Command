@@ -10,6 +10,7 @@ public sealed class WeatherBeaconScheduler : IWeatherBeaconScheduler
     private readonly IAprsIsClient aprsIsClient;
     private readonly IRfBeaconTransmitClient? rfTransmitClient;
     private readonly IBeaconSchedulerClock clock;
+    private readonly ExerciseMarking? marking;
     private WeatherBeaconConfiguration configuration;
     private WeatherBeaconSchedulerState state;
 
@@ -20,7 +21,8 @@ public sealed class WeatherBeaconScheduler : IWeatherBeaconScheduler
         IAprsIsClient aprsIsClient,
         WeatherBeaconConfiguration? configuration = null,
         IBeaconSchedulerClock? clock = null,
-        IRfBeaconTransmitClient? rfTransmitClient = null)
+        IRfBeaconTransmitClient? rfTransmitClient = null,
+        ExerciseMarking? marking = null)
     {
         this.profileService = profileService;
         this.weatherFormatter = weatherFormatter;
@@ -29,6 +31,7 @@ public sealed class WeatherBeaconScheduler : IWeatherBeaconScheduler
         this.configuration = StampDefaults(configuration ?? WeatherBeaconConfiguration.Default, DateTimeOffset.UtcNow);
         this.clock = clock ?? new SystemBeaconSchedulerClock();
         this.rfTransmitClient = rfTransmitClient;
+        this.marking = marking;
 
         state = new WeatherBeaconSchedulerState(
             SchedulerEnabled: this.configuration.WeatherBeaconEnabled,
@@ -373,7 +376,7 @@ public sealed class WeatherBeaconScheduler : IWeatherBeaconScheduler
             configuration.AprsDestination,
             transport == WeatherBeaconTransmitTransport.Rf ? configuration.RfPath : [],
             configuration.IncludePosition,
-            configuration.CommentText);
+            marking?.MarkComment(configuration.CommentText) ?? configuration.CommentText);
     }
 
     private (bool IsEligible, string? BlockReason) IsAprsIsEligible(LocalStationProfile profile, string packet)

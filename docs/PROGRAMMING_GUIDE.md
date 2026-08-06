@@ -2608,6 +2608,46 @@ A real multi-operator drill — where stations genuinely exchange traffic — is
 > **Exercise Mode is not "the mode you run an exercise in"** — Its name describes what it protects, not what it enables. Exercise Mode = a hard guarantee of no transmission, for safe solo rehearsal. A drill where operators actually talk to each other runs with Exercise Mode OFF and transmit turned on, ideally on an isolated frequency or private server.
 
 
+## The Sibling: Exercise Traffic Marking
+
+The global inhibit answers "may I transmit at all?" — a single yes/no on an opaque string, which is why it lives at the transport gate. A real EmComm drill needs the opposite: you DO transmit, and every packet must be stamped *EXERCISE* so it is never mistaken for real traffic. That is a different job, and it lives in a small sibling class, `src/Aprs.Services/ExerciseMarking.cs`.
+
+Why it cannot share the inhibit gate's choke point: by the time a packet reaches the transport it is already a finished raw string — the transport has no idea which part is a message body, an object's 9-character name, or a comment. Marking has to change specific semantic fields in different ways (prefix a message, append to a comment, leave a name alone), so it is applied at each *per-type formatter* where those fields are still separate, not at the transport.
+
+The service is deliberately tiny and pure: a session-only mutable state plus a few string helpers. It is not persisted — it defaults OFF at every launch, the same receive-first instinct as the transmit switches, so marking can never silently bleed into real operations a week later.
+
+```csharp
+public sealed class ExerciseMarking
+{
+    public const string Tag = "EXERCISE";
+    public bool Active { get; private set; }
+    public int  Repeat { get; private set; } = 2;   // message/status prefix count, clamped 1..3
+
+    public string MessagePrefix       => Active ? repeat-many "EXERCISE " : "";
+    public int    ReservedMessageLength => MessagePrefix.Length;
+
+    public string MarkBody(string? body);      // prefix a message/status; no-op or de-dup if already tagged
+    public string MarkComment(string? comment); // append the tag to a comment; de-dup if present
+}
+```
+
+[['MarkBody', 'c'], ' prefixes a message or status body and refuses to double-tag (so the built-in EXERCISE template never yields four copies); ', ['MarkComment', 'c'], ' appends the tag to a comment. Both are no-ops when marking is off, so every call site uses the same one-liner with no if-statement.']
+
+
+### How it reaches every transmit path
+
+Each outbound formatter takes the marking service as an OPTIONAL constructor parameter (defaulting to null), so existing code and tests that build a formatter without one keep compiling unchanged. The composition root registers one shared instance right next to the transmit-safety authority and hands it to the five formatters that assemble outgoing fields:
+
+- [['AprsMessageRetryEngine.FormatMessagePacket', 'c'], ' prefixes the message body; ', ['AprsMessageStoreService', 'c'], ' validates the MARKED length against the 67-character limit so a labeled message can never overflow on the air.']
+- [['AprsObjectEditorService.BuildObjectPacket', 'c'], ' appends the tag to the object comment, and pointedly leaves the 9-character name alone.']
+- [['AprsBeaconFormatter.CreateInputFromProfile', 'c'], ' marks the position-beacon comment.']
+- [['WeatherBeaconScheduler.CreateFormatterOptions', 'c'], ' marks the weather comment.']
+
+> **Why the object NAME is left untouched** — An object's name is its identity: to move, update, or kill it later you must re-send the exact same name. If marking silently prefixed the name, you could not retire the object unless marking were still on — a foot-gun. So the code marks the comment (safe) and the manual documents an operator-applied "X-" name convention (e.g. X-EOC) instead. Correctness beats a slightly louder label.
+
+> **The operator's side** — The user-facing half — the Tools toggle, the amber EXERCISE MARKING badge, the message template, and the channel-isolation guidance — is documented in the User Manual chapter "Operating in a Live Exercise."
+
+
 ## Why It Matters / Design Takeaways
 
 If a future maintainer preserves only one thing about this file, preserve the shape: one object, two interfaces, four ordered gates, closed by default. The rich `Evaluate` checkpoint and the minimal `IsTransmitInhibited` tripwire are two faces of the same shared singleton precisely so that convenience and guarantee do not have to compete — services get friendly, specific denials, while the wire-level chokepoints get an unskippable hard stop.

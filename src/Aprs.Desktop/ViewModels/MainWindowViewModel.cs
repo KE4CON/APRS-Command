@@ -131,6 +131,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
         OpenScheduledBeaconsCommand = new DesktopCommand(() => ScheduledBeaconsRequested?.Invoke(this, EventArgs.Empty));
         BeaconNowCommand       = new DesktopCommand(() => BeaconNowRequested?.Invoke(this, EventArgs.Empty));
         ToggleExerciseModeCommand = new DesktopCommand(() => ExerciseModeRequested?.Invoke(this, EventArgs.Empty));
+        ToggleExerciseMarkingCommand = new DesktopCommand(() => ExerciseMarkingRequested?.Invoke(this, EventArgs.Empty));
         OpenAboutCommand       = new DesktopCommand(() => AboutRequested?.Invoke(this, EventArgs.Empty));
         OpenNetControlCommand  = new DesktopCommand(() => NetControlRequested?.Invoke(this, EventArgs.Empty));
         OpenNwsAlertsCommand   = new DesktopCommand(() => NwsAlertsRequested?.Invoke(this, EventArgs.Empty));
@@ -168,6 +169,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public event EventHandler? ScheduledBeaconsRequested;
     public event EventHandler? BeaconNowRequested;
     public event EventHandler? ExerciseModeRequested;
+    public event EventHandler? ExerciseMarkingRequested;
     public event EventHandler? AboutRequested;
     public event EventHandler? DarkModeRequested;
     public event EventHandler? NetControlRequested;
@@ -243,6 +245,7 @@ public sealed class MainWindowViewModel : INotifyPropertyChanged
     public DesktopCommand OpenScheduledBeaconsCommand { get; }
     public DesktopCommand BeaconNowCommand { get; }
     public DesktopCommand ToggleExerciseModeCommand { get; }
+    public DesktopCommand ToggleExerciseMarkingCommand { get; }
     public DesktopCommand OpenAboutCommand { get; }
     public DesktopCommand ToggleDarkModeCommand { get; }
     public DesktopCommand OpenNetControlCommand { get; }

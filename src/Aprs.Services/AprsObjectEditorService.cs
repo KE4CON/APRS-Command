@@ -10,11 +10,16 @@ public sealed partial class AprsObjectEditorService : IAprsObjectEditorService
     private readonly IAprsObjectManager objectManager;
     private readonly ILocalStationProfileService localStationProfileService;
     private readonly AprsParser parser = new();
+    private readonly ExerciseMarking? marking;
 
-    public AprsObjectEditorService(IAprsObjectManager objectManager, ILocalStationProfileService localStationProfileService)
+    public AprsObjectEditorService(
+        IAprsObjectManager objectManager,
+        ILocalStationProfileService localStationProfileService,
+        ExerciseMarking? marking = null)
     {
         this.objectManager = objectManager;
         this.localStationProfileService = localStationProfileService;
+        this.marking = marking;
     }
 
     public AprsObjectEditModel CreateNewDraft(DateTimeOffset now)
@@ -243,7 +248,7 @@ public sealed partial class AprsObjectEditorService : IAprsObjectEditorService
         }, preview, validation.Errors, validation.Warnings);
     }
 
-    private static string BuildObjectPacket(AprsObjectEditModel model, DateTimeOffset now)
+    private string BuildObjectPacket(AprsObjectEditModel model, DateTimeOffset now)
     {
         var name = NormalizeObjectName(model.ObjectName).PadRight(MaximumObjectNameLength)[..MaximumObjectNameLength];
         var indicator = model.IsKilled ? '_' : '*';
@@ -251,7 +256,12 @@ public sealed partial class AprsObjectEditorService : IAprsObjectEditorService
         // (HHMMSS) under the 'z' DHM suffix, so any object beaconed at minute ≥ 24 encoded an invalid
         // "hour" (e.g. 14:25:30 → "142530z" reads as day 14, hour 25). DHM-zulu is the widely-parsed form.
         var timestamp = now.UtcDateTime.ToString("ddHHmm", CultureInfo.InvariantCulture) + "z";
-        var packetBody = $";{name}{indicator}{timestamp}{AprsCoordinateFormatter.FormatLatitude(model.Latitude!.Value)}{model.SymbolTableIdentifier!.Value}{AprsCoordinateFormatter.FormatLongitude(model.Longitude!.Value)}{model.SymbolCode!.Value}{model.Comment.Trim()}";
+        // Exercise Traffic Marking (when active) appends "EXERCISE" to the object comment so a drill
+        // object is never mistaken for a real one. The object NAME is left untouched on purpose — it is
+        // the object's identity for later kill/update, so it must stay stable (see the manual's
+        // "Operating in a Live Exercise" for the recommended X- name convention you apply yourself).
+        var comment = marking?.MarkComment(model.Comment) ?? model.Comment.Trim();
+        var packetBody = $";{name}{indicator}{timestamp}{AprsCoordinateFormatter.FormatLatitude(model.Latitude!.Value)}{model.SymbolTableIdentifier!.Value}{AprsCoordinateFormatter.FormatLongitude(model.Longitude!.Value)}{model.SymbolCode!.Value}{comment}";
         return $"{model.OwnerCallsign.Trim().ToUpperInvariant()}>APRS:{packetBody}";
     }
 

@@ -7,6 +7,9 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
 {
     private const int MaximumMessageBodyLength = 67;
     private readonly List<AprsMessageRecord> messages = [];
+    private readonly ExerciseMarking? marking;
+
+    public AprsMessageStoreService(ExerciseMarking? marking = null) => this.marking = marking;
 
     public event EventHandler<AprsMessageRecord>? IncomingMessageReceived;
 
@@ -98,9 +101,16 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
             errors.Add("Message body cannot contain line breaks.");
         }
 
-        if (request.MessageText.Trim().Length > MaximumMessageBodyLength)
+        // Validate the length the packet will actually be — including the "EXERCISE …" prefix when
+        // Exercise Traffic Marking is active — so a marked message never overflows the 67-char limit on air.
+        var trimmedText = request.MessageText.Trim();
+        var onAirBody = marking?.MarkBody(trimmedText) ?? trimmedText;
+        if (onAirBody.Length > MaximumMessageBodyLength)
         {
-            errors.Add($"Message body must be {MaximumMessageBodyLength} characters or fewer.");
+            errors.Add(marking is { Active: true }
+                ? $"With exercise marking on, your text plus the \"EXERCISE\" prefix must fit in "
+                    + $"{MaximumMessageBodyLength} characters — please shorten it."
+                : $"Message body must be {MaximumMessageBodyLength} characters or fewer.");
         }
 
         return errors.Count == 0
