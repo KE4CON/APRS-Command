@@ -247,12 +247,13 @@ def ch_installing(doc, n):
     S.chapter_open(doc, n, "Installing APRS Command",
         "Getting the program onto your computer — Windows, macOS, Linux, or a Raspberry Pi.",
         ["Two ways to install", "Windows", "macOS", "Linux", "Raspberry Pi",
-         "Why you may see a security warning", "Running from source"])
+         "Signed vs. unsigned: what you'll see", "Running from source"])
 
-    S.callout(doc, "note", "Provisional chapter — installer details are being finalized.",
-        "The steps below are accurate for the current builds. The macOS and Windows steps are expected to get simpler soon, "
-        "once the app ships digitally signed (see “Why You May See a Security Warning”). This chapter will be updated when "
-        "that happens.")
+    S.callout(doc, "note", "Signed or unsigned — this chapter covers both.",
+        "Depending on the build you download, APRS Command may be digitally signed (it installs cleanly and shows the "
+        "author's name) or unsigned (your computer shows a one-time security caution you safely click past). It is the same "
+        "program either way. Each platform's steps below tell you what to expect in both cases, and "
+        "“Signed vs. Unsigned: What You'll See” near the end explains the difference in plain terms.")
 
     S.h1(doc, "Before You Start")
     S.body(doc, ["Make sure your computer meets the ", ("System Requirements", 'i'), " in the previous chapter — in short, "
@@ -267,17 +268,22 @@ def ch_installing(doc, n):
     S.steps(doc, [
         ["Download the Windows installer — ", ("APRSCommand-…-windows-x64-Setup.exe", 'c'), "."],
         ["Double-click it to run."],
-        ["The first time, Windows may show ", ("“Windows protected your PC.”", 'b'), " Click ", ("More info", 'b'),
-         ", then ", ("Run anyway", 'b'), " (this is expected — see “Why you may see a security warning” below)."],
+        ["The first time you run it, watch for one of two things — both are fine. If this build is ", ("signed", 'b'),
+         ", a ", ("User Account Control", 'b'), " box may appear listing ", ("Verified publisher: James Rospopo (KE4CON)", 'b'),
+         " — click ", ("Yes", 'b'), ". If instead you see ", ("“Windows protected your PC,”", 'b'),
+         " this copy is unsigned — click ", ("More info", 'b'), ", then ", ("Run anyway", 'b'),
+         " (safe; see “Signed vs. Unsigned” below)."],
         ["APRS Command installs to ", ("C:\\Program Files\\APRS Command", 'c'), " with Start-menu and desktop shortcuts."],
     ])
     S.body(doc, ["To remove it later: ", ("Settings → Apps → APRS Command → Uninstall", 'b'), "."])
     S.h2(doc, "Portable (no installation)")
     S.steps(doc, [
         ["Download ", ("APRSCommand-…-windows-x64.zip", 'c'), " and extract it to any folder."],
-        ["Run ", ("Aprs.Desktop.exe", 'c'), ". If the security prompt appears, click ", ("More info → Run anyway", 'b'), "."],
+        ["Run ", ("Aprs.Desktop.exe", 'c'), ". If a ", ("“Windows protected your PC”", 'b'),
+         " prompt appears (that means an unsigned copy), click ", ("More info → Run anyway", 'b'),
+         ". A signed copy just runs."],
     ])
-    S.screenshot(doc, "The Windows SmartScreen prompt with the More info / Run anyway choice highlighted")
+    S.screenshot(doc, "Side by side: a signed User Account Control prompt showing the verified publisher, and the unsigned “Windows protected your PC” prompt with More info / Run anyway")
 
     S.h1(doc, "macOS")
     S.h2(doc, "Installer (.dmg, recommended)")
@@ -286,12 +292,16 @@ def ch_installing(doc, n):
          ("…-macos-x64.dmg", 'c'), " for an Intel Mac."],
         ["Double-click the ", (".dmg", 'c'), " to open it, then drag ", ("APRS Command", 'b'), " into your ",
          ("Applications", 'b'), " folder."],
-        ["The first time only: in Applications, ", ("right-click", 'b'), " (or Control-click) APRS Command, choose ",
-         ("Open", 'b'), ", then click ", ("Open", 'b'), " again. macOS remembers the exception, and it launches normally afterward."],
+        ["The first time you open it, watch for one of two things. If this build is ", ("signed and notarized", 'b'),
+         ", just ", ("double-click", 'b'), " it — it opens normally (you may get a one-time “downloaded from the Internet — "
+         "are you sure you want to open it?” with an ", ("Open", 'b'), " button; click ", ("Open", 'b'),
+         "). If instead macOS says it ", ("“cannot be opened because Apple cannot check it,”", 'b'),
+         " this copy is unsigned — ", ("right-click", 'b'), " (or Control-click) the app, choose ", ("Open", 'b'),
+         ", then ", ("Open", 'b'), " again. macOS remembers it, and it launches normally afterward."],
     ])
-    S.callout(doc, "note", "Why the right-click-Open dance?",
-        "APRS Command is not code-signed (see below), so a normal double-click on first launch is blocked by macOS "
-        "Gatekeeper. Right-click → Open is the standard one-time approval for unsigned open-source apps.")
+    S.callout(doc, "note", "The right-click step is only for an unsigned copy.",
+        "A signed, notarized build opens with a normal double-click — no dance needed. The right-click → Open step is the "
+        "standard one-time approval only when the copy is unsigned. See “Signed vs. Unsigned: What You'll See” below.")
     S.h2(doc, "Portable (.zip)")
     S.body(doc, ["Unzip the archive, then in Terminal run ", ("xattr -cr .", 'c'), " inside the extracted folder (to clear "
         "the download-quarantine flag) and launch ", ("./Aprs.Desktop", 'c'), "."])
@@ -346,17 +356,38 @@ def ch_installing(doc, n):
     S.callout(doc, "note", "NOTE", "Keep your logs and the offline map cache on storage with room to spare — on a Pi, "
         "avoid filling the boot SD card with downloaded map tiles. A Pi 4 or Pi 5 gives the smoothest map.")
 
-    S.h1(doc, "Why You May See a Security Warning")
-    S.body(doc, "On Windows and macOS you may see a warning the first time you launch APRS Command — SmartScreen on "
-        "Windows, or Gatekeeper on macOS. This is normal and expected.")
-    S.body(doc, ["Today's builds are ", ("not code-signed", 'b'), ". Code-signing certificates cost money, and this is a "
-        "free, open-source amateur-radio project maintained by volunteers. The one-time bypass described above is safe and "
-        "is standard practice for unsigned open-source software."])
-    S.callout(doc, "note", "This is changing.",
-        "The project now has an Apple Developer account, so a signed and notarized macOS build is planned — once it ships, "
-        "the macOS right-click → Open step goes away and it becomes a normal double-click. Windows code-signing is also "
-        "being arranged; if it comes through, the SmartScreen warning will no longer appear. This chapter will be updated "
-        "at that point.")
+    S.h1(doc, "Signed vs. Unsigned: What You'll See")
+    S.body(doc, "“Code signing” is a digital seal that tells your computer who made a program and proves it has not been "
+        "altered since. When a program is signed, Windows and macOS trust it and show you the author's name. When it is "
+        "not signed, they show a one-time caution the first time you run it — not because anything is wrong, but because "
+        "they cannot confirm the author automatically.")
+    S.body(doc, ["APRS Command is a free, open-source amateur-radio project. Depending on the download, a build may be ",
+        ("signed", 'b'), " — published under the author's verified name, ", ("James Rospopo, KE4CON", 'b'),
+        " — or ", ("unsigned", 'b'), ". Both are the identical program, from the same public source code. The only "
+        "difference is whether your computer greets it by name or with a caution. Here is exactly what to expect, and what "
+        "to do, either way:"])
+    S.table(doc,
+        ["Your computer", "If the copy is signed", "If the copy is unsigned — and what to do"],
+        [
+            ["Windows",
+             "Installs normally. A “User Account Control” box may show “Verified publisher: James Rospopo (KE4CON)” — click Yes.",
+             "A “Windows protected your PC” box appears. Click More info, then Run anyway. Safe — it only means this copy is not signed."],
+            ["macOS",
+             "Opens with a normal double-click. You may get a one-time “downloaded from the Internet — open?” — click Open.",
+             "macOS says it “cannot be opened because Apple cannot check it.” Right-click (or Control-click) the app → Open → Open."],
+            ["Linux / Raspberry Pi",
+             "No warning — Linux does not gate apps this way. Install and run normally.",
+             "No warning either; install and run normally."],
+        ],
+        [Inches(1.2), Inches(2.65), Inches(2.65)])
+    S.callout(doc, "tip", "Want to confirm you have a genuine copy?",
+        "Always download from the official releases page: github.com/KE4CON/APRS-Command/releases. On Windows you can also "
+        "right-click the installer → Properties → the Digital Signatures tab to see who signed it; on macOS, a signed build "
+        "simply opens without the “cannot be checked” message.")
+    S.callout(doc, "note", "Both are safe — and this can change over time.",
+        "Whether a given release is signed may vary (signing certificates renew periodically, and this is an independent "
+        "project). If a build you expected to be signed shows a caution, or the reverse, nothing is wrong — just follow the "
+        "matching column above. Either way it is the same program from the same source.")
 
     S.h1(doc, "Running from Source (Optional)")
     S.body(doc, "If you would rather build it yourself — for example to try the very latest changes — install the "
