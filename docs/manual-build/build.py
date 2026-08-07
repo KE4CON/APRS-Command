@@ -21,7 +21,7 @@ def title_page(doc):
     import datetime
     S.cover(
         doc,
-        kicker="APRS COMMAND  ·  AMATEUR RADIO APRS",
+        kicker="AUTOMATIC PACKET REPORTING SYSTEM",
         big_title="APRS COMMAND",
         subtitle="Situational Awareness for Amateur Radio",
         doc_kind="COMPLETE USER MANUAL",
