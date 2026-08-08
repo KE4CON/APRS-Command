@@ -9,6 +9,7 @@
     "The five tabs: Map, Stations, Net, Messages, Stats",
     "The access token and why the link is long",
     "Limits: read-only, same Wi-Fi, app must stay open",
+    "Feeding the FieldCommand tactical map (fixed-port, tokenless LAN feed)",
     "Troubleshooting connection problems"
   ],
   "blocks": [
@@ -140,6 +141,30 @@
         "**Fresh link each session.** Starting the server generates a new address and a new access token. A link you saved yesterday will not work today.",
         "**The link is a key.** Anyone you give the full URL to, while you are on the same network, can view your feed. Share it deliberately."
       ]
+    },
+    {
+      "h1": "Feeding the FieldCommand Tactical Map (LAN)"
+    },
+    {
+      "p": "If you run FieldCommand IMS (the Raspberry-Pi incident-management platform) on the same field network, its big-screen __tactical map__ can pull live stations straight from APRS Command. Because that map is a program on another machine — not a phone opening a link — it needs a fixed address with no token, so it gets its own menu item separate from the Mobile Companion above."
+    },
+    {
+      "steps": [
+        "In the **Tools** menu, click **FieldCommand Tactical-Map Feed (LAN)**.",
+        "A window shows the address, like `http://192.168.50.20:8080/` — note the machine's IP and the fixed port **8080**. There is no token in this one.",
+        "On the FieldCommand tactical map, open **Settings → APRS Sources** and set the **RF source host** to this computer's IP and the **RF source port** to 8080.",
+        "Stations APRS Command is hearing (over Direwolf/RF, and APRS-IS if connected) now appear on the FieldCommand map."
+      ]
+    },
+    {
+      "callout": {
+        "kind": "important",
+        "label": "Trusted network only — no token",
+        "text": "This feed is deliberately tokenless and reachable by any device on the network, so use it only on your own isolated EMCOMM-NET (the same no-login posture FieldCommand's own tools use there). It is read-only — it serves station/message data, never transmit controls. On an untrusted network, use the token-protected Mobile Companion instead."
+      }
+    },
+    {
+      "p": "Under the hood this is the same built-in server as the Mobile Companion, just started in a fixed-port, tokenless mode with cross-origin access allowed so a browser on another machine can read it. (A future release will move this onto APRS Command's dedicated Local REST API; when that happens the only change on the FieldCommand side is the port number.)"
     },
     {
       "h1": "Troubleshooting"

@@ -208,3 +208,27 @@ extraction is done.
 straightforward; keep it local-file based (no cloud dependency) to stay consistent with the
 no-backend, privacy-first posture; never include secrets/tokens in a shared bundle unless the operator
 opts in.
+
+## 13. Local REST API — build the network transport (external integrations)
+
+**Status:** v2 idea. **What it is:** `AprsCommand.Api.LocalRestApiService` already defines the full
+integration API — endpoints (`/api/stations`, `/api/stations/{callsign}`, `/api/objects`, `/api/weather`,
+`/api/gps`, `/api/alerts`, `/api/rf-diagnostics`, `/api/ports`, plus permissioned POST submit/transmit),
+Bearer-token auth, read-only mode, and per-minute rate limiting — but it has **no network transport yet**:
+`StartAsync()` only flips a state flag and nothing calls `HandleAsync`. Build the actual HTTP server (an
+`HttpListener` or Kestrel host) that binds the configured port (8765), maps requests to
+`LocalRestApiRequest`, calls `HandleAsync`, writes `LocalRestApiResponse`, and adds CORS. Pair it with the
+parallel `WebSocketEventStreamService` foundation (same status — logic exists, no socket) for live push.
+
+**Why:** this is the *proper* long-term integration surface. Today the FieldCommand IMS tactical map is
+fed from the `MobileCompanionServer` in a tokenless fixed-port (8080) LAN mode — pragmatic and working now,
+but the companion server is really the phone-companion, not the integration API. Once the Local REST API
+is network-live, **move the FieldCommand feed onto it**: richer contract, safer model (explicit enable,
+read-only, rate limiting, per-endpoint write/transmit permissions), and WebSocket live updates instead of
+polling. On the FieldCommand side the switch is trivial — the tactical map's RF source is just a host:port
+(Settings → APRS Sources).
+
+**Design notes:** keep the locked-down defaults (disabled, localhost-only, token required, read-only) and
+let the operator opt into a LAN-exposed, tokenless, read-only feed for a *trusted* EMCOMM-NET — the same
+no-login posture FieldCommand's own services use on that isolated network. The auth / rate-limit / routing
+logic in `HandleAsync` is already there and tested; the HTTP transport is the only missing piece.

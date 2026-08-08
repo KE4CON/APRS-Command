@@ -314,6 +314,11 @@
             "Mobile Companion"
           ],
           [
+            "FieldCommand Tactical-Map Feed (LAN)",
+            "Starts a fixed-port (8080), tokenless read-only station feed for the FieldCommand IMS tactical map on a trusted EMCOMM-NET. Shows the address to enter under the map's APRS Sources settings.",
+            "Mobile Companion"
+          ],
+          [
             "Toggle Exercise Mode (inhibit all transmit)",
             "Turns Exercise Mode on or off. While on, every transmit path is blocked for drills.",
             "Exercise Mode"

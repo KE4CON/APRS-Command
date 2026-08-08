@@ -271,6 +271,36 @@ descriptions and locks the full set (86 primary + 73 alternate = 159); `MapViewM
 
 ---
 
+## 2026-08-07 — FieldCommand IMS integration
+
+### D16 — FieldCommand tactical-map station feed rides the Mobile Companion server (tokenless LAN mode)
+
+FieldCommand IMS (the sibling Raspberry-Pi incident-management platform) drives a big-screen **tactical
+APRS map** that needs live stations off the radio. In the new radio chain the RF TNC is **Direwolf**
+(KISS/AGW, no HTTP), so the "serve stations to the map" job moves to APRS Command. The map is a plain
+browser `fetch` of `http://<host>:<port>/api/stations` with no auth header.
+
+**Decision:** serve that feed from the existing **`MobileCompanionServer`** in a new **LAN feed mode** —
+`Start(port, requireToken: false)` binds a **fixed port (8080)** with **no per-session token** and adds a
+**wildcard CORS** header. Exposed via `DesktopRuntime.StartFieldCommandFeed()` and a **View → "FieldCommand
+Tactical-Map Feed (LAN)"** menu item. The phone-companion token mode is unchanged.
+
+**Why the companion server and not the Local REST API:** `AprsCommand.Api.LocalRestApiService` is the
+*intended* long-term integration surface (richer contract, read-only, rate-limited, per-endpoint
+permissions) — but it is **not network-live**: `StartAsync()` only sets a state flag and nothing binds a
+socket or calls `HandleAsync`. The companion server is a real, working `HttpListener` today, so it is the
+pragmatic home for now.
+
+**Why tokenless is acceptable here:** the feed is used only on the isolated, trusted **EMCOMM-NET** — the
+same no-login posture FieldCommand's own services use on that network. Do **not** enable tokenless mode on
+an untrusted network. Read-only: the LAN feed only serves the existing GET endpoints.
+
+**Planned follow-up (v2 backlog §13):** build the HTTP transport for `LocalRestApiService` (+ the parallel
+`WebSocketEventStreamService`), then move the FieldCommand feed onto it — richer contract and live push.
+The FieldCommand side is a trivial host:port change.
+
+---
+
 ## Future / planned (not yet done)
 
 Decisions made about work intended for later, so the reasoning is captured before it is scheduled.
