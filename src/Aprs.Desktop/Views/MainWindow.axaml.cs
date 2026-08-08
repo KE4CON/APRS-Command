@@ -320,6 +320,19 @@ public sealed partial class MainWindow : Window
         win.Show();
     }
 
+    private void OpenFieldCommandFeed_Click(object? sender, RoutedEventArgs e)
+    {
+        var rt = (Application.Current as App)?.Runtime;
+        if (rt is null) return;
+
+        // Tokenless, fixed-port (8080) feed for the FieldCommand tactical map on EMCOMM-NET.
+        // The URL shown is the base to enter under the map's Settings → APRS Sources
+        // (host + port); the map polls {base}/api/stations.
+        var url = rt.StartFieldCommandFeed();
+        var win = new MobileCompanionUrlWindow(url);
+        win.Show();
+    }
+
     private void OpenRepeaterDirectory_Click(object? sender, RoutedEventArgs e)
     {
         var win = new RepeaterDirectoryWindow

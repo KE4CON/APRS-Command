@@ -484,8 +484,12 @@ public sealed class DesktopRuntime : IAsyncDisposable
             filter: filter);
     }
 
-    /// <summary>Starts the mobile companion web server and returns the URL operators open on their phone.</summary>
-    public string StartMobileCompanion()
+    /// <summary>
+    /// Starts the mobile companion web server and returns the URL operators open on their phone.
+    /// Pass <paramref name="requireToken"/>=false and a fixed <paramref name="port"/> for the
+    /// FieldCommand LAN feed (tokenless, CORS-enabled) — see StartFieldCommandFeed().
+    /// </summary>
+    public string StartMobileCompanion(int port = 0, bool requireToken = true)
     {
         if (MobileCompanionServer?.IsRunning == true)
             return MobileCompanionServer.Url;
@@ -521,9 +525,17 @@ public sealed class DesktopRuntime : IAsyncDisposable
                         _           => "📍"
                     })).ToList());
 
-        MobileCompanionServer.Start();
+        MobileCompanionServer.Start(port, requireToken);
         return MobileCompanionServer.Url;
     }
+
+    /// <summary>
+    /// Starts the station feed for the FieldCommand tactical map: a fixed port with no token and
+    /// wildcard CORS, so the map (a different origin on EMCOMM-NET) can poll /api/stations directly.
+    /// Returns the base URL to enter under the map's Settings → APRS Sources.
+    /// </summary>
+    public string StartFieldCommandFeed(int port = 8080)
+        => StartMobileCompanion(port, requireToken: false);
 
     public async Task StopMobileCompanionAsync()
     {

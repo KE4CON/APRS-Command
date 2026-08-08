@@ -42,6 +42,14 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     /// </summary>
     private string sessionToken = GenerateToken();
 
+    /// <summary>
+    /// When false, the server runs in "LAN feed" mode: no per-session token is required and JSON
+    /// responses carry a wildcard CORS header. This is for feeding the FieldCommand tactical map
+    /// from a fixed port on a trusted, isolated EMCOMM-NET — the same no-login posture FieldCommand's
+    /// own services use on that network. Do NOT use tokenless mode on an untrusted network.
+    /// </summary>
+    private bool requireToken = true;
+
     public int Port { get; private set; }
     public bool IsRunning { get; private set; }
 
@@ -50,7 +58,9 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     /// on the same network can reach the server; falls back to localhost when no
     /// LAN address can be determined. Includes the per-session access token.
     /// </summary>
-    public string Url => $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/{sessionToken}/";
+    public string Url => requireToken
+        ? $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/{sessionToken}/"
+        : $"http://{GetLanIpAddress() ?? "localhost"}:{Port}/";
 
     private static string GenerateToken()
         => Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
@@ -75,10 +85,11 @@ public sealed class MobileCompanionServer : IAsyncDisposable
         this.getNetRoster    = getNetRoster;
     }
 
-    public void Start(int port = 0)
+    public void Start(int port = 0, bool requireToken = true)
     {
+        this.requireToken = requireToken;
         Port = port == 0 ? FindFreePort() : port;
-        sessionToken = GenerateToken();
+        sessionToken = requireToken ? GenerateToken() : string.Empty;
 
         // Bind on all interfaces so phones on the same network can connect —
         // that is the entire purpose of the mobile companion. On Windows,
@@ -175,19 +186,19 @@ public sealed class MobileCompanionServer : IAsyncDisposable
                     await ServeHtmlAsync(resp, sessionToken);
                     break;
                 case "/api/stations":
-                    await ServeJsonAsync(resp, BuildStationsPayload());
+                    await ServeJsonAsync(resp, BuildStationsPayload(), cors: !requireToken);
                     break;
                 case "/api/stats":
-                    await ServeJsonAsync(resp, BuildStatsPayload());
+                    await ServeJsonAsync(resp, BuildStatsPayload(), cors: !requireToken);
                     break;
                 case "/api/messages":
-                    await ServeJsonAsync(resp, BuildMessagesPayload());
+                    await ServeJsonAsync(resp, BuildMessagesPayload(), cors: !requireToken);
                     break;
                 case "/api/net":
-                    await ServeJsonAsync(resp, BuildNetPayload());
+                    await ServeJsonAsync(resp, BuildNetPayload(), cors: !requireToken);
                     break;
                 case "/api/status":
-                    await ServeJsonAsync(resp, BuildStatusPayload());
+                    await ServeJsonAsync(resp, BuildStatusPayload(), cors: !requireToken);
                     break;
                 default:
                     resp.StatusCode = 404;
@@ -205,6 +216,12 @@ public sealed class MobileCompanionServer : IAsyncDisposable
     /// </summary>
     private bool TryStripToken(string absolutePath, out string remainder)
     {
+        // LAN feed mode: no token in the path — accept the request as-is.
+        if (!requireToken)
+        {
+            remainder = absolutePath;
+            return true;
+        }
         remainder = "/";
         var trimmed = absolutePath.StartsWith('/') ? absolutePath[1..] : absolutePath;
         var slash = trimmed.IndexOf('/');
@@ -283,7 +300,7 @@ public sealed class MobileCompanionServer : IAsyncDisposable
 
     // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-    private static async Task ServeJsonAsync(HttpListenerResponse resp, object payload)
+    private static async Task ServeJsonAsync(HttpListenerResponse resp, object payload, bool cors = false)
     {
         var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions
         {
@@ -292,9 +309,11 @@ public sealed class MobileCompanionServer : IAsyncDisposable
         var bytes = Encoding.UTF8.GetBytes(json);
         resp.ContentType     = "application/json; charset=utf-8";
         resp.ContentLength64 = bytes.Length;
-        // No CORS header: the companion page is served from this same origin, so it needs none.
-        // A wildcard Access-Control-Allow-Origin would instead let any website the operator's phone
-        // visits read this data cross-origin, so it is deliberately omitted.
+        // Token mode (phone companion): the page is same-origin, so no CORS header — a wildcard would
+        // let any site the phone visits read this data. LAN feed mode: the FieldCommand map is a
+        // different origin on the trusted EMCOMM-NET, so a wildcard CORS header is required and safe.
+        if (cors)
+            resp.Headers.Add("Access-Control-Allow-Origin", "*");
         resp.Headers.Add("Cache-Control", "no-cache");
         await resp.OutputStream.WriteAsync(bytes);
         resp.Close();

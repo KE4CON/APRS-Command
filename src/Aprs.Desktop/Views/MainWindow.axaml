@@ -139,6 +139,7 @@
         <MenuItem Header="RF Diagnostics" Command="{Binding OpenRfDiagnosticsCommand}" />
         <MenuItem Header="After-Action Report" Command="{Binding OpenAfterActionCommand}" />
         <MenuItem Header="Mobile Companion Web View" Click="OpenMobileCompanion_Click" />
+        <MenuItem Header="FieldCommand Tactical-Map Feed (LAN)" Click="OpenFieldCommandFeed_Click" />
         <Separator />
         <MenuItem Header="Toggle Exercise Mode (inhibit all transmit)"
                   Command="{Binding ToggleExerciseModeCommand}" />
