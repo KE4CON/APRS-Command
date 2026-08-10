@@ -341,8 +341,8 @@ public sealed class MobileCompanionServer : IAsyncDisposable
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>APRS Command</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
@@ -612,6 +612,9 @@ window.showTab = function(tab) {
     {
         cts.Cancel();
         try { listener.Stop(); } catch { }
+        // Stop() only halts listening; Close() releases the underlying HTTP.sys handles. Without it the
+        // listener's native resources leak until finalization.
+        try { listener.Close(); } catch { }
         if (listenerTask is not null)
             try { await listenerTask.ConfigureAwait(false); } catch { }
         cts.Dispose();

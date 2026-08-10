@@ -42,35 +42,22 @@ public static class Ax25AprsFrameEncoder
         if (headerParts.Length == 0) return null;
 
         var destination = headerParts[0].Trim();
-        var digipeaters = headerParts[1..].Select(p => p.Trim().TrimEnd('*')).ToArray();
+        // Keep the trailing '*' so the has-been-repeated (H) bit can be encoded per digipeater below.
+        var digipeaters = headerParts[1..].Select(p => p.Trim()).ToArray();
 
         if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(destination)) return null;
 
         var frame = new List<byte>();
 
-        // Address fields: destination, source, then each digipeater
-        for (int i = -1; i < digipeaters.Length; i++)
-        {
-            string addr   = i == -1 ? destination : i == 0 && digipeaters.Length == 0 ? source : digipeaters[i];
-            bool   isLast = i == digipeaters.Length - 1;
-
-            if (i == -1) // destination
-            {
-                frame.AddRange(EncodeAddress(destination, isLast: digipeaters.Length == 0 && false));
-            }
-            else if (i < digipeaters.Length)
-            {
-                // This slot is a digi
-            }
-        }
-
-        // Simpler, clearer construction:
-        frame.Clear();
-
-        frame.AddRange(EncodeAddress(destination, isLast: false));
-        frame.AddRange(EncodeAddress(source,      isLast: digipeaters.Length == 0));
+        // Address fields: destination, source, then each digipeater. Destination and source never carry
+        // the H bit; a digipeater carries it when its token ended with '*' (already repeated through it).
+        frame.AddRange(EncodeAddress(destination, isLast: false, hasBeenRepeated: false));
+        frame.AddRange(EncodeAddress(source,      isLast: digipeaters.Length == 0, hasBeenRepeated: false));
         for (int i = 0; i < digipeaters.Length; i++)
-            frame.AddRange(EncodeAddress(digipeaters[i], isLast: i == digipeaters.Length - 1));
+        {
+            var repeated = digipeaters[i].EndsWith('*');
+            frame.AddRange(EncodeAddress(digipeaters[i], isLast: i == digipeaters.Length - 1, hasBeenRepeated: repeated));
+        }
 
         frame.Add(ControlUi);
         frame.Add(PidNoLayer3);
@@ -79,7 +66,7 @@ public static class Ax25AprsFrameEncoder
         return frame.ToArray();
     }
 
-    private static byte[] EncodeAddress(string callsignWithSsid, bool isLast)
+    private static byte[] EncodeAddress(string callsignWithSsid, bool isLast, bool hasBeenRepeated)
     {
         var clean   = callsignWithSsid.TrimEnd('*').Trim();
         var dashIdx = clean.LastIndexOf('-');
@@ -102,8 +89,8 @@ public static class Ax25AprsFrameEncoder
         for (int i = 0; i < 6; i++)
             result[i] = (byte)((callsign[i] & 0x7F) << 1);
 
-        // Byte 6: 0x60 (R bits set) | SSID<<1 | end-of-address bit
-        result[6] = (byte)(0x60 | ((ssid & 0x0F) << 1) | (isLast ? 0x01 : 0x00));
+        // Byte 6: H bit (0x80, has-been-repeated) | 0x60 (R reserved bits set) | SSID<<1 | end-of-address bit
+        result[6] = (byte)((hasBeenRepeated ? 0x80 : 0x00) | 0x60 | ((ssid & 0x0F) << 1) | (isLast ? 0x01 : 0x00));
         return result;
     }
 }

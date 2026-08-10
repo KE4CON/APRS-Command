@@ -124,4 +124,23 @@ public sealed class Ax25AprsFrameEncoderTests
         var info = System.Text.Encoding.ASCII.GetString(ax25, 16, ax25.Length - 16);
         Assert.Equal("!3956.00N/08255.00W-Test", info);
     }
+
+    [Fact]
+    public void Encode_DigipeaterHasBeenRepeatedFlag_SetsHBit()
+    {
+        // WIDE1-1 has been used (trailing '*'); WIDE2-1 has not. The H bit (0x80) of the SSID byte marks
+        // the used one; the unused one must not have it.
+        var ax25 = Ax25AprsFrameEncoder.Encode("KE4CON>APRS,WIDE1-1*,WIDE2-1:>Status");
+        Assert.NotNull(ax25);
+
+        // Address blocks: [dest 0..6][source 7..13][digi1 14..20][digi2 21..27]. SSID byte is index+6.
+        var digi1SsidByte = ax25![14 + 6];
+        var digi2SsidByte = ax25![21 + 6];
+
+        Assert.Equal(0x80, digi1SsidByte & 0x80); // WIDE1-1* -> H bit set
+        Assert.Equal(0x00, digi2SsidByte & 0x80); // WIDE2-1  -> H bit clear
+        // Destination and source never carry the H bit.
+        Assert.Equal(0x00, ax25![0 + 6] & 0x80);
+        Assert.Equal(0x00, ax25![7 + 6] & 0x80);
+    }
 }

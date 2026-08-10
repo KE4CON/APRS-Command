@@ -20,7 +20,7 @@ namespace Aprs.Desktop.Services;
 /// Two details remain to confirm against a live key (documented but untested): the integer
 /// <c>Mode</c> enum mapping, and that ServiceStack returns PascalCase JSON as assumed here.
 /// </summary>
-public sealed class WinlinkRmsGatewayService
+public sealed class WinlinkRmsGatewayService : IDisposable
 {
     // Gateway proximity endpoint (Route "/gateway/proximity" in the published DTOs).
     private const string ProximityUrl = "https://api.winlink.org/gateway/proximity";
@@ -37,6 +37,8 @@ public sealed class WinlinkRmsGatewayService
     }
 
     public bool IsConfigured => !string.IsNullOrWhiteSpace(apiKey);
+
+    public void Dispose() => http.Dispose();
 
     /// <summary>
     /// Fetches RMS gateways within range of the given position.

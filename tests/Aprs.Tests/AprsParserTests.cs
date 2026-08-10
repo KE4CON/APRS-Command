@@ -159,6 +159,17 @@ public sealed class AprsParserTests
         '/',
         '#',
         "PHG5130 Test digi")]
+    // MDHM 8-digit timestamp (MMDDHHMM, no designator). Latitude must start one byte later than the
+    // 7-char DHM/HMS forms; before the Parser M2 fix the position was read starting mid-timestamp.
+    [InlineData(
+        "K8ABC>APRS:@100923453903.50N/08430.50W>MDHM test",
+        '@',
+        "10092345",
+        39.058333,
+        -84.508333,
+        '/',
+        '>',
+        "MDHM test")]
     public void TryParse_ReturnsPositionPacket_ForUncompressedPosition(
         string rawLine,
         char expectedPositionType,

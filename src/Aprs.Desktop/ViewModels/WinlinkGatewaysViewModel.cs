@@ -96,7 +96,7 @@ public sealed class WinlinkGatewaysViewModel : INotifyPropertyChanged
         StatusText = "Querying nearby RMS gateways…";
         Gateways.Clear();
 
-        var liveService = new Services.WinlinkRmsGatewayService(
+        using var liveService = new Services.WinlinkRmsGatewayService(
             settingsStore.Load().Winlink.ApiKey);
 
         var result = await liveService.QueryNearbyGatewaysAsync(lat.Value, lon.Value)

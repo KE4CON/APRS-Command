@@ -8,9 +8,16 @@ public sealed class AprsPositionParser
         var information = rawPacket.Information;
         var positionType = information.Length > 0 ? information[0] : '\0';
         var hasTimestamp = positionType is '/' or '@';
-        var latitudeStart = hasTimestamp ? 8 : 1;
-        var timestamp = hasTimestamp && information.Length >= 8
-            ? information.Substring(1, 7)
+
+        // Most timestamps are 7 chars: DHM (DDHHMMz / DDHHMM/) or HMS (HHMMSSh), whose 7th char is a
+        // non-digit designator (z, h or /). The MDHM form (MMDDHHMM) is 8 all-digit chars with no
+        // designator, so latitude then starts one byte later. Reading a fixed 7 chars misparsed every
+        // MDHM position (audit Parser M2): the position field was read starting mid-timestamp.
+        var isMdhm = hasTimestamp && information.Length > 7 && char.IsDigit(information[7]);
+        var timestampLength = isMdhm ? 8 : 7;
+        var latitudeStart = hasTimestamp ? 1 + timestampLength : 1;
+        var timestamp = hasTimestamp && information.Length >= 1 + timestampLength
+            ? information.Substring(1, timestampLength)
             : null;
 
         if (hasTimestamp && timestamp is null)
