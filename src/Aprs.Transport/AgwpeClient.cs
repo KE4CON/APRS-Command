@@ -14,9 +14,16 @@ public sealed class AgwpeClient : IAgwpeClient
     private readonly AprsParser aprsParser = new();
     private readonly Channel<AgwpeFrame> receivedFrames = Channel.CreateUnbounded<AgwpeFrame>();
     private readonly Channel<AgwpeRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<AgwpeRawPacketReceivedEventArgs>();
+    // Guards stream/state/lastError. The receive loop runs on a background thread while ConnectAsync,
+    // DisconnectAsync and SendPacketAsync touch the same fields — AGWPE was missed by the thread-safety
+    // pass the other transport clients got (audit H2). I/O is never done while holding the lock: the
+    // stream is snapshotted under the lock, then read/written on the local copy.
+    private readonly object sync = new();
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
     private Stream? stream;
+    private AgwpeConnectionState state = AgwpeConnectionState.Disconnected;
+    private Exception? lastError;
 
     public AgwpeClient(AgwpeConfiguration configuration)
         : this(configuration, CreateTcpStreamAsync, new AgwpeFrameCodec())
@@ -42,15 +49,23 @@ public sealed class AgwpeClient : IAgwpeClient
 
     public event EventHandler<AgwpeRawPacketReceivedEventArgs>? RawPacketReceived;
 
-    public AgwpeConnectionState State { get; private set; } = AgwpeConnectionState.Disconnected;
+    public AgwpeConnectionState State { get { lock (sync) return state; } }
 
-    public Exception? LastError { get; private set; }
+    public Exception? LastError { get { lock (sync) return lastError; } }
+
+    private void SetState(AgwpeConnectionState newState) { lock (sync) state = newState; }
+
+    private void Fault(Exception exception) { lock (sync) { lastError = exception; state = AgwpeConnectionState.Faulted; } }
+
+    private Stream? SnapshotStream() { lock (sync) return stream; }
+
+    private void SetStream(Stream? newStream) { lock (sync) stream = newStream; }
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         if (!configuration.Enabled)
         {
-            State = AgwpeConnectionState.Disconnected;
+            SetState(AgwpeConnectionState.Disconnected);
             return;
         }
 
@@ -61,13 +76,14 @@ public sealed class AgwpeClient : IAgwpeClient
 
         ValidateConfiguration(configuration);
         connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        State = AgwpeConnectionState.Connecting;
-        LastError = null;
+        SetState(AgwpeConnectionState.Connecting);
+        lock (sync) lastError = null;
 
         try
         {
-            stream = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
-            State = AgwpeConnectionState.Connected;
+            var opened = await streamFactory(configuration, connectionCancellation.Token).ConfigureAwait(false);
+            SetStream(opened);
+            SetState(AgwpeConnectionState.Connected);
             if (configuration.ReceiveEnabled)
             {
                 receiveTask = Task.Run(() => ReceiveLoopAsync(connectionCancellation.Token), CancellationToken.None);
@@ -75,8 +91,7 @@ public sealed class AgwpeClient : IAgwpeClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = AgwpeConnectionState.Faulted;
+            Fault(exception);
             throw;
         }
     }
@@ -85,10 +100,11 @@ public sealed class AgwpeClient : IAgwpeClient
     {
         connectionCancellation?.Cancel();
 
-        if (stream is not null)
+        var current = SnapshotStream();
+        if (current is not null)
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
-            stream = null;
+            await current.DisposeAsync().ConfigureAwait(false);
+            SetStream(null);
         }
 
         if (receiveTask is not null)
@@ -105,7 +121,7 @@ public sealed class AgwpeClient : IAgwpeClient
             }
         }
 
-        State = AgwpeConnectionState.Disconnected;
+        SetState(AgwpeConnectionState.Disconnected);
     }
 
     public async IAsyncEnumerable<AgwpeFrame> ReadFramesAsync([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -154,16 +170,21 @@ public sealed class AgwpeClient : IAgwpeClient
             payload);
         var frame = codec.Decode(encoded, timestamp, configuration.SourceName);
 
+        var current = SnapshotStream();
+        if (current is null)
+        {
+            return AgwpeTransmitResult.Failed(timestamp, stateAtRequest, "AGWPE client is not connected.", frame);
+        }
+
         try
         {
-            await stream!.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
-            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            await current.WriteAsync(encoded, cancellationToken).ConfigureAwait(false);
+            await current.FlushAsync(cancellationToken).ConfigureAwait(false);
             return AgwpeTransmitResult.Succeeded(timestamp, stateAtRequest, frame);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            LastError = exception;
-            State = AgwpeConnectionState.Faulted;
+            Fault(exception);
             return AgwpeTransmitResult.Failed(timestamp, stateAtRequest, exception.Message, frame);
         }
     }
@@ -181,21 +202,30 @@ public sealed class AgwpeClient : IAgwpeClient
 
         try
         {
-            while (!cancellationToken.IsCancellationRequested && stream is not null)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var bytesRead = await stream.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
+                var current = SnapshotStream();
+                if (current is null)
+                {
+                    break;
+                }
+
+                var bytesRead = await current.ReadAsync(readBuffer, cancellationToken).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     if (!configuration.ReconnectEnabled || cancellationToken.IsCancellationRequested)
                     {
-                        State = AgwpeConnectionState.Disconnected;
+                        SetState(AgwpeConnectionState.Disconnected);
                         break;
                     }
 
-                    State = AgwpeConnectionState.Reconnecting;
+                    SetState(AgwpeConnectionState.Reconnecting);
+                    pending.Clear(); // drop stale partial-frame bytes from the dead connection (transport M2)
                     await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
-                    stream = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
-                    State = AgwpeConnectionState.Connected;
+                    var reconnected = await streamFactory(configuration, cancellationToken).ConfigureAwait(false);
+                    SetStream(reconnected);
+                    try { await current.DisposeAsync().ConfigureAwait(false); } catch { /* old stream already dead */ } // avoid leak (transport M4)
+                    SetState(AgwpeConnectionState.Connected);
                     continue;
                 }
 
@@ -217,8 +247,7 @@ public sealed class AgwpeClient : IAgwpeClient
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not ObjectDisposedException)
         {
-            LastError = exception;
-            State = AgwpeConnectionState.Faulted;
+            Fault(exception);
         }
     }
 
@@ -263,7 +292,7 @@ public sealed class AgwpeClient : IAgwpeClient
             return "AGWPE radio port must be between 0 and 255.";
         }
 
-        if (stateAtRequest != AgwpeConnectionState.Connected || stream is null)
+        if (stateAtRequest != AgwpeConnectionState.Connected || SnapshotStream() is null)
         {
             return "AGWPE client is not connected.";
         }
