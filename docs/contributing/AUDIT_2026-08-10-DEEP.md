@@ -44,74 +44,69 @@ Status counts are updated as fixes land. Every fix carries a regression test (pl
   `a`–`j` (numeric overlays are encoded as `a`–`j` so it's never a digit). Any overlaid compressed
   position/object/item/weather was routed to the uncompressed parser and dropped (null lat/lon). Oracle-
   confirmed against Dire Wolf. **Fix:** recognize `/`, `\`, `A`–`Z`, `a`–`j` as compressed.
-- ☐ **Concurrency — `BeaconService.ApplySettings` on the GPS thread rebuilds the APRS-IS client every fix.**
-  `WireGpsWriteback` calls `ApplySettings` on the background GPS loop (unmarshaled) on every position update;
-  `ApplySettings` unconditionally disposes + rebuilds + reconnects the APRS-IS client → ~1 Hz connection
-  thrash for a mobile station, a torn `aprsIsClient` field vs. UI-thread saves, and a stale captured client
-  in `MessageAckCoordinator` (messaging silently dies after the first rebuild). **Fix (planned):** only
-  rebuild when connection-relevant config changed; guard the field; give the message coordinator a live
-  handle; marshal.
-- ◐ **Tests/coverage — critical gaps.** ☐ `SqliteStationDatabase` has **zero** tests (round-trip, prune
-  trigger, corrupt-row tolerance, concurrent write+dispose — the C4-fixed class). ☐ The fuzz harness is a
-  live-APRS-IS console Exe that fuzzes only `AprsParser.Parse` and **never runs in CI**; no in-suite
-  deterministic fuzz over the weather drivers, `KissFrameCodec`, `AgwpeFrameCodec`, NMEA, MIC-E. ☐ Full
-  menu-reachability test still absent. Plan: add all three.
+- ☑ **Concurrency — `BeaconService.ApplySettings` on the GPS thread rebuilt the APRS-IS client every fix.**
+  Fixed: `ApplySettings` computes a connection signature (server/port/passcode/filter/callsign/transmit
+  flags) and rebuilds the client only when it changes; the swap is `clientLock`-guarded; `CreateFromSettings`
+  seeds the signature so the first write-back doesn't rebuild; the GPS write-back marshals the call to the UI
+  thread. Test: `BeaconServiceApplySettingsTests`.
+- ◐ **Tests/coverage.** ☑ `SqliteStationDatabase` tests added (round-trip, corrupt-row tolerance, concurrent
+  write+dispose; added a path-override ctor for isolation). ☑ In-suite deterministic fuzzer added
+  (`DeterministicFuzzTests` — 300k iterations over `AprsParser` + KISS/AGWPE codecs, no throw/hang, runs in
+  CI). ☐ Remaining: a full menu-reachability test (every `*Requested` event has a subscriber) — a cheap
+  reflection test, tracked residual.
 
 ---
 
-## MEDIUM
+## MEDIUM — all fixed
 
-- ☐ **Parser/spec — unknown/dotted wind (`.../...`) aborts weather field parsing.** The `DDD/SSS` branch
-  requires all-digit fields; dotted wind matches neither branch, so `index` stays 0 and gust/temp/rain/
-  humidity/baro all fall into the comment. Oracle-confirmed (Dire Wolf skips dotted wind, parses the rest).
-  Fix: when the 7-char wind slot is non-numeric, leave wind null but advance the index past it.
-- ☐ **Parser/spec — item live/kill state dropped.** `ItemAprsPacket` has no `IsKilled`/`IsAlive`; a killed
-  item (`_` separator) is indistinguishable from live (`!`), so a station removing its item isn't honored.
-  Fix: capture the separator, add the fields (mirror the object parser).
-- ☐ **Security — Mobile Companion has no CSP (incomplete H1 fix).** The first audit recorded H1 as "escape
-  + add CSP"; only the escaping landed. No `Content-Security-Policy`/`Referrer-Policy`/`X-Content-Type-Options`
-  is emitted, and the client-side `esc()` is the sole XSS control on a page that carries the session token.
-  Fix: send a strict CSP + the two hardening headers on the HTML response.
-- ☐ **Concurrency — `LiveDataCoordinator.ConnectAprsIsReceiveOnly` leaks the old client on failover.** Each
-  server switch overwrites `aprsIsClient` without disconnecting/disposing/unsubscribing the prior one → one
-  leaked socket + task + CTS per failover, plus duplicate ingestion if the old server recovers. Fix: tear
-  down the old client before assigning the new one.
-- ☐ **Services — `WeatherBeaconScheduler` re-fires a failing transmit every tick (no backoff).** On failure
-  `NextScheduledTransmitTimeUtc` isn't advanced, so a persistently failing transport is hammered every tick.
-  Fix: advance the next time on failure too (optionally shorter retry).
+- ☑ **Parser/spec — dotted wind (`.../...`) aborted weather parsing.** Now skips the 7-char wind slot when
+  non-numeric so gust/temp/rain/humidity/baro still parse (wind stays null). Oracle-confirmed. Test added.
+- ☑ **Parser/spec — item live/kill state dropped.** `ItemAprsPacket` gains `IsKilled`/`IsAlive` from the
+  `!`/`_` separator. Test added.
+- ☑ **Security — Mobile Companion CSP.** The HTML response now sends a strict `Content-Security-Policy` +
+  `X-Content-Type-Options: nosniff` + `Referrer-Policy: no-referrer` (defense-in-depth behind the escaping).
+- ☑ **Concurrency — `LiveDataCoordinator` failover leak.** The previous receive-only client is now
+  disconnected + disposed before the new one is assigned.
+- ☑ **Services — `WeatherBeaconScheduler` no backoff on failure.** `NextScheduledTransmitTimeUtc` now
+  advances on failure too, so a failing transport isn't re-fired every tick.
 
 ---
 
-## LOW
+## LOW — fixed
 
-- ☐ **Parser/spec — luminosity ≥1000 W/m² (lowercase `l`) off by 1000 both ways.** Parse treats `l`/`L`
-  identically (should add 1000 for `l`); format clamps to `L999` (should emit `l{v-1000}` for 1000–1999).
-  Oracle-confirmed. *(Also flagged by the services reviewer.)*
-- ☐ **Parser/spec — MIC-E mixed standard/custom message bits pick the wrong message.** The custom index uses
-  `custMsg` alone; the true value is `stdMsg | custMsg`. Only malformed mixed-encoding packets are affected.
-- ☐ **Parser/spec — telemetry: trailing comment on the 8-bit digital field rejected; non-numeric (`MIC`)
-  sequence rejected.** Take the first 8 bits + treat the rest as comment; accept the `MIC` sequence form.
+- ☑ **Parser/spec — luminosity lowercase `l` = value+1000.** Fixed on both parse (add 1000) and emit
+  (`l{v-1000}` for 1000–1999). Oracle-confirmed. Test added.
+- ☑ **Parser/spec — MIC-E mixed standard/custom bits.** Custom table now indexed with `stdMsg | custMsg`.
+- ☑ **Services — weather humidity 0 %.** Formatter clamps an implausible 0 % up to 1 % so it isn't emitted
+  as the `h00` (=100 %) sentinel.
+- ☑ **Persistence — `DeleteTacticalLabel` key normalization.** Now trims+upper-cases the callsign like the
+  write path, so a varied-case delete no longer leaves an orphan row.
+- ☑ **Security — update-URL scheme validation.** The release URL is parsed and asserted `http`/`https`
+  before `Process.Start(UseShellExecute=true)`.
+
+## LOW — tracked residuals (genuinely minor; not yet fixed)
+
+- ☐ **Parser/spec — telemetry:** a trailing comment on the 8-bit digital field is rejected; a non-numeric
+  (`MIC`) sequence is rejected. Take the first 8 bits + treat the rest as comment; accept the `MIC` form.
 - ☐ **Parser/spec — AX.25 decoder discards the digipeater path** (`Ax25AprsPayloadDecoder` rebuilds only
-  `source>dest:info`). Encoder side is correct.
-- ☐ **Services — weather humidity 0 % encodes as `h00` which parses back as 100 %.** Formatter should guard
-  a 0 input (`h00` = 100 % is the spec sentinel).
-- ☐ **Services — ACK/REJ matched by message id alone; 2-digit id space (`% 100`).** A late ACK from station
-  B can acknowledge a message actually sent to A. Match on (id **and** ack source == recipient).
-- ☐ **Persistence — SQLite never stores Object/Item snapshots** (keyed by source callsign, but objects key
-  by name); **`DeleteTacticalLabel` doesn't normalize the key** like the write paths do (case/whitespace
-  callsign leaves a DB row that resurrects on restart); **out-of-order persistence** (per-packet `Task.Run`,
-  no ordering guard) can persist a stale snapshot under load.
-- ☐ **Security — LAN feed is tokenless + `Access-Control-Allow-Origin: *` + all-interface bind** (documented
-  trade-off; consider a one-time warning + origin-restricted CORS). **Update-URL `Process.Start(UseShellExecute=true)**`
-  without asserting `https` scheme. **Winlink API key in URL query string**, surfaceable in error text.
-- ☐ **Concurrency (minor)** — `PacketStatisticsService.currentHour` torn read at hour boundary;
-  `lastInboxCount` RMW race (missed/double toast); `CalTopoForwardingService` never disposed/unsubscribed
-  (app-lifetime `HttpClient` leak); a fire-and-forget `ConnectAsync` swallows faults.
+  `source>dest:info`). Heard-via digis are lost on the *decode* side; the encoder side is correct.
+- ☐ **Services — ACK/REJ matched by message id alone**, 2-digit id space (`% 100`). A late ACK from a
+  different station could match a recycled id. Match on (id **and** ack source == recipient).
+- ☐ **Persistence — SQLite never stores Object/Item snapshots** (they key by name, not source callsign);
+  **out-of-order persistence** (per-packet `Task.Run`, no ordering guard) can persist a stale snapshot under
+  a busy feed. Both self-heal from live packets; restart-persistence only.
+- ☐ **Security — LAN FieldCommand feed** is tokenless + `Access-Control-Allow-Origin: *` + all-interface
+  bind (a documented EMCOMM-NET trade-off; consider a one-time in-app warning + origin-restricted CORS).
+  **Winlink API key in URL query string**, surfaceable in exception text.
+- ☐ **Concurrency (minor)** — `PacketStatisticsService.currentHour` torn read at the hour boundary;
+  `lastInboxCount` RMW race (missed/double toast); `CalTopoForwardingService` never disposed (app-lifetime
+  `HttpClient` leak); a fire-and-forget `ConnectAsync` swallows faults.
 - ☐ **Persistence (minor)** — `JsonAppSettingsStore.Save/Update` unsynchronized on the process-wide
-  singleton (single `.tmp` path collision under concurrent saves); `WindowStateService` off-screen math has
-  no tests.
-- ☐ **Reachability (intent check)** — RepeaterBook + Winlink have full command→window handlers but no menu
-  item (deliberately held; add a `// held` comment so they don't read as wired). Dead `enum MainFeaturePanel`.
+  singleton; `WindowStateService` off-screen math has no tests.
+- ☐ **Tests — full menu-reachability test** (assert every `*Requested` event has a `MainWindow` subscriber /
+  every `Open*Command` resolves) — cheap reflection test, would catch a menu item wired to a removed handler.
+- ☐ **Reachability (intent)** — RepeaterBook + Winlink have full handlers but no menu item (deliberately
+  held); dead `enum MainFeaturePanel`. Add a `// held` comment / delete the dead enum in a cleanup pass.
 
 ---
 

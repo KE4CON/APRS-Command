@@ -623,13 +623,18 @@ public sealed partial class App : Application
                                 .Show();
                         }
                     }
-                    else if (result.ReleaseUrl is not null)
+                    else if (result.ReleaseUrl is not null
+                             && Uri.TryCreate(result.ReleaseUrl, UriKind.Absolute, out var releaseUri)
+                             && (releaseUri.Scheme == Uri.UriSchemeHttps || releaseUri.Scheme == Uri.UriSchemeHttp))
                     {
+                        // Only ever hand an http(s) URL to ShellExecute — never a raw string that could be a
+                        // protocol handler or local path. The URL comes from GitHub over TLS today, but the
+                        // scheme is asserted here as defense-in-depth (deep-audit).
                         try
                         {
                             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                             {
-                                FileName        = result.ReleaseUrl,
+                                FileName        = releaseUri.AbsoluteUri,
                                 UseShellExecute = true
                             });
                         }
