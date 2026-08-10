@@ -106,9 +106,11 @@ public sealed class AprsMicEParser
         longitude = daoLon ?? longitude;
 
         // Message status: both-zero maps to Emergency; else custom table if any custom bit set, else standard.
+        // The full 3-bit message value is (stdMsg | custMsg); indexing the custom table with custMsg alone
+        // mis-decoded packets that mix standard and custom message bits (deep-audit, matches Dire Wolf).
         string status;
         if (stdMsg == 0 && custMsg == 0) status = "Emergency";
-        else if (custMsg != 0) status = CustomMessages[custMsg];
+        else if (custMsg != 0) status = CustomMessages[stdMsg | custMsg];
         else status = StandardMessages[stdMsg];
 
         // Surface the operational status (En Route, Emergency, etc.) - but not the idle "Off Duty"

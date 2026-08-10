@@ -29,12 +29,23 @@ public sealed class SqliteStationDatabase : IStationDatabase, IDisposable
 
     public SqliteStationDatabase() : this(new StationDatabase()) { }
 
-    public SqliteStationDatabase(StationDatabase inner)
+    public SqliteStationDatabase(StationDatabase inner) : this(inner, DatabasePath) { }
+
+    /// <summary>
+    /// Constructs the store against a specific database file. The default overloads use the per-user
+    /// AppData path; an explicit path lets tests run against an isolated temp database.
+    /// </summary>
+    public SqliteStationDatabase(StationDatabase inner, string databasePath)
     {
         this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
-        Directory.CreateDirectory(Path.GetDirectoryName(DatabasePath)!);
-        connection = new SqliteConnection($"Data Source={DatabasePath}");
+        var directory = Path.GetDirectoryName(databasePath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        connection = new SqliteConnection($"Data Source={databasePath}");
         connection.Open();
 
         EnsureSchema();
@@ -243,8 +254,11 @@ public sealed class SqliteStationDatabase : IStationDatabase, IDisposable
     private void DeleteTacticalLabel(string callsign) => RunWrite(() =>
     {
         using var cmd = connection.CreateCommand();
+        // Normalize the key the same way the write path stores it (RealCallsign is trimmed + upper-cased).
+        // SQLite '=' on TEXT is case-sensitive, so a raw lowercase/whitespace callsign would leave the row
+        // behind and the label would resurrect on restart (deep-audit).
         cmd.CommandText = "DELETE FROM TacticalLabels WHERE RealCallsign = $c";
-        cmd.Parameters.AddWithValue("$c", callsign);
+        cmd.Parameters.AddWithValue("$c", callsign.Trim().ToUpperInvariant());
         cmd.ExecuteNonQuery();
     });
 
