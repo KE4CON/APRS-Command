@@ -4,6 +4,11 @@ namespace Aprs.Services;
 
 public sealed class StationDatabase : IStationDatabase
 {
+    // Guards all mutable state below. Non-APRS-IS transports (KISS/AGWPE/serial/managed-modem) ingest
+    // packets on background receive threads, while the UI refresh timer reads on the UI thread — so every
+    // public entry point must take this lock. C# lock/Monitor is re-entrant, so nested helper calls that
+    // re-enter a locked method are safe. All getters return copies (ToArray), so nothing mutable escapes.
+    private readonly object sync = new();
     private readonly Dictionary<string, StationSnapshot> stations = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<StationTrailPoint>> trails = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TacticalLabel> tacticalLabels = new(StringComparer.OrdinalIgnoreCase);
@@ -47,166 +52,205 @@ public sealed class StationDatabase : IStationDatabase
             return;
         }
 
-        var existing = stations.GetValueOrDefault(stationKey);
-        var updated = CreateBaseUpdate(stationKey, packet, packetSource, existing);
-        updated = ApplyPacketSpecificFields(updated, packet);
+        lock (sync)
+        {
+            var existing = stations.GetValueOrDefault(stationKey);
+            var updated = CreateBaseUpdate(stationKey, packet, packetSource, existing);
+            updated = ApplyPacketSpecificFields(updated, packet);
 
-        stations[stationKey] = updated;
-        AddTrailPointIfNeeded(stationKey, packet, packetSource);
+            stations[stationKey] = updated;
+            AddTrailPointIfNeeded(stationKey, packet, packetSource);
+        }
     }
 
     public IReadOnlyCollection<StationSnapshot> GetAllStations()
     {
-        return SortStations(stations.Values);
+        lock (sync) return SortStations(stations.Values);
     }
 
     public IReadOnlyCollection<StationSnapshot> GetVisibleStations()
     {
-        return SortStations(stations.Values.Where(IsVisible));
+        lock (sync) return SortStations(stations.Values.Where(IsVisible));
     }
 
     public IReadOnlyCollection<StationSnapshot> GetActiveStations()
     {
-        return SortStations(stations.Values.Where(station => station.LifecycleState == StationLifecycleState.Active));
+        lock (sync) return SortStations(stations.Values.Where(station => station.LifecycleState == StationLifecycleState.Active));
     }
 
     public IReadOnlyList<StationTrailPoint> GetTrail(string callsign)
     {
-        return trails.TryGetValue(NormalizeStationKey(callsign), out var trail)
-            ? trail.ToArray()
-            : [];
+        lock (sync)
+        {
+            return trails.TryGetValue(NormalizeStationKey(callsign), out var trail)
+                ? trail.ToArray()
+                : [];
+        }
     }
 
     public TacticalLabel SetTacticalLabel(string callsign, string label, string? notes, DateTimeOffset now)
     {
-        var stationKey = NormalizeStationKey(callsign);
-        var existing = tacticalLabels.GetValueOrDefault(stationKey);
-        var tacticalLabel = new TacticalLabel(
-            stationKey,
-            label.Trim(),
-            notes,
-            existing?.CreatedAtUtc ?? now,
-            now);
+        lock (sync)
+        {
+            var stationKey = NormalizeStationKey(callsign);
+            var existing = tacticalLabels.GetValueOrDefault(stationKey);
+            var tacticalLabel = new TacticalLabel(
+                stationKey,
+                label.Trim(),
+                notes,
+                existing?.CreatedAtUtc ?? now,
+                now);
 
-        tacticalLabels[stationKey] = tacticalLabel;
-        RefreshStationDisplayName(stationKey);
+            tacticalLabels[stationKey] = tacticalLabel;
+            RefreshStationDisplayName(stationKey);
 
-        return tacticalLabel;
+            return tacticalLabel;
+        }
     }
 
     public bool RemoveTacticalLabel(string callsign)
     {
-        var stationKey = NormalizeStationKey(callsign);
-        var removed = tacticalLabels.Remove(stationKey);
-        if (removed)
+        lock (sync)
         {
-            RefreshStationDisplayName(stationKey);
-        }
+            var stationKey = NormalizeStationKey(callsign);
+            var removed = tacticalLabels.Remove(stationKey);
+            if (removed)
+            {
+                RefreshStationDisplayName(stationKey);
+            }
 
-        return removed;
+            return removed;
+        }
     }
 
     public TacticalLabel? GetTacticalLabel(string callsign)
     {
-        return tacticalLabels.TryGetValue(NormalizeStationKey(callsign), out var tacticalLabel)
-            ? tacticalLabel
-            : null;
+        lock (sync)
+        {
+            return tacticalLabels.TryGetValue(NormalizeStationKey(callsign), out var tacticalLabel)
+                ? tacticalLabel
+                : null;
+        }
     }
 
     public IReadOnlyCollection<TacticalLabel> GetAllTacticalLabels()
     {
-        return tacticalLabels.Values
-            .OrderBy(label => label.RealCallsign, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        lock (sync)
+        {
+            return tacticalLabels.Values
+                .OrderBy(label => label.RealCallsign, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
     }
 
     public void ClearTacticalLabels()
     {
-        tacticalLabels.Clear();
-        foreach (var stationKey in stations.Keys.ToArray())
+        lock (sync)
         {
-            RefreshStationDisplayName(stationKey);
+            tacticalLabels.Clear();
+            foreach (var stationKey in stations.Keys.ToArray())
+            {
+                RefreshStationDisplayName(stationKey);
+            }
         }
     }
 
     public StationSnapshot? GetStation(string callsign)
     {
-        return stations.TryGetValue(NormalizeStationKey(callsign), out var station)
-            ? station
-            : null;
+        lock (sync)
+        {
+            return stations.TryGetValue(NormalizeStationKey(callsign), out var station)
+                ? station
+                : null;
+        }
     }
 
     public void UpdateAgeStates(DateTimeOffset now)
     {
-        foreach (var (stationKey, station) in stations.ToArray())
+        lock (sync)
         {
-            stations[stationKey] = station with
+            foreach (var (stationKey, station) in stations.ToArray())
             {
-                LifecycleState = CalculateLifecycleState(station, now)
-            };
+                stations[stationKey] = station with
+                {
+                    LifecycleState = CalculateLifecycleState(station, now)
+                };
+            }
         }
     }
 
     public bool HideStation(string callsign)
     {
-        var stationKey = NormalizeStationKey(callsign);
-        if (!stations.TryGetValue(stationKey, out var station))
+        lock (sync)
         {
-            return false;
+            var stationKey = NormalizeStationKey(callsign);
+            if (!stations.TryGetValue(stationKey, out var station))
+            {
+                return false;
+            }
+
+            stations[stationKey] = station with
+            {
+                IsManuallyHidden = true,
+                LifecycleState = StationLifecycleState.Hidden
+            };
+
+            return true;
         }
-
-        stations[stationKey] = station with
-        {
-            IsManuallyHidden = true,
-            LifecycleState = StationLifecycleState.Hidden
-        };
-
-        return true;
     }
 
     public bool UnhideStation(string callsign, DateTimeOffset now)
     {
-        var stationKey = NormalizeStationKey(callsign);
-        if (!stations.TryGetValue(stationKey, out var station))
+        lock (sync)
         {
-            return false;
-        }
+            var stationKey = NormalizeStationKey(callsign);
+            if (!stations.TryGetValue(stationKey, out var station))
+            {
+                return false;
+            }
 
-        var unhidden = station with { IsManuallyHidden = false };
-        stations[stationKey] = unhidden with
-        {
-            LifecycleState = CalculateLifecycleState(unhidden, now)
-        };
-
-        return true;
-    }
-
-    public void ClearHiddenState(DateTimeOffset now)
-    {
-        foreach (var (stationKey, station) in stations.ToArray())
-        {
             var unhidden = station with { IsManuallyHidden = false };
             stations[stationKey] = unhidden with
             {
                 LifecycleState = CalculateLifecycleState(unhidden, now)
             };
+
+            return true;
+        }
+    }
+
+    public void ClearHiddenState(DateTimeOffset now)
+    {
+        lock (sync)
+        {
+            foreach (var (stationKey, station) in stations.ToArray())
+            {
+                var unhidden = station with { IsManuallyHidden = false };
+                stations[stationKey] = unhidden with
+                {
+                    LifecycleState = CalculateLifecycleState(unhidden, now)
+                };
+            }
         }
     }
 
     public bool ClearTrail(string callsign)
     {
-        return trails.Remove(NormalizeStationKey(callsign));
+        lock (sync) return trails.Remove(NormalizeStationKey(callsign));
     }
 
     public void ClearAllTrails()
     {
-        trails.Clear();
+        lock (sync) trails.Clear();
     }
 
     public void Clear()
     {
-        stations.Clear();
-        trails.Clear();
+        lock (sync)
+        {
+            stations.Clear();
+            trails.Clear();
+        }
     }
 
     private StationSnapshot CreateBaseUpdate(
@@ -561,13 +605,16 @@ public sealed class StationDatabase : IStationDatabase
     /// </summary>
     public void RestoreSnapshot(StationSnapshot snapshot)
     {
-        var key = NormalizeStationKey(snapshot.Callsign);
-        if (stations.TryGetValue(key, out var existing) && existing.LastHeardUtc >= snapshot.LastHeardUtc)
+        lock (sync)
         {
-            return; // Already have a more-recent entry from this session.
-        }
+            var key = NormalizeStationKey(snapshot.Callsign);
+            if (stations.TryGetValue(key, out var existing) && existing.LastHeardUtc >= snapshot.LastHeardUtc)
+            {
+                return; // Already have a more-recent entry from this session.
+            }
 
-        stations[key] = snapshot;
+            stations[key] = snapshot;
+        }
     }
 
     /// <summary>
@@ -576,7 +623,7 @@ public sealed class StationDatabase : IStationDatabase
     /// </summary>
     public void RestoreTacticalLabel(TacticalLabel label)
     {
-        tacticalLabels[NormalizeStationKey(label.RealCallsign)] = label;
+        lock (sync) tacticalLabels[NormalizeStationKey(label.RealCallsign)] = label;
     }
 
     private static string ComputePacketHash(string? rawLine)

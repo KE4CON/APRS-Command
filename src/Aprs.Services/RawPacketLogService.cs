@@ -8,6 +8,9 @@ public sealed partial class RawPacketLogService : IRawPacketLogService
     private readonly IAprsParser parser;
     private readonly IBeaconSchedulerClock clock;
     private readonly RawPacketLogConfiguration configuration;
+    // Guards `entries`. Packets are added on background transport receive threads while the UI enumerates
+    // via GetRecentEntries on the UI thread — concurrent List mutation + enumeration throws otherwise.
+    private readonly object sync = new();
     private readonly List<RawPacketLogEntry> entries = [];
 
     public RawPacketLogService(
@@ -76,8 +79,11 @@ public sealed partial class RawPacketLogService : IRawPacketLogService
 
     public IReadOnlyList<RawPacketLogEntry> GetRecentEntries(int? maximumCount = null)
     {
-        var query = entries.OrderByDescending(entry => entry.TimestampUtc).ThenByDescending(entry => entry.LogEntryId);
-        return maximumCount is > 0 ? query.Take(maximumCount.Value).ToArray() : query.ToArray();
+        lock (sync)
+        {
+            var query = entries.OrderByDescending(entry => entry.TimestampUtc).ThenByDescending(entry => entry.LogEntryId);
+            return maximumCount is > 0 ? query.Take(maximumCount.Value).ToArray() : query.ToArray();
+        }
     }
 
     public IReadOnlyList<RawPacketLogEntry> GetEntriesBySourceCallsign(string sourceCallsign)
@@ -128,7 +134,7 @@ public sealed partial class RawPacketLogService : IRawPacketLogService
 
     public void ClearLog()
     {
-        entries.Clear();
+        lock (sync) entries.Clear();
     }
 
     private RawPacketLogEntry? AddRawPacket(
@@ -187,8 +193,12 @@ public sealed partial class RawPacketLogService : IRawPacketLogService
             sanitizedResult,
             sanitizedNotes);
 
-        entries.Add(entry);
-        TrimEntries();
+        lock (sync)
+        {
+            entries.Add(entry);
+            TrimEntries();
+        }
+
         return entry;
     }
 
