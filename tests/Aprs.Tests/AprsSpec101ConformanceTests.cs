@@ -341,6 +341,38 @@ public sealed class AprsSpec101ConformanceTests
     }
 
     /// <summary>
+    /// Reply-ack (aprs.org/aprs11/replyacks.txt): "text{MM}AA" carries this message's id (MM) plus an
+    /// acknowledgement (AA) of the message being replied to — the two must be split, not stored as "MM}AA".
+    /// </summary>
+    [Fact]
+    public void Spec_ReplyAckMessage_SplitsMessageIdAndAcknowledgement()
+    {
+        var raw = "KD8ABC-7>APRS::KE4CON-1 :Roger that{45}23";
+        var p = Parse(raw);
+        Assert.True(p.IsValid);
+        var msg = (MessageAprsPacket)p;
+        Assert.Equal("Roger that", msg.MessageBody);
+        Assert.Equal("45", msg.MessageId);              // this message's id
+        Assert.Equal("23", msg.AcknowledgedMessageId);  // ack of the replied-to message
+    }
+
+    /// <summary>
+    /// A message whose text merely begins with the lowercase letters "ack"/"rej" as prose (e.g.
+    /// "acknowledge please") must NOT be classified as an acknowledgement — the remainder is not a
+    /// plausible 1–5 char message number.
+    /// </summary>
+    [Fact]
+    public void Spec_LowercaseAckProse_IsNotAnAcknowledgement()
+    {
+        var raw = "KD8ABC-7>APRS::KE4CON-1 :acknowledge please";
+        var p = Parse(raw);
+        Assert.True(p.IsValid);
+        var msg = (MessageAprsPacket)p;
+        Assert.Null(msg.AcknowledgedMessageId);
+        Assert.Equal("acknowledge please", msg.MessageBody);
+    }
+
+    /// <summary>
     /// §8/§12: A weather report carried on a <em>timestamped</em> position report ('@' or '/') puts
     /// the weather symbol code after the 7-char timestamp, so the parser must offset for it rather
     /// than assuming the timestampless '!'/'=' layout — otherwise all weather data is lost.

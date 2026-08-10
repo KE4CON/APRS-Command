@@ -1,6 +1,13 @@
 <Project>
   <PropertyGroup>
     <RollForward>Major</RollForward>
+    <!-- Static analysis: run the .NET analyzers + code-style rules as part of every build so latent
+         correctness/quality issues surface in CI. Kept at the "recommended" tier (not "all") to avoid a
+         flood of stylistic noise; not TreatWarningsAsErrors globally so a new advisory warning doesn't
+         hard-block an unrelated build. (Audit Build M4.) -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Product>APRS Command</Product>
     <!-- File metadata carried into signed binaries (SignPath requires configured/enforced metadata).
          Sole individual developer, not a company — the "Company" field holds the author's name. -->

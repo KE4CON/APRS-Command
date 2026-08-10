@@ -1,0 +1,49 @@
+root = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# APRS Command — analyzer configuration (audit Build M4)
+#
+# The .NET analyzers are enabled at latest-recommended in Directory.Build.props.
+# This file curates them: pure-style / naming / micro-optimization rules that do
+# not indicate defects are dialed to `silent` so they do not bury the rules that
+# actually catch bugs. Correctness-signal rules are left at their default
+# (warning) so they surface on every build.
+# ─────────────────────────────────────────────────────────────────────────────
+
+[*.cs]
+
+# --- Silenced: naming & style (not defects) --------------------------------
+# Underscores in identifiers — every xUnit test method name uses them by design.
+dotnet_diagnostic.CA1707.severity = none
+# Identifiers should not match keywords / should be spelled a certain way.
+dotnet_diagnostic.CA1716.severity = none
+dotnet_diagnostic.CA1711.severity = none
+dotnet_diagnostic.CA1720.severity = none
+# "Mark members as static" — stylistic; many are intentional instance methods.
+dotnet_diagnostic.CA1822.severity = suggestion
+
+# --- Silenced: micro-optimizations (not defects) ---------------------------
+dotnet_diagnostic.CA1859.severity = suggestion   # use concrete types for perf
+dotnet_diagnostic.CA1805.severity = suggestion   # do not initialize to default
+dotnet_diagnostic.CA1826.severity = suggestion   # use property over LINQ First/Last
+dotnet_diagnostic.CA1861.severity = suggestion   # constant arrays as static readonly
+dotnet_diagnostic.CA1865.severity = suggestion   # char overload of StartsWith/EndsWith
+dotnet_diagnostic.CA1836.severity = suggestion   # prefer IsEmpty over Count
+dotnet_diagnostic.CA1846.severity = suggestion   # prefer AsSpan over Substring
+dotnet_diagnostic.CA1869.severity = suggestion   # cache JsonSerializerOptions
+dotnet_diagnostic.CA1725.severity = suggestion   # parameter names match base
+
+# --- Culture rules: suggestion, not warning --------------------------------
+# APRS is an ASCII/invariant protocol; most string ops are protocol parsing, not
+# user-facing text. These fire heavily (~475) and are mostly noise here, but keep
+# them visible as suggestions so genuinely user-facing formatting can be reviewed.
+dotnet_diagnostic.CA1305.severity = suggestion
+dotnet_diagnostic.CA1304.severity = suggestion
+dotnet_diagnostic.CA1310.severity = suggestion
+
+# --- Left at WARNING (real correctness / resource signal) ------------------
+# CA1001  type owns an IDisposable field but is not disposable
+# CA2208  correctly construct argument exceptions (with param name)
+# CA1806  do not ignore method results
+# CA1852  seal internal types that are never inherited
+# ...and the rest of the recommended set.

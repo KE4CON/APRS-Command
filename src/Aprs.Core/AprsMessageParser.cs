@@ -40,36 +40,36 @@ public sealed class AprsMessageParser
 
         var messageBody = rawMessageBody;
         string? messageId = null;
+        string? replyAckAcknowledgedId = null;
         var messageIdIndex = rawMessageBody.LastIndexOf('{');
         if (messageIdIndex >= 0)
         {
-            messageId = rawMessageBody[(messageIdIndex + 1)..];
+            var idPortion = rawMessageBody[(messageIdIndex + 1)..];
             messageBody = rawMessageBody[..messageIdIndex];
 
+            // Reply-ack (aprs.org/aprs11/replyacks.txt): "{MM}AA" carries this message's id (MM) followed
+            // by an acknowledgement (AA) of the message being replied to. Previously the whole "MM}AA" was
+            // stored as the message id (audit Parser M3). Split on '}'.
+            var replyAckIndex = idPortion.IndexOf('}');
+            if (replyAckIndex >= 0)
+            {
+                var acked = idPortion[(replyAckIndex + 1)..];
+                replyAckAcknowledgedId = acked.Length > 0 ? acked : null;
+                idPortion = idPortion[..replyAckIndex];
+            }
+
+            messageId = idPortion;
             if (messageId.Length == 0)
             {
                 validationErrors.Add("Message ID is empty.");
             }
         }
 
-        var acknowledgedMessageId = StartsWithCommand(rawMessageBody, "ack")
-            ? rawMessageBody[3..]
-            : null;
-        var rejectedMessageId = StartsWithCommand(rawMessageBody, "rej")
-            ? rawMessageBody[3..]
-            : null;
+        var acknowledgedMessageId = ReadAckRejId(rawMessageBody, "ack", "ACK", validationErrors);
+        var rejectedMessageId = ReadAckRejId(rawMessageBody, "rej", "REJ", validationErrors);
 
-        if (acknowledgedMessageId == string.Empty)
-        {
-            validationErrors.Add("ACK message ID is missing.");
-            acknowledgedMessageId = null;
-        }
-
-        if (rejectedMessageId == string.Empty)
-        {
-            validationErrors.Add("REJ message ID is missing.");
-            rejectedMessageId = null;
-        }
+        // A reply-ack (…{MM}AA) also carries an acknowledgement of the replied-to message.
+        acknowledgedMessageId ??= replyAckAcknowledgedId;
 
         // Bulletin addressing (spec §14): "BLN" + one identifier char, then either 5 spaces or, for
         // group bulletins, a group name. A DIGIT identifier is a general/group bulletin; a LETTER
@@ -118,10 +118,52 @@ public sealed class AprsMessageParser
             isQuery ? rawMessageBody : null);
     }
 
-    private static bool StartsWithCommand(string value, string command)
+    // Reads an "ackMMMMM" / "rejMMMMM" acknowledgement id from the message body, or null if the body is not
+    // an acknowledgement. The APRS spec defines "ack"/"rej" as lowercase literals whose entire remaining
+    // body is a message number, so:
+    //   - "ACK…"/"REJ…" (uppercase) is ordinary prose, not an ack (Ordinal comparison).
+    //   - lowercase prose such as "acknowledge please" is NOT an ack either, because the remainder is not a
+    //     plausible message id (audit Parser M3) — only a truly empty remainder is flagged as a missing id.
+    private static string? ReadAckRejId(string body, string command, string label, List<string> validationErrors)
     {
-        // The APRS spec defines "ack" and "rej" as lowercase literals. Matching case-insensitively
-        // would misclassify an ordinary message such as "ACKNOWLEDGED" as an acknowledgement.
-        return value.StartsWith(command, StringComparison.Ordinal);
+        if (!body.StartsWith(command, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var id = body[command.Length..];
+        // A reply-ack style acknowledgement can carry a trailing '}' ("ack003}"); drop it.
+        if (id.EndsWith('}'))
+        {
+            id = id[..^1];
+        }
+
+        if (id.Length == 0)
+        {
+            validationErrors.Add($"{label} message ID is missing.");
+            return null;
+        }
+
+        return IsPlausibleMessageId(id) ? id : null;
+    }
+
+    // An APRS message number is 1–5 alphanumeric characters (classic numeric or the newer alphanumeric
+    // reply-ack form). Anything longer or containing spaces/punctuation is message prose, not an id.
+    private static bool IsPlausibleMessageId(string id)
+    {
+        if (id.Length is < 1 or > 5)
+        {
+            return false;
+        }
+
+        foreach (var c in id)
+        {
+            if (!char.IsLetterOrDigit(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -107,9 +107,13 @@ public sealed class NwsAlertService : IAsyncDisposable
             var area        = props.TryGetProperty("areaDesc", out var areaEl) ? areaEl.GetString() ?? "" : "";
             var sender      = props.TryGetProperty("senderName", out var sndEl) ? sndEl.GetString() ?? "" : "";
 
+            // Only overwrite the UtcNow fallback when the parse actually succeeds — TryParse sets its out
+            // arg to default (MinValue) on failure, which would otherwise stamp a malformed alert with
+            // 0001-01-01 instead of "now" (audit Build M4 / CA1806).
             DateTimeOffset effective = DateTimeOffset.UtcNow;
-            if (props.TryGetProperty("effective", out var effEl) && effEl.GetString() is { } effStr)
-                DateTimeOffset.TryParse(effStr, out effective);
+            if (props.TryGetProperty("effective", out var effEl) && effEl.GetString() is { } effStr
+                && DateTimeOffset.TryParse(effStr, out var effVal))
+                effective = effVal;
 
             DateTimeOffset? expires = null;
             if (props.TryGetProperty("expires", out var expEl) && expEl.GetString() is { } expStr
