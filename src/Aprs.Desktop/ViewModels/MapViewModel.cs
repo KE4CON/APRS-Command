@@ -48,6 +48,8 @@ public sealed class MapViewModel : INotifyPropertyChanged
         ClearObjectSelectionCommand = new DesktopCommand(ClearObjectSelection);
         HomeCommand                 = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.Home));
         CentreOnStationCommand      = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.CentreOnStation));
+        ZoomInCommand               = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.ZoomIn));
+        ZoomOutCommand              = new DesktopCommand(() => NavigationRequested?.Invoke(this, MapNavigationRequest.ZoomOut));
         FindStationCommand          = new DesktopCommand(() => FindStationRequested?.Invoke(this, EventArgs.Empty));
         ToggleMapLayerCommand       = new DesktopCommand(() => ToggleMapLayerRequested?.Invoke(this, EventArgs.Empty));
         MeasureDistanceCommand      = new DesktopCommand(() => MeasureDistanceRequested?.Invoke(this, EventArgs.Empty));
@@ -542,6 +544,10 @@ public sealed class MapViewModel : INotifyPropertyChanged
     public DesktopCommand ClearObjectSelectionCommand { get; }
 
     public DesktopCommand HomeCommand { get; }
+
+    public DesktopCommand ZoomInCommand { get; }
+
+    public DesktopCommand ZoomOutCommand { get; }
 
     public DesktopCommand CentreOnStationCommand { get; }
 

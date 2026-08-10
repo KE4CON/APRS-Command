@@ -11,6 +11,10 @@
         MinHeight="620">
 
   <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+M" Command="{Binding OpenMessagesCommand}" />
+    <KeyBinding Gesture="Ctrl+W" Command="{Binding OpenWeatherCommand}" />
+    <KeyBinding Gesture="Ctrl+R" Command="{Binding OpenRawPacketsCommand}" />
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding OpenSettingsCommand}" />
     <KeyBinding Gesture="Ctrl+N" Command="{Binding OpenNetControlCommand}" />
     <KeyBinding Gesture="Ctrl+B" Command="{Binding BeaconNowCommand}" />
     <KeyBinding Gesture="Ctrl+D" Command="{Binding ToggleDarkModeCommand}" />
@@ -109,6 +113,8 @@
                     Click="ToggleRadarMenuItem_Click" />
         </MenuItem>
         <Separator />
+        <MenuItem Header="_Geofences" Click="OpenGeofences_Click"
+                  ToolTip.Tip="Define map zones that raise an alert when a station enters or leaves" />
         <MenuItem Header="Offline Map _Download" Command="{Binding OpenOfflineMapCommand}" />
         <MenuItem Header="_Coverage Prediction" Command="{Binding OpenCoverageCommand}" />
         <MenuItem Header="_Elevation Profile" Command="{Binding OpenElevationCommand}" />
@@ -140,6 +146,15 @@
         <MenuItem Header="After-Action Report" Command="{Binding OpenAfterActionCommand}" />
         <MenuItem Header="Mobile Companion Web View" Click="OpenMobileCompanion_Click" />
         <MenuItem Header="FieldCommand Tactical-Map Feed (LAN)" Click="OpenFieldCommandFeed_Click" />
+        <Separator />
+        <MenuItem Header="Training Mode" Click="OpenTrainingMode_Click"
+                  ToolTip.Tip="Run guided training scenarios and tasks for operators" />
+        <MenuItem Header="Traffic Simulation" Click="OpenSimulation_Click"
+                  ToolTip.Tip="Generate synthetic APRS traffic to exercise the app without live RF" />
+        <MenuItem Header="Direwolf Profile" Click="OpenDirewolfProfile_Click"
+                  ToolTip.Tip="Configure the managed Direwolf software-TNC modem profile" />
+        <MenuItem Header="File Hooks" Click="OpenFileHooks_Click"
+                  ToolTip.Tip="Configure file-based import/export integration folders" />
         <Separator />
         <MenuItem Header="Toggle Exercise Mode (inhibit all transmit)"
                   Command="{Binding ToggleExerciseModeCommand}" />

@@ -20,6 +20,10 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
 
+        // Bare +/-/Home map shortcuts. Using bubbling KeyDown (not a KeyBinding) means a focused text
+        // control that already consumed the key marks it Handled first, so these never fire while typing.
+        KeyDown += OnMapShortcutKeyDown;
+
         // Restore MainWindow position/size from last session.
         var store = JsonAppSettingsStore.Default;
         Opened  += (_, _) => WindowStateService.Restore(this, store);
@@ -358,6 +362,45 @@ public sealed partial class MainWindow : Window
         };
         win.Show();
     }
+
+    private void OnMapShortcutKeyDown(object? sender, Avalonia.Input.KeyEventArgs e)
+    {
+        if (vm?.Map is null) return;
+        switch (e.Key)
+        {
+            case Avalonia.Input.Key.Add:
+            case Avalonia.Input.Key.OemPlus:   // the '+ / =' key
+                vm.Map.ZoomInCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Avalonia.Input.Key.Subtract:
+            case Avalonia.Input.Key.OemMinus:
+                vm.Map.ZoomOutCommand.Execute(null);
+                e.Handled = true;
+                break;
+            case Avalonia.Input.Key.Home:
+                vm.Map.CentreOnStationCommand.Execute(null);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    // The five feature view models are already constructed and live on the MainWindowViewModel; these
+    // handlers simply host each view in a window so the feature is reachable from the menu.
+    private void OpenGeofences_Click(object? sender, RoutedEventArgs e)
+        => ShowWithState(new GeofenceEditorWindow { DataContext = vm?.Geofences });
+
+    private void OpenTrainingMode_Click(object? sender, RoutedEventArgs e)
+        => ShowWithState(new TrainingModeWindow { DataContext = vm?.Training });
+
+    private void OpenSimulation_Click(object? sender, RoutedEventArgs e)
+        => ShowWithState(new SimulationWindow { DataContext = vm?.Simulation });
+
+    private void OpenDirewolfProfile_Click(object? sender, RoutedEventArgs e)
+        => ShowWithState(new DirewolfProfileWindow { DataContext = vm?.DirewolfProfile });
+
+    private void OpenFileHooks_Click(object? sender, RoutedEventArgs e)
+        => ShowWithState(new FileHooksWindow { DataContext = vm?.FileHooks });
 
     private void OpenPacketStatistics_Click(object? sender, RoutedEventArgs e)
     {

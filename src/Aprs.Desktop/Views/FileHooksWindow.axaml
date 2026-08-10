@@ -1,0 +1,13 @@
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:views="using:Aprs.Desktop.Views"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
+        x:Class="Aprs.Desktop.Views.FileHooksWindow"
+        x:DataType="vm:FileHooksViewModel"
+        Title="File Hooks"
+        PanelTitle="File Hooks"
+        Width="860" Height="660" MinWidth="620" MinHeight="460"
+        WindowStartupLocation="CenterOwner">
+  <views:FileHooksView />
+</ctrls:FloatingPanelWindow>

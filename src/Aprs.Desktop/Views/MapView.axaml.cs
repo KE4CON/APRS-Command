@@ -1070,6 +1070,14 @@ public sealed partial class MapView : UserControl
                 var (px, py) = SphericalMercator.FromLonLat(request.Longitude.Value, request.Latitude.Value);
                 MapControl.Map.Navigator.CenterOnAndZoomTo(new MPoint(px, py), HomeResolution / 8);
                 break;
+
+            case MapNavigationKind.ZoomIn:
+                MapControl.Map.Navigator.ZoomIn();
+                break;
+
+            case MapNavigationKind.ZoomOut:
+                MapControl.Map.Navigator.ZoomOut();
+                break;
         }
     }
 

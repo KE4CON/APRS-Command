@@ -1,0 +1,13 @@
+<ctrls:FloatingPanelWindow xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Aprs.Desktop.ViewModels"
+        xmlns:views="using:Aprs.Desktop.Views"
+        xmlns:ctrls="using:Aprs.Desktop.Controls"
+        x:Class="Aprs.Desktop.Views.TrainingModeWindow"
+        x:DataType="vm:TrainingModeViewModel"
+        Title="Training Mode"
+        PanelTitle="Training Mode"
+        Width="900" Height="680" MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+  <views:TrainingModeView />
+</ctrls:FloatingPanelWindow>

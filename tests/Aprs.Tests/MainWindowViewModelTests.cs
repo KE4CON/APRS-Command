@@ -92,15 +92,26 @@ public sealed class MainWindowViewModelTests
 
         // Menu bar with all commands.
         Assert.Contains("<Menu", xaml, StringComparison.Ordinal);
+
+        // These appear once as a menu item and have no keyboard accelerator, so exactly one binding.
         foreach (var command in new[]
         {
-            "OpenSettingsCommand", "OpenMessagesCommand", "OpenObjectsCommand",
-            "OpenWeatherCommand", "OpenEventsCommand", "OpenEventBusCommand",
+            "OpenObjectsCommand", "OpenEventsCommand", "OpenEventBusCommand",
             "OpenReplayCommand", "OpenRfDiagnosticsCommand", "OpenAlertsCommand",
-            "OpenStationListCommand", "OpenRawPacketsCommand", "OpenHelpCommand"
+            "OpenStationListCommand", "OpenHelpCommand"
         })
         {
             Assert.Equal(1, Count(xaml, $"Command=\"{{Binding {command}}}\""));
+        }
+
+        // These have a keyboard accelerator (Ctrl+M/W/R/S) in addition to their menu item, so the command
+        // is bound twice — once on the MenuItem, once on the KeyBinding. Both must resolve to one command.
+        foreach (var command in new[]
+        {
+            "OpenSettingsCommand", "OpenMessagesCommand", "OpenWeatherCommand", "OpenRawPacketsCommand"
+        })
+        {
+            Assert.Equal(2, Count(xaml, $"Command=\"{{Binding {command}}}\""));
         }
 
         // Icon sidebar.

@@ -4,7 +4,9 @@ public enum MapNavigationKind
 {
     Home,
     CentreOnStation,
-    CentreOnPosition
+    CentreOnPosition,
+    ZoomIn,
+    ZoomOut
 }
 
 /// <summary>
@@ -18,4 +20,6 @@ public sealed record MapNavigationRequest(
 {
     public static MapNavigationRequest Home { get; } = new(MapNavigationKind.Home);
     public static MapNavigationRequest CentreOnStation { get; } = new(MapNavigationKind.CentreOnStation);
+    public static MapNavigationRequest ZoomIn { get; } = new(MapNavigationKind.ZoomIn);
+    public static MapNavigationRequest ZoomOut { get; } = new(MapNavigationKind.ZoomOut);
 }

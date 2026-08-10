@@ -156,6 +156,11 @@
             "Weather"
           ],
           [
+            "Geofences",
+            "Opens the geofence editor — define map zones that raise an alert when a station enters or leaves them.",
+            "Geofences"
+          ],
+          [
             "Offline Map Download",
             "Opens the offline map download window — save map tiles for use without internet.",
             "Offline Maps"
@@ -278,7 +283,7 @@
       "h1": "Tools"
     },
     {
-      "p": "**Tools** holds the utilities that don't fit the other menus — the internal event bus, session replay, RF diagnostics, reporting, the phone companion, and the exercise-mode switch."
+      "p": "**Tools** holds the utilities that don't fit the other menus — the internal event bus, session replay, RF diagnostics, reporting, the phone companion, training and traffic-simulation tools, the Direwolf modem profile, file-based integration hooks, and the exercise-mode switches."
     },
     {
       "table": {
@@ -317,6 +322,26 @@
             "FieldCommand Tactical-Map Feed (LAN)",
             "Starts a fixed-port (8080), tokenless read-only station feed for the FieldCommand IMS tactical map on a trusted EMCOMM-NET. Shows the address to enter under the map's APRS Sources settings.",
             "Mobile Companion"
+          ],
+          [
+            "Training Mode",
+            "Opens the training window — run guided training scenarios and step-by-step tasks for operators.",
+            "Training Mode"
+          ],
+          [
+            "Traffic Simulation",
+            "Opens the simulation window — generate synthetic APRS traffic to exercise the app without live RF.",
+            "Traffic Simulation"
+          ],
+          [
+            "Direwolf Profile",
+            "Opens the Direwolf profile editor — configure the managed Direwolf software-TNC modem.",
+            "Managed Modem"
+          ],
+          [
+            "File Hooks",
+            "Opens the file hooks window — configure file-based import/export integration folders.",
+            "File Hooks"
           ],
           [
             "Toggle Exercise Traffic Marking (tag transmit as EXERCISE)",

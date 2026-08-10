@@ -7,7 +7,7 @@
       "p": "APRS Command puts a small set of keyboard shortcuts and mouse actions on top of the menus, so the things you reach for most — opening __Net Control__, sending a beacon, flipping to dark mode, working a net roster — are one keystroke away instead of a menu dig."
     },
     {
-      "p": "This chapter lists every shortcut the app actually recognizes, grouped by where it works. There are three groups: __Global__ keys that work from the main __map page__, __mouse__ actions on the map itself, and a bank of __function keys__ that only work while the __Net Control__ window is focused."
+      "p": "This chapter lists every shortcut the app actually recognizes, grouped by where it works. There are four groups: __Global__ keys that work from the main __map page__, a few __map keys__ for zoom and centering, __mouse__ actions on the map itself, and a bank of __function keys__ that only work while the __Net Control__ window is focused."
     },
     {
       "callout": {
@@ -51,6 +51,26 @@
         ],
         "rows": [
           [
+            "`Ctrl+M`",
+            "Opens the **Message Center**",
+            "Messages ▸ Messages"
+          ],
+          [
+            "`Ctrl+W`",
+            "Opens the **Weather Stations** window",
+            "Map ▸ Weather ▸ Weather Stations"
+          ],
+          [
+            "`Ctrl+R`",
+            "Opens the **Raw Packets** monitor",
+            "View ▸ Raw Packets"
+          ],
+          [
+            "`Ctrl+S`",
+            "Opens **Settings**",
+            "Settings"
+          ],
+          [
             "`Ctrl+N`",
             "Opens the **Net Control** window",
             "Operate ▸ Net Control"
@@ -78,6 +98,41 @@
         "kind": "warning",
         "label": "Ctrl+B is a transmit action",
         "text": "`Ctrl+B` asks the app to send a beacon on the air. That is a deliberate transmit, so treat it like keying up. Out of the box the app is receive-first with the **TX Disabled** badge lit in the title bar, and nothing goes out until you deliberately enable transmit — so a stray `Ctrl+B` before then does not put a signal out."
+      }
+    },
+    {
+      "h1": "Map keyboard keys"
+    },
+    {
+      "p": "A few plain keys work the map when the main window has focus and you are not typing in a text box. They mirror the map's zoom and centering, so you can pan around without reaching for the mouse."
+    },
+    {
+      "table": {
+        "headers": [
+          "Key",
+          "What it does"
+        ],
+        "rows": [
+          [
+            "`+` / `=`",
+            "Zoom the map in one step"
+          ],
+          [
+            "`-`",
+            "Zoom the map out one step"
+          ],
+          [
+            "`Home`",
+            "Center the map on your station"
+          ]
+        ]
+      }
+    },
+    {
+      "callout": {
+        "kind": "note",
+        "label": "These wait their turn",
+        "text": "The `+`, `-`, and `Home` keys only act on the map when you are **not** editing text. If your cursor is in a search box or a form field, the key types or moves the caret there as normal — it does not zoom the map out from under you."
       }
     },
     {
