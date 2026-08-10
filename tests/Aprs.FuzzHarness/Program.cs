@@ -298,4 +298,4 @@ sealed class FuzzResults
     public ConcurrentDictionary<string, int> TypeCounts  = [];
 }
 
-record FuzzFinding(string RawLine, string Finding, long ElapsedMs);
+sealed record FuzzFinding(string RawLine, string Finding, long ElapsedMs);

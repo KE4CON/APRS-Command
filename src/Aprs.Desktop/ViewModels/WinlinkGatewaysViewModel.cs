@@ -6,7 +6,7 @@ using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
 
-public sealed class WinlinkGatewaysViewModel : INotifyPropertyChanged
+public sealed class WinlinkGatewaysViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly Services.WinlinkRmsGatewayService service;
     private readonly IAppSettingsStore settingsStore;
@@ -63,6 +63,9 @@ public sealed class WinlinkGatewaysViewModel : INotifyPropertyChanged
     public bool IsNotQuerying => !isQuerying;
 
     public bool IsConfigured => service.IsConfigured;
+
+    /// <summary>Disposes the gateway service (its HttpClient). Called when the Winlink window closes.</summary>
+    public void Dispose() => service.Dispose();
 
     public DesktopCommand QueryCommand    { get; }
     public DesktopCommand SaveKeyCommand  { get; }

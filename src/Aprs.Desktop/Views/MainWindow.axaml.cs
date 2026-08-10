@@ -209,12 +209,11 @@ public sealed partial class MainWindow : Window
     {
         var rt = (Application.Current as App)?.Runtime;
         if (rt is null) return;
-        var win = new WinlinkGatewaysWindow
-        {
-            DataContext = new ViewModels.WinlinkGatewaysViewModel(
-                rt.GetService<IAppSettingsStore>(),
-                rt.GetService<ILocalStationProfileService>())
-        };
+        var winlinkVm = new ViewModels.WinlinkGatewaysViewModel(
+            rt.GetService<IAppSettingsStore>(),
+            rt.GetService<ILocalStationProfileService>());
+        var win = new WinlinkGatewaysWindow { DataContext = winlinkVm };
+        win.Closed += (_, _) => winlinkVm.Dispose();
         win.ShowDialog(this);
     }
 
@@ -419,11 +418,9 @@ public sealed partial class MainWindow : Window
     {
         var rt = (Application.Current as App)?.Runtime;
         if (rt is null) return;
-        var win = new ElevationProfileWindow
-        {
-            DataContext = new ViewModels.ElevationProfileViewModel(
-                rt.GetService<IStationDatabase>())
-        };
+        var elevationVm = new ViewModels.ElevationProfileViewModel(rt.GetService<IStationDatabase>());
+        var win = new ElevationProfileWindow { DataContext = elevationVm };
+        win.Closed += (_, _) => elevationVm.Dispose();
         win.ShowDialog(this);
     }
 

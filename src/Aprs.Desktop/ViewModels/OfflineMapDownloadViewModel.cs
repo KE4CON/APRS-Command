@@ -10,7 +10,7 @@ namespace Aprs.Desktop.ViewModels;
 /// map tiles for a defined geographic area before going to a field location
 /// without internet access.
 /// </summary>
-public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
+public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly IOfflineMapDownloadManager downloadManager;
     private CancellationTokenSource? downloadCts;
@@ -239,6 +239,14 @@ public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? n = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+    /// <summary>Cancels and disposes any in-flight download token. The DI container disposes this singleton.</summary>
+    public void Dispose()
+    {
+        downloadCts?.Cancel();
+        downloadCts?.Dispose();
+        downloadCts = null;
+    }
 }
 
 /// <summary>No-op download manager for design-time preview.</summary>

@@ -12,7 +12,7 @@ using Aprs.Services;
 
 namespace Aprs.Desktop.Views;
 
-public sealed partial class AboutWindow : FloatingPanelWindow
+public sealed partial class AboutWindow : FloatingPanelWindow, IDisposable
 {
     private readonly UpdateCheckerService updateChecker = new();
     private readonly IDeviceIdDatabaseUpdateService? deviceDbUpdater;
@@ -20,6 +20,10 @@ public sealed partial class AboutWindow : FloatingPanelWindow
     public AboutWindow()
     {
         InitializeComponent();
+
+        // Dispose the owned update checker (its HttpClient) when the dialog closes. deviceDbUpdater is a
+        // shared runtime singleton and is intentionally NOT disposed here.
+        Closed += (_, _) => Dispose();
 
         // Version from assembly metadata.
         VersionText.Text = $"Version {Services.AppVersion.Informational}";
@@ -118,6 +122,10 @@ public sealed partial class AboutWindow : FloatingPanelWindow
         }
     }
 
+
+    /// <summary>Disposes the owned update checker (its HttpClient). The service exposes only async
+    /// disposal, which just releases the HttpClient, so blocking here is safe.</summary>
+    public void Dispose() => updateChecker.DisposeAsync().AsTask().GetAwaiter().GetResult();
 
     private void RepoLink_PointerPressed(object? sender, PointerPressedEventArgs e)
     {

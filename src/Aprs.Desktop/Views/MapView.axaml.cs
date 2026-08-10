@@ -26,6 +26,13 @@ using BruTile.Web;
 
 namespace Aprs.Desktop.Views;
 
+// CA1001: the layer fields are added to MapControl.Map.Layers and are owned/disposed by Mapsui's
+// MapControl.Map (which disposes its layers on teardown). MapView only holds references to update them
+// live; it is a single control that lives for the whole session and the layers hold in-memory feature
+// lists, not OS handles. Disposing them here would double-dispose against Mapsui's own teardown.
+[System.Diagnostics.CodeAnalysis.SuppressMessage(
+    "Usage", "CA1001:Types that own disposable fields should be disposable",
+    Justification = "Layer fields are owned and disposed by the Mapsui MapControl.Map they are added to.")]
 public sealed partial class MapView : UserControl
 {
     private MapViewModel? currentViewModel;

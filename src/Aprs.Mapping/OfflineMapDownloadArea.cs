@@ -13,6 +13,12 @@ public sealed record OfflineMapDownloadArea(
     DateTimeOffset UpdatedAtUtc,
     string? Notes)
 {
+    // CA2208: the exception names (AreaName, NorthLatitude, …) intentionally identify the invalid
+    // property of the area the caller supplied, not a parameter of Validate — the correct, useful
+    // information for a caller who passed a whole OfflineMapDownloadArea. Types are asserted by tests.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Usage", "CA2208:Instantiate argument exceptions correctly",
+        Justification = "Names identify the invalid record property supplied by the caller, not a Validate parameter.")]
     public void Validate(bool allowLargeArea = false)
     {
         if (string.IsNullOrWhiteSpace(AreaName))

@@ -38,7 +38,7 @@ public interface IDeviceIdDatabaseUpdateService
     Task<DeviceIdUpdateResult> UpdateAsync(bool force, CancellationToken cancellationToken = default);
 }
 
-public sealed class DeviceIdDatabaseUpdateService : IDeviceIdDatabaseUpdateService
+public sealed class DeviceIdDatabaseUpdateService : IDeviceIdDatabaseUpdateService, IDisposable
 {
     /// <summary>Default weekly refresh cadence.</summary>
     public static readonly TimeSpan DefaultRefreshInterval = TimeSpan.FromDays(7);
@@ -49,6 +49,9 @@ public sealed class DeviceIdDatabaseUpdateService : IDeviceIdDatabaseUpdateServi
     private readonly IBeaconSchedulerClock clock;
     private readonly TimeSpan refreshInterval;
     private readonly SemaphoreSlim gate = new(1, 1);
+
+    /// <summary>Releases the update gate. The DI container disposes this singleton at shutdown.</summary>
+    public void Dispose() => gate.Dispose();
 
     public DeviceIdDatabaseUpdateService(
         RefreshableDeviceIdentificationService service,

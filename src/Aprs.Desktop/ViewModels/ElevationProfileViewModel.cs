@@ -4,7 +4,7 @@ using Aprs.Services;
 
 namespace Aprs.Desktop.ViewModels;
 
-public sealed class ElevationProfileViewModel : INotifyPropertyChanged
+public sealed class ElevationProfileViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly IStationDatabase stationDatabase;
     private readonly Services.ElevationProfileService elevationService;
@@ -120,4 +120,8 @@ public sealed class ElevationProfileViewModel : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? n = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+    /// <summary>Disposes the elevation service (its HttpClient). Called when the window closes. The
+    /// service exposes only async disposal, which just releases the HttpClient, so blocking here is safe.</summary>
+    public void Dispose() => elevationService.DisposeAsync().AsTask().GetAwaiter().GetResult();
 }
