@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code Signing — Step-by-Step</title>
+<style>
+  @page { size: Letter; margin: 20mm 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color: #1f2933; font-size: 10.6pt; line-height: 1.5; }
+  h1 { font-size: 22pt; color: #0b4a8f; margin: 0 0 2mm; }
+  h2 { font-size: 15pt; color: #0b4a8f; border-bottom: 2px solid #0b4a8f; padding-bottom: 1.5mm; margin: 9mm 0 3mm; page-break-after: avoid; }
+  h3 { font-size: 12pt; color: #14539a; margin: 6mm 0 2mm; page-break-after: avoid; }
+  h4 { font-size: 10.8pt; color: #333; margin: 4mm 0 1mm; page-break-after: avoid; }
+  p { margin: 0 0 2.5mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+  li { margin: 0 0 1.5mm; }
+  code { font-family: "Consolas", "Courier New", monospace; background: #eef2f7; padding: 0.5mm 1.2mm; border-radius: 2px; font-size: 9.4pt; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 3mm 4mm; border-radius: 4px; font-family: "Consolas", monospace; font-size: 8.9pt; line-height: 1.45; white-space: pre-wrap; word-break: break-word; page-break-inside: avoid; margin: 2mm 0 3mm; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.6pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #cbd5e1; padding: 1.6mm 2.4mm; text-align: left; vertical-align: top; }
+  th { background: #e8f0fb; color: #0b4a8f; }
+  .lead { font-size: 11pt; color: #45525f; margin-bottom: 4mm; }
+  .callout { border-left: 4px solid #0b4a8f; background: #f2f7fd; padding: 2.5mm 4mm; margin: 3mm 0; border-radius: 0 4px 4px 0; page-break-inside: avoid; }
+  .warn { border-left-color: #b45309; background: #fff7ed; }
+  .ok { border-left-color: #15803d; background: #f0fdf4; }
+  .done { color: #15803d; font-weight: 600; }
+  .step { page-break-inside: avoid; }
+  .cover { text-align: center; padding-top: 40mm; page-break-after: always; }
+  .cover .sub { color: #45525f; font-size: 13pt; margin-top: 3mm; }
+  .cover .meta { color: #64748b; font-size: 10pt; margin-top: 20mm; }
+  .toc a { color: #14539a; text-decoration: none; }
+  .tag { display: inline-block; background: #0b4a8f; color: #fff; font-size: 8pt; padding: 0.4mm 2mm; border-radius: 3px; vertical-align: middle; }
+  hr { border: none; border-top: 1px solid #d0d7de; margin: 6mm 0; }
+  .small { font-size: 9pt; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Code Signing — Step by Step</h1>
+  <div class="sub">Windows (Azure) &amp; macOS (Apple), and how to reuse both for your other projects</div>
+  <div class="meta">
+    APRS Command &nbsp;·&nbsp; James Rospopo (KE4CON)<br>
+    Follow-along maintainer guide &nbsp;·&nbsp; keep private (accounts &amp; credentials)
+  </div>
+</div>
+
+<h2>What this is</h2>
+<p class="lead">A slow, click-by-click guide to signing your installers so users see <strong>your verified name</strong> as the publisher instead of an "unknown publisher — are you sure?" warning. No prior experience assumed; every term is explained the first time it appears.</p>
+
+<p><strong>Where you are right now:</strong></p>
+<ul>
+  <li><strong>Windows / Azure</strong> — <span class="done">✔ Identity validation complete.</span> Remaining: create the certificate profile, make the "robot login," and paste six values into GitHub. ~20 minutes.</li>
+  <li><strong>macOS / Apple</strong> — membership paid. Remaining: create the certificate and an API key on a Mac, prove it works by hand once, then paste six values into GitHub.</li>
+</ul>
+
+<div class="callout ok"><strong>The automation is already built.</strong> Both signing steps live in the repo's release workflow (<code>.github/workflows/release.yml</code>) and stay <em>asleep</em> until you add the secrets. Nothing signs — and nothing can break — until you flip the switch. Unsigned builds keep shipping exactly as before in the meantime.</div>
+
+<h3>What "code signing" actually is</h3>
+<p>When you download a program, Windows and macOS ask: <em>"Do we know who made this, and has it been tampered with?"</em> Code signing answers both. You get a <strong>certificate</strong> — a cryptographic ID card issued after a trusted authority checks who you are — and your build process stamps your installer with it. The operating system checks the stamp and, if it trusts the issuer, shows <strong>your name</strong> instead of a scary warning.</p>
+<ul>
+  <li><strong>Windows</strong> trusts the stamp directly. We use <strong>Azure Artifact Signing</strong> (formerly "Trusted Signing").</li>
+  <li><strong>macOS</strong> needs one extra step, <strong>notarization</strong>: you send the signed app to Apple, their servers scan it, and send back a "ticket" you attach to the app. We use an <strong>Apple Developer ID</strong> certificate plus notarization.</li>
+</ul>
+<p>They are completely independent — doing one doesn't affect the other.</p>
+
+<!-- ============================ PART 1 ============================ -->
+<h2>Part 1 — Windows (Azure Artifact Signing)</h2>
+<p><strong>Cost:</strong> about <strong>$9.99/month</strong> (the "Basic" plan). <strong>Users see:</strong> your verified legal name as publisher.</p>
+
+<p class="small">Vocabulary: <strong>Azure</strong> = Microsoft's cloud. <strong>Subscription</strong> = your billing container. <strong>Resource group</strong> = a folder that holds related things. <strong>Service principal</strong> = a limited "robot login" you give to GitHub instead of your personal password. <strong>Certificate profile</strong> = the template your signing certificates are minted from.</p>
+
+<div class="callout ok"><strong>You already did the hard part.</strong> The identity validation (Microsoft's ID check via your phone) is complete. The three remaining pieces are quick.</div>
+
+<h3 class="step">Step 1 — Create the certificate profile</h3>
+<p>The profile is the template your signing certificates come from. (Skip if you already made one.)</p>
+<ol>
+  <li>Open <strong>portal.azure.com</strong> → search <strong>Artifact Signing Accounts</strong> → click your account (e.g. <code>aprscommandsign</code>).</li>
+  <li>Left menu → under <strong>Objects</strong> → <strong>Certificate profiles</strong> → <strong>+ Create</strong> → choose <strong>Public Trust</strong>.</li>
+  <li><strong>Certificate profile name:</strong> e.g. <code>aprscommand-public</code> (5–100 letters/numbers).</li>
+  <li><strong>Verified CN and O:</strong> select the identity validation you already completed.</li>
+  <li>Leave the rest default → <strong>Create</strong>.</li>
+</ol>
+
+<h3 class="step">Step 2 — Copy the three names GitHub needs</h3>
+<table>
+  <tr><th>Name</th><th>Where to find it</th><th>Example</th></tr>
+  <tr><td><strong>Endpoint</strong></td><td>Your account's region URI</td><td><code>https://wus2.codesigning.azure.net/</code></td></tr>
+  <tr><td><strong>Account name</strong></td><td>The Artifact Signing account name</td><td><code>aprscommandsign</code></td></tr>
+  <tr><td><strong>Certificate profile name</strong></td><td>From Step 1</td><td><code>aprscommand-public</code></td></tr>
+</table>
+<p class="small">Common region endpoints: West US 2 → <code>https://wus2.codesigning.azure.net/</code> · East US → <code>https://eus.codesigning.azure.net/</code> · West Europe → <code>https://weu.codesigning.azure.net/</code></p>
+
+<h3 class="step">Step 3 — Create the "robot login" (service principal)</h3>
+<ol>
+  <li>Go back to your <strong>Artifact Signing account</strong> page → left menu → <strong>Settings</strong> → <strong>Properties</strong> (or the <strong>JSON View</strong> link). Copy the long <strong>Resource ID</strong> — it looks like<br><code>/subscriptions/1111…/resourceGroups/rg-signing/providers/Microsoft.CodeSigning/codeSigningAccounts/aprscommandsign</code></li>
+  <li>At the top of the portal, click the <strong>&gt;_</strong> icon (<strong>Cloud Shell</strong>). First time: choose <strong>Bash</strong> and accept the small storage account.</li>
+  <li>At the <code>$</code> prompt, paste this — replace the <code>--scopes</code> value with the Resource ID you copied:</li>
+</ol>
+<pre><code>az ad sp create-for-rbac \
+  --name "aprs-command-signing-ci" \
+  --role "Trusted Signing Certificate Profile Signer" \
+  --scopes "&lt;PASTE-THE-RESOURCE-ID-HERE&gt;"</code></pre>
+<p>It prints a small block:</p>
+<pre><code>{
+  "appId":    "aaaaaaaa-....",
+  "password": "abc123~....",
+  "tenant":   "bbbbbbbb-...."
+}</code></pre>
+<div class="callout warn"><strong>Copy <code>appId</code>, <code>password</code>, and <code>tenant</code> right now.</strong> The <code>password</code> is shown <strong>only this once</strong>. If you miss it, just run the command again — it makes a fresh one.</div>
+
+<h3 class="step">Step 4 — Flip the switch in GitHub</h3>
+<ol>
+  <li>Go to <strong>github.com/KE4CON/APRS-Command</strong> → <strong>Settings</strong> → left menu <strong>Secrets and variables</strong> → <strong>Actions</strong>.</li>
+  <li>On the <strong>Secrets</strong> tab, <strong>New repository secret</strong> — add these three (Name, Value, Add secret):</li>
+</ol>
+<table>
+  <tr><th>Secret name</th><th>Value</th></tr>
+  <tr><td><code>AZURE_TENANT_ID</code></td><td>the <code>tenant</code> from Step 3</td></tr>
+  <tr><td><code>AZURE_CLIENT_ID</code></td><td>the <code>appId</code> from Step 3</td></tr>
+  <tr><td><code>AZURE_CLIENT_SECRET</code></td><td>the <code>password</code> from Step 3</td></tr>
+</table>
+<p>Then the <strong>Variables</strong> tab → <strong>New repository variable</strong> — add these three:</p>
+<table>
+  <tr><th>Variable name</th><th>Value</th></tr>
+  <tr><td><code>AZURE_SIGNING_ENDPOINT</code></td><td>your endpoint, e.g. <code>https://wus2.codesigning.azure.net/</code></td></tr>
+  <tr><td><code>AZURE_SIGNING_ACCOUNT</code></td><td>your account name — <strong>this is the on-switch</strong></td></tr>
+  <tr><td><code>AZURE_SIGNING_CERT_PROFILE</code></td><td>your profile name</td></tr>
+</table>
+
+<h3 class="step">Step 5 — Test it</h3>
+<p>Create a throwaway tag (in GitHub Desktop or on the site), e.g. <code>v0.5.1-test</code>. Watch the <strong>Actions</strong> tab — the <em>"Sign installer (Azure Artifact Signing)"</em> step should <strong>run</strong>, not say "skipped." Delete the draft release and tag afterward.</p>
+<div class="callout"><span class="tag">GOOD TO KNOW</span> Azure signing usually removes the SmartScreen warning immediately because it chains to a Microsoft-trusted authority. Occasionally the warning briefly returns when Azure rotates to a new back-end authority that hasn't built reputation yet — uncommon, not something you control.</div>
+
+<!-- ============================ PART 2 ============================ -->
+<h2>Part 2 — macOS (Apple Developer ID + Notarization)</h2>
+<p>You paid the <strong>$99/year</strong> membership. Everything here is done <strong>on a Mac</strong>. More moving parts than Windows, but each is small.</p>
+<p class="small">Vocabulary: <strong>Developer ID Application certificate</strong> = the ID card that signs apps for distribution outside the Mac App Store. <strong>Keychain Access</strong> = the built-in Mac app that stores certificates/keys. <strong>Notarization</strong> = Apple scans your signed app and returns a ticket. <strong>Stapling</strong> = attaching that ticket so it's trusted offline. <strong>Hardened runtime</strong> = a stricter mode Apple requires; it blocks a few things .NET needs unless you allow them (the "entitlements" file — already in the repo at <code>build/entitlements.mac.plist</code>). <strong>.p12</strong> = your certificate + private key in one password-protected file. <strong>.p8</strong> = the API key used to log in to notarization. <strong>base64</strong> = turning a binary file into plain text so it can be pasted into a GitHub secret.</p>
+
+<h3 class="step">Step 1 — Find your Team ID</h3>
+<ol>
+  <li>Go to <strong>developer.apple.com/account</strong> → sign in → <strong>Membership details</strong>.</li>
+  <li>Copy your <strong>Team ID</strong> — 10 characters like <code>AB12CD34EF</code>. Your full signing name will be:<br><code>Developer ID Application: James Rospopo (AB12CD34EF)</code></li>
+</ol>
+
+<h3 class="step">Step 2 — Create the Developer ID Application certificate (easiest via Xcode)</h3>
+<ol>
+  <li>Install <strong>Xcode</strong> from the Mac App Store (large; let it finish).</li>
+  <li>Xcode → <strong>Settings…</strong> → <strong>Accounts</strong> → <strong>+</strong> → <strong>Apple ID</strong> → sign in.</li>
+  <li>Select your team → <strong>Manage Certificates…</strong> → <strong>+</strong> → <strong>Developer ID Application</strong>.</li>
+  <li>It appears in the list. The certificate and its <strong>private key</strong> are now in your login keychain.</li>
+</ol>
+<p class="small">No-Xcode alternative: Keychain Access → Certificate Assistant → <em>Request a Certificate…</em> (save to disk) → upload the request at <strong>developer.apple.com/account/resources/certificates</strong> → choose <strong>Developer ID Application</strong> → download the <code>.cer</code> → double-click to install.</p>
+
+<h3 class="step">Step 3 — Export the certificate as a <code>.p12</code></h3>
+<ol>
+  <li>Keychain Access → <strong>login</strong> keychain → <strong>My Certificates</strong>.</li>
+  <li>Find <strong>Developer ID Application: James Rospopo (…)</strong>. Expand the triangle — you should see a <strong>private key</strong> underneath. (No key = the cert was made on a different Mac; redo Step 2 here.)</li>
+  <li>Hold <strong>⌘</strong> and select <strong>both</strong> the certificate row and the private key row.</li>
+  <li>Right-click → <strong>Export 2 items…</strong> → format <strong>Personal Information Exchange (.p12)</strong> → save as <code>DeveloperID.p12</code>.</li>
+  <li>Set a password (this becomes the <code>APPLE_CERT_PASSWORD</code> secret). Enter your Mac login password if asked → <strong>Allow</strong>.</li>
+  <li>Turn it into text for GitHub (Terminal):</li>
+</ol>
+<pre><code>base64 -i ~/Desktop/DeveloperID.p12 | pbcopy</code></pre>
+<p class="small">Nothing prints — that's normal; it copies the encoded cert to your clipboard. Re-run it right before pasting so it's fresh.</p>
+
+<h3 class="step">Step 4 — Create an App Store Connect API key (for notarization)</h3>
+<ol>
+  <li><strong>appstoreconnect.apple.com</strong> → <strong>Users and Access</strong> → <strong>Integrations</strong> tab → <strong>App Store Connect API</strong> → <strong>Team Keys</strong>.</li>
+  <li><strong>+</strong> (Generate API Key) → name it <code>notarization</code> → Access <strong>Developer</strong> → <strong>Generate</strong>.</li>
+  <li><strong>Download the <code>AuthKey_XXXXXXXXXX.p8</code> now</strong> — Apple lets you download it only once.</li>
+  <li>Note two IDs on that page: the <strong>Key ID</strong> (10 chars, also in the filename) and the <strong>Issuer ID</strong> (a long UUID near the top).</li>
+  <li>Encode it (Terminal): <code>base64 -i ~/Downloads/AuthKey_XXXXXXXXXX.p8 | pbcopy</code></li>
+</ol>
+
+<h3 class="step">Step 5 — Prove it works by hand (once)</h3>
+<p>In the repo folder on your Mac, build the app bundle, then sign / notarize / staple. This confirms your identity string and key before we rely on the automation.</p>
+<pre><code>bash scripts/make-macos-app.sh osx-arm64
+
+ID="Developer ID Application: James Rospopo (AB12CD34EF)"   # your Team ID
+APP="artifacts/installers/APRS Command.app"
+
+# Sign inner files first, main program next, the bundle LAST. Never use --deep.
+find "$APP/Contents/MacOS" -name "*.dylib" -exec \
+  codesign --force --options runtime --timestamp \
+    --entitlements build/entitlements.mac.plist --sign "$ID" {} \;
+codesign --force --options runtime --timestamp \
+  --entitlements build/entitlements.mac.plist --sign "$ID" "$APP/Contents/MacOS/Aprs.Desktop"
+codesign --force --options runtime --timestamp \
+  --entitlements build/entitlements.mac.plist --sign "$ID" "$APP"
+codesign --verify --strict --verbose=2 "$APP"
+
+# Notarize (uses your Step 4 key), then staple the ticket.
+ditto -c -k --keepParent "$APP" "APRSCommand.zip"
+xcrun notarytool submit "APRSCommand.zip" \
+  --key ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
+  --key-id &lt;KEY_ID&gt; --issuer &lt;ISSUER_ID&gt; --wait
+xcrun stapler staple "$APP"
+
+# Repackage the stapled app into the .dmg (does NOT rebuild it unsigned), then sign the .dmg.
+bash scripts/make-macos-app.sh osx-arm64 --dmg-only
+codesign --force --timestamp --sign "$ID" "artifacts/installers/APRSCommand-osx-arm64.dmg"</code></pre>
+<p class="small">If notarization says <strong>Invalid</strong>, get the reason: <code>xcrun notarytool log &lt;submission-id&gt; --key … --key-id … --issuer …</code>. Almost always a missing <code>--options runtime</code>, an unsigned file, or a missing entitlement.</p>
+
+<h3 class="step">Step 6 — Add the six Mac secrets to GitHub</h3>
+<p>The CI job is <strong>already written and dormant</strong> — it self-gates on <code>APPLE_SIGNING_IDENTITY</code>, so builds stay unsigned until you add these (GitHub → Settings → Secrets and variables → Actions → <strong>Secrets</strong>):</p>
+<table>
+  <tr><th>Secret</th><th>What to paste</th></tr>
+  <tr><td><code>APPLE_SIGNING_IDENTITY</code></td><td><code>Developer ID Application: James Rospopo (TEAMID)</code> — the on-switch</td></tr>
+  <tr><td><code>APPLE_CERT_P12_BASE64</code></td><td>the base64 from Step 3</td></tr>
+  <tr><td><code>APPLE_CERT_PASSWORD</code></td><td>the <code>.p12</code> password from Step 3</td></tr>
+  <tr><td><code>APPLE_API_KEY_P8_BASE64</code></td><td>the base64 from Step 4</td></tr>
+  <tr><td><code>APPLE_API_KEY_ID</code></td><td>the Key ID from Step 4</td></tr>
+  <tr><td><code>APPLE_API_ISSUER_ID</code></td><td>the Issuer ID from Step 4</td></tr>
+</table>
+<p>Then push a throwaway tag (e.g. <code>v0.5.1-test</code>) and confirm the <em>"Sign + notarize + staple"</em> step runs.</p>
+
+<div class="callout warn"><strong>Apple gotchas (each has cost people an evening):</strong>
+<ul style="margin-top:1.5mm;margin-bottom:0;">
+  <li>Sign inner files first, the bundle last. <strong>Never <code>--deep</code>.</strong></li>
+  <li><code>--options runtime</code> <strong>and</strong> <code>--timestamp</code> are both mandatory.</li>
+  <li>The <code>.p8</code> key downloads only once. Lose it → revoke and make a new one.</li>
+  <li>Staple the app <strong>before</strong> packaging the <code>.dmg</code>, or offline users still get a warning.</li>
+  <li>The Developer ID cert lasts ~5 years, but the <strong>$99 membership is annual</strong> — if it lapses, signing/notarization stop.</li>
+</ul>
+</div>
+
+<!-- ============================ PART 3 ============================ -->
+<h2>Part 3 — Reusing both for your other projects</h2>
+<p class="lead">Short answer: <strong>yes — you set up the accounts once and reuse them for every project.</strong> You do <em>not</em> pay again, re-validate your identity, or make new certificates per project. You reuse the same credentials and only wire up each new project's build.</p>
+
+<h3>Apple — one membership signs everything</h3>
+<ul>
+  <li>Your <strong>$99/year membership</strong> covers <strong>all</strong> your apps — no per-app fee.</li>
+  <li>The <strong>same Developer ID Application certificate</strong> (the same <code>.p12</code>) signs any number of apps.</li>
+  <li>The <strong>same App Store Connect API key</strong> (the same <code>.p8</code>, Key ID, Issuer ID) notarizes any app.</li>
+  <li>Your <strong>Team ID</strong> and the <strong>signing identity string</strong> are the same everywhere.</li>
+</ul>
+<p><strong>To sign a new macOS project:</strong></p>
+<ol>
+  <li>Add the same six <code>APPLE_*</code> secrets to that project's GitHub repo (copy the exact same values).</li>
+  <li>Add the sign+notarize+staple job to that project's release workflow — copy the <code>installer-macos</code> job from APRS Command's <code>release.yml</code> and change only the app-specific bits: the app/bundle name and the build-output paths.</li>
+  <li>Give each app its <strong>own unique bundle identifier</strong> in its <code>Info.plist</code> — e.g. <code>com.ke4con.aprs-command</code>, <code>com.ke4con.fieldcommand</code>. The certificate doesn't care what the bundle ID is; it just has to be unique per app.</li>
+  <li>The entitlements file is reusable as-is <strong>for .NET/Avalonia apps</strong>. A different framework (e.g. Electron, native) may need different entitlements — but for your .NET apps it's identical.</li>
+</ol>
+<div class="callout ok">Reality: signing a second .NET macOS app is a copy-paste of the CI job plus the same six secrets. Fifteen minutes, not an afternoon.</div>
+
+<h3>Azure — one signing account signs everything</h3>
+<ul>
+  <li>Your <strong>identity validation</strong> is done once and covers the account — never repeated.</li>
+  <li>One <strong>Artifact Signing account</strong> + one <strong>certificate profile</strong> can sign binaries for any number of your projects.</li>
+  <li>The <strong>same service principal</strong> (the same <code>appId</code>/<code>password</code>/<code>tenant</code>) works for every repo. (You can make a separate one per project if you prefer isolation, but you don't have to.)</li>
+  <li>You pay for the <strong>signing plan</strong> (~$9.99/mo Basic), shared across all projects. Basic includes a generous monthly signing quota — plenty for personal release cadence.</li>
+</ul>
+<p><strong>To sign a new Windows project:</strong></p>
+<ol>
+  <li>Add the same three secrets (<code>AZURE_TENANT_ID</code> / <code>AZURE_CLIENT_ID</code> / <code>AZURE_CLIENT_SECRET</code>) and three variables (<code>AZURE_SIGNING_ENDPOINT</code> / <code>AZURE_SIGNING_ACCOUNT</code> / <code>AZURE_SIGNING_CERT_PROFILE</code>) to that project's repo — the exact same values.</li>
+  <li>Copy the <em>"Sign installer (Azure Artifact Signing)"</em> step from APRS Command's <code>release.yml</code> into that project's workflow, and point <code>files-folder</code> at where that project puts its <code>.exe</code>.</li>
+</ol>
+
+<div class="callout"><span class="tag">TIME-SAVER</span> If you keep several projects, put a <strong>GitHub Organization</strong> around them and add each secret/variable <strong>once at the organization level</strong> (Settings → Secrets and variables → Actions → <em>New organization secret</em>), shared to all repos. Then a new project inherits the credentials automatically and you skip re-adding six values each time. (Personal accounts don't have org-level secrets — you add them per-repo; a free org fixes that.)</div>
+
+<h3>Per-project checklist (either platform)</h3>
+<table>
+  <tr><th>Reused as-is (set up once)</th><th>New per project</th></tr>
+  <tr>
+    <td>
+      • Apple membership, Developer ID cert (<code>.p12</code>), API key (<code>.p8</code>), Team/Key/Issuer IDs<br>
+      • Azure account, certificate profile, identity validation, service principal<br>
+      • The six <code>APPLE_*</code> / six Azure secret+variable <em>values</em><br>
+      • The .NET entitlements file
+    </td>
+    <td>
+      • Add the secrets/variables to the new repo (or inherit from a GitHub org)<br>
+      • Copy the signing job/step into the new repo's workflow<br>
+      • Adjust app name, bundle identifier, and build-output paths<br>
+      • Push a <code>-test</code> tag to confirm the step runs
+    </td>
+  </tr>
+</table>
+
+<hr>
+<p class="small"><strong>Security reminder:</strong> real certificates, keys, passwords, <code>.p12</code>/<code>.p8</code> files, and secret values belong <strong>only</strong> in GitHub Actions secrets and your personal password manager — <strong>never</strong> committed to a repository. This guide contains names and steps, never values. The full markdown source lives at <code>docs/release/CODE_SIGNING_SETUP.md</code>.</p>
+
+</body>
+</html>
