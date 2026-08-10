@@ -476,14 +476,14 @@ async function fetchStations() {
       seen.add(s.callsign);
       const icon = L.divIcon({
         className:'',
-        html:`<div style="background:#1d4ed8;color:#fff;padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.5)">${aprsSymbolEmoji(s.symbol)} ${s.callsign}</div>`,
+        html:`<div style="background:#1d4ed8;color:#fff;padding:2px 5px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.5)">${aprsSymbolEmoji(s.symbol)} ${esc(s.callsign)}</div>`,
         iconAnchor:[0,0]
       });
       if (markers[s.callsign]) {
         markers[s.callsign].setLatLng([s.lat, s.lng]).setIcon(icon);
       } else {
         markers[s.callsign] = L.marker([s.lat, s.lng], {icon})
-          .bindPopup(`<b>${s.callsign}</b><br>${s.comment}<br><small>${timeAgo(s.lastHeard)}</small>`)
+          .bindPopup(`<b>${esc(s.callsign)}</b><br>${esc(s.comment)}<br><small>${timeAgo(s.lastHeard)}</small>`)
           .addTo(map);
       }
     }
@@ -497,6 +497,10 @@ async function fetchStations() {
   } catch(e) {}
 }
 
+// Escape any packet-derived string before it enters innerHTML (audit H1: a station comment/callsign
+// like `<img src=x onerror=...>` would otherwise run JS in the operator's phone browser).
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
 function renderStations(stations) {
   const el = document.getElementById('stations-list');
   if (!stations.length) { el.innerHTML = '<div class="empty">No stations heard yet.</div>'; return; }
@@ -504,8 +508,8 @@ function renderStations(stations) {
     `<div class="station-row" onclick="focusStation(${s.lat},${s.lng})">
       <div>${aprsSymbolEmoji(s.symbol)}</div>
       <div style="flex:1">
-        <div class="callsign">${s.callsign}</div>
-        ${s.comment ? `<div class="comment">${s.comment}</div>` : ''}
+        <div class="callsign">${esc(s.callsign)}</div>
+        ${s.comment ? `<div class="comment">${esc(s.comment)}</div>` : ''}
         <div class="meta">${timeAgo(s.lastHeard)}${s.speed ? ' · ' + s.speed + ' kts' : ''}</div>
       </div>
     </div>`
@@ -529,8 +533,8 @@ async function fetchNet() {
       `<div class="net-row">
         <div style="font-size:18px">${s.statusEmoji || '📍'}</div>
         <div>
-          <div class="callsign">${s.callsign}</div>
-          <div class="meta">${s.checkInStatus || ''} · ${s.resourceStatus || ''}</div>
+          <div class="callsign">${esc(s.callsign)}</div>
+          <div class="meta">${esc(s.checkInStatus || '')} · ${esc(s.resourceStatus || '')}</div>
         </div>
       </div>`
     ).join('');
@@ -547,9 +551,9 @@ async function fetchMessages() {
     }
     el.innerHTML = d.messages.map(m =>
       `<div class="msg-row">
-        <div class="msg-from">${m.direction === 'in' ? '← ' : '→ '}${m.other}</div>
-        <div class="msg-body">${m.body}</div>
-        <div class="msg-time">${m.time}</div>
+        <div class="msg-from">${m.direction === 'in' ? '← ' : '→ '}${esc(m.other)}</div>
+        <div class="msg-body">${esc(m.body)}</div>
+        <div class="msg-time">${esc(m.time)}</div>
       </div>`
     ).join('');
   } catch(e) {}
@@ -571,7 +575,7 @@ async function fetchStats() {
       <div style="padding:12px 16px;font-size:13px;font-weight:600;color:#94a3b8;margin-top:4px">Top Stations</div>
       ${(d.topStations || []).map(s =>
         `<div class="station-row">
-          <div class="callsign">${s.callsign}</div>
+          <div class="callsign">${esc(s.callsign)}</div>
           <div style="flex:1">
             <div class="bar-wrap"><div class="bar" style="width:${Math.round(s.count/maxCount*100)}%"></div></div>
           </div>

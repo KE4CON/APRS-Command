@@ -55,6 +55,22 @@ public class WebSocketEventStreamServiceTests
     }
 
     [Fact]
+    public async Task RequireToken_WithNoTokenConfigured_RejectsAnyToken()
+    {
+        // Audit H2: fail CLOSED. RequireToken=true but no configured token previously short-circuited the
+        // guard and accepted any non-empty token. It must reject instead.
+        var service = CreateService(configuration: EnabledConfiguration() with { ApiTokenReference = null });
+        await service.StartAsync();
+
+        var result = await service.ConnectClientAsync(
+            new WebSocketEventStreamClientRequest("/ws/events", Token: "anything"),
+            new FakeClient("attacker"));
+
+        Assert.Equal(401, result.StatusCode);
+        Assert.Empty(service.ConnectedClients);
+    }
+
+    [Fact]
     public async Task AuthorizedClientCanConnect()
     {
         var service = CreateService();

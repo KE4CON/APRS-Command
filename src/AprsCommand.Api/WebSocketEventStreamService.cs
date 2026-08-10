@@ -122,8 +122,11 @@ public sealed class WebSocketEventStreamService : IWebSocketEventStreamService
                 return WebSocketEventStreamConnectionResult.Rejected(401, "WebSocket token is required.");
             }
 
-            if (!string.IsNullOrWhiteSpace(configuration.ApiTokenReference)
-                && !string.Equals(request.Token, configuration.ApiTokenReference, StringComparison.Ordinal))
+            // Fail CLOSED (audit H2): a token is required, so a missing/empty configured token must reject,
+            // not accept any non-empty token. Compare in constant time to avoid a timing oracle, mirroring
+            // the REST API's fail-closed logic.
+            if (string.IsNullOrWhiteSpace(configuration.ApiTokenReference)
+                || !FixedTimeTokenEquals(request.Token, configuration.ApiTokenReference))
             {
                 return WebSocketEventStreamConnectionResult.Rejected(401, "WebSocket token is invalid.");
             }
@@ -489,6 +492,14 @@ public sealed class WebSocketEventStreamService : IWebSocketEventStreamService
         return string.Equals(address, "localhost", StringComparison.OrdinalIgnoreCase)
             || string.Equals(address, "127.0.0.1", StringComparison.OrdinalIgnoreCase)
             || string.Equals(address, "::1", StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Constant-time token comparison to avoid a timing side channel (audit H2).
+    private static bool FixedTimeTokenEquals(string provided, string expected)
+    {
+        var providedBytes = System.Text.Encoding.UTF8.GetBytes(provided);
+        var expectedBytes = System.Text.Encoding.UTF8.GetBytes(expected);
+        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(providedBytes, expectedBytes);
     }
 
     private static string NormalizePath(string path)
