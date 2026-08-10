@@ -72,6 +72,27 @@ public sealed class AgwpeTests
     }
 
     [Fact]
+    public void AgwpeFrameCodec_PayloadSplitAcrossReads_WaitsInsteadOfDesyncing()
+    {
+        // audit transport H1: a valid frame whose payload straddles a TCP read boundary (so far fewer
+        // bytes are buffered than the declared payload length) must be treated as INCOMPLETE and waited
+        // on, not misclassified as corrupt and emitted as a bogus header-only frame.
+        var codec = new AgwpeFrameCodec();
+        var payload = Encoding.ASCII.GetBytes(new string('X', 100));
+        var complete = codec.Encode('K', 0, "N0CALL", "APRS", payload);
+
+        // Only the 36-byte header + 4 payload bytes have arrived; length field says 100.
+        var partial = complete.Take(AgwpeFrameCodec.HeaderLength + 4).ToArray();
+
+        Assert.Equal(-1, codec.FindLastCompleteFrameEnd(partial));
+        Assert.Empty(codec.DecodeMany(partial, DateTimeOffset.UtcNow, "test"));
+
+        // Once the whole frame arrives it decodes as exactly one frame.
+        var full = codec.DecodeMany(complete, DateTimeOffset.UtcNow, "test");
+        Assert.Single(full);
+    }
+
+    [Fact]
     public void AgwpeFrameCodec_DecodesFakeReceivedAprsPacket()
     {
         var codec = new AgwpeFrameCodec();

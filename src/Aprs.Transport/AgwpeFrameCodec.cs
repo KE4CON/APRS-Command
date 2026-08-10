@@ -7,6 +7,12 @@ public sealed class AgwpeFrameCodec
 {
     public const int HeaderLength = 36;
 
+    // Upper bound on a single AGWPE frame's payload. AGWPE carries small AX.25 packets (well under 1 KB);
+    // anything beyond this is corrupt/hostile. Used to distinguish a genuinely bad length from a valid
+    // frame whose payload simply has not fully arrived yet (audit transport H1), and to keep
+    // HeaderLength + length from overflowing to a negative frameLength.
+    private const int MaxPayloadLength = 65536;
+
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
 
     public AgwpeFrameCodec()
@@ -96,11 +102,11 @@ public sealed class AgwpeFrameCodec
         while (offset + HeaderLength <= bytes.Count)
         {
             var length = BinaryPrimitives.ReadInt32LittleEndian(bytes.Skip(offset + 28).Take(4).ToArray());
-            // A negative length, or one larger than the whole buffer, is corrupt/hostile: emit a
-            // header-only frame carrying the validation error and stop. Bounding by bytes.Count also
-            // stops HeaderLength + length from overflowing to a negative frameLength, which would
-            // otherwise march the offset backwards and spin this loop forever.
-            if (length < 0 || length > bytes.Count)
+            // A negative or absurdly large length is corrupt/hostile: emit a header-only frame carrying
+            // the validation error and stop. The cap (not bytes.Count) is what distinguishes corruption
+            // from a valid frame whose payload has not fully arrived yet — that case is handled by the
+            // incomplete-frame check below, which simply waits for more bytes.
+            if (length < 0 || length > MaxPayloadLength)
             {
                 frames.Add(Decode(bytes.Skip(offset).Take(HeaderLength).ToArray(), timestampUtc, packetSource));
                 break;
@@ -109,7 +115,7 @@ public sealed class AgwpeFrameCodec
             var frameLength = HeaderLength + length;
             if (offset + frameLength > bytes.Count)
             {
-                break;
+                break; // payload not fully arrived yet — wait for the rest of the frame
             }
 
             frames.Add(Decode(bytes.Skip(offset).Take(frameLength).ToArray(), timestampUtc, packetSource));
@@ -143,9 +149,9 @@ public sealed class AgwpeFrameCodec
         while (offset + HeaderLength <= bytes.Count)
         {
             var length = BinaryPrimitives.ReadInt32LittleEndian(bytes.Skip(offset + 28).Take(4).ToArray());
-            // See DecodeMany: bound the length to prevent both a spin on overflow and treating a
-            // corrupt oversize length as a "complete" frame.
-            if (length < 0 || length > bytes.Count)
+            // See DecodeMany: only a negative/absurd length is corrupt; a valid frame whose payload has
+            // not fully arrived is handled by the incomplete-frame break below (keep buffering).
+            if (length < 0 || length > MaxPayloadLength)
             {
                 return offset + HeaderLength - 1;
             }
@@ -153,7 +159,7 @@ public sealed class AgwpeFrameCodec
             var frameLength = HeaderLength + length;
             if (offset + frameLength > bytes.Count)
             {
-                break;
+                break; // incomplete frame — do not treat as complete; wait for more bytes
             }
 
             lastEnd = offset + frameLength - 1;
