@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cross-Platform Smoke Test</title>
+<style>
+  @page { size: Letter; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, Arial, sans-serif; color: #1f2933; font-size: 10.4pt; line-height: 1.46; }
+  h1 { font-size: 21pt; color: #0b4a8f; margin: 0 0 2mm; }
+  h2 { font-size: 14pt; color: #0b4a8f; border-bottom: 2px solid #0b4a8f; padding-bottom: 1.2mm; margin: 7mm 0 2.5mm; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; color: #14539a; margin: 4.5mm 0 1.5mm; page-break-after: avoid; }
+  p { margin: 0 0 2.2mm; }
+  ul { margin: 0 0 2.5mm; padding-left: 5.5mm; }
+  li { margin: 0 0 1.2mm; }
+  code { font-family: Consolas, "Courier New", monospace; background: #eef2f7; padding: 0.4mm 1.1mm; border-radius: 2px; font-size: 9.2pt; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 3mm; font-size: 9.2pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #cbd5e1; padding: 1.5mm 2mm; text-align: left; vertical-align: top; }
+  th { background: #e8f0fb; color: #0b4a8f; }
+  th.os, td.os { text-align: center; width: 12mm; }
+  .lead { font-size: 10.8pt; color: #45525f; margin-bottom: 3.5mm; }
+  .callout { border-left: 4px solid #0b4a8f; background: #f2f7fd; padding: 2.2mm 3.5mm; margin: 2.5mm 0; border-radius: 0 4px 4px 0; page-break-inside: avoid; }
+  .warn { border-left-color: #b45309; background: #fff7ed; }
+  .ok { border-left-color: #15803d; background: #f0fdf4; }
+  .cover { text-align: center; padding-top: 34mm; page-break-after: always; }
+  .cover .sub { color: #45525f; font-size: 12.5pt; margin-top: 3mm; }
+  .cover .meta { color: #64748b; font-size: 10pt; margin-top: 18mm; }
+  .tag { display: inline-block; background: #0b4a8f; color: #fff; font-size: 7.6pt; padding: 0.3mm 1.8mm; border-radius: 3px; vertical-align: middle; }
+  .why { color: #64748b; font-size: 8.8pt; }
+  .small { font-size: 8.8pt; color: #64748b; }
+  .box { display:inline-block; width:3.4mm; height:3.4mm; border:1px solid #64748b; border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>Cross-Platform Smoke Test</h1>
+  <div class="sub">What you must test on each OS — and what you can safely assume from one codebase</div>
+  <div class="meta">
+    APRS Command &nbsp;·&nbsp; James Rospopo (KE4CON)<br>
+    Companion to the full click-through (<code>FINAL_RELEASE_VALIDATION_CHECKLIST.md</code>)
+  </div>
+</div>
+
+<h2>The idea in one paragraph</h2>
+<p class="lead">APRS Command is one C#/.NET + Avalonia codebase, so the <strong>logic and most of the UI are
+genuinely portable</strong> — test those <em>once</em>. But a handful of features touch the operating system
+directly, and <strong>those are where cross-platform apps break</strong>. This page is <em>only</em> those
+OS-boundary items. Run the full click-through once (on your dev machine), then run this short smoke on each
+OS you intend to ship — <strong>especially with the radio connected</strong>, since serial is the riskiest
+surface.</p>
+
+<div class="callout ok"><strong>Safe to assume portable — do NOT re-test per OS:</strong> APRS packet parsing,
+all math/business logic, the map and most UI (Avalonia → Skia → Mapsui render the same everywhere), and the
+network transports (APRS-IS, KISS-TCP, AGWPE — plain sockets). If these work on one OS, they work on all.</div>
+
+<h2>Before you start on Linux / Raspberry Pi (one-time setup)</h2>
+<p>Two gotchas will otherwise look like "the app is broken" when it's really the OS:</p>
+<ul>
+  <li><span class="tag">SERIAL</span> Add your user to the serial group, then log out/in:
+      <code>sudo usermod -aG dialout $USER</code>. Without this, the radio's port won't open (permission
+      denied) even though it's plugged in. (Some distros use <code>uucp</code> instead of <code>dialout</code>.)</li>
+  <li><span class="tag">VOICE</span> Install the Linux/Pi speech engine: <code>sudo apt install espeak-ng</code>.
+      It is not preinstalled on a fresh system, so voice alerts silently do nothing until it's there.</li>
+</ul>
+
+<h2>The per-OS smoke checklist</h2>
+<p class="small">Run each row on each OS you support. Columns: <strong>Win</strong> = Windows x64 ·
+<strong>Mac</strong> = macOS (test one of Intel/Apple-Silicon thoroughly, spot-check the other) ·
+<strong>Lin</strong> = Linux x64 · <strong>Pi</strong> = Raspberry Pi (linux-arm64). Tick when it works.</p>
+
+<table>
+  <tr>
+    <th>#</th><th>Check</th>
+    <th class="os">Win</th><th class="os">Mac</th><th class="os">Lin</th><th class="os">Pi</th>
+  </tr>
+  <tr>
+    <td>1</td>
+    <td><strong>App launches and the window renders.</strong> No crash on start; no clipped/overlapping
+      text; native <strong>file-picker dialogs</strong> open (Import GPX/KML, Export).
+      <div class="why">Avalonia is portable but fonts, DPI scaling, and native dialogs differ per OS.</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><strong>Serial port discovery.</strong> Your radio's port appears in the connection dropdown
+      (<code>COM3</code> on Windows; <code>/dev/tty*</code> on Linux/Pi; <code>/dev/cu.*</code> on macOS).
+      <div class="why">Port enumeration is OS-specific code (<code>SerialPortDiscovery</code>).</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><strong>Radio connects (serial open + receive).</strong> Open the KISS/serial (or CI-V) port; confirm
+      the connection state goes to <em>Connected</em> and received packets flow in.
+      <div class="why"><code>System.IO.Ports</code> behaves differently per OS and is historically weakest on
+      Linux/macOS — this is the #1 thing that won't "just work" from a Windows test.</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><strong>★ Radio TRANSMIT on a dummy load / low power.</strong> Enable RF transmit for the port, key a
+      beacon, and confirm the TNC/rig actually transmits.
+      <div class="why">The transmit-<em>safety gates</em> are portable code, but the physical serial write to
+      the TNC is OS-specific. Do this per OS with hardware. Dummy load or low power only.</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><strong>GPS over serial (if you use an external NMEA GPS).</strong> The receiver is found and a fix
+      updates your position.
+      <div class="why">Same serial layer as the radio (<code>SerialNmeaGpsSource</code>).</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><strong>Voice alerts speak.</strong> Trigger a voice alert and hear it.
+      <div class="why">Three different engines: System.Speech (Win), <code>say</code> (Mac),
+      <code>espeak-ng</code> (Linux/Pi — install it first, see above).</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td><strong>Sound alerts play</strong> (chimes/beeps) and audio-device selection works.
+      <div class="why">Audio playback + device enumeration have OS branches
+      (<code>SoundAlertService</code>, <code>AudioDeviceDiscovery</code>).</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td><strong>Managed Direwolf modem launches</strong> (only if you use it). Starting the managed modem
+      spawns Direwolf and connects via loopback KISS.
+      <div class="why"><code>Process.Start</code> of <code>direwolf.exe</code> vs <code>direwolf</code>;
+      the binary must be on PATH per OS.</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>9</td>
+    <td><strong>Mobile Companion / FieldCommand feed is reachable from a phone/another device</strong> on the
+      LAN (open the shown URL; the map/data loads).
+      <div class="why"><code>HttpListener</code> binding to a non-localhost address differs per OS (Windows
+      can need a URL-ACL or elevation; Linux/macOS bind freely).</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>10</td>
+    <td><strong>Settings &amp; logs persist across a restart.</strong> Change a setting, restart, confirm it
+      stuck; confirm packet/event logs are written.
+      <div class="why">Data lands in a different folder per OS (<code>GetFolderPath(ApplicationData)</code>),
+      and Linux filesystems are <strong>case-sensitive</strong> — a path that works on Windows can fail on
+      Linux.</div></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+    <td class="os"><span class="box"></span></td><td class="os"><span class="box"></span></td>
+  </tr>
+  <tr>
+    <td>11</td>
+    <td><strong>Pi-only: GPIO PTT</strong> (if you wire PTT to a GPIO pin). The pin toggles on transmit.
+      <div class="why"><code>GpioPttController</code> is Raspberry-Pi-specific hardware code that only exists
+      on that target.</div></td>
+    <td class="os" style="background:#f1f5f9">—</td><td class="os" style="background:#f1f5f9">—</td>
+    <td class="os" style="background:#f1f5f9">—</td><td class="os"><span class="box"></span></td>
+  </tr>
+</table>
+
+<div class="callout warn"><span class="tag">HIGHEST RISK</span> Rows <strong>2–5</strong> (everything serial —
+the radio and GPS) are the most likely to behave differently from your Windows test. If you only have time for
+a few checks on a given OS, do those. The rest of the app riding on top is already portable.</div>
+
+<h2>How much to test where</h2>
+<table>
+  <tr><th>Platform</th><th>How much</th></tr>
+  <tr><td><strong>Windows (dev box)</strong></td><td>Full click-through + full radio test. This is your baseline.</td></tr>
+  <tr><td><strong>macOS</strong> (one of Intel / Apple Silicon)</td><td>This whole smoke list, radio included. Spot-check the <em>other</em> Mac arch for launch + one serial connect.</td></tr>
+  <tr><td><strong>Linux x64</strong></td><td>This whole smoke list (after the dialout + espeak-ng setup).</td></tr>
+  <tr><td><strong>Raspberry Pi (ARM64)</strong></td><td>First-class target — run the whole list <em>on the actual Pi</em>, plus row 11 (GPIO PTT) if used. Don't infer it from x86 Linux: different arch, different hardware, most likely to be missing system deps.</td></tr>
+</table>
+
+<div class="callout"><strong>Turn failures into permanent fixes.</strong> Anything that fails here is a real
+bug — capture the OS + exact symptom and it becomes a code fix plus a regression test, same as everything
+else. OS-specific bugs love to come back, so a test that pins the fixed behavior is worth the few minutes.</div>
+
+<p class="small" style="margin-top:6mm;">Source: <code>docs/release/CROSS_PLATFORM_SMOKE_TEST.html</code> (regenerate the PDF via headless Chrome/Edge <code>--print-to-pdf</code>). Companion to <code>FINAL_RELEASE_VALIDATION_CHECKLIST.md</code>.</p>
+
+</body>
+</html>
