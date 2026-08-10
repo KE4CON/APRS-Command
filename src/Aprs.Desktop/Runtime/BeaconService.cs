@@ -18,6 +18,10 @@ public sealed class BeaconService : IAsyncDisposable
     private readonly BeaconScheduler scheduler;
     private readonly ITransmitInhibitGate? inhibitGate;
     private readonly ILogService? log;
+    // Guards aprsIsClient + lastConnectionSignature. ApplySettings runs from the UI thread (settings save)
+    // AND the GPS background thread (position write-back), which previously rebuilt the socket every fix.
+    private readonly object clientLock = new();
+    private string? lastConnectionSignature;
     private IAprsIsClient? aprsIsClient;
 
     /// <summary>The transmit-capable APRS-IS client, if one is configured. Used by the message ACK coordinator.</summary>
@@ -75,7 +79,11 @@ public sealed class BeaconService : IAsyncDisposable
             schedulerConfig,
             rfBeaconClient: rfBeaconClient);
 
-        return new BeaconService(profileService, scheduler, aprsIsClient, inhibitGate, log);
+        var service = new BeaconService(profileService, scheduler, aprsIsClient, inhibitGate, log);
+        // Seed the signature so the FIRST ApplySettings (e.g. a GPS position write-back) doesn't needlessly
+        // rebuild the client that CreateFromSettings just built for the same connection config.
+        service.lastConnectionSignature = ComputeConnectionSignature(settings);
+        return service;
     }
 
     /// <summary>
@@ -87,26 +95,34 @@ public sealed class BeaconService : IAsyncDisposable
         var station = settings.Station;
         profileService.UpdateProfile(ToLocalProfile(station), DateTimeOffset.UtcNow);
 
-        // Rebuild the APRS-IS transmit client if the connection configuration changed
-        // (e.g. a passcode was just entered). Disconnect AND dispose the old client so its
-        // CancellationTokenSource, receive-loop task and socket are released — previously it was
-        // only fire-and-forget disconnected and then dropped, leaking one client per settings save.
-        var oldClient = aprsIsClient;
-        if (oldClient is not null)
+        // Only tear down and rebuild the APRS-IS client when connection-relevant config actually changed
+        // (server/passcode/callsign/filter/transmit flags). ApplySettings is ALSO called on every GPS
+        // position write-back (~1 Hz for a mobile station); rebuilding a socket + receive loop each time
+        // thrashed the connection and orphaned the client the message coordinator captured (audit deep pass).
+        // Position/comment/interval changes must NOT rebuild — they only affect beacon content + scheduler.
+        var signature = ComputeConnectionSignature(settings);
+        lock (clientLock)
         {
-            _ = DisposeReplacedClientAsync(oldClient);
-        }
+            if (signature != lastConnectionSignature)
+            {
+                lastConnectionSignature = signature;
 
-        var newClient = BuildAprsIsClient(settings, inhibitGate);
-        aprsIsClient  = newClient;
+                // Disconnect AND dispose the old client so its CTS, receive-loop task and socket are released.
+                var oldClient = aprsIsClient;
+                if (oldClient is not null)
+                {
+                    _ = DisposeReplacedClientAsync(oldClient);
+                }
 
-        // Re-wire the scheduler to use the new client.
-        scheduler.ReplaceAprsIsClient(newClient ?? new NullAprsIsClient());
+                var newClient = BuildAprsIsClient(settings, inhibitGate);
+                aprsIsClient = newClient;
+                scheduler.ReplaceAprsIsClient(newClient ?? new NullAprsIsClient());
 
-        // If transmit is enabled, connect the new client immediately.
-        if (newClient is not null && station.TransmitEnabled && station.AprsIsTransmitEnabled)
-        {
-            _ = newClient.ConnectAsync(cts.Token);
+                if (newClient is not null && station.TransmitEnabled && station.AprsIsTransmitEnabled)
+                {
+                    _ = newClient.ConnectAsync(cts.Token);
+                }
+            }
         }
 
         // Refresh scheduler configuration for transmit flags and intervals.
@@ -178,6 +194,33 @@ public sealed class BeaconService : IAsyncDisposable
 
     /// <summary>Current scheduler state — for the status display.</summary>
     public BeaconSchedulerState GetState() => scheduler.GetState();
+
+    /// <summary>
+    /// A string capturing exactly the settings that affect <see cref="BuildAprsIsClient"/>'s output, so
+    /// ApplySettings can skip the socket rebuild when only position/comment/interval changed.
+    /// </summary>
+    private static string ComputeConnectionSignature(Configuration.AppSettings settings)
+    {
+        var station = settings.Station;
+        var parts = new List<string?>
+        {
+            station.FullCallsign,
+            station.TransmitEnabled.ToString(),
+            station.AprsIsTransmitEnabled.ToString()
+        };
+        foreach (var port in settings.Connections.Ports)
+        {
+            if (port.Type != Configuration.ConnectionPortType.AprsIs) continue;
+            var isConfig = port.Configuration.AprsIs;
+            if (isConfig is null) continue;
+            parts.Add(isConfig.ServerHost);
+            parts.Add(isConfig.ServerPort.ToString());
+            parts.Add(isConfig.Passcode);
+            parts.Add(isConfig.Filter);
+        }
+
+        return string.Join("|", parts);
+    }
 
     /// <summary>
     /// Builds a transmit-capable APRS-IS client from settings, or returns null if no

@@ -69,8 +69,11 @@ public sealed partial class App : Application
                 }
             });
 
-            // Push the updated position into the live beacon engine immediately.
-            rt.BeaconService.ApplySettings(JsonAppSettingsStore.Default.Load());
+            // Push the updated position into the live beacon engine on the UI thread (this handler runs on
+            // the background GPS read loop). ApplySettings now skips the client rebuild when only the
+            // position changed, so this is cheap; the client swap is also lock-guarded as defense.
+            var latest = JsonAppSettingsStore.Default.Load();
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => rt.BeaconService.ApplySettings(latest));
         };
     }
 
