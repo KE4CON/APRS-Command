@@ -17,6 +17,7 @@ public sealed class BeaconService : IAsyncDisposable
     private readonly LocalStationProfileService profileService;
     private readonly BeaconScheduler scheduler;
     private readonly ITransmitInhibitGate? inhibitGate;
+    private readonly ILogService? log;
     private IAprsIsClient? aprsIsClient;
 
     /// <summary>The transmit-capable APRS-IS client, if one is configured. Used by the message ACK coordinator.</summary>
@@ -28,12 +29,14 @@ public sealed class BeaconService : IAsyncDisposable
         LocalStationProfileService profileService,
         BeaconScheduler scheduler,
         IAprsIsClient? aprsIsClient,
-        ITransmitInhibitGate? inhibitGate = null)
+        ITransmitInhibitGate? inhibitGate = null,
+        ILogService? log = null)
     {
         this.profileService = profileService ?? throw new ArgumentNullException(nameof(profileService));
         this.scheduler = scheduler ?? throw new ArgumentNullException(nameof(scheduler));
         this.aprsIsClient = aprsIsClient;
         this.inhibitGate = inhibitGate;
+        this.log = log;
     }
 
     /// <summary>Creates a fully wired BeaconService from the persisted station settings.</summary>
@@ -41,7 +44,8 @@ public sealed class BeaconService : IAsyncDisposable
         Configuration.AppSettings settings,
         Aprs.Services.IRfBeaconTransmitClient? rfBeaconClient = null,
         ITransmitInhibitGate? inhibitGate = null,
-        Aprs.Services.ExerciseMarking? marking = null)
+        Aprs.Services.ExerciseMarking? marking = null,
+        ILogService? log = null)
     {
         var station = settings.Station;
         var profileService = new LocalStationProfileService();
@@ -71,7 +75,7 @@ public sealed class BeaconService : IAsyncDisposable
             schedulerConfig,
             rfBeaconClient: rfBeaconClient);
 
-        return new BeaconService(profileService, scheduler, aprsIsClient, inhibitGate);
+        return new BeaconService(profileService, scheduler, aprsIsClient, inhibitGate, log);
     }
 
     /// <summary>
@@ -84,10 +88,13 @@ public sealed class BeaconService : IAsyncDisposable
         profileService.UpdateProfile(ToLocalProfile(station), DateTimeOffset.UtcNow);
 
         // Rebuild the APRS-IS transmit client if the connection configuration changed
-        // (e.g. a passcode was just entered). Disconnect the old client first.
-        if (aprsIsClient is not null)
+        // (e.g. a passcode was just entered). Disconnect AND dispose the old client so its
+        // CancellationTokenSource, receive-loop task and socket are released — previously it was
+        // only fire-and-forget disconnected and then dropped, leaking one client per settings save.
+        var oldClient = aprsIsClient;
+        if (oldClient is not null)
         {
-            _ = aprsIsClient.DisconnectAsync(CancellationToken.None);
+            _ = DisposeReplacedClientAsync(oldClient);
         }
 
         var newClient = BuildAprsIsClient(settings, inhibitGate);
@@ -137,10 +144,18 @@ public sealed class BeaconService : IAsyncDisposable
                 {
                     break;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Never crash the tick loop; log it later when we have a logging service.
-                    await Task.Delay(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false);
+                    // Never crash the tick loop, but do not swallow silently either (CLAUDE.md rule).
+                    log?.Error("Beacon", "Beacon scheduler tick failed; retrying in 30 s.", ex);
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(30), cts.Token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
         }, cts.Token);
@@ -197,6 +212,31 @@ public sealed class BeaconService : IAsyncDisposable
             return new AprsIsClient(clientConfig) { InhibitGate = inhibitGate };
         }
         return null;
+    }
+
+    /// <summary>
+    /// Disconnects and disposes an APRS-IS client that <see cref="ApplySettings"/> is replacing,
+    /// off the caller's thread. Any fault is logged, never thrown into the fire-and-forget task.
+    /// </summary>
+    private async Task DisposeReplacedClientAsync(IAprsIsClient client)
+    {
+        try
+        {
+            await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            log?.Warning("Beacon", "Disconnecting the replaced APRS-IS client failed.", ex);
+        }
+
+        try
+        {
+            await client.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            log?.Warning("Beacon", "Disposing the replaced APRS-IS client failed.", ex);
+        }
     }
 
     public async ValueTask DisposeAsync()

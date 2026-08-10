@@ -4,9 +4,12 @@ using System.Runtime.CompilerServices;
 
 namespace Aprs.Desktop.ViewModels;
 
-public sealed class ScheduledMessagesViewModel : INotifyPropertyChanged
+public sealed class ScheduledMessagesViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly Runtime.ScheduledMessageService service;
+    private readonly EventHandler<Runtime.ScheduledMessage> onMessageAdded;
+    private readonly EventHandler<Guid> onMessageRemoved;
+    private readonly EventHandler<Runtime.ScheduledMessage> onMessageFired;
 
     private string recipient    = string.Empty;
     private string body         = string.Empty;
@@ -27,11 +30,23 @@ public sealed class ScheduledMessagesViewModel : INotifyPropertyChanged
         SendDate = when.ToString("MM/dd/yyyy");
         SendTime = when.ToString("HH:mm");
 
-        service.MessageAdded   += (_, _) => RefreshList();
-        service.MessageRemoved += (_, _) => RefreshList();
-        service.MessageFired   += (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshList);
+        // Named handlers kept in fields so Dispose can unsubscribe them — the service is app-lifetime,
+        // so anonymous lambdas would pin this view model for the life of the process.
+        onMessageAdded   = (_, _) => RefreshList();
+        onMessageRemoved = (_, _) => RefreshList();
+        onMessageFired   = (_, _) => Avalonia.Threading.Dispatcher.UIThread.Post(RefreshList);
+        service.MessageAdded   += onMessageAdded;
+        service.MessageRemoved += onMessageRemoved;
+        service.MessageFired   += onMessageFired;
 
         RefreshList();
+    }
+
+    public void Dispose()
+    {
+        service.MessageAdded   -= onMessageAdded;
+        service.MessageRemoved -= onMessageRemoved;
+        service.MessageFired   -= onMessageFired;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

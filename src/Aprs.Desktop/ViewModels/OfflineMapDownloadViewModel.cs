@@ -136,6 +136,11 @@ public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
     {
         if (IsDownloading) return;
 
+        // Declared outside the try so the finally can always stop and dispose it — otherwise a throw
+        // from StartJobAsync (or a cancellation) leaks a timer that keeps firing its UI-thread post
+        // handler forever and is never disposed.
+        System.Timers.Timer? progressTimer = null;
+
         try
         {
             var area = BuildArea();
@@ -149,7 +154,7 @@ public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
             downloadCts = new CancellationTokenSource();
 
             // Progress polling timer.
-            var progressTimer = new System.Timers.Timer(500);
+            progressTimer = new System.Timers.Timer(500);
             progressTimer.Elapsed += (_, _) =>
             {
                 Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -163,8 +168,6 @@ public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
 
             var completed = await downloadManager.StartJobAsync(job, area, false, downloadCts.Token)
                                                  .ConfigureAwait(false);
-
-            progressTimer.Stop();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -188,6 +191,8 @@ public sealed class OfflineMapDownloadViewModel : INotifyPropertyChanged
         }
         finally
         {
+            progressTimer?.Stop();
+            progressTimer?.Dispose();
             IsDownloading = false;
             downloadCts?.Dispose();
             downloadCts = null;

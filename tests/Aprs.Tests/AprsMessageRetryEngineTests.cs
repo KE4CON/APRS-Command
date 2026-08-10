@@ -186,6 +186,56 @@ public sealed class AprsMessageRetryEngineTests
         Assert.Equal("09", generator.NextId());
     }
 
+    // Safety M (duplicate-send race): the initial send (UI) and the retry tick (background loop) must
+    // never transmit the same message at the same time. The per-message lock serializes them, so the
+    // transmitter never sees two concurrent SendAsync calls for one message.
+    [Fact]
+    public async Task SendAndRetry_ForSameMessage_NeverTransmitConcurrently()
+    {
+        var store = new AprsMessageStoreService();
+        var transmitter = new ConcurrencyTrackingTransmitter();
+        var engine = new AprsMessageRetryEngine(
+            store,
+            transmitter,
+            new SequentialAprsMessageIdGenerator(),
+            AprsMessageRetryConfiguration.Default with { MaximumRetries = 10, RetryInterval = TimeSpan.FromSeconds(30) });
+
+        var draft = store.CreateDraft(new AprsMessageComposeRequest("N0CALL", "K8ABC", "Hello", "01"), TestNow);
+        await engine.SendMessageAsync(draft.Id, TestNow, CancellationToken.None); // -> WaitingForAck, due at TestNow+30s
+
+        var later = TestNow.AddMinutes(1); // message is now due for retry
+        var send  = Task.Run(() => engine.SendMessageAsync(draft.Id, later, CancellationToken.None));
+        var retry = Task.Run(() => engine.ProcessRetriesAsync(later, CancellationToken.None));
+        await Task.WhenAll(send, retry);
+
+        Assert.Equal(1, transmitter.MaxConcurrent); // never two sends of the same message at once
+    }
+
+    private sealed class ConcurrencyTrackingTransmitter : IAprsMessageTransmitService
+    {
+        private int current;
+        public int MaxConcurrent { get; private set; }
+
+        public async Task<AprsMessageTransmitResult> SendAsync(string rawPacket, CancellationToken cancellationToken)
+        {
+            var now = Interlocked.Increment(ref current);
+            lock (this)
+            {
+                if (now > MaxConcurrent) MaxConcurrent = now;
+            }
+
+            try
+            {
+                await Task.Delay(25, cancellationToken).ConfigureAwait(false); // widen the window for overlap
+                return AprsMessageTransmitResult.Succeeded(TestNow, rawPacket);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref current);
+            }
+        }
+    }
+
     private static (AprsMessageStoreService Store, FakeMessageTransmitter Transmitter, AprsMessageRetryEngine Engine) CreateEngine(int maximumRetries = 3)
     {
         var store = new AprsMessageStoreService();

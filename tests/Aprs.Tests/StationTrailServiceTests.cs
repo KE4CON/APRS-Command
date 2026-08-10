@@ -169,4 +169,63 @@ public sealed class StationTrailServiceTests
         Assert.IsAssignableFrom<System.Collections.Generic.IReadOnlyList<TrailPoint>>(
             trails["KE4CON"]);
     }
+
+    // Concurrency H2: the station cap bounds key growth and evicts the least-recently-heard station.
+    [Fact]
+    public void RecordPosition_BeyondStationCap_EvictsLeastRecentlyHeard()
+    {
+        var svc = new StationTrailService { MaxStations = 3 };
+        // Use recent, monotonically increasing timestamps so the default 2-hour MaxAge doesn't prune them.
+        var baseTime = DateTimeOffset.UtcNow.AddMinutes(-10);
+
+        for (var i = 0; i < 10; i++)
+        {
+            var call = $"N0CAL{i}";
+            svc.RecordPosition(call, 34.0 + i, -84.0, baseTime.AddSeconds(i * 2));
+            svc.RecordPosition(call, 34.5 + i, -84.5, baseTime.AddSeconds(i * 2 + 1));
+        }
+
+        var trails = svc.GetTrails();
+        Assert.True(trails.Count <= 3, $"Expected at most 3 stations, got {trails.Count}.");
+        Assert.Contains("N0CAL9", trails.Keys);      // most-recently-heard survives
+        Assert.DoesNotContain("N0CAL0", trails.Keys); // least-recently-heard evicted
+    }
+
+    // Concurrency H2: RecordPosition (ingest threads) and GetTrails (UI thread) run concurrently
+    // without corrupting the shared dictionary/lists.
+    [Fact]
+    public async Task RecordPosition_AndGetTrails_Concurrently_DoNotThrow()
+    {
+        var svc = new StationTrailService();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+
+        var exception = await Record.ExceptionAsync(async () =>
+        {
+            var writer = Task.Run(() =>
+            {
+                var t = new DateTimeOffset(2026, 8, 10, 0, 0, 0, TimeSpan.Zero);
+                var n = 0;
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    svc.RecordPosition($"N{n % 50}CALL", 34.0 + (n % 90) * 0.01, -84.0 - (n % 90) * 0.01, t.AddSeconds(n));
+                    n++;
+                }
+            });
+
+            var reader = Task.Run(() =>
+            {
+                while (!cts.Token.IsCancellationRequested)
+                {
+                    foreach (var (_, points) in svc.GetTrails())
+                    {
+                        foreach (var _ in points) { /* enumerate the copy */ }
+                    }
+                }
+            });
+
+            await Task.WhenAll(writer, reader);
+        });
+
+        Assert.Null(exception);
+    }
 }

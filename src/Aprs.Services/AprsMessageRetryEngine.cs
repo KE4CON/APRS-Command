@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Aprs.Core;
 
 namespace Aprs.Services;
@@ -9,6 +10,14 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
     private readonly IAprsMessageIdGenerator messageIdGenerator;
     private readonly AprsMessageRetryConfiguration configuration;
     private readonly ExerciseMarking? marking;
+
+    // Serializes all transmit+update work for a given message id so the initial send (UI thread) and
+    // the retry tick (10 s background loop) can never transmit the same record at the same time
+    // (audit Safety M — duplicate-send race). One semaphore per message, created on demand.
+    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> messageLocks = new();
+
+    private SemaphoreSlim LockFor(Guid messageRecordId)
+        => messageLocks.GetOrAdd(messageRecordId, _ => new SemaphoreSlim(1, 1));
 
     public AprsMessageRetryEngine(
         IAprsMessageStoreService messageStore,
@@ -25,6 +34,20 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
     }
 
     public async Task<AprsMessageRecord> SendMessageAsync(Guid messageRecordId, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var gate = LockFor(messageRecordId);
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await SendMessageCoreAsync(messageRecordId, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<AprsMessageRecord> SendMessageCoreAsync(Guid messageRecordId, CancellationToken cancellationToken)
     {
         var record = messageStore.GetAllMessages().Single(message => message.Id == messageRecordId);
         var messageId = string.IsNullOrWhiteSpace(record.MessageId) ? messageIdGenerator.NextId() : record.MessageId;
@@ -99,8 +122,29 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
     public async Task<IReadOnlyList<AprsMessageRecord>> ProcessRetriesAsync(DateTimeOffset now, CancellationToken cancellationToken)
     {
         var updated = new List<AprsMessageRecord>();
-        foreach (var message in GetMessagesDueForRetry(now))
+        foreach (var selected in GetMessagesDueForRetry(now))
         {
+            var gate = LockFor(selected.Id);
+            await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
+            {
+                // Re-read under the lock: SendMessageAsync or an incoming ACK/REJ may have changed this
+                // record between selection and now. Acting on the stale snapshot is what caused the
+                // duplicate transmit (audit Safety M).
+                var message = messageStore.GetAllMessages().FirstOrDefault(m => m.Id == selected.Id);
+                if (message is null)
+                {
+                    continue;
+                }
+
+                // No longer eligible (already acked/rejected/failed/cancelled, or its retry time moved out).
+                if (message.DeliveryState is not (AprsMessageDeliveryState.WaitingForAck or AprsMessageDeliveryState.RetryPending)
+                    || message.NextRetryAtUtc is null
+                    || message.NextRetryAtUtc > now)
+                {
+                    continue;
+                }
+
             if (message.DeliveryState == AprsMessageDeliveryState.Cancelled)
             {
                 continue;
@@ -136,6 +180,11 @@ public sealed class AprsMessageRetryEngine : IAprsMessageRetryEngine
                     FailureReason = result.FailureReason ?? "Retry transmit failed.",
                     ValidationErrors = [.. record.ValidationErrors, result.FailureReason ?? "Retry transmit failed."]
                 }));
+            }
+            finally
+            {
+                gate.Release();
+            }
         }
 
         return updated;

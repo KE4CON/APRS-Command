@@ -303,7 +303,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
             provider.GetRequiredService<IAppSettingsStore>().Load(),
             rfBeaconClient: rfTransmitClient,
             inhibitGate: inhibitGate,
-            marking: exerciseMarking);
+            marking: exerciseMarking,
+            log: provider.GetRequiredService<ILogService>());
 
         // Wire the live APRS-IS client into the deferred iGate proxy now that it exists.
         deferredIGateClient.InnerClient = beaconService.AprsIsClient;
