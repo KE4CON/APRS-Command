@@ -101,12 +101,18 @@ public sealed partial class App : Application
         var rfVm = rt.MainViewModel.RfDiagnostics;
 
         // Route parsed RF packets (KISS-TCP and Direwolf) to the RF diagnostics service.
+        // PacketParsed fires on the background transport receive thread; AcceptPacket refreshes bound
+        // ObservableCollections, which Avalonia requires be mutated on the UI thread — so marshal it
+        // (audit C3), matching the OutputReceived handler below.
         rt.Coordinator.PacketParsed += (_, e) =>
         {
             if (e.Packet is null) return;
             if (e.Source is AprsPacketSource.TcpKiss or AprsPacketSource.Direwolf)
             {
-                rt.MainViewModel.RfDiagnostics.AcceptPacket(e.Packet, e.Source);
+                var packet = e.Packet;
+                var source = e.Source;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    rt.MainViewModel.RfDiagnostics.AcceptPacket(packet, source));
             }
         };
 

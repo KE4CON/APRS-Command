@@ -16,6 +16,10 @@ public sealed class SqliteStationDatabase : IStationDatabase, IDisposable
 {
     private readonly StationDatabase inner;
     private readonly SqliteConnection connection;
+    // Microsoft.Data.Sqlite does not allow concurrent commands on one connection; every background
+    // persist/delete goes through this lock, which also guards against use-after-dispose (audit C4).
+    private readonly object dbLock = new();
+    private bool disposed;
 
     public static string DatabasePath =>
         Path.Combine(
@@ -95,8 +99,25 @@ public sealed class SqliteStationDatabase : IStationDatabase, IDisposable
 
     public void Dispose()
     {
-        connection.Close();
-        connection.Dispose();
+        lock (dbLock)
+        {
+            if (disposed) return;
+            disposed = true;
+            connection.Close();
+            connection.Dispose();
+        }
+    }
+
+    // Serializes a background write against the single connection; no-ops after Dispose. Best-effort:
+    // a persistence failure must never crash the app or the receive path.
+    private void RunWrite(Action work)
+    {
+        lock (dbLock)
+        {
+            if (disposed) return;
+            try { work(); }
+            catch { /* best-effort persistence */ }
+        }
     }
 
     // ── Schema ────────────────────────────────────────────────────────────
@@ -183,72 +204,56 @@ public sealed class SqliteStationDatabase : IStationDatabase, IDisposable
 
     // ── Persist helpers (called from background threads) ─────────────────
 
-    private void PersistSnapshot(StationSnapshot snapshot)
+    private void PersistSnapshot(StationSnapshot snapshot) => RunWrite(() =>
     {
-        try
-        {
-            var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = """
-                INSERT INTO Stations (Callsign, SnapshotJson, LastHeardUtc)
-                VALUES ($c, $j, $t)
-                ON CONFLICT(Callsign) DO UPDATE SET
-                    SnapshotJson = excluded.SnapshotJson,
-                    LastHeardUtc = excluded.LastHeardUtc;
-                """;
-            cmd.Parameters.AddWithValue("$c", snapshot.Callsign);
-            cmd.Parameters.AddWithValue("$j", json);
-            cmd.Parameters.AddWithValue("$t", snapshot.LastHeardUtc.ToString("O"));
-            cmd.ExecuteNonQuery();
-        }
-        catch { /* best-effort — never crash on persistence failure */ }
-    }
+        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO Stations (Callsign, SnapshotJson, LastHeardUtc)
+            VALUES ($c, $j, $t)
+            ON CONFLICT(Callsign) DO UPDATE SET
+                SnapshotJson = excluded.SnapshotJson,
+                LastHeardUtc = excluded.LastHeardUtc;
+            """;
+        cmd.Parameters.AddWithValue("$c", snapshot.Callsign);
+        cmd.Parameters.AddWithValue("$j", json);
+        cmd.Parameters.AddWithValue("$t", snapshot.LastHeardUtc.ToString("O"));
+        cmd.ExecuteNonQuery();
+    });
 
-    private void PersistTacticalLabel(TacticalLabel label)
+    private void PersistTacticalLabel(TacticalLabel label) => RunWrite(() =>
     {
-        try
-        {
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = """
-                INSERT INTO TacticalLabels (RealCallsign, Label, Notes, CreatedAtUtc, UpdatedAtUtc)
-                VALUES ($c, $l, $n, $ca, $ua)
-                ON CONFLICT(RealCallsign) DO UPDATE SET
-                    Label = excluded.Label,
-                    Notes = excluded.Notes,
-                    UpdatedAtUtc = excluded.UpdatedAtUtc;
-                """;
-            cmd.Parameters.AddWithValue("$c",  label.RealCallsign);
-            cmd.Parameters.AddWithValue("$l",  label.Label);
-            cmd.Parameters.AddWithValue("$n",  (object?)label.Notes ?? DBNull.Value);
-            cmd.Parameters.AddWithValue("$ca", label.CreatedAtUtc.ToString("O"));
-            cmd.Parameters.AddWithValue("$ua", label.UpdatedAtUtc.ToString("O"));
-            cmd.ExecuteNonQuery();
-        }
-        catch { }
-    }
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = """
+            INSERT INTO TacticalLabels (RealCallsign, Label, Notes, CreatedAtUtc, UpdatedAtUtc)
+            VALUES ($c, $l, $n, $ca, $ua)
+            ON CONFLICT(RealCallsign) DO UPDATE SET
+                Label = excluded.Label,
+                Notes = excluded.Notes,
+                UpdatedAtUtc = excluded.UpdatedAtUtc;
+            """;
+        cmd.Parameters.AddWithValue("$c",  label.RealCallsign);
+        cmd.Parameters.AddWithValue("$l",  label.Label);
+        cmd.Parameters.AddWithValue("$n",  (object?)label.Notes ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("$ca", label.CreatedAtUtc.ToString("O"));
+        cmd.Parameters.AddWithValue("$ua", label.UpdatedAtUtc.ToString("O"));
+        cmd.ExecuteNonQuery();
+    });
 
-    private void DeleteTacticalLabel(string callsign)
+    private void DeleteTacticalLabel(string callsign) => RunWrite(() =>
     {
-        try
-        {
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = "DELETE FROM TacticalLabels WHERE RealCallsign = $c";
-            cmd.Parameters.AddWithValue("$c", callsign);
-            cmd.ExecuteNonQuery();
-        }
-        catch { }
-    }
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM TacticalLabels WHERE RealCallsign = $c";
+        cmd.Parameters.AddWithValue("$c", callsign);
+        cmd.ExecuteNonQuery();
+    });
 
-    private void DeleteAllTacticalLabels()
+    private void DeleteAllTacticalLabels() => RunWrite(() =>
     {
-        try
-        {
-            using var cmd = connection.CreateCommand();
-            cmd.CommandText = "DELETE FROM TacticalLabels";
-            cmd.ExecuteNonQuery();
-        }
-        catch { }
-    }
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM TacticalLabels";
+        cmd.ExecuteNonQuery();
+    });
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
