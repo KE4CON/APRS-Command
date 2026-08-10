@@ -25,7 +25,8 @@ public sealed class AgwpeCoordinator : IAsyncDisposable
     /// <summary>Creates a coordinator from the persisted connection settings.</summary>
     public static AgwpeCoordinator CreateFromSettings(
         Configuration.AppSettings settings,
-        AprsIngestionService ingestion)
+        AprsIngestionService ingestion,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         var coordinator = new AgwpeCoordinator(ingestion);
 
@@ -38,7 +39,7 @@ public sealed class AgwpeCoordinator : IAsyncDisposable
             if (agwpeConfig is null) continue;
 
             var config = agwpeConfig with { Enabled = true };
-            coordinator.clients.Add(new AgwpeClient(config));
+            coordinator.clients.Add(new AgwpeClient(config) { InhibitGate = inhibitGate });
         }
 
         return coordinator;

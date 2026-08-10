@@ -14,6 +14,7 @@ public sealed class ManagedModemCoordinator : IAsyncDisposable
     private readonly DirewolfProcessManager processManager;
     private readonly AprsIngestionService ingestion;
     private readonly Configuration.ManagedModemSettings settings;
+    private readonly ITransmitInhibitGate? inhibitGate;
     private TcpKissClient? kissClient;
     private readonly CancellationTokenSource cts = new();
     private Task? kissLoop;
@@ -27,10 +28,12 @@ public sealed class ManagedModemCoordinator : IAsyncDisposable
     public ManagedModemCoordinator(
         Configuration.ManagedModemSettings settings,
         string callsign,
-        AprsIngestionService ingestion)
+        AprsIngestionService ingestion,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         this.settings = settings;
         this.ingestion = ingestion;
+        this.inhibitGate = inhibitGate;
         processManager = new DirewolfProcessManager(settings, callsign);
         processManager.OutputReceived += (_, line) => OutputReceived?.Invoke(this, line);
         processManager.StateChanged   += OnProcessStateChanged;
@@ -38,7 +41,8 @@ public sealed class ManagedModemCoordinator : IAsyncDisposable
 
     public static ManagedModemCoordinator? CreateIfEnabled(
         Configuration.AppSettings appSettings,
-        AprsIngestionService ingestion)
+        AprsIngestionService ingestion,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         var s = appSettings.ManagedModem;
         if (!s.Enabled) return null;
@@ -47,7 +51,7 @@ public sealed class ManagedModemCoordinator : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(callsign) || callsign.Equals("N0CALL", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        return new ManagedModemCoordinator(s, callsign, ingestion);
+        return new ManagedModemCoordinator(s, callsign, ingestion, inhibitGate);
     }
 
     public void Start() => processManager.Start();
@@ -89,7 +93,7 @@ public sealed class ManagedModemCoordinator : IAsyncDisposable
                 ReconnectEnabled = false // process manager handles restart
             };
 
-            kissClient = new TcpKissClient(config);
+            kissClient = new TcpKissClient(config) { InhibitGate = inhibitGate };
             kissClient.RawPacketReceived += OnRawPacketReceived;
 
             OutputReceived?.Invoke(this, $"[Managed Modem] Connecting KISS-TCP on 127.0.0.1:{settings.KissPort}");

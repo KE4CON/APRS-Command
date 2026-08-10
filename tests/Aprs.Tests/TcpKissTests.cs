@@ -184,6 +184,30 @@ public sealed class TcpKissTests
         Assert.Equal(1, result.Frame!.PortNumber);
     }
 
+    // Safety M/H: the transmit-inhibit gate lives in the primitive, so ANY caller — not just the beacon
+    // wrapper — is hard-blocked during exercise mode, and no bytes reach the wire.
+    [Fact]
+    public async Task TcpKissClient_WhenInhibited_BlocksTransmitAndWritesNoBytes()
+    {
+        var stream = new WriteCapturingBlockingReadStream();
+        var client = CreateClient(stream, CreateTransmitConfiguration() with { ReceiveEnabled = false });
+        client.InhibitGate = new StubInhibitGate(inhibited: true, reason: "Exercise mode active.");
+
+        await client.ConnectAsync(CancellationToken.None);
+        var result = await client.SendFrameAsync(1, KissCommandType.DataFrame, Encoding.ASCII.GetBytes("N0CALL>APRS:>Online"), transmitConfirmed: true, CancellationToken.None);
+        await client.DisconnectAsync(CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("Exercise mode active.", result.FailureReason);
+        Assert.Empty(stream.WrittenBytes); // nothing keyed up
+    }
+
+    private sealed class StubInhibitGate(bool inhibited, string? reason) : Aprs.Transport.ITransmitInhibitGate
+    {
+        public bool IsTransmitInhibited => inhibited;
+        public string? InhibitReason => reason;
+    }
+
     private static TcpKissClient CreateClient(Stream stream)
     {
         return CreateClient(stream, TcpKissConfiguration.Default with { Enabled = true });

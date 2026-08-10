@@ -469,6 +469,16 @@ public sealed class FileHookService : IFileHookService
     private static string Csv(string? value)
     {
         value ??= string.Empty;
+
+        // Neutralize spreadsheet formula injection: a cell that starts with = + - @ (or tab/CR, which
+        // Excel also treats as formula leads) is executed as a formula when the CSV is opened. APRS
+        // packet text is attacker-controllable, so prefix a single quote to force text interpretation.
+        // Done before quoting so the guard character is inside any surrounding quotes.
+        if (value.Length > 0 && value[0] is '=' or '+' or '-' or '@' or '\t' or '\r')
+        {
+            value = "'" + value;
+        }
+
         return value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r')
             ? $"\"{value.Replace("\"", "\"\"", StringComparison.Ordinal)}\""
             : value;

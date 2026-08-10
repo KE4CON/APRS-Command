@@ -60,6 +60,23 @@ public sealed class FileHookServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task MessageCsvExport_NeutralizesSpreadsheetFormulaInjection()
+    {
+        var provider = new InMemoryLocalRestApiDataProvider();
+        // APRS text is attacker-controllable; a leading '=' would execute as a formula in Excel.
+        provider.SeedMessages(new MessageDto { MessageId = "01", From = "K8ABC", To = "N0CALL", Text = "=HYPERLINK(x),y" });
+        var service = new FileHookService(EnabledConfiguration(exportEnabled: true), provider);
+
+        var result = await service.ExportAsync(FileHookExportKind.Messages);
+
+        Assert.True(result.Success);
+        // The dangerous cell is prefixed with a single quote (and quoted, since it also contains a comma),
+        // so a spreadsheet stores it as literal text, never evaluating the formula.
+        Assert.Contains("\"'=HYPERLINK(x),y\"", result.Content);
+        Assert.DoesNotContain(",=HYPERLINK", result.Content); // no bare formula-leading cell survives
+    }
+
+    [Fact]
     public async Task WeatherExportCreatesExpectedDtoJson()
     {
         var provider = new InMemoryLocalRestApiDataProvider();

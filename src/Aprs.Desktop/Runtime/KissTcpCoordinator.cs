@@ -31,7 +31,8 @@ public sealed class KissTcpCoordinator : IAsyncDisposable
     /// </summary>
     public static KissTcpCoordinator CreateFromSettings(
         Configuration.AppSettings settings,
-        AprsIngestionService ingestion)
+        AprsIngestionService ingestion,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         var coordinator = new KissTcpCoordinator(ingestion);
 
@@ -53,7 +54,7 @@ public sealed class KissTcpCoordinator : IAsyncDisposable
                 SourceName      = $"Network TNC ({kissConfig.Host}:{kissConfig.Port})"
             };
 
-            coordinator.clients.Add(new TcpKissClient(config));
+            coordinator.clients.Add(new TcpKissClient(config) { InhibitGate = inhibitGate });
         }
 
         return coordinator;

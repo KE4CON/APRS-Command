@@ -50,6 +50,13 @@ public sealed class TcpKissClient : ITcpKissClient
 
     public event EventHandler<TcpKissRawPacketReceivedEventArgs>? RawPacketReceived;
 
+    /// <summary>
+    /// Optional global transmit-inhibit gate. When set and inhibited (for example exercise mode),
+    /// every <see cref="SendFrameAsync"/> call is blocked before any bytes reach the socket — so a
+    /// caller that bypasses the beacon wrapper still cannot key up during a drill (audit Safety M/H).
+    /// </summary>
+    public ITransmitInhibitGate? InhibitGate { get; set; }
+
     public TcpKissConnectionState State { get { lock (sync) { return state; } } }
 
     public Exception? LastError { get { lock (sync) { return lastError; } } }
@@ -166,6 +173,17 @@ public sealed class TcpKissClient : ITcpKissClient
         // Take a consistent snapshot of the stream and state so a concurrent reconnect cannot swap
         // the stream between the write and the flush, and so validation and I/O see the same stream.
         var (active, stateAtRequest) = Snapshot();
+
+        // Global inhibit (exercise/training mode) wins over everything and is checked before any other
+        // validation so a drill can never key up an RF port by any path.
+        var gate = InhibitGate;
+        if (gate is not null && gate.IsTransmitInhibited)
+        {
+            return TcpKissTransmitResult.Failed(
+                timestamp, stateAtRequest,
+                gate.InhibitReason ?? "Transmit is globally inhibited (exercise mode).");
+        }
+
         var failureReason = ValidateTransmitRequest(portNumber, commandType, ax25Payload, transmitConfirmed, stateAtRequest, active);
         if (failureReason is not null)
         {

@@ -32,7 +32,8 @@ public sealed class SerialKissCoordinator : IAsyncDisposable
     /// </summary>
     public static SerialKissCoordinator CreateFromSettings(
         Configuration.AppSettings settings,
-        AprsIngestionService ingestion)
+        AprsIngestionService ingestion,
+        ITransmitInhibitGate? inhibitGate = null)
     {
         var coordinator = new SerialKissCoordinator(ingestion);
         var factory     = SystemSerialPortConnectionFactory.Instance;
@@ -55,7 +56,7 @@ public sealed class SerialKissCoordinator : IAsyncDisposable
                 SourceName      = $"Serial KISS ({serialConfig.PortName})"
             };
 
-            coordinator.clients.Add(new SerialKissClient(config, factory));
+            coordinator.clients.Add(new SerialKissClient(config, factory) { InhibitGate = inhibitGate });
         }
 
         return coordinator;

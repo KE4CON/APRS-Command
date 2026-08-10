@@ -373,7 +373,7 @@ public sealed class DesktopRuntime : IAsyncDisposable
         var gpsCoordinator = new GpsCoordinator(new Aprs.Services.GpsService(), gpsSource, gpsdClient);
 
         var appSettings2 = provider.GetRequiredService<IAppSettingsStore>().Load();
-        var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>());
+        var managedModemCoordinator = ManagedModemCoordinator.CreateIfEnabled(appSettings2, provider.GetRequiredService<AprsIngestionService>(), inhibitGate);
 
         var logService = provider.GetRequiredService<ILogService>();
         var watchdog = new ConnectionHealthWatchdog(coordinator, logService);
@@ -400,11 +400,13 @@ public sealed class DesktopRuntime : IAsyncDisposable
 
         var kissTcpCoordinator = KissTcpCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
-            provider.GetRequiredService<AprsIngestionService>());
+            provider.GetRequiredService<AprsIngestionService>(),
+            inhibitGate);
 
         var serialKissCoordinator = SerialKissCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
-            provider.GetRequiredService<AprsIngestionService>());
+            provider.GetRequiredService<AprsIngestionService>(),
+            inhibitGate);
 
         // Wire real RF transmit delegates now that coordinators exist
         rfTransmitClient.GetTcpClients    = () => kissTcpCoordinator.GetTransmitClients();
@@ -417,7 +419,8 @@ public sealed class DesktopRuntime : IAsyncDisposable
         // AGWPE coordinator — handles BPQ32 and AGW Packet Engine connections
         var agwpeCoordinator = AgwpeCoordinator.CreateFromSettings(
             provider.GetRequiredService<IAppSettingsStore>().Load(),
-            provider.GetRequiredService<AprsIngestionService>());
+            provider.GetRequiredService<AprsIngestionService>(),
+            inhibitGate);
 
         return new DesktopRuntime(provider, mainViewModel, coordinator, beaconService,
             provider.GetRequiredService<ITransmitSafetyAuthority>(),

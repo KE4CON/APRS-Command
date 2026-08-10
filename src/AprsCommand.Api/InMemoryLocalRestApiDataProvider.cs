@@ -41,6 +41,7 @@ public sealed class InMemoryLocalRestApiDataProvider : ILocalRestApiDataProvider
     public void SeedStations(params StationUpdateDto[] values) => stations.AddRange(values);
     public void SeedWeather(params WeatherObservationDto[] values) => weather.AddRange(values);
     public void SeedEvents(params DecodedEventDto[] values) => events.AddRange(values);
+    public void SeedMessages(params MessageDto[] values) => messages.AddRange(values);
     public void SetReplayStatus(ReplayStatusDto value) => replayStatus = value;
     public void SetSimulationStatus(SimulationStatusDto value) => simulationStatus = value;
     public void SetTrainingStatus(TrainingScenarioDto value) => trainingStatus = value;

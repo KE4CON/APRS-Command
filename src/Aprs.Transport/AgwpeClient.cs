@@ -49,6 +49,13 @@ public sealed class AgwpeClient : IAgwpeClient
 
     public event EventHandler<AgwpeRawPacketReceivedEventArgs>? RawPacketReceived;
 
+    /// <summary>
+    /// Optional global transmit-inhibit gate. When set and inhibited (for example exercise mode),
+    /// every <see cref="SendPacketAsync"/> call is blocked before any bytes reach the socket — so a
+    /// caller that bypasses the beacon wrapper still cannot key up during a drill (audit Safety M/H).
+    /// </summary>
+    public ITransmitInhibitGate? InhibitGate { get; set; }
+
     public AgwpeConnectionState State { get { lock (sync) return state; } }
 
     public Exception? LastError { get { lock (sync) return lastError; } }
@@ -157,6 +164,17 @@ public sealed class AgwpeClient : IAgwpeClient
     {
         var timestamp = DateTimeOffset.UtcNow;
         var stateAtRequest = State;
+
+        // Global inhibit (exercise/training mode) wins over everything and is checked before any other
+        // validation so a drill can never key up an RF port by any path.
+        var gate = InhibitGate;
+        if (gate is not null && gate.IsTransmitInhibited)
+        {
+            return AgwpeTransmitResult.Failed(
+                timestamp, stateAtRequest,
+                gate.InhibitReason ?? "Transmit is globally inhibited (exercise mode).");
+        }
+
         var failureReason = ValidateTransmitRequest(rawPacketLine, transmitConfirmed, rfSafetyEnabled, stateAtRequest);
         if (failureReason is not null)
         {
