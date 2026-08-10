@@ -10,7 +10,7 @@ public sealed class AprsIsClient : IAprsIsClient
 {
     private readonly AprsIsClientConfiguration configuration;
     private readonly Func<AprsIsClientConfiguration, CancellationToken, Task<Stream>> streamFactory;
-    private readonly Channel<AprsIsRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<AprsIsRawPacketReceivedEventArgs>();
+    private readonly Channel<AprsIsRawPacketReceivedEventArgs> receivedPackets = Channel.CreateBounded<AprsIsRawPacketReceivedEventArgs>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
     private readonly AprsParser parser = new();
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;

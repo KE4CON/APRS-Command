@@ -10,8 +10,8 @@ public sealed class TcpKissClient : ITcpKissClient
     public  TcpKissConfiguration Configuration => configuration;
     private readonly Func<TcpKissConfiguration, CancellationToken, Task<Stream>> streamFactory;
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
-    private readonly Channel<KissFrame> receivedFrames = Channel.CreateUnbounded<KissFrame>();
-    private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<TcpKissRawPacketReceivedEventArgs>();
+    private readonly Channel<KissFrame> receivedFrames = Channel.CreateBounded<KissFrame>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
+    private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateBounded<TcpKissRawPacketReceivedEventArgs>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
 

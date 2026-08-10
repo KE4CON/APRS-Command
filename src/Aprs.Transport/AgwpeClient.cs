@@ -12,8 +12,8 @@ public sealed class AgwpeClient : IAgwpeClient
     private readonly Func<AgwpeConfiguration, CancellationToken, Task<Stream>> streamFactory;
     private readonly AgwpeFrameCodec codec;
     private readonly AprsParser aprsParser = new();
-    private readonly Channel<AgwpeFrame> receivedFrames = Channel.CreateUnbounded<AgwpeFrame>();
-    private readonly Channel<AgwpeRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<AgwpeRawPacketReceivedEventArgs>();
+    private readonly Channel<AgwpeFrame> receivedFrames = Channel.CreateBounded<AgwpeFrame>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
+    private readonly Channel<AgwpeRawPacketReceivedEventArgs> receivedPackets = Channel.CreateBounded<AgwpeRawPacketReceivedEventArgs>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
     // Guards stream/state/lastError. The receive loop runs on a background thread while ConnectAsync,
     // DisconnectAsync and SendPacketAsync touch the same fields — AGWPE was missed by the thread-safety
     // pass the other transport clients got (audit H2). I/O is never done while holding the lock: the

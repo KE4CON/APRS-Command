@@ -9,8 +9,8 @@ public sealed class SerialKissClient : ISerialKissClient
     public  SerialKissConfiguration Configuration => configuration;
     private readonly ISerialPortConnectionFactory connectionFactory;
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
-    private readonly Channel<KissFrame> receivedFrames = Channel.CreateUnbounded<KissFrame>();
-    private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateUnbounded<TcpKissRawPacketReceivedEventArgs>();
+    private readonly Channel<KissFrame> receivedFrames = Channel.CreateBounded<KissFrame>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
+    private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateBounded<TcpKissRawPacketReceivedEventArgs>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
 
