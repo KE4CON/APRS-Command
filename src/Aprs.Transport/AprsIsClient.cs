@@ -65,7 +65,10 @@ public sealed class AprsIsClient : IAprsIsClient
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
-        if (State is AprsIsConnectionState.Connected or AprsIsConnectionState.Connecting)
+        // Reconnecting is included so a Connect call during an in-progress auto-reconnect does not
+        // start a second receive loop racing the first over the shared stream/state (transport M5).
+        if (State is AprsIsConnectionState.Connected or AprsIsConnectionState.Connecting
+            or AprsIsConnectionState.Reconnecting)
         {
             return;
         }
@@ -225,24 +228,17 @@ public sealed class AprsIsClient : IAprsIsClient
     {
         try
         {
-            // Process any data that arrived before the receive loop started
-            // (buffered during WaitForLogrespAsync).
-            if (!string.IsNullOrEmpty(pendingData))
-            {
-                foreach (var pendingLine in pendingData.Split('\n'))
-                {
-                    var trimmed = pendingLine.TrimEnd('\r');
-                    if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith('#'))
-                        PublishPacket(trimmed);
-                }
-                pendingData = string.Empty;
-            }
-
             while (!cancellationToken.IsCancellationRequested)
             {
                 Stream? active;
                 lock (sync) { active = stream; }
                 if (active is null) break;
+
+                // Process any data that arrived bundled after the logresp line (buffered during
+                // WaitForLogrespAsync). This must run on every iteration, not just the first: a
+                // reconnect calls WaitForLogrespAsync again and re-populates pendingData, and those
+                // already-arrived packets were previously dropped on the floor (transport M1).
+                DrainPendingData();
 
                 using (var reader = new StreamReader(active, Encoding.ASCII, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
                 {
@@ -288,6 +284,22 @@ public sealed class AprsIsClient : IAprsIsClient
         {
             Fault(exception);
         }
+    }
+
+    private void DrainPendingData()
+    {
+        if (string.IsNullOrEmpty(pendingData))
+        {
+            return;
+        }
+
+        foreach (var pendingLine in pendingData.Split('\n'))
+        {
+            var trimmed = pendingLine.TrimEnd('\r');
+            if (!string.IsNullOrWhiteSpace(trimmed) && !trimmed.StartsWith('#'))
+                PublishPacket(trimmed);
+        }
+        pendingData = string.Empty;
     }
 
     private void PublishPacket(string line)

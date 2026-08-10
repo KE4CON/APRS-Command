@@ -69,7 +69,10 @@ public sealed class AgwpeClient : IAgwpeClient
             return;
         }
 
-        if (State is AgwpeConnectionState.Connected or AgwpeConnectionState.Connecting)
+        // Reconnecting is included so a Connect call during an in-progress auto-reconnect does not
+        // start a second receive loop racing the first over the shared stream/state (transport M5).
+        if (State is AgwpeConnectionState.Connected or AgwpeConnectionState.Connecting
+            or AgwpeConnectionState.Reconnecting)
         {
             return;
         }

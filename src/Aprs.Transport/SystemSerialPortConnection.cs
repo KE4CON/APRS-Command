@@ -48,8 +48,26 @@ internal sealed class SystemSerialPortConnection : ISerialPortConnection, IAsync
         // on all platforms, so we wrap in a Task to keep it off the UI thread.
         return await Task.Run(() =>
         {
-            try { return port.BaseStream.Read(buffer.Span); }
-            catch when (cancellationToken.IsCancellationRequested) { return 0; }
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                try
+                {
+                    return port.BaseStream.Read(buffer.Span);
+                }
+                catch (TimeoutException)
+                {
+                    // A quiet serial link legitimately produces read timeouts every ReadTimeout ms.
+                    // That is neither a fault nor a disconnect, so keep waiting for bytes rather than
+                    // returning 0 (which the KISS receive loop treats as a closed connection) or
+                    // letting the exception fault a healthy idle link (transport M6).
+                    continue;
+                }
+                catch when (cancellationToken.IsCancellationRequested)
+                {
+                    return 0;
+                }
+            }
         }, cancellationToken).ConfigureAwait(false);
     }
 

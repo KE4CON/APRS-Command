@@ -11,6 +11,7 @@ public sealed class SerialKissClient : ISerialKissClient
     private readonly IAx25AprsPayloadDecoder payloadDecoder;
     private readonly Channel<KissFrame> receivedFrames = Channel.CreateBounded<KissFrame>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
     private readonly Channel<TcpKissRawPacketReceivedEventArgs> receivedPackets = Channel.CreateBounded<TcpKissRawPacketReceivedEventArgs>(new BoundedChannelOptions(4096) { FullMode = BoundedChannelFullMode.DropOldest });
+    private const int MaxPendingBytes = 1 << 20; // 1 MiB reassembly cap; a real KISS frame is far smaller
     private CancellationTokenSource? connectionCancellation;
     private Task? receiveTask;
 
@@ -67,7 +68,10 @@ public sealed class SerialKissClient : ISerialKissClient
             return;
         }
 
-        if (State is SerialKissConnectionState.Connected or SerialKissConnectionState.Connecting)
+        // Reconnecting is included so a Connect call during an in-progress auto-reconnect does not
+        // start a second receive loop racing the first over the shared connection/state (transport M5).
+        if (State is SerialKissConnectionState.Connected or SerialKissConnectionState.Connecting
+            or SerialKissConnectionState.Reconnecting)
         {
             return;
         }
@@ -213,6 +217,7 @@ public sealed class SerialKissClient : ISerialKissClient
                     }
 
                     SetState(SerialKissConnectionState.Reconnecting);
+                    pending.Clear(); // drop stale partial-frame bytes from the dead connection (transport M2)
                     await active.CloseAsync(cancellationToken).ConfigureAwait(false);
                     await Task.Delay(configuration.ReconnectDelay, cancellationToken).ConfigureAwait(false);
                     var reopened = connectionFactory.Create(configuration);
@@ -226,6 +231,13 @@ public sealed class SerialKissClient : ISerialKissClient
                 var lastCompleteEnd = KissFrameCodec.FindLastCompleteFrameEnd(pending);
                 if (lastCompleteEnd < 0)
                 {
+                    // Garbage or an unterminated frame must not accumulate without bound (transport M3, DoS).
+                    // A single AX.25/KISS frame is well under this cap, so anything larger is not a real frame.
+                    if (pending.Count > MaxPendingBytes)
+                    {
+                        pending.Clear();
+                    }
+
                     continue;
                 }
 
