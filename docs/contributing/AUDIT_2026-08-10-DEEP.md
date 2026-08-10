@@ -110,6 +110,35 @@ Status counts are updated as fixes land. Every fix carries a regression test (pl
 
 ---
 
+## Lock-ordering / deadlock sweep (pre-beta) — ☑ PASS, no fix needed
+
+Every real lock in `src/` was enumerated and each lock body traced for nested-lock acquisition, opposite-
+order cycles, locks held across `await`, and events/callbacks dispatched under a lock. **Result: the code is
+deadlock-free by construction.**
+
+- **One lock object per class** across all ~17 lock-holders (`StationDatabase`, `RawPacketLogService`,
+  `SqliteStationDatabase`, `StationTrailService`, `AprsMessageStoreService`, `GeofenceService`,
+  `BeaconService`, `LogService`, `SoundAlertService`, `TransmitSafetyAuthority`, the two event buses, and
+  the four transport clients). A single lock can't cycle with itself, so a deadlock could only form if one
+  lock body called into another lock-taking class — and none does in a way that closes a cycle.
+- **No lock is held across an `await`** — the C# compiler forbids `await` inside `lock`, and the transport
+  clients deliberately *snapshot state under the lock, then do I/O outside it*.
+- **Events/callbacks are always raised outside the lock:** both event buses snapshot subscribers under the
+  lock and invoke them after releasing it; `LogService` and `StationTrailService` raise their events after
+  the lock block closes; `StationDatabase`/`RawPacketLogService` have no events.
+- **The only lock *nestings* are strictly one-directional** (no reverse path exists, so no cycle):
+  `BeaconService.clientLock` → `AprsIsClient.sync` (brief, via `ConnectAsync`'s sync prefix);
+  `AprsMessageRetryEngine`'s per-message `SemaphoreSlim` → `AprsMessageStoreService.sync`; the transport
+  inhibit-gate check happens *after* `Snapshot()` releases the transport lock, not inside it.
+- **`VoiceAlertService`** is the only class with two primitives (a `lock` + a non-blocking `SemaphoreSlim`);
+  the order is always semaphore-then-`pending`, and `pending` is never held across the await — consistent,
+  no cycle.
+- Runtime backstop: `ConcurrencyRegressionTests` hammer the shared services from many threads under a time
+  budget — a deadlock would surface there as a hang/timeout.
+- Minor (not a deadlock): `AprsEventBus.Publish` blocks sync-over-async (`GetAwaiter().GetResult()`); it's
+  safe because the bus uses `ConfigureAwait(false)` throughout, but prefer the async `PublishAsync` on the
+  UI thread. Tracked, not blocking.
+
 ## Verified SOUND (deep pass, oracle where noted)
 Transport primitives (all four clients — snapshot-under-lock, no lock-across-await, bounded channels,
 reconnect cleanup); `StationDatabase`/`RawPacketLogService`/`StationTrailService` locks; replay/sim/training
