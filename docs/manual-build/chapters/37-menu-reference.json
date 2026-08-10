@@ -319,6 +319,11 @@
             "Mobile Companion"
           ],
           [
+            "Toggle Exercise Traffic Marking (tag transmit as EXERCISE)",
+            "Turns Exercise Traffic Marking on or off. While on, outgoing message and beacon text is prefixed with “EXERCISE” so drill traffic is unmistakable, and a badge appears in the title bar. This marks traffic; it does not block it — that is Exercise Mode.",
+            "Exercise Mode"
+          ],
+          [
             "Toggle Exercise Mode (inhibit all transmit)",
             "Turns Exercise Mode on or off. While on, every transmit path is blocked for drills.",
             "Exercise Mode"
@@ -357,7 +362,7 @@
           [
             "Keyboard Shortcuts",
             "Opens the keyboard-shortcuts reference window.",
-            "`Ctrl+?`",
+            "`Ctrl+/`",
             "Keyboard Shortcuts"
           ],
           [
