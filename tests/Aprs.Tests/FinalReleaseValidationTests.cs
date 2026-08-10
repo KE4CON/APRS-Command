@@ -10,7 +10,7 @@ public sealed class FinalReleaseValidationTests
         "## Unit Test Validation",
         "## Desktop Launch Validation",
         "## First-Run Setup Validation",
-        "## UI Layout Validation",
+        "## UI / Click-Through Validation",
         "## In-App Help Validation",
         "## Documentation Validation",
         "## Package Script Validation",
