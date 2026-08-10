@@ -57,4 +57,64 @@ public sealed class AprsWeatherRoundTripTests
         Assert.Equal(50, wx.HumidityPercent);
         Assert.Equal(1013.2, wx.BarometricPressureMillibars!.Value, 1);
     }
+
+    // Audit H1: negative temperatures were read as 4 chars (should be 3), so every sub-freezing report
+    // failed to parse temperature and dumped humidity/pressure into the comment. Round-trip must survive.
+    [Theory]
+    [InlineData(-5)]
+    [InlineData(-20)]
+    [InlineData(0)]
+    [InlineData(99)]
+    public void WeatherObservation_NegativeTemperature_RoundTrips(int temperatureFahrenheit)
+    {
+        var result = new AprsWeatherFormatter().FormatPreview(Observation(temperatureFahrenheit));
+        Assert.True(result.IsSuccess);
+
+        var wx = Assert.IsType<WeatherAprsPacket>(new AprsParser().Parse(result.Packet!, Now));
+        Assert.Equal(temperatureFahrenheit, wx.TemperatureFahrenheit);
+        // The fields AFTER temperature must still parse (they were previously lost into the comment).
+        Assert.Equal(50, wx.HumidityPercent);
+        Assert.Equal(1013.2, wx.BarometricPressureMillibars!.Value, 1);
+    }
+
+    // Audit H2: snow ('s' when wind speed is already known) was misread as wind speed and dropped.
+    [Fact]
+    public void WeatherObservation_Snow_RoundTripsAndDoesNotOverwriteWindSpeed()
+    {
+        var result = new AprsWeatherFormatter().FormatPreview(Observation(30, snowInches: 0.5));
+        Assert.True(result.IsSuccess);
+
+        var wx = Assert.IsType<WeatherAprsPacket>(new AprsParser().Parse(result.Packet!, Now));
+        Assert.Equal(50, wx.SnowHundredthsInch); // 0.5 in = 50 hundredths
+        Assert.Equal(5, wx.WindSpeedMph);        // wind speed must NOT be overwritten by the snow field
+    }
+
+    private static CommonWeatherObservation Observation(int temperatureFahrenheit, double? snowInches = null)
+        => new(
+            SourceName: "Round-trip WX",
+            SourceType: WeatherObservationSourceType.WeatherFlowTempest,
+            StationDeviceId: "dev-1",
+            Callsign: "N0CALL",
+            TimestampUtc: Now,
+            Latitude: 39.058333,
+            Longitude: -84.508333,
+            WindDirectionDegrees: 180,
+            WindSpeedMph: 5,
+            WindGustMph: 10,
+            TemperatureFahrenheit: temperatureFahrenheit,
+            RainLastHourInches: 0,
+            RainLast24HoursInches: 0,
+            RainSinceMidnightInches: 0,
+            HumidityPercent: 50,
+            BarometricPressureMillibars: 1013.2,
+            LuminosityWattsPerSquareMeter: null,
+            UvIndex: null,
+            SnowInches: snowInches,
+            LightningCount: null,
+            LightningDistanceMiles: null,
+            Diagnostics: new Dictionary<string, string>(),
+            RawSourcePayload: "{}",
+            StaleDataState: WeatherDataState.Current,
+            ValidationErrors: [],
+            ValidationWarnings: []);
 }

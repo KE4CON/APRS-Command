@@ -201,15 +201,34 @@ public sealed class AprsWeatherParser
             switch (fieldCode)
             {
                 case 's':
-                    if (TryReadUnsigned(body, index, 3, out var windSpeed))
+                    // 's' is overloaded in APRS: it is sustained wind speed when the wind speed is not yet
+                    // known (the c<dir>s<speed> wind format), otherwise it is 24-hour snowfall. Our
+                    // formatter emits wind via the dir/speed prefix, so a later 's' is snow — disambiguate
+                    // by position to keep both received traffic and our own round-trip correct.
+                    if (windSpeedMph is null)
                     {
-                        windSpeedMph = windSpeed;
+                        if (TryReadUnsigned(body, index, 3, out var windSpeed))
+                        {
+                            windSpeedMph = windSpeed;
+                            index += 3;
+                            parsedFieldCount++;
+                            break;
+                        }
+
+                        validationErrors.Add("Weather wind speed is invalid.");
+                        index = fieldStart;
+                        return Finish(body, index, parsedFieldCount, validationErrors);
+                    }
+
+                    if (TryReadUnsigned(body, index, 3, out var snowfall))
+                    {
+                        snow = snowfall;
                         index += 3;
                         parsedFieldCount++;
                         break;
                     }
 
-                    validationErrors.Add("Weather wind speed is invalid.");
+                    validationErrors.Add("Weather snow is invalid.");
                     index = fieldStart;
                     return Finish(body, index, parsedFieldCount, validationErrors);
                 case 'g':
@@ -226,7 +245,7 @@ public sealed class AprsWeatherParser
                 case 't':
                     if (TryReadSignedTemperature(body, index, out temperatureFahrenheit))
                     {
-                        index += body[index] == '-' ? 4 : 3;
+                        index += 3; // temperature is always a 3-char field, negative or not
                         parsedFieldCount++;
                         break;
                     }
@@ -382,12 +401,10 @@ public sealed class AprsWeatherParser
     private static bool TryReadSignedTemperature(string value, int start, out int? result)
     {
         result = null;
-        if (start >= value.Length)
-        {
-            return false;
-        }
-
-        var length = value[start] == '-' ? 4 : 3;
+        // APRS temperature is ALWAYS exactly 3 characters (-99..999); a leading minus counts as one of
+        // the three. Reading 4 for negatives (the old bug) swallowed the next field's code and made every
+        // sub-freezing report fail to parse, dumping temp/humidity/pressure into the comment.
+        const int length = 3;
         if (start + length > value.Length)
         {
             return false;
