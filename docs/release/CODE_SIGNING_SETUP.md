@@ -358,9 +358,10 @@ xcrun notarytool submit "APRSCommand.zip" \
 xcrun stapler staple "$APP"
 ```
 
-**6e — Rebuild the `.dmg` from the now-stapled app, and sign the `.dmg` too:**
+**6e — Repackage the `.dmg` from the now-stapled app, and sign the `.dmg` too:**
 ```bash
-bash scripts/make-macos-app.sh osx-arm64      # repackages the stapled .app into the .dmg
+# --dmg-only repackages the EXISTING signed+stapled .app; a plain re-run would rebuild it unsigned.
+bash scripts/make-macos-app.sh osx-arm64 --dmg-only
 codesign --force --timestamp --sign "$ID" "artifacts/installers/APRSCommand-osx-arm64.dmg"
 ```
 
@@ -372,11 +373,14 @@ xcrun notarytool log <the-submission-id-it-printed> \
 It names the offending file/entitlement. Almost always it's a missing `--options runtime`, a file that
 didn't get signed, or a missing entitlement — fix and re-run 6a onward.
 
-### Step 7 — Add the Mac secrets to GitHub, and I'll automate it
-Once Step 6 works by hand, add these repo **secrets** (GitHub → Settings → Secrets and variables →
-Actions → Secrets). Then tell me, and **I'll write the macOS signing job into `release.yml`** (import
-the certificate into a temporary keychain, sign, notarize, staple) — dormant until configured, exactly
-like the Windows one.
+### Step 7 — Add the Mac secrets to GitHub (the CI job is already written)
+The macOS signing job in `release.yml` is **already written and dormant** — it imports the cert into a
+throwaway keychain, signs inner→outer, notarizes, staples, repackages the `.dmg` with `--dmg-only`, and
+signs the `.dmg`. It **self-gates on `APPLE_SIGNING_IDENTITY`**, so until you add the secrets below it
+builds an unsigned `.dmg` exactly as before (nothing can break). Once Step 6 works by hand, add these repo
+**secrets** (GitHub → Settings → Secrets and variables → Actions → **Secrets**), then push a throwaway tag
+(e.g. `v0.5.1-test`) and watch the **Actions** tab — the "Sign + notarize + staple" step should run, not
+skip. Delete the draft release + tag afterward.
 
 | Secret | What to paste |
 |---|---|

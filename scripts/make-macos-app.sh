@@ -19,8 +19,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 RID="${1:-osx-arm64}"
 
+# Second arg (or DMG_ONLY=1) repackages the EXISTING .app into the .dmg without rebuilding the bundle.
+# Used by the signing flow: build once, sign+notarize+staple the .app, then repackage the stapled .app
+# into the .dmg — a plain re-run would rm -rf and rebuild the .app unsigned.
+DMG_ONLY=0
+if [[ "${2:-}" == "--dmg-only" || "${DMG_ONLY:-0}" == "1" ]]; then
+  DMG_ONLY=1
+fi
+
 if [[ "$RID" != "osx-arm64" && "$RID" != "osx-x64" ]]; then
-  echo "Usage: $0 [osx-arm64|osx-x64]" >&2
+  echo "Usage: $0 [osx-arm64|osx-x64] [--dmg-only]" >&2
   exit 2
 fi
 
@@ -34,6 +42,15 @@ APP_BUNDLE="$INSTALLER_DIR/$APP_NAME.app"
 DMG_OUT="$INSTALLER_DIR/APRSCommand-$RID.dmg"
 
 mkdir -p "$INSTALLER_DIR"
+
+if [[ "$DMG_ONLY" -eq 1 ]]; then
+  # Repackage-only: the .app must already exist (signed + stapled by the caller).
+  if [[ ! -d "$APP_BUNDLE" ]]; then
+    echo "ERROR: --dmg-only requires an existing $APP_BUNDLE (build it first)." >&2
+    exit 3
+  fi
+  echo "Repackaging existing (signed) $APP_BUNDLE into the DMG..."
+else
 
 # ── 1. Publish ────────────────────────────────────────────────────────────────
 if [[ ! -f "$PUBLISH_DIR/Aprs.Desktop" ]]; then
@@ -76,6 +93,8 @@ cat > "$APP_BUNDLE/Contents/Info.plist" << PLIST
 PLIST
 
 echo "  → $APP_BUNDLE"
+
+fi  # end of the build-the-.app section (skipped in --dmg-only mode)
 
 # ── 3. .dmg ───────────────────────────────────────────────────────────────────
 rm -f "$DMG_OUT"

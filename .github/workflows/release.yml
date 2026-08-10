@@ -83,6 +83,15 @@ jobs:
             artifact: APRSCommand-${{ github.ref_name }}-macos-arm64-installer
           - rid: osx-x64
             artifact: APRSCommand-${{ github.ref_name }}-macos-x64-installer
+    # Apple signing is DORMANT until the secrets below are configured. The "Sign + notarize + staple"
+    # step self-gates on APPLE_SIGNING_IDENTITY, so until it's set the job builds an UNSIGNED .dmg exactly
+    # as before. Once the secrets are present, tagging a release signs, notarizes, staples, and re-signs
+    # the .dmg automatically. See docs/release/CODE_SIGNING_SETUP.md Part 2. Required secrets:
+    #   APPLE_SIGNING_IDENTITY  (e.g. "Developer ID Application: James Rospopo (TEAMID)") — the on-switch
+    #   APPLE_CERT_P12_BASE64 / APPLE_CERT_PASSWORD                (the exported cert + private key)
+    #   APPLE_API_KEY_P8_BASE64 / APPLE_API_KEY_ID / APPLE_API_ISSUER_ID   (App Store Connect API key)
+    env:
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
@@ -90,8 +99,56 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Install create-dmg
         run: brew install create-dmg
-      - name: Build DMG
+      - name: Build DMG (unsigned)
         run: bash scripts/make-macos-app.sh ${{ matrix.rid }}
+
+      - name: Sign + notarize + staple (Apple Developer ID)
+        if: env.APPLE_SIGNING_IDENTITY != ''
+        env:
+          APPLE_CERT_P12_BASE64: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          APP="artifacts/installers/APRS Command.app"
+          DMG="artifacts/installers/APRSCommand-${{ matrix.rid }}.dmg"
+
+          # 1) Import the Developer ID cert + key into a throwaway keychain.
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          KPW="$(openssl rand -base64 24)"
+          security create-keychain -p "$KPW" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KPW" "$KEYCHAIN"
+          echo "$APPLE_CERT_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$APPLE_CERT_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KPW" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+
+          # 2) Sign inner dylibs, then the main executable, then the bundle last. Never --deep.
+          find "$APP/Contents/MacOS" -name "*.dylib" -exec \
+            codesign --force --options runtime --timestamp \
+              --entitlements build/entitlements.mac.plist --sign "$APPLE_SIGNING_IDENTITY" {} \;
+          codesign --force --options runtime --timestamp \
+            --entitlements build/entitlements.mac.plist --sign "$APPLE_SIGNING_IDENTITY" \
+            "$APP/Contents/MacOS/Aprs.Desktop"
+          codesign --force --options runtime --timestamp \
+            --entitlements build/entitlements.mac.plist --sign "$APPLE_SIGNING_IDENTITY" "$APP"
+          codesign --verify --strict --verbose=2 "$APP"
+
+          # 3) Notarize the .app, then staple the ticket.
+          echo "$APPLE_API_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/api.p8"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --key "$RUNNER_TEMP/api.p8" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER_ID" --wait
+          xcrun stapler staple "$APP"
+
+          # 4) Repackage the stapled .app into the .dmg (does NOT rebuild the bundle), then sign the .dmg.
+          bash scripts/make-macos-app.sh ${{ matrix.rid }} --dmg-only
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$DMG"
+
       - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.artifact }}
