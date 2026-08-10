@@ -114,6 +114,50 @@ public sealed class AprsSpecSubVariantConformanceTests
     }
 
     /// <summary>
+    /// §12: unknown wind is commonly reported as ".../..."; the parser must skip the 7-char wind slot and
+    /// still parse the following fields instead of dumping them all into the comment (deep-audit, Dire-Wolf).
+    /// </summary>
+    [Fact]
+    public void Spec_WeatherWithDottedWind_ParsesRemainingFields()
+    {
+        var wx = Assert.IsType<WeatherAprsPacket>(
+            Parse("N0CALL>APRS:!4903.50N/07201.75W_.../...g005t077r000p000P000h50b09900"));
+
+        Assert.Null(wx.WindDirectionDegrees);
+        Assert.Null(wx.WindSpeedMph);
+        Assert.Equal(5, wx.WindGustMph);       // these were previously lost into the comment
+        Assert.Equal(77, wx.TemperatureFahrenheit);
+        Assert.Equal(50, wx.HumidityPercent);
+    }
+
+    /// <summary>
+    /// §12: 'L' = luminosity 0–999 W/m²; lowercase 'l' = value + 1000 (1000–1999). Deep-audit (Dire-Wolf):
+    /// lowercase 'l' was read as the raw value, off by 1000.
+    /// </summary>
+    [Fact]
+    public void Spec_WeatherLuminosityLowercaseL_AddsThousand()
+    {
+        var wx = Assert.IsType<WeatherAprsPacket>(
+            Parse("N0CALL>APRS:!4903.50N/07201.75W_180/010g005t077r000p000P000h50b09900l500"));
+
+        Assert.Equal(1500, wx.LuminosityWattsPerSquareMeter);
+    }
+
+    /// <summary>
+    /// §11: a killed item uses the '_' separator (live uses '!'). The kill state must be captured so a
+    /// station removing its item from the map is honored (deep-audit — it was previously dropped).
+    /// </summary>
+    [Theory]
+    [InlineData("N0CALL>APRS:)ITEM      !4903.50N/07201.75Wr", false)]
+    [InlineData("N0CALL>APRS:)ITEM      _4903.50N/07201.75Wr", true)]
+    public void Spec_ItemKillState_Captured(string raw, bool expectedKilled)
+    {
+        var item = Assert.IsType<ItemAprsPacket>(Parse(raw));
+        Assert.Equal(expectedKilled, item.IsKilled);
+        Assert.Equal(!expectedKilled, item.IsAlive);
+    }
+
+    /// <summary>
     /// §9 + §11: an item may likewise carry a compressed position (same fix as objects).
     /// </summary>
     [Fact]

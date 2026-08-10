@@ -131,13 +131,31 @@ public sealed class LiveDataCoordinator : IAsyncDisposable, IReplayMapController
             TransmitEnabled = false,
         };
 
-        aprsIsClient = new AprsIsClient(config);
-        aprsIsClient.RawPacketReceived += (_, e) =>
+        // Tear down any prior client (the failover coordinator calls this again on each server switch).
+        // Previously the field was overwritten without disposing the old client, leaking its socket +
+        // receive-loop task + CancellationTokenSource — and, with reconnect enabled, the old client kept
+        // reconnecting and double-ingesting if the old server recovered (audit deep pass).
+        var previous = aprsIsClient;
+
+        var client = new AprsIsClient(config);
+        client.RawPacketReceived += (_, e) =>
             Dispatcher.UIThread.Post(() =>
                 ingestion.IngestReceivedLine(e.RawPacketLine, AprsPacketSource.AprsIs, e.ReceivedAtUtc));
+        aprsIsClient = client;
 
         // Fire and forget; the client reconnects internally per its configuration.
-        _ = aprsIsClient.ConnectAsync(CancellationToken.None);
+        _ = client.ConnectAsync(CancellationToken.None);
+
+        if (previous is not null)
+        {
+            _ = DisposePreviousReceiveClientAsync(previous);
+        }
+    }
+
+    private static async Task DisposePreviousReceiveClientAsync(IAprsIsClient client)
+    {
+        try { await client.DisconnectAsync(CancellationToken.None).ConfigureAwait(false); } catch { /* best effort */ }
+        try { await client.DisposeAsync().ConfigureAwait(false); } catch { /* best effort */ }
     }
 
     public async ValueTask DisposeAsync()

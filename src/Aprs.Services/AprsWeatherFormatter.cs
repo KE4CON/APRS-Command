@@ -83,7 +83,10 @@ public sealed partial class AprsWeatherFormatter : IAprsWeatherFormatter
 
         if (observation.LuminosityWattsPerSquareMeter is not null)
         {
-            body += $"L{Math.Clamp(RoundInt(observation.LuminosityWattsPerSquareMeter.Value), 0, 999):000}";
+            // Spec §12: 'L' encodes 0–999 W/m²; 'l' encodes 1000–1999 (value − 1000). Previously values
+            // ≥1000 were clamped to L999, losing bright-sun readings (deep-audit).
+            var lux = Math.Clamp(RoundInt(observation.LuminosityWattsPerSquareMeter.Value), 0, 1999);
+            body += lux >= 1000 ? $"l{lux - 1000:000}" : $"L{lux:000}";
         }
 
         if (observation.SnowInches is not null)
@@ -202,7 +205,10 @@ public sealed partial class AprsWeatherFormatter : IAprsWeatherFormatter
 
     private static string FormatHumidity(int humidity)
     {
-        return humidity == 100 ? "00" : humidity.ToString("00", CultureInfo.InvariantCulture);
+        // Spec §12: humidity 1–99 is two digits; 100% is the sentinel "00". A 0% reading would also format
+        // to "00" and be read back as 100%, so clamp an implausible 0 up to 1 (deep-audit).
+        var clamped = Math.Clamp(humidity, 1, 100);
+        return clamped == 100 ? "00" : clamped.ToString("00", CultureInfo.InvariantCulture);
     }
 
     [GeneratedRegex("^[A-Z0-9]{1,6}(-([0-9]|1[0-5]))?$", RegexOptions.IgnoreCase, "en-US")]

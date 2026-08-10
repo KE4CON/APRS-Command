@@ -349,7 +349,8 @@ public sealed record ItemAprsPacket(
     char? SymbolCode,
     string Comment,
     string RawItemBody,
-    int PositionAmbiguity)
+    int PositionAmbiguity,
+    bool IsKilled = false)
     : AprsPacket(
         RawLine,
         SourceCallsign,
@@ -359,7 +360,11 @@ public sealed record ItemAprsPacket(
         Information,
         ReceivedAtUtc,
         IsValid,
-        ValidationErrors);
+        ValidationErrors)
+{
+    /// <summary>True when the item is live (the '!' separator); false when killed (the '_' separator).</summary>
+    public bool IsAlive => !IsKilled;
+}
 
 public sealed record WeatherAprsPacket(
     string RawLine,

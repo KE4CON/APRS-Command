@@ -277,13 +277,18 @@ public sealed class WeatherBeaconScheduler : IWeatherBeaconScheduler
             return result;
         }
 
+        // Advance the schedule on failure too — otherwise NextScheduledTransmitTimeUtc stays in the past and
+        // TickAsync re-fires against a genuinely failing transport on EVERY tick with no backoff (deep audit).
+        var retryAt = clock.UtcNow.Add(configuration.WeatherTransmitInterval);
         state = state with
         {
             LastTransmitResult = result,
             LastBlockedReason = result.FailureReason,
             LastErrorOrWarning = result.FailureReason,
-            BlockedTransmitCount = state.BlockedTransmitCount + 1
+            BlockedTransmitCount = state.BlockedTransmitCount + 1,
+            NextScheduledTransmitTimeUtc = retryAt
         };
+        configuration = configuration with { NextTransmitTimestampUtc = retryAt, UpdatedTimestampUtc = clock.UtcNow };
         return result;
     }
 

@@ -325,6 +325,20 @@ public sealed class MobileCompanionServer : IAsyncDisposable
         var html = BuildHtml().Replace("__API_BASE__", "/" + token);
         var bytes = Encoding.UTF8.GetBytes(html);
         resp.ContentType     = "text/html; charset=utf-8";
+
+        // Defense-in-depth for the phone page: a strict CSP so that even if a packet-derived string ever
+        // slipped past the client-side esc(), it could not load external script or exfiltrate the session
+        // token. The page needs inline script/style, Leaflet from unpkg (with SRI), and OSM tiles; it only
+        // talks to its own origin. (Deep audit — the first pass's H1 recorded a CSP that never shipped.)
+        resp.Headers.Add("Content-Security-Policy",
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' https://unpkg.com; " +
+            "style-src 'self' 'unsafe-inline' https://unpkg.com; " +
+            "img-src 'self' data: https://*.tile.openstreetmap.org https://tile.openstreetmap.org; " +
+            "connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'");
+        resp.Headers.Add("X-Content-Type-Options", "nosniff");
+        resp.Headers.Add("Referrer-Policy", "no-referrer");
+
         resp.ContentLength64 = bytes.Length;
         await resp.OutputStream.WriteAsync(bytes);
         resp.Close();

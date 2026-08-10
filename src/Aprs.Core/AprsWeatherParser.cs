@@ -177,6 +177,13 @@ public sealed class AprsWeatherParser
             index += 7;
             parsedFieldCount += 2;
         }
+        else if (TryGet(body, index + 3) == '/' && index + 7 <= body.Length)
+        {
+            // Wind reported as unknown — commonly ".../..." (dots) or spaces. The slot is still 7 chars
+            // (DDD/SSS); skip past it so the following fields (gust/temp/rain/humidity/baro) still parse
+            // instead of all falling into the comment. Wind stays null. Matches Dire Wolf. (Deep-audit.)
+            index += 7;
+        }
         else if (TryGet(body, index) == 'c')
         {
             index++;
@@ -314,6 +321,13 @@ public sealed class AprsWeatherParser
                 case 'l':
                     if (TryReadUnsigned(body, index, 3, out luminosity))
                     {
+                        // Spec §12: 'L' = 0–999 W/m²; lowercase 'l' = value + 1000 (1000–1999).
+                        // Previously both were read as the raw 0–999 value (deep-audit, Dire-Wolf confirmed).
+                        if (fieldCode == 'l')
+                        {
+                            luminosity += 1000;
+                        }
+
                         index += 3;
                         parsedFieldCount++;
                         break;

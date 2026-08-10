@@ -93,6 +93,8 @@ public sealed class AprsObjectItemParser
         var separatorIndex = FindItemPositionSeparator(rawItemBody);
         var itemName = separatorIndex >= 0 ? rawItemBody[..separatorIndex].TrimEnd() : rawItemBody.TrimEnd();
         var latitudeStart = separatorIndex >= 0 ? separatorIndex + 2 : information.Length;
+        // Spec §11: items use '!' (live) / '_' (killed) as the name/position separator, like objects' '*'/'_'.
+        var isKilled = separatorIndex >= 0 && rawItemBody[separatorIndex] == '_';
 
         if (itemName.Length == 0)
         {
@@ -124,7 +126,8 @@ public sealed class AprsObjectItemParser
             parsedPosition.SymbolCode,
             parsedPosition.Comment,
             rawItemBody,
-            parsedPosition.PositionAmbiguity);
+            parsedPosition.PositionAmbiguity,
+            isKilled);
     }
 
     private static int FindItemPositionSeparator(string rawItemBody)
