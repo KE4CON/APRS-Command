@@ -54,28 +54,71 @@ Known issues approved by:
 - [ ] Example callsigns are fake, such as `N0CALL`, `SIM001`, `TESTWX`, and `OBJTEST`.
 - [ ] First-run setup does not enable APRS-IS transmit, RF transmit, beaconing, iGate, digipeater, object transmit, message transmit, weather beaconing, REST API, WebSocket, file hooks, or plugin loading.
 
-## UI Layout Validation
+## UI / Click-Through Validation (current menu-bar layout)
 
-- [ ] The restored original map-first layout is present.
-- [ ] The map is visible at startup.
-- [ ] The station list is readable on the right side.
-- [ ] Station status and selected station details are readable.
-- [ ] The packet monitor is visible below the map.
-- [ ] Messages, Objects, Weather, Events, Event Bus, Replay, RF Diag, and Alerts buttons are accessible in the restored original lower-right feature panel.
-- [ ] All eight lower-right feature buttons are visible together at normal desktop/laptop sizes; Messages is not the only visible feature button.
-- [ ] There is only one lower-right feature navigation/control set.
-- [ ] Clicking Messages visibly shows the Message Center / Messages panel.
-- [ ] Clicking Objects visibly shows the Object Manager / Objects panel.
-- [ ] Clicking Weather visibly shows the Weather panel.
-- [ ] Clicking Events visibly shows the Decoded Event Log / Events panel.
-- [ ] Clicking Event Bus visibly shows the Event Monitor / Event Bus panel.
-- [ ] Clicking Replay visibly shows the Replay panel.
-- [ ] Clicking RF Diag visibly shows the RF Diagnostics panel.
-- [ ] Clicking Alerts visibly shows the Alert Rules / Alerts panel.
-- [ ] Each feature button updates the visible feature title, description, and content area.
-- [ ] The Help button or menu opens the in-app Help viewer.
-- [ ] There is no crowded failed top-navigation layout.
-- [ ] No obvious text overlaps, clipped labels, or unusable controls appear at normal desktop sizes.
+> Current UI = a **menu bar** (Settings · View · Map · Messages · Operate · Tools · Help) across the top,
+> a **map** filling the main area, a narrow **icon sidebar** down the left, and a **status bar** at the
+> bottom. (This replaces the earlier rejected "lower-right feature panel" and "crowded top-navigation"
+> designs — those are gone; the `MainWindowXaml_UsesSingleFeatureNavigationSurface` test enforces it.)
+>
+> **How to use this section:** with the app open, walk it top to bottom. For every window: it **opens
+> without a crash, renders (not blank/garbled), and closes cleanly**. Anything that fails becomes a bug →
+> a regression test.
+
+### Frame & layout
+- [ ] Title bar reads **APRS Command** and shows the **APRS-IS status** and **TX status** badges.
+- [ ] The map is visible at startup; the left icon sidebar and the bottom status bar are present.
+- [ ] Status bar shows **local time above UTC**, both live.
+- [ ] No text overlaps, clipped labels, or unusable controls at a normal window size, and after **resizing**
+      / maximizing.
+
+### Menu: Settings
+- [ ] **Settings** opens the settings window; tabs render; changing a value and saving persists (reopen to confirm).
+
+### Menu: View
+- [ ] **Station List** · **Raw Packets** · **Telemetry Monitor** · **Events** · **Packet Statistics Dashboard**
+      each open and render.
+- [ ] **Toggle Dark Mode** flips the whole app light↔dark with no unreadable/clipped elements in either theme.
+
+### Menu: Map
+- [ ] **Draw ▸ Drawing Toolbar** shows the on-map toolbar; try line/polygon/circle/text, a color, fill, width,
+      Measure, Clear, Exit.
+- [ ] **Draw ▸ Import GPX/KML** and **Export Drawings** open file pickers.
+- [ ] **Weather ▸ Weather Stations** · **Weather Alerts** open; **Toggle Radar** toggles the radar layer.
+- [ ] **Geofences** opens the geofence editor (create a circle zone, save, see it listed).
+- [ ] **Offline Map Download** · **Coverage Prediction** · **Elevation Profile** · **Frequency Reference** each open.
+
+### Menu: Messages
+- [ ] **Messages** (Message Center) · **Message Broadcast** · **Scheduled Messages** · **Message Receipts Dashboard**
+      each open and render.
+
+### Menu: Operate
+- [ ] **Net Control** · **Net Script Editor** · **Objects** · **Session Templates** · **Scheduled Beacons** ·
+      **Shadow Beacon** · **Alerts** each open and render.
+
+### Menu: Tools
+- [ ] **Event Bus** · **Replay** · **RF Diagnostics** · **After-Action Report** each open.
+- [ ] **Mobile Companion Web View** shows a URL + QR; **FieldCommand Tactical-Map Feed** shows its LAN address.
+- [ ] **Training Mode** · **Traffic Simulation** · **Direwolf Profile** · **File Hooks** each open (the five
+      formerly-orphaned features — confirm each binds the right data and doesn't throw on open).
+- [ ] **Toggle Exercise Traffic Marking** shows the **EXERCISE MARKING** title-bar badge when on.
+- [ ] **Toggle Exercise Mode** flips the TX badge to **EXERCISE — TX INHIBITED** and hard-blocks transmit.
+
+### Menu: Help
+- [ ] **Help** opens the in-app help viewer; **Keyboard Shortcuts** opens the shortcuts window; **About** opens.
+
+### Left icon sidebar (hover each for its tooltip)
+- [ ] Home/Reset (⌂), Center on station (◎), Find station (🔍), Measure distance (📏), Map layer (🗺),
+      Beacon Now (📡), Alert status (🔔), Range rings (⊙), Trails (🛤), Radar (🌧) — each responds.
+
+### Map interactions
+- [ ] Scroll wheel zooms; a station marker shows a popup on click; **right-click** opens the context menu
+      (assign tactical label, draw rings, place object).
+
+### Keyboard shortcuts (match the Keyboard Shortcuts window)
+- [ ] `Ctrl+M` Messages · `Ctrl+W` Weather Stations · `Ctrl+R` Raw Packets · `Ctrl+S` Settings ·
+      `Ctrl+N` Net Control · `Ctrl+B` Beacon Now · `Ctrl+D` Dark Mode · `Ctrl+/` Shortcuts.
+- [ ] Map keys (not while typing in a field): `+`/`=` zoom in, `-` zoom out, `Home` center on station.
 
 ## In-App Help Validation
 
@@ -98,7 +141,7 @@ Known issues approved by:
 - [ ] Packaging preparation documentation links to this final release validation checklist.
 - [ ] Installer and package planning documentation links to this final release validation checklist.
 - [ ] Documentation consistently uses `APRS Command` for the user-facing application name.
-- [ ] Documentation does not describe the failed crowded top-navigation layout.
+- [ ] Documentation describes the current **menu-bar** layout (Settings/View/Map/Messages/Operate/Tools/Help) and does **not** describe either rejected design (the old "lower-right feature panel" or the "crowded top-navigation").
 - [ ] Safety documentation clearly states that transmit is disabled by default.
 - [ ] Extension documentation consistently refers to APRS Command public data contracts, APRS Command REST API, APRS Command WebSocket event streams, APRS Command file import/export hooks, and APRS Command plugin/driver framework.
 - [ ] Docs and examples do not contain real APRS-IS passcodes, API tokens, signing secrets, private credentials, GitHub tokens, weather credentials, or personal secrets.
