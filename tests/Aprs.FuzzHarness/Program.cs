@@ -10,6 +10,13 @@ var filterRadius    = GetArg(args, "--radius",    env: "APRS_RADIUS",    def: "5
 var durationMinStr  = GetArg(args, "--minutes",   env: "APRS_MINUTES",   def: "10");
 var slowMs          = int.Parse(GetArg(args, "--slow-ms", env: "APRS_SLOW_MS", def: "50"));
 
+// --decode: read TNC2 lines from stdin, parse each, and print a normalized one-line field summary.
+// Used for oracle-diffing our parser against Dire Wolf's decode_aprs. Not part of the live fuzz run.
+if (Array.IndexOf(args, "--decode") >= 0)
+{
+    return DecodeFromStdin();
+}
+
 if (!int.TryParse(durationMinStr, out var durationMin) || durationMin < 1)
 {
     Console.Error.WriteLine("ERROR: --minutes must be a positive integer.");
@@ -282,6 +289,62 @@ static string GetArg(string[] args, string flag, string env, string def)
 
 static string Truncate(string s, int max) =>
     s.Length > max ? s[..max] + "…" : s;
+
+// Reads TNC2 lines from stdin, parses each, prints one normalized "field=value" summary line per input.
+// Blank lines and lines starting with '#' are echoed as-is (so a corpus can carry comments/labels).
+static int DecodeFromStdin()
+{
+    var parser = new AprsParser();
+    string? line;
+    while ((line = Console.ReadLine()) is not null)
+    {
+        if (line.Length == 0 || line[0] == '#') { Console.WriteLine(line); continue; }
+
+        AprsPacket p;
+        try { p = parser.Parse(line, DateTimeOffset.UnixEpoch); }
+        catch (Exception ex) { Console.WriteLine($"THREW {ex.GetType().Name}: {ex.Message}"); continue; }
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append(p.GetType().Name.Replace("AprsPacket", ""));
+        sb.Append(" valid=").Append(p.IsValid);
+        switch (p)
+        {
+            case PositionAprsPacket x:
+                Append(sb, "lat", F(x.Latitude)); Append(sb, "lon", F(x.Longitude));
+                Append(sb, "sym", $"{x.SymbolTableIdentifier}{x.SymbolCode}");
+                Append(sb, "crs", x.CourseDegrees); Append(sb, "spd", x.SpeedKnots);
+                Append(sb, "alt", x.AltitudeFeet); Append(sb, "amb", x.PositionAmbiguity);
+                Append(sb, "cmt", x.Comment); break;
+            case WeatherAprsPacket x:
+                Append(sb, "lat", F(x.Latitude)); Append(sb, "lon", F(x.Longitude));
+                Append(sb, "sym", $"{x.SymbolTableIdentifier}{x.SymbolCode}");
+                Append(sb, "wdir", x.WindDirectionDegrees); Append(sb, "wspd", x.WindSpeedMph);
+                Append(sb, "gust", x.WindGustMph); Append(sb, "temp", x.TemperatureFahrenheit);
+                Append(sb, "hum", x.HumidityPercent); break;
+            case ObjectAprsPacket x:
+                Append(sb, "name", x.ObjectName); Append(sb, "killed", x.IsKilled);
+                Append(sb, "lat", F(x.Latitude)); Append(sb, "lon", F(x.Longitude));
+                Append(sb, "sym", $"{x.SymbolTableIdentifier}{x.SymbolCode}"); break;
+            case ItemAprsPacket x:
+                Append(sb, "name", x.ItemName);
+                Append(sb, "lat", F(x.Latitude)); Append(sb, "lon", F(x.Longitude));
+                Append(sb, "sym", $"{x.SymbolTableIdentifier}{x.SymbolCode}"); break;
+            case MessageAprsPacket x:
+                Append(sb, "to", x.Addressee); Append(sb, "body", x.MessageBody);
+                Append(sb, "id", x.MessageId); Append(sb, "ack", x.AcknowledgedMessageId);
+                Append(sb, "rej", x.RejectedMessageId); Append(sb, "bln", x.IsBulletin); break;
+            case StatusAprsPacket x:
+                Append(sb, "info", x.Information); break;
+        }
+        if (!p.IsValid && p.ValidationErrors.Count > 0)
+            Append(sb, "errs", string.Join("|", p.ValidationErrors));
+        Console.WriteLine(sb.ToString());
+    }
+    return 0;
+
+    static string F(double? d) => d.HasValue ? d.Value.ToString("F4", System.Globalization.CultureInfo.InvariantCulture) : "-";
+    static void Append(System.Text.StringBuilder sb, string k, object? v) => sb.Append(' ').Append(k).Append('=').Append(v?.ToString() ?? "-");
+}
 
 // ── Data structures ───────────────────────────────────────────────────────────
 sealed class FuzzResults

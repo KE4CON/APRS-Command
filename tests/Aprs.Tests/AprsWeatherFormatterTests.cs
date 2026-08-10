@@ -162,7 +162,9 @@ public sealed class AprsWeatherFormatterTests
             options: AprsWeatherFormatterOptions.Default with { UsePosition = false });
 
         Assert.True(result.IsSuccess);
-        Assert.StartsWith("N0CALL>APCMD0:_120000180/005g010t072r000p000P000h50b10132", result.Packet, StringComparison.Ordinal);
+        // Positionless weather uses the 8-digit MDHM timestamp (MMDDHHMM) per spec — here TestTime is
+        // 2026-06-11 12:00 UTC → "06111200". (Was previously the wrong 6-digit "120000"; deep-audit fix.)
+        Assert.StartsWith("N0CALL>APCMD0:_06111200180/005g010t072r000p000P000h50b10132", result.Packet, StringComparison.Ordinal);
     }
 
     [Fact]

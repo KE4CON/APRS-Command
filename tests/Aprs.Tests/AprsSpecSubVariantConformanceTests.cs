@@ -95,6 +95,25 @@ public sealed class AprsSpecSubVariantConformanceTests
     }
 
     /// <summary>
+    /// §9: a compressed position's leading byte is the Symbol Table Identifier, which may be an OVERLAY
+    /// letter ('A'–'Z' uppercase, or 'a'–'j' for numeric overlays 0–9) — not only '/' or '\'. Deep-audit
+    /// (Dire-Wolf-confirmed): overlaid compressed positions were misrouted to the uncompressed parser and
+    /// lost. All three overlay forms must decode to the same coordinates as the primary-table form.
+    /// </summary>
+    [Theory]
+    [InlineData("N0CALL>APRS:!A5L!!<*e7>7P[")] // overlay 'A'
+    [InlineData("N0CALL>APRS:!a5L!!<*e7>7P[")] // overlay '0' (encoded as 'a')
+    [InlineData("N0CALL>APRS:!S5L!!<*e7>7P[")] // alternate-table symbol 'S'
+    public void Spec_CompressedPosition_WithOverlaySymbol_Decoded(string raw)
+    {
+        var pos = Assert.IsType<PositionAprsPacket>(Parse(raw));
+
+        Assert.True(pos.IsValid);
+        Assert.Equal(49.5, pos.Latitude!.Value, 1);
+        Assert.Equal(-72.75, pos.Longitude!.Value, 2);
+    }
+
+    /// <summary>
     /// §9 + §11: an item may likewise carry a compressed position (same fix as objects).
     /// </summary>
     [Fact]

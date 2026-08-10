@@ -89,6 +89,25 @@ public sealed class AprsWeatherRoundTripTests
         Assert.Equal(5, wx.WindSpeedMph);        // wind speed must NOT be overwritten by the snow field
     }
 
+    // Deep-audit HIGH: positionless weather (_) emitted a 6-digit HHMMSS timestamp, but the spec (and our
+    // own parser, which tries MDHM first) require an 8-digit MMDDHHMM. The 6-digit form made the parser eat
+    // two wind-direction digits as timestamp and lose every weather field. Positionless must round-trip.
+    [Fact]
+    public void WeatherObservation_Positionless_RoundTrips()
+    {
+        var options = AprsWeatherFormatterOptions.Default with { UsePosition = false };
+        var result = new AprsWeatherFormatter().FormatPreview(Observation(72), localStationProfile: null, options);
+        Assert.True(result.IsSuccess);
+        Assert.StartsWith("_", result.Packet!.Split(':', 2)[1]); // positionless body starts with '_'
+
+        var wx = Assert.IsType<WeatherAprsPacket>(new AprsParser().Parse(result.Packet!, Now));
+        Assert.Equal(180, wx.WindDirectionDegrees);
+        Assert.Equal(5, wx.WindSpeedMph);
+        Assert.Equal(72, wx.TemperatureFahrenheit);
+        Assert.Equal(50, wx.HumidityPercent);
+        Assert.Equal(1013.2, wx.BarometricPressureMillibars!.Value, 1);
+    }
+
     private static CommonWeatherObservation Observation(int temperatureFahrenheit, double? snowInches = null)
         => new(
             SourceName: "Round-trip WX",

@@ -178,7 +178,10 @@ public sealed partial class AprsWeatherFormatter : IAprsWeatherFormatter
 
     private static string BuildTimestamp(DateTimeOffset timestamp)
     {
-        return timestamp.ToUniversalTime().ToString("HHmmss", CultureInfo.InvariantCulture);
+        // Positionless weather uses the 8-digit MDHM form (MMDDHHMM) per the APRS spec — NOT HHMMSS.
+        // Emitting 6 digits made our own parser (which tries MDHM first) eat two wind-direction digits as
+        // part of the timestamp, losing every weather field (audit 2026-08-10 deep pass).
+        return timestamp.ToUniversalTime().ToString("MMddHHmm", CultureInfo.InvariantCulture);
     }
 
     private static int RoundInt(double? value)

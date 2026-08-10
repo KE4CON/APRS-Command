@@ -7,6 +7,11 @@ public sealed class GeofenceService : IGeofenceService
     private readonly IBeaconSchedulerClock clock;
     private readonly List<GeofenceDefinition> geofences = [];
     private readonly Dictionary<string, bool> stationInsideState = new(StringComparer.OrdinalIgnoreCase);
+    // Guards `geofences` and `stationInsideState`. EvaluateStationPosition runs on background transport
+    // receive threads (one per KISS/AGWPE port) and mutates the dictionary, while the geofence editor
+    // mutates from the UI thread — previously unsynchronized, so concurrent Dictionary writes could corrupt
+    // its buckets (a 100%-CPU spin or IndexOutOfRange), not merely lose state (audit 2026-08-10 deep pass).
+    private readonly object sync = new();
 
     public GeofenceService(IBeaconSchedulerClock? clock = null)
     {
@@ -15,75 +20,91 @@ public sealed class GeofenceService : IGeofenceService
 
     public GeofenceDefinition CreateGeofence(GeofenceDefinition geofence)
     {
-        if (geofences.Any(existing => existing.GeofenceId == geofence.GeofenceId))
-        {
-            throw new InvalidOperationException("A geofence with the same ID already exists.");
-        }
-
         var normalized = Normalize(geofence, geofence.CreatedAtUtc == default ? clock.UtcNow : geofence.CreatedAtUtc);
-        geofences.Add(normalized);
+        lock (sync)
+        {
+            if (geofences.Any(existing => existing.GeofenceId == geofence.GeofenceId))
+            {
+                throw new InvalidOperationException("A geofence with the same ID already exists.");
+            }
+
+            geofences.Add(normalized);
+        }
         return normalized;
     }
 
     public GeofenceDefinition? UpdateGeofence(GeofenceDefinition geofence)
     {
-        var index = geofences.FindIndex(existing => existing.GeofenceId == geofence.GeofenceId);
-        if (index < 0)
+        lock (sync)
         {
-            return null;
-        }
+            var index = geofences.FindIndex(existing => existing.GeofenceId == geofence.GeofenceId);
+            if (index < 0)
+            {
+                return null;
+            }
 
-        var normalized = Normalize(geofence, geofence.CreatedAtUtc == default ? geofences[index].CreatedAtUtc : geofence.CreatedAtUtc);
-        geofences[index] = normalized;
-        return normalized;
+            var normalized = Normalize(geofence, geofence.CreatedAtUtc == default ? geofences[index].CreatedAtUtc : geofence.CreatedAtUtc);
+            geofences[index] = normalized;
+            return normalized;
+        }
     }
 
     public bool DeleteGeofence(Guid geofenceId)
     {
-        stationInsideState.Keys
-            .Where(key => key.StartsWith($"{geofenceId:N}|", StringComparison.OrdinalIgnoreCase))
-            .ToArray()
-            .ToList()
-            .ForEach(key => stationInsideState.Remove(key));
+        lock (sync)
+        {
+            foreach (var key in stationInsideState.Keys
+                .Where(key => key.StartsWith($"{geofenceId:N}|", StringComparison.OrdinalIgnoreCase))
+                .ToArray())
+            {
+                stationInsideState.Remove(key);
+            }
 
-        return geofences.RemoveAll(geofence => geofence.GeofenceId == geofenceId) > 0;
+            return geofences.RemoveAll(geofence => geofence.GeofenceId == geofenceId) > 0;
+        }
     }
 
     public bool SetGeofenceEnabled(Guid geofenceId, bool enabled, DateTimeOffset? updatedAtUtc = null)
     {
-        var index = geofences.FindIndex(geofence => geofence.GeofenceId == geofenceId);
-        if (index < 0)
+        lock (sync)
         {
-            return false;
-        }
+            var index = geofences.FindIndex(geofence => geofence.GeofenceId == geofenceId);
+            if (index < 0)
+            {
+                return false;
+            }
 
-        geofences[index] = Normalize(geofences[index] with
-        {
-            Enabled = enabled,
-            UpdatedAtUtc = updatedAtUtc ?? clock.UtcNow
-        }, geofences[index].CreatedAtUtc);
-        return true;
+            geofences[index] = Normalize(geofences[index] with
+            {
+                Enabled = enabled,
+                UpdatedAtUtc = updatedAtUtc ?? clock.UtcNow
+            }, geofences[index].CreatedAtUtc);
+            return true;
+        }
     }
 
     public IReadOnlyList<GeofenceDefinition> GetAllGeofences()
     {
-        return geofences.ToArray();
+        lock (sync) { return geofences.ToArray(); }
     }
 
     public IReadOnlyList<GeofenceDefinition> GetEnabledGeofences()
     {
-        return geofences.Where(geofence => geofence.Enabled && geofence.ValidationErrors.Count == 0).ToArray();
+        lock (sync) { return geofences.Where(geofence => geofence.Enabled && geofence.ValidationErrors.Count == 0).ToArray(); }
     }
 
     public GeofenceDefinition? GetGeofence(Guid geofenceId)
     {
-        return geofences.FirstOrDefault(geofence => geofence.GeofenceId == geofenceId);
+        lock (sync) { return geofences.FirstOrDefault(geofence => geofence.GeofenceId == geofenceId); }
     }
 
     public void ClearGeofences()
     {
-        geofences.Clear();
-        stationInsideState.Clear();
+        lock (sync)
+        {
+            geofences.Clear();
+            stationInsideState.Clear();
+        }
     }
 
     public GeofenceValidationResult ValidateGeofence(GeofenceDefinition geofence, bool allowLargeGeofence = false)
@@ -183,25 +204,30 @@ public sealed class GeofenceService : IGeofenceService
         }
 
         var events = new List<GeofenceStationEvent>();
-        foreach (var geofence in GetEnabledGeofences())
+        // Hold the lock across the read-enabled + state-update loop so concurrent receive threads can't
+        // corrupt stationInsideState. ContainsPoint/CreateEvent are pure math over local data.
+        lock (sync)
         {
-            var key = BuildStateKey(geofence.GeofenceId, stationCallsign);
-            var wasKnown = stationInsideState.TryGetValue(key, out var wasInside);
-            var isInside = ContainsPoint(geofence, latitude, longitude);
-            stationInsideState[key] = isInside;
+            foreach (var geofence in geofences.Where(g => g.Enabled && g.ValidationErrors.Count == 0))
+            {
+                var key = BuildStateKey(geofence.GeofenceId, stationCallsign);
+                var wasKnown = stationInsideState.TryGetValue(key, out var wasInside);
+                var isInside = ContainsPoint(geofence, latitude, longitude);
+                stationInsideState[key] = isInside;
 
-            if (!wasKnown)
-            {
-                continue;
-            }
+                if (!wasKnown)
+                {
+                    continue;
+                }
 
-            if (!wasInside && isInside && geofence.AlertOnEnter)
-            {
-                events.Add(CreateEvent(geofence, stationCallsign, GeofenceEventType.Entered, timestampUtc, latitude, longitude));
-            }
-            else if (wasInside && !isInside && geofence.AlertOnExit)
-            {
-                events.Add(CreateEvent(geofence, stationCallsign, GeofenceEventType.Left, timestampUtc, latitude, longitude));
+                if (!wasInside && isInside && geofence.AlertOnEnter)
+                {
+                    events.Add(CreateEvent(geofence, stationCallsign, GeofenceEventType.Entered, timestampUtc, latitude, longitude));
+                }
+                else if (wasInside && !isInside && geofence.AlertOnExit)
+                {
+                    events.Add(CreateEvent(geofence, stationCallsign, GeofenceEventType.Left, timestampUtc, latitude, longitude));
+                }
             }
         }
 

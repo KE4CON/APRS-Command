@@ -177,6 +177,33 @@ public sealed class BeaconSchedulerTests
         Assert.Contains("APRS-IS beaconing is disabled", result.Message);
     }
 
+    // Deep-audit HIGH: firing one transport's beacon reset BOTH countdowns from `now`, so with the default
+    // 30 min APRS-IS / 60 min RF the RF beacon was perpetually postponed and never fired. Firing the APRS-IS
+    // beacon must leave the RF countdown untouched.
+    [Fact]
+    public async Task BeaconNow_FiringAprsIs_DoesNotPostponeRfBeaconTimer()
+    {
+        var (profileService, client, scheduler, clock) = CreateScheduler(aprsIsBeaconEnabled: true, rfBeaconEnabled: true);
+        profileService.UpdateProfile(CreateValidProfile(transmitEnabled: true, aprsIsTransmitEnabled: true) with
+        {
+            AprsIsBeaconInterval = TimeSpan.FromMinutes(30),
+            RfBeaconInterval = TimeSpan.FromMinutes(60),
+        }, TestNow);
+        client.State = AprsIsConnectionState.Connected;
+
+        scheduler.Start();
+        var scheduledRf = scheduler.GetState().NextRfBeaconTimeUtc; // TestNow + 60
+        Assert.Equal(TestNow.AddMinutes(60), scheduledRf);
+
+        // APRS-IS beacon fires 30 minutes later.
+        clock.UtcNow = TestNow.AddMinutes(30);
+        await scheduler.BeaconNowAsync(CancellationToken.None);
+
+        var state = scheduler.GetState();
+        Assert.Equal(TestNow.AddMinutes(60), state.NextRfBeaconTimeUtc);        // unchanged — NOT pushed to +90
+        Assert.Equal(TestNow.AddMinutes(30 + 30), state.NextAprsIsBeaconTimeUtc); // its own timer advanced
+    }
+
     private static (LocalStationProfileService ProfileService, FakeAprsIsClient Client, BeaconScheduler Scheduler, FakeBeaconSchedulerClock Clock) CreateScheduler(
         bool aprsIsBeaconEnabled = false,
         bool rfBeaconEnabled = false)

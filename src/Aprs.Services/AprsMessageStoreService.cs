@@ -7,6 +7,12 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
 {
     private const int MaximumMessageBodyLength = 67;
     private readonly List<AprsMessageRecord> messages = [];
+    // Guards `messages`. It is touched from the UI thread (compose/refresh), the 10 s retry tick, and
+    // the transport receive threads (incoming ACK/REJ via MessageAckCoordinator.ProcessIncomingPacket) —
+    // previously unsynchronized, so an Add during an enumeration threw "Collection was modified" and could
+    // kill a receive loop (audit 2026-08-10 deep pass). Never held across the IncomingMessageReceived
+    // callback; getters return .ToArray() copies so nothing mutable escapes.
+    private readonly object sync = new();
     private readonly ExerciseMarking? marking;
 
     public AprsMessageStoreService(ExerciseMarking? marking = null) => this.marking = marking;
@@ -38,7 +44,7 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
             kind,
             packet.ValidationErrors);
 
-        messages.Add(record);
+        lock (sync) { messages.Add(record); }
         IncomingMessageReceived?.Invoke(this, record);
         return record;
     }
@@ -66,7 +72,7 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
             AprsMessageKind.PrivateMessage,
             validation.Errors);
 
-        messages.Add(record);
+        lock (sync) { messages.Add(record); }
         return record;
     }
 
@@ -160,40 +166,52 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
 
     public IReadOnlyList<AprsMessageRecord> GetAllMessages()
     {
-        return messages.OrderBy(message => message.CreatedAtUtc).ToArray();
+        lock (sync) { return messages.OrderBy(message => message.CreatedAtUtc).ToArray(); }
     }
 
     public IReadOnlyList<AprsMessageRecord> GetInboxMessages()
     {
-        return messages
-            .Where(message => message.Direction == AprsMessageDirection.Incoming)
-            .OrderByDescending(message => message.ReceivedAtUtc ?? message.CreatedAtUtc)
-            .ToArray();
+        lock (sync)
+        {
+            return messages
+                .Where(message => message.Direction == AprsMessageDirection.Incoming)
+                .OrderByDescending(message => message.ReceivedAtUtc ?? message.CreatedAtUtc)
+                .ToArray();
+        }
     }
 
     public IReadOnlyList<AprsMessageRecord> GetOutboxMessages()
     {
-        return messages
-            .Where(message => message.Direction == AprsMessageDirection.Outgoing)
-            .OrderByDescending(message => message.LastUpdatedAtUtc)
-            .ToArray();
+        lock (sync)
+        {
+            return messages
+                .Where(message => message.Direction == AprsMessageDirection.Outgoing)
+                .OrderByDescending(message => message.LastUpdatedAtUtc)
+                .ToArray();
+        }
     }
 
     public IReadOnlyList<AprsMessageRecord> GetDrafts()
     {
-        return messages
-            .Where(message => message.Direction == AprsMessageDirection.Draft || message.Status == AprsMessageStatus.Draft)
-            .OrderByDescending(message => message.LastUpdatedAtUtc)
-            .ToArray();
+        lock (sync)
+        {
+            return messages
+                .Where(message => message.Direction == AprsMessageDirection.Draft || message.Status == AprsMessageStatus.Draft)
+                .OrderByDescending(message => message.LastUpdatedAtUtc)
+                .ToArray();
+        }
     }
 
     public IReadOnlyList<AprsMessageRecord> GetMessagesByRemoteStation(string remoteStationCallsign)
     {
         var normalized = NormalizeCallsign(remoteStationCallsign);
-        return messages
-            .Where(message => string.Equals(message.RemoteStationCallsign, normalized, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(message => message.CreatedAtUtc)
-            .ToArray();
+        lock (sync)
+        {
+            return messages
+                .Where(message => string.Equals(message.RemoteStationCallsign, normalized, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(message => message.CreatedAtUtc)
+                .ToArray();
+        }
     }
 
     public IReadOnlyList<AprsMessageRecord> GetConversation(string remoteStationCallsign)
@@ -203,20 +221,23 @@ public sealed partial class AprsMessageStoreService : IAprsMessageStoreService
 
     public void Clear()
     {
-        messages.Clear();
+        lock (sync) { messages.Clear(); }
     }
 
     private AprsMessageRecord UpdateRecord(Guid messageRecordId, Func<AprsMessageRecord, AprsMessageRecord> update)
     {
-        var index = messages.FindIndex(message => message.Id == messageRecordId);
-        if (index < 0)
+        lock (sync)
         {
-            throw new InvalidOperationException("Message record was not found.");
-        }
+            var index = messages.FindIndex(message => message.Id == messageRecordId);
+            if (index < 0)
+            {
+                throw new InvalidOperationException("Message record was not found.");
+            }
 
-        var updated = update(messages[index]);
-        messages[index] = updated;
-        return updated;
+            var updated = update(messages[index]);
+            messages[index] = updated;
+            return updated;
+        }
     }
 
     private static AprsMessageKind DetermineKind(MessageAprsPacket packet)

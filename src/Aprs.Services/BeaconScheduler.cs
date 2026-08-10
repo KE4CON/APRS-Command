@@ -193,7 +193,9 @@ public sealed class BeaconScheduler : IBeaconScheduler
                 LastErrorOrWarning = transmitted ? null : message,
                 CurrentStationProfile = profile
             },
-            clock.UtcNow);
+            clock.UtcNow,
+            recomputeAprsIs: true,
+            recomputeRf: false); // APRS-IS beacon fired — leave the RF countdown untouched
 
         return new BeaconNowResult(
             PacketGenerated: true,
@@ -252,12 +254,12 @@ public sealed class BeaconScheduler : IBeaconScheduler
         var rfResult = await rfBeaconClient.SendBeaconAsync(formatResult.Packet, cancellationToken)
                                            .ConfigureAwait(false);
 
-        // Update RF beacon timer
+        // Update RF beacon timer only — leave the APRS-IS countdown untouched.
         state = CalculateNextBeaconTimes(state with
         {
             LastRfBeaconTimeUtc = rfResult.Transmitted ? DateTimeOffset.UtcNow : state.LastRfBeaconTimeUtc,
             LastErrorOrWarning  = rfResult.Transmitted ? null : rfResult.Message,
-        }, clock.UtcNow);
+        }, clock.UtcNow, recomputeAprsIs: false, recomputeRf: true);
 
         return rfResult;
     }
@@ -271,15 +273,34 @@ public sealed class BeaconScheduler : IBeaconScheduler
         return smartBeaconingDecisionService.Evaluate(currentPosition);
     }
 
-    private BeaconSchedulerState CalculateNextBeaconTimes(BeaconSchedulerState currentState, DateTimeOffset now)
+    // The two transports keep INDEPENDENT countdowns. `recomputeAprsIs`/`recomputeRf` say which timer(s) to
+    // advance: Start/ApplySettings recompute both; firing one transport's beacon must advance ONLY that
+    // transport's next time and leave the other's alone. Previously both were reset from `now` on every
+    // beacon, so with the default 30 min APRS-IS / 60 min RF the RF beacon was perpetually postponed and
+    // never fired (audit 2026-08-10 deep pass).
+    private BeaconSchedulerState CalculateNextBeaconTimes(
+        BeaconSchedulerState currentState,
+        DateTimeOffset now,
+        bool recomputeAprsIs = true,
+        bool recomputeRf = true)
     {
         var profile = profileService.GetCurrentProfile();
-        var nextAprsIs = currentState.SchedulerEnabled && configuration.AprsIsBeaconEnabled
-            ? now.Add(profile.AprsIsBeaconInterval)
-            : (DateTimeOffset?)null;
-        var nextRf = currentState.SchedulerEnabled && configuration.RfBeaconEnabled
-            ? now.Add(profile.RfBeaconInterval)
-            : (DateTimeOffset?)null;
+
+        DateTimeOffset? nextAprsIs;
+        if (!recomputeAprsIs)
+            nextAprsIs = currentState.NextAprsIsBeaconTimeUtc;
+        else
+            nextAprsIs = currentState.SchedulerEnabled && configuration.AprsIsBeaconEnabled
+                ? now.Add(profile.AprsIsBeaconInterval)
+                : (DateTimeOffset?)null;
+
+        DateTimeOffset? nextRf;
+        if (!recomputeRf)
+            nextRf = currentState.NextRfBeaconTimeUtc;
+        else
+            nextRf = currentState.SchedulerEnabled && configuration.RfBeaconEnabled
+                ? now.Add(profile.RfBeaconInterval)
+                : (DateTimeOffset?)null;
 
         return currentState with
         {

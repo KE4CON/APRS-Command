@@ -37,9 +37,14 @@ internal static class AprsCompressedPositionDecoder
     {
         if (offset >= information.Length) return false;
         var c = information[offset];
-        // Compressed format leads with the Symbol Table Identifier (/ or \).
-        // Normal lat/long leads with digit characters (degree digits).
-        return c is '/' or '\\';
+        // Spec §9: a compressed position leads with the Symbol Table Identifier, which is '/', '\\', an
+        // overlay LETTER 'A'–'Z', or 'a'–'j' (numeric overlays 0–9 are encoded as 'a'–'j' precisely so the
+        // first byte is never a digit). Uncompressed lat/long always leads with a degree DIGIT. Previously
+        // only '/' and '\\' were recognized, so every overlaid compressed position/object/item/weather was
+        // routed to the uncompressed parser and lost (audit 2026-08-10 deep pass, Dire-Wolf confirmed).
+        return c is '/' or '\\'
+            || c is >= 'A' and <= 'Z'
+            || c is >= 'a' and <= 'j';
     }
 
     /// <summary>

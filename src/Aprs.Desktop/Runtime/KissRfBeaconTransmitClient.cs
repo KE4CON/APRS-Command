@@ -35,6 +35,16 @@ public sealed class KissRfBeaconTransmitClient : IRfBeaconTransmitClient
         if (string.IsNullOrWhiteSpace(rawPacket))
             return Fail("Empty packet.", rawPacket);
 
+        // Identity gate at the single RF chokepoint: never key up on the air with a placeholder callsign.
+        // Unlike APRS-IS (which is blocked by the missing passcode), RF has no passcode, so N0CALL/empty
+        // would otherwise transmit unidentified — an FCC §97.119 identification violation. This covers every
+        // RF path that fans out through here (beacon, message, weather). See CLAUDE.md transmit-safety.
+        var source = ExtractSourceCallsign(rawPacket);
+        if (IsPlaceholderCallsign(source))
+            return Fail(
+                $"RF transmit blocked: '{(source.Length == 0 ? "(empty)" : source)}' is not a valid station callsign. " +
+                "Set your callsign in Station Setup before transmitting on RF.", rawPacket);
+
         var ax25 = Ax25AprsFrameEncoder.Encode(rawPacket);
         if (ax25 is null || ax25.Length == 0)
             return Fail($"Could not encode to AX.25: '{rawPacket}'", rawPacket);
@@ -84,4 +94,22 @@ public sealed class KissRfBeaconTransmitClient : IRfBeaconTransmitClient
 
     private static BeaconNowResult Fail(string msg, string? pkt)
         => new(false, false, false, true, pkt, msg, null, new[] { msg });
+
+    /// <summary>Returns the source callsign (with SSID) from a TNC2 line, or "" if none.</summary>
+    private static string ExtractSourceCallsign(string rawPacket)
+    {
+        var gt = rawPacket.IndexOf('>');
+        return gt > 0 ? rawPacket[..gt].Trim() : string.Empty;
+    }
+
+    /// <summary>True for an empty or placeholder callsign that must never key up a real transmitter.</summary>
+    private static bool IsPlaceholderCallsign(string callsignWithSsid)
+    {
+        if (string.IsNullOrWhiteSpace(callsignWithSsid)) return true;
+        var dash = callsignWithSsid.IndexOf('-');
+        var baseCall = dash > 0 ? callsignWithSsid[..dash] : callsignWithSsid;
+        return string.Equals(baseCall, "N0CALL", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(baseCall, "NOCALL", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(baseCall, "MYCALL", StringComparison.OrdinalIgnoreCase);
+    }
 }
