@@ -401,3 +401,20 @@ querying and on-map display; no separate terms carve-out is needed the way Repea
 key lands, verify the live request/response shape against `ParseResponse()` (never tested against a real
 key) and confirm Winlink's data-use/attribution expectations before shipping. **Do not** assume the API
 works until the key is in hand.
+
+### D17 — APRS-Command is VHF-only (1200-baud); HF APRS is not, and never was, in this app
+**Recorded 2026-08-15 (retroactive — this was never a stated decision, only an implicit one).** APRS-Command
+supports **VHF APRS only (1200-baud AFSK; 9600 G3RUH planned)**. It has **no HF (300-baud) support** and no
+built-in modem — all RF modulation is delegated to **Direwolf**, and the generated config hardcodes
+`MODEM 1200` (`DirewolfProcessManager.cs`, `WriteConfigFile()`), with no baud/mode selector exposed anywhere.
+
+**Why VHF-only:** there is **no documented rationale** — HF APRS was simply never built. It is a *byproduct*
+of the Direwolf-1200 dependency, not a deliberate "we won't do HF" choice. (The app *does* list the HF APRS
+frequencies — 30m 10.151, 20m 14.105, USB/300 baud — in its frequency reference for the operator to dial by
+hand, but there is no modem behind them.) Captured here so future work doesn't have to re-derive it.
+
+**Division of labor with IcomRigControl (KE4CON's Icom control/logging app):** HF APRS lives in
+**IcomRigControl**, which has its own self-contained 300-baud AFSK/AX.25 engine (no Direwolf). APRS-Command
+owns **VHF** APRS. The two are deliberately separate programs; they divide APRS by **band**, not by handoff.
+If HF ever becomes wanted in APRS-Command, it would need a real 300-baud modem path (Direwolf HF tone config
+or an internal modem) — a genuine new feature, not a config tweak.

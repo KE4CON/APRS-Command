@@ -1,17 +1,26 @@
 # ============================================================
 # APRS Command — Windows NSIS installer
 #
-# No Authenticode certificate required.
-# SmartScreen will warn on first run — click "More info" then
+# Code signing is OPTIONAL and OFF by default (see scripts/sign-windows.ps1).
+# If Azure Artifact Signing is configured AND you are logged in (az login),
+# both the app and the installer are signed automatically. Otherwise output
+# is UNSIGNED: SmartScreen warns on first run — click "More info" then
 # "Run anyway". Standard for unsigned open-source software.
 #
 # Usage (PowerShell):
 #   pwsh scripts/make-windows-installer.ps1 [-Version 0.4.0]
 #
+# To ALSO sign, first set (your real values) then re-run:
+#   $env:AZURE_SIGN_ENDPOINT = "https://eus.codesigning.azure.net/"
+#   $env:AZURE_SIGN_ACCOUNT  = "aprscommandsign"
+#   $env:AZURE_SIGN_PROFILE  = "rospopo-public"
+#   az login
+#
 # Requirements:
 #   - .NET 10 SDK
 #   - NSIS 3.x (free): https://nsis.sourceforge.io/
 #     If not found, the .nsi script is written for manual compile.
+#   - (optional, for signing) 'sign' tool + Azure CLI
 # ============================================================
 param([string]$Version = "")
 
@@ -22,6 +31,7 @@ $PublishDir   = Join-Path $RepoRoot "artifacts\publish\win-x64"
 $InstallerDir = Join-Path $RepoRoot "artifacts\installers"
 $NsiFile      = Join-Path $InstallerDir "aprs-command.nsi"
 $OutFile      = Join-Path $InstallerDir "APRSCommand-windows-x64-Setup.exe"
+$SignScript   = Join-Path $ScriptDir "sign-windows.ps1"
 
 # Derive version from git tag if not supplied
 if (-not $Version) {
@@ -40,6 +50,11 @@ if (-not (Test-Path (Join-Path $PublishDir "Aprs.Desktop.exe"))) {
 }
 
 New-Item -ItemType Directory -Force -Path $InstallerDir | Out-Null
+
+# ── 1b. Sign the app (optional, credential-gated) ─────────────────────────────
+# Signs the app BEFORE it is packed into the installer. Skips cleanly if signing
+# is not configured, leaving unsigned output.
+& $SignScript (Join-Path $PublishDir "Aprs.Desktop.exe")
 
 # ── 2. Write NSIS script ──────────────────────────────────────────────────────
 Write-Host "Writing NSIS script..."
@@ -127,11 +142,20 @@ $makensis = @(
 if ($makensis) {
     Write-Host "Compiling with NSIS: $makensis"
     & $makensis $NsiFile
+
+    # ── 4. Sign the installer (optional, credential-gated) ────────────────────
+    & $SignScript $OutFile
+
     Write-Host ""
     Write-Host "Done. Installer: $OutFile"
     Write-Host ""
-    Write-Host "NOTE: NOT code-signed. SmartScreen will warn on first run."
-    Write-Host "  Users click 'More info' then 'Run anyway'."
+    if ($env:AZURE_SIGN_ENDPOINT -and $env:AZURE_SIGN_ACCOUNT -and $env:AZURE_SIGN_PROFILE) {
+        Write-Host "If signing succeeded above, the app and installer are code-signed."
+        Write-Host "Verify: right-click the installer -> Properties -> Digital Signatures."
+    } else {
+        Write-Host "NOTE: NOT code-signed (signing not configured). SmartScreen will warn on first run."
+        Write-Host "  Users click 'More info' then 'Run anyway'."
+    }
 } else {
     Write-Host ""
     Write-Host "NSIS not found. Install from https://nsis.sourceforge.io/"
